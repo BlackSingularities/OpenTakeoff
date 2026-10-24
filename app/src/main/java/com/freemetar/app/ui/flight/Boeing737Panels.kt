@@ -684,7 +684,7 @@ fun BoeingSystems(link: LinkClient, s: FlightState) {
 
 @Composable
 fun BoeingEngines(link: LinkClient, s: FlightState) {
-    BoeingEicas(s)
+    EngineDisplayBox { BoeingEicas(s) }
     Spacer(Modifier.height(12.dp))
     Quadrant(link, s, AircraftProfile.B737)
     if (s.autopilot.athr) Text(loc("A/T włączony — symulator może sam przestawiać dźwignie.", "A/T is on — the simulator may move the thrust levers itself."),

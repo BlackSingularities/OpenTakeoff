@@ -771,7 +771,7 @@ fun AirbusSystems(link: LinkClient, s: FlightState) {
 
 @Composable
 fun AirbusEngines(link: LinkClient, s: FlightState) {
-    AirbusEwd(s)
+    EngineDisplayBox { AirbusEwd(s) }
     Spacer(Modifier.height(12.dp))
     Quadrant(link, s, AircraftProfile.A320)
     if (s.autopilot.athr) Text(loc("A/THR włączony — symulator może sam przestawiać ciąg.", "A/THR is on — the simulator may move the thrust itself."),

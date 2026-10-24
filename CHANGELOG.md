@@ -1,3 +1,8 @@
+## 2.3.3 — Smaller engine displays
+
+- Engines tab: the EICAS / ECAM engine display is the same size as the ND on wide screens (centred), instead of filling
+  the full width; phones are unchanged.
+
 ## 2.3.2 — Aircraft scales with the map
 
 - The aircraft on the map (3D and the ground symbol) is smaller when zoomed out and grows with the map when zoomed in,

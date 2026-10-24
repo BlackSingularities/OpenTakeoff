@@ -67,6 +67,18 @@ private val EICAS_AMBER = Color(0xFFFFB020)
 private val EICAS_RED = Color(0xFFFF3B47)
 private val EICAS_CYAN = Color(0xFF4FD1E8)
 
+/**
+ * Ekran parametrów silników w wielkości ND z zakładki na żywo: na szerokim ekranie (ND zajmuje tam niecałą połowę
+ * szerokości obok PFD) wyśrodkowany w tej samej szerokości, na telefonie na całą szerokość jak ND.
+ */
+@Composable
+internal fun EngineDisplayBox(content: @Composable () -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        val w = if (maxWidth >= 560.dp) (maxWidth - 12.dp) / 2.1f else maxWidth
+        Box(Modifier.width(w)) { content() }
+    }
+}
+
 /** Zapadka dźwigni ciągu (odrzutowce): położenie 0–100 % i podpis. */
 private data class Detent(val pct: Int, val label: String)
 
@@ -82,12 +94,12 @@ fun EnginePanel(link: LinkClient, s: FlightState, profile: AircraftProfile) {
         val side = maxWidth >= 560.dp
         if (side) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(Modifier.weight(1.2f)) { Eicas(s, profile) }
+                Column(Modifier.weight(1f)) { Eicas(s, profile) }
                 Column(Modifier.weight(1f)) { Quadrant(link, s, profile) }
             }
         } else {
             Column {
-                Eicas(s, profile)
+                EngineDisplayBox { Eicas(s, profile) }
                 Spacer(Modifier.height(12.dp))
                 Quadrant(link, s, profile)
             }

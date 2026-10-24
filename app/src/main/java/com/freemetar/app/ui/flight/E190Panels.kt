@@ -534,7 +534,7 @@ fun EmbraerSystems(link: LinkClient, s: FlightState) {
 
 @Composable
 fun EmbraerEngines(link: LinkClient, s: FlightState) {
-    EmbraerEicas(s)
+    EngineDisplayBox { EmbraerEicas(s) }
     Spacer(Modifier.height(12.dp))
     Quadrant(link, s, AircraftProfile.E190)
     if (s.autopilot.athr) Text(loc("A/T włączony — symulator może sam przestawiać dźwignie.", "A/T is on — the simulator may move the thrust levers itself."),
