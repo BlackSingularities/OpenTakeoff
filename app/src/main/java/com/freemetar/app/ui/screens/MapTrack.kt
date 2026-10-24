@@ -150,6 +150,15 @@ internal fun trackLabels(track: List<TrackPoint>): FeatureCollection {
 }
 
 /**
+ * Rozpiętość samolotu 3D w metrach: z bliska rzeczywista (ok. 36 m — samolot mieści się na drodze kołowania),
+ * z daleka stała wielkość na ekranie, malejąca z przybliżeniem od 36 px (zoom ≤ 10) do 14 px (zoom ≥ 15).
+ */
+internal fun planeSpanM(zoom: Double, mPerPx: Double): Double {
+    val px = 36.0 - (zoom - 10.0).coerceIn(0.0, 5.0) / 5.0 * 22.0
+    return maxOf(36.0, px * mPerPx).coerceAtMost(6000.0)
+}
+
+/**
  * Samolot w 3D: płaska sylwetka (kadłub, skrzydła, usterzenie) obrócona zgodnie z kursem i zawieszona
  * na wysokości lotu — w tym samym przewyższeniu co linia toru, więc leży na jej końcu.
  * [spanM] — rozpiętość w metrach (dobierana do przybliżenia mapy, żeby symbol miał stałą wielkość na ekranie).

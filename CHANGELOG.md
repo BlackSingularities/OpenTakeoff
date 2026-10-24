@@ -1,3 +1,8 @@
+## 2.3.2 — Aircraft scales with the map
+
+- The aircraft on the map (3D and the ground symbol) is smaller when zoomed out and grows with the map when zoomed in,
+  close to its real size at an airport, instead of covering the apron.
+
 ## 2.3.1 — MSFS 2024 camera fixes, narrower 737 and E190 panels
 
 - Looking around (hold a camera button) now pivots from the pilot's eye instead of placing the camera in front of the

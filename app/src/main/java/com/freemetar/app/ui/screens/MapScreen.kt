@@ -272,12 +272,13 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             live?.position?.altMslFt?.let { addStringProperty("label", altLabel(it.roundToInt())) }
         })
         (st.getSource(SRC_PLANE) as? GeoJsonSource)?.setGeoJson(fc)
-        // Samolot w 3D na wysokości lotu; rozpiętość ok. 48 px niezależnie od przybliżenia
+        // Samolot w 3D na wysokości lotu; z bliska w skali mapy, z daleka mały znak stałej wielkości
         val alt = live?.position?.altMslFt
         mapView.getMapAsync { m ->
             val plane3d = if (lat == null || lon == null || alt == null) FeatureCollection.fromFeatures(emptyList()) else {
-                val mPerPx = 156_543.03 * kotlin.math.cos(Math.toRadians(lat)) / Math.pow(2.0, m.cameraPosition.zoom)
-                planeShape3d(lat, lon, live?.attitude?.hdgTrueDeg ?: 0.0, alt, (48 * mPerPx).coerceIn(40.0, 6000.0))
+                val zoom = m.cameraPosition.zoom
+                val mPerPx = 156_543.03 * kotlin.math.cos(Math.toRadians(lat)) / Math.pow(2.0, zoom)
+                planeShape3d(lat, lon, live?.attitude?.hdgTrueDeg ?: 0.0, alt, planeSpanM(zoom, mPerPx))
             }
             (st.getSource(SRC_PLANE3D) as? GeoJsonSource)?.setGeoJson(plane3d)
         }
@@ -541,7 +542,9 @@ private fun addOverlay(st: Style, c: FmColors) {
         PropertyFactory.iconRotationAlignment("map"),
         PropertyFactory.iconAllowOverlap(true),
         PropertyFactory.iconIgnorePlacement(true),
-        PropertyFactory.iconSize(0.7f),
+        // Z daleka mały znak, od zoomu 14 rośnie z mapą (×2 na poziom), aż zbliży się do rzeczywistej wielkości
+        PropertyFactory.iconSize(Expression.interpolate(Expression.exponential(2f), Expression.zoom(),
+            Expression.stop(10, 0.55f), Expression.stop(14, 0.45f), Expression.stop(16, 0.8f), Expression.stop(18, 3.2f))),
         // Bieżąca wysokość pod symbolem samolotu
         PropertyFactory.textField(Expression.get("label")),
         PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
