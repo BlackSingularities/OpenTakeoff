@@ -1,3 +1,14 @@
+## 2.4.0 — Boeing 787 cockpit panels
+
+- 787 MCP: F/D, A/P, A/T ARM, CLB/CON, A/T, IAS ( ) MACH with the IAS/MACH changeover, LNAV, FLCH, HDG ( ) TRK with the
+  bank-limit ring (tap the knob for HDG SEL) and HOLD, V/S ( ) FPA wheel and V/S, ALTITUDE with HOLD, LOC and APP, and the
+  A/P DISENGAGE bar; one row on tablets and foldables, three tiers on phones.
+- TCP-style radio: VHF L/R, NAV RAD L/R and XPDR pages, values typed into the scratchpad and inserted next to the standby
+  line, transfer keys, transponder modes and IDENT.
+- Systems: exterior lights, gear lever with the EICAS-style GEAR box, flaps UP–30, speed brake with ARMED, parking brake
+  with the wheel brake axis, stab trim.
+- 787 EICAS: TAT, N1 and EGT dials, N2 and FF, gear, flaps, stab trim and fuel, above the thrust levers.
+
 ## 2.3.3 — Smaller engine displays
 
 - Engines tab: the EICAS / ECAM engine display is the same size as the ND on wide screens (centred), instead of filling

@@ -81,12 +81,13 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 // ---------------- Wybór panelu wg profilu ----------------
-// A320, 737 i E190 mają własne widoki w stylu kabiny producenta; pozostałe profile — panele ogólne dopasowane do profilu.
+// A320, 737, 787 i E190 mają własne widoki w stylu kabiny producenta; pozostałe profile — panele ogólne dopasowane do profilu.
 
 @Composable
 fun AutopilotFor(link: LinkClient, s: FlightState, p: AircraftProfile, compact: Boolean = false) = when (p) {
     AircraftProfile.A320 -> AirbusFcu(link, s, compact)
     AircraftProfile.B737 -> BoeingMcp(link, s, compact)
+    AircraftProfile.B787 -> B787Mcp(link, s, compact)
     AircraftProfile.E190 -> EmbraerGuidancePanel(link, s, compact)
     else -> AutopilotPanelV2(link, s, p, compact)
 }
@@ -95,6 +96,7 @@ fun AutopilotFor(link: LinkClient, s: FlightState, p: AircraftProfile, compact: 
 fun RadioFor(link: LinkClient, s: FlightState, p: AircraftProfile) = when (p) {
     AircraftProfile.A320 -> { AirbusRmp(link, s); Spacer(Modifier.height(10.dp)); AirbusAtc(link, s) }
     AircraftProfile.B737 -> { BoeingRadioPanel(link, s); Spacer(Modifier.height(10.dp)); BoeingAtc(link, s) }
+    AircraftProfile.B787 -> B787Tcp(link, s)
     AircraftProfile.E190 -> EmbraerRadio(link, s)
     else -> RadioPanel(link, s, p)
 }
@@ -103,6 +105,7 @@ fun RadioFor(link: LinkClient, s: FlightState, p: AircraftProfile) = when (p) {
 fun SystemsFor(link: LinkClient, s: FlightState, p: AircraftProfile) = when (p) {
     AircraftProfile.A320 -> AirbusSystems(link, s)
     AircraftProfile.B737 -> BoeingSystems(link, s)
+    AircraftProfile.B787 -> B787Systems(link, s)
     AircraftProfile.E190 -> EmbraerSystems(link, s)
     else -> SystemsPanel(link, s, p)
 }
@@ -111,6 +114,7 @@ fun SystemsFor(link: LinkClient, s: FlightState, p: AircraftProfile) = when (p) 
 fun EnginesFor(link: LinkClient, s: FlightState, p: AircraftProfile) = when (p) {
     AircraftProfile.A320 -> AirbusEngines(link, s)
     AircraftProfile.B737 -> BoeingEngines(link, s)
+    AircraftProfile.B787 -> B787Engines(link, s)
     AircraftProfile.E190 -> EmbraerEngines(link, s)
     else -> EnginePanel(link, s, p)
 }
