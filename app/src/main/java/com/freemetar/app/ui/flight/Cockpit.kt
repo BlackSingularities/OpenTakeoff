@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ThreeSixty
 import androidx.compose.material.icons.outlined.AirlineSeatReclineNormal
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material3.DropdownMenu
@@ -341,10 +342,10 @@ private fun PanelBar(tab: CockpitTab?, onTab: (CockpitTab) -> Unit, modifier: Mo
 }
 
 /**
- * Kamera MSFS: kabina, zewnętrzna (pościg) i dron — trzy kompaktowe ikony. Aktywny widok podświetlony
- * na podstawie CAMERA STATE z symulatora. Krótkie dotknięcie zmienia kamerę; **przytrzymanie** włącza
- * rozglądanie się tym samym sposobem co sterowanie: żyroskop (przechylanie telefonu od pozycji z chwili
- * naciśnięcia) albo przesuwanie palca. Puszczenie wraca z kamerą na wprost.
+ * Rozglądanie się w MSFS: jeden przycisk. **Przytrzymanie** obraca kamerę tym samym sposobem co sterowanie —
+ * żyroskop (przechylanie telefonu od pozycji z chwili naciśnięcia) albo przesuwanie palca; w kabinie obraca się
+ * głowa pilota, w innych widokach kamera krąży wokół samolotu. Puszczenie wraca do widoku sprzed rozglądania.
+ * Krótkie dotknięcie pokazuje, co to za przycisk i jak go używać. Widok zmienia się w samym symulatorze.
  */
 @Composable
 internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier = Modifier, controlMode: String = "TILT", vertical: Boolean = false) {
@@ -353,9 +354,8 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
     val density = androidx.compose.ui.platform.LocalDensity.current
     val tiltMode = controlMode != "TOUCH"
     val tilt = rememberTilt(enabled = tiltMode)
-    val cam = s.controls.cameraState
-    val holdHint = tr(" — przytrzymaj, aby się rozglądać", " — hold to look around")
     var looking by remember { mutableStateOf(false) }
+    var info by remember { mutableStateOf(false) }
     var yaw by remember { mutableFloatStateOf(0f) }    // stopnie, + w prawo
     var pitch by remember { mutableFloatStateOf(0f) }  // stopnie, + w górę
     var roll0 by remember { mutableFloatStateOf(0f) }
@@ -380,52 +380,70 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
         }
     }
 
-    val buttons: @Composable () -> Unit = {
-        listOf(
-            Triple(2, tr("Kamera: kabina", "Camera: cockpit"), Icons.Outlined.AirlineSeatReclineNormal),
-            Triple(3, tr("Kamera: zewnętrzna", "Camera: external"), Icons.Outlined.FlightTakeoff),
-            Triple(4, tr("Kamera: dron", "Camera: drone"), Icons.Outlined.Videocam),
-        ).forEach { (state, label, icon) ->
-            val on = cam == state
-            val desc = label + holdHint
-            Box(
-                Modifier.size(32.dp).clip(CircleShape).background(if (on) c.ink else Color.Transparent)
-                    .semantics {
-                        contentDescription = desc
-                        role = Role.RadioButton
-                    }
-                    .pointerInput(tiltMode) {
-                        val reach = with(density) { 120.dp.toPx() }
-                        awaitEachGesture {
-                            val down = awaitFirstDown()
-                            down.consume()
-                            // Krótkie dotknięcie = zmiana kamery; przytrzymanie = rozglądanie się
-                            val up = withTimeoutOrNull(300) { waitForUpOrCancellation() }
-                            if (up != null) { link.command("CAMERA_STATE", state.toDouble()); return@awaitEachGesture }
-                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                            roll0 = tilt.roll.toFloat(); pitch0 = tilt.pitch.toFloat()
-                            yaw = 0f; pitch = 0f
-                            looking = true
-                            while (true) {
-                                val ev = awaitPointerEvent()
-                                val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
-                                if (!ch.pressed) break
-                                ch.consume()
-                                if (!tiltMode) {
-                                    yaw = ((ch.position.x - down.position.x) / reach * 180f).coerceIn(-180f, 180f)
-                                    pitch = (-(ch.position.y - down.position.y) / reach * 80f).coerceIn(-80f, 80f)
-                                }
-                            }
-                            looking = false
+    val label = tr("Rozglądanie się — przytrzymaj", "Look around — hold")
+    Row(
+        modifier.clip(RoundedCornerShape(50)).background(if (looking) c.accent.copy(alpha = 0.18f) else Color.Transparent)
+            .border(1.dp, if (looking) c.accent else c.rule, RoundedCornerShape(50))
+            .semantics { contentDescription = label; role = Role.Button }
+            .pointerInput(tiltMode) {
+                val reach = with(density) { 120.dp.toPx() }
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    down.consume()
+                    // Krótkie dotknięcie = wyjaśnienie; przytrzymanie = rozglądanie się
+                    val up = withTimeoutOrNull(300) { waitForUpOrCancellation() }
+                    if (up != null) { info = true; return@awaitEachGesture }
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    roll0 = tilt.roll.toFloat(); pitch0 = tilt.pitch.toFloat()
+                    yaw = 0f; pitch = 0f
+                    looking = true
+                    while (true) {
+                        val ev = awaitPointerEvent()
+                        val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!ch.pressed) break
+                        ch.consume()
+                        if (!tiltMode) {
+                            yaw = ((ch.position.x - down.position.x) / reach * 180f).coerceIn(-180f, 180f)
+                            pitch = (-(ch.position.y - down.position.y) / reach * 80f).coerceIn(-80f, 80f)
                         }
-                    },
-                contentAlignment = Alignment.Center,
-            ) { Icon(icon, null, tint = if (on) c.paper else c.ink2, modifier = Modifier.size(17.dp)) }
+                    }
+                    looking = false
+                }
+            }
+            .padding(horizontal = if (vertical) 7.dp else 10.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.ThreeSixty, null, tint = if (looking) c.accent else c.ink, modifier = Modifier.size(18.dp))
+        if (!vertical) {
+            Spacer(Modifier.width(5.dp))
+            Text(
+                if (looking) "%+d° / %+d°".format(yaw.roundToInt(), pitch.roundToInt()) else tr("Rozglądaj", "Look"),
+                fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = if (looking) c.accent else c.ink, maxLines = 1,
+            )
         }
     }
-    val frame = modifier.clip(RoundedCornerShape(50)).border(1.dp, if (looking) c.accent else c.rule, RoundedCornerShape(50)).padding(2.dp)
-    if (vertical) Column(frame, verticalArrangement = Arrangement.spacedBy(2.dp), horizontalAlignment = Alignment.CenterHorizontally) { buttons() }
-    else Row(frame, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) { buttons() }
+
+    if (info) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { info = false },
+        icon = { Icon(Icons.Outlined.ThreeSixty, null) },
+        title = { Text(tr("Rozglądanie się", "Look around")) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    if (tiltMode) tr("Przytrzymaj przycisk i przechylaj telefon: na boki — obrót w lewo i w prawo, do siebie i od siebie — w górę i w dół.",
+                        "Hold the button and tilt the phone: sideways to look left and right, towards or away from you to look up and down.")
+                    else tr("Przytrzymaj przycisk i przesuwaj palec: w bok — obrót w lewo i w prawo, w górę i w dół — spojrzenie w górę i w dół.",
+                        "Hold the button and slide your finger: sideways to look left and right, up and down to look up and down."),
+                )
+                Text(tr("W kabinie obracasz głowę pilota. W widoku zewnętrznym, z drona i w innych widokach kamera krąży wokół samolotu.",
+                    "In the cockpit you turn the pilot's head. In the external, drone and other views the camera circles around the aircraft."))
+                Text(tr("Puść przycisk, a kamera wróci do widoku, w którym była. Widok zmieniasz w samym symulatorze.",
+                    "Let go and the camera returns to the view it was in. Change views in the simulator itself."),
+                    color = c.ink2, style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton({ info = false }) { Text(tr("Rozumiem", "Got it")) } },
+    )
 }
 
 /**

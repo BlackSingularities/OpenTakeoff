@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.FlightTakeoff
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Speed
@@ -28,7 +27,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -50,8 +48,6 @@ import com.freemetar.app.ui.theme.Fm
 @Composable
 fun WelcomeScreen(
     onGetStarted: () -> Unit,
-    onSignInToDrive: () -> Unit,
-    onSkip: () -> Unit
 ) {
     Box(
         Modifier
@@ -135,71 +131,18 @@ fun WelcomeScreen(
                 )
             )
 
-            if (com.freemetar.app.BuildConfig.DRIVE_SYNC) FeatureItem(
-                icon = Icons.Outlined.Cloud,
-                title = loc("Synchronizacja z Google Drive", "Google Drive sync"),
-                description = loc(
-                    "Twoje loty bezpiecznie w chmurze. Automatyczny backup po każdym locie.",
-                    "Your flights safely in the cloud. Automatic backup after every flight."
-                )
-            )
-
             Spacer(Modifier.height(16.dp))
 
-            if (com.freemetar.app.BuildConfig.DRIVE_SYNC) {
-                // Przycisk główny - Google Drive
-                Button(
-                    onClick = onSignInToDrive,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Fm.c.accent,
-                        contentColor = Fm.c.paper
-                    )
-                ) {
-                    Icon(Icons.Outlined.Cloud, null, Modifier.size(24.dp))
-                    Spacer(Modifier.size(12.dp))
-                    Text(
-                        loc("Zaloguj do Google Drive", "Sign in to Google Drive"),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                // Przycisk drugorzędny - bez Drive
-                OutlinedButton(
-                    onClick = onGetStarted,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        loc("Rozpocznij bez synchronizacji", "Continue without sync"),
-                        fontSize = 15.sp
-                    )
-                }
-
-                // Tekst pomocniczy
-                Text(
-                    loc(
-                        "Możesz włączyć synchronizację później w Ustawieniach",
-                        "You can enable sync later in Settings"
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Fm.c.ink2,
-                    textAlign = TextAlign.Center
+            Button(
+                onClick = onGetStarted,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Fm.c.accent,
+                    contentColor = Fm.c.paper
                 )
-            } else {
-                Button(
-                    onClick = onGetStarted,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Fm.c.accent,
-                        contentColor = Fm.c.paper
-                    )
-                ) {
-                    Text(loc("Rozpocznij", "Get started"), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                }
+            ) {
+                Text(loc("Rozpocznij", "Get started"), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }
