@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.freemetar.app.data.link.FlightLogStore
+import com.freemetar.app.domain.loc
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
@@ -66,9 +67,9 @@ class SyncViewModel(
                 _syncState.value = SyncState.Syncing
                 driveSync.downloadFlights().onSuccess { flights ->
                     flightStore.save(flights)
-                    _syncState.value = SyncState.Success("Pobrano ${flights.size} lotów z Google Drive")
+                    _syncState.value = SyncState.Success(loc("Pobrano ${flights.size} lotów z Google Drive", "Downloaded ${flights.size} flights from Google Drive"))
                 }.onFailure { e ->
-                    _syncState.value = SyncState.Error("Błąd pobierania: ${e.message}")
+                    _syncState.value = SyncState.Error(loc("Błąd pobierania: ${e.message}", "Download failed: ${e.message}"))
                 }
             } else if (localFlights.isNotEmpty() && !hasData) {
                 // Są dane lokalnie, ale nie na Drive - wyślij
@@ -97,10 +98,10 @@ class SyncViewModel(
 
                 driveSync.initialize(account).onSuccess {
                     _isSignedIn.value = true
-                    _syncState.value = SyncState.Success("Zalogowano pomyślnie")
+                    _syncState.value = SyncState.Success(loc("Zalogowano pomyślnie", "Signed in"))
                     checkForExistingData()
                 }.onFailure { e ->
-                    _syncState.value = SyncState.Error("Błąd inicjalizacji: ${e.message}")
+                    _syncState.value = SyncState.Error(loc("Błąd inicjalizacji: ${e.message}", "Initialisation failed: ${e.message}"))
                 }
             } catch (e: ApiException) {
                 _syncState.value = SyncState.Error(signInError(e.statusCode))
@@ -110,11 +111,11 @@ class SyncViewModel(
 
     /** Kody z GoogleSignInStatusCodes / CommonStatusCodes przełożone na zrozumiały komunikat. */
     private fun signInError(code: Int): String = when (code) {
-        12501 -> "Logowanie anulowane"
-        7 -> "Brak połączenia z internetem"
-        10 -> "Błąd konfiguracji Google (kod 10): brak klienta OAuth dla tego podpisu aplikacji"
-        12500 -> "Logowanie nie powiodło się (kod 12500) — sprawdź ekran zgody OAuth i konto testowe"
-        else -> "Logowanie nie powiodło się (kod $code)"
+        12501 -> loc("Logowanie anulowane", "Sign-in cancelled")
+        7 -> loc("Brak połączenia z internetem", "No internet connection")
+        10 -> loc("Błąd konfiguracji Google (kod 10): brak klienta OAuth dla tego podpisu aplikacji", "Google configuration error (code 10): no OAuth client for this app signature")
+        12500 -> loc("Logowanie nie powiodło się (kod 12500) — sprawdź ekran zgody OAuth i konto testowe", "Sign-in failed (code 12500) — check the OAuth consent screen and the test account")
+        else -> loc("Logowanie nie powiodło się (kod $code)", "Sign-in failed (code $code)")
     }
 
     /** Wylogowanie */
@@ -122,7 +123,7 @@ class SyncViewModel(
         viewModelScope.launch {
             driveSync.signOut()
             _isSignedIn.value = false
-            _syncState.value = SyncState.Success("Wylogowano")
+            _syncState.value = SyncState.Success(loc("Wylogowano", "Signed out"))
         }
     }
 
@@ -135,9 +136,9 @@ class SyncViewModel(
                 // Scalanie: zachowaj oba zestawy, bez duplikatów
                 val merged = com.freemetar.app.data.link.FlightArchive.merge(localFlights, cloudFlights)
                 flightStore.save(merged)
-                _syncState.value = SyncState.Success("Zsynchronizowano ${cloudFlights.size} lotów")
+                _syncState.value = SyncState.Success(loc("Zsynchronizowano ${cloudFlights.size} lotów", "Synced ${cloudFlights.size} flights"))
             }.onFailure { e ->
-                _syncState.value = SyncState.Error("Błąd: ${e.message}")
+                _syncState.value = SyncState.Error(loc("Błąd: ${e.message}", "Error: ${e.message}"))
             }
         }
     }
@@ -156,9 +157,9 @@ class SyncViewModel(
             _syncState.value = SyncState.Syncing
             driveSync.restoreFromBackup().onSuccess { backupFlights ->
                 flightStore.save(backupFlights)
-                _syncState.value = SyncState.Success("Przywrócono ${backupFlights.size} lotów z backupu")
+                _syncState.value = SyncState.Success(loc("Przywrócono ${backupFlights.size} lotów z backupu", "Restored ${backupFlights.size} flights from the backup"))
             }.onFailure { e ->
-                _syncState.value = SyncState.Error("Brak backupu: ${e.message}")
+                _syncState.value = SyncState.Error(loc("Brak backupu: ${e.message}", "No backup: ${e.message}"))
             }
         }
     }
@@ -167,7 +168,7 @@ class SyncViewModel(
         driveSync.uploadFlights(flights).onSuccess {
             // Sukces - nie pokazuj komunikatu dla auto-sync
         }.onFailure { e ->
-            _syncState.value = SyncState.Error("Błąd wysyłania: ${e.message}")
+            _syncState.value = SyncState.Error(loc("Błąd wysyłania: ${e.message}", "Upload failed: ${e.message}"))
         }
     }
 

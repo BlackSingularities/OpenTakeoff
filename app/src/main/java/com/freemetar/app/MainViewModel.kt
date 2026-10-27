@@ -349,7 +349,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     // Ocena zaraz po przyziemieniu — nie trzeba czekać na koniec lotu
                     recorder.lastLanding?.takeIf { it !== announcedLanding }?.let { l ->
                         announcedLanding = l
-                        _flightMessage.value = loc("Lądowanie: ${l.score}/100, ${l.grade.lowercase()} — ${l.vsFpm} ft/min", "Landing: ${l.score}/100, ${l.grade.lowercase()} — ${l.vsFpm} ft/min") + (l.runway?.let { ", $it" } ?: "")
+                        _flightMessage.value = loc("Lądowanie: ${l.score}/100, ${l.gradeText.lowercase()} — ${l.vsFpm} ft/min", "Landing: ${l.score}/100, ${l.gradeText.lowercase()} — ${l.vsFpm} ft/min") + (l.runway?.let { ", $it" } ?: "")
                     }
                 }
             }

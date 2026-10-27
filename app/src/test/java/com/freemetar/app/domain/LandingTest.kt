@@ -62,6 +62,21 @@ class LandingTest {
         assertTrue(r.notes.any { it.contains("zostało 4000 ft") })
     }
 
+    @Test
+    fun savedLandingShownInCurrentLanguage() {
+        // Zapisane po polsku, wyświetlane po przełączeniu na angielski
+        val r = LandingScore.evaluate(TouchdownData(vsFpm = -180.0, alongFt = 5000.0, runwayLengthFt = 9000.0, bounces = 1))
+        try {
+            Lang.current = AppLang.EN
+            assertEquals("Fair", r.gradeText)
+            assertTrue(r.noteTexts.any { it.contains("4000 ft of runway remaining") })
+            assertTrue(r.noteTexts.any { it.startsWith("Bounces") })
+            assertTrue(r.noteTexts.none { it.contains("Odbicia") })
+        } finally {
+            Lang.current = AppLang.PL
+        }
+    }
+
     private fun st(lat: Double, lon: Double, gs: Double, ground: Boolean, vs: Double = 0.0, td: Touchdown? = null) = FlightState(
         aircraft = AircraftInfo("A320", ground, false, category = "airliner"),
         position = Position(lat, lon, if (ground) 490.0 else 3000.0),

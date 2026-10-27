@@ -152,7 +152,7 @@ private fun LandingCard(l: LandingReport, ordinal: String? = null) {
             ScoreBadge(l, 72)
             Spacer(Modifier.width(16.dp))
             Column {
-                Text(l.grade, style = MaterialTheme.typography.headlineMedium, color = col)
+                Text(l.gradeText, style = MaterialTheme.typography.headlineMedium, color = col)
                 Text(loc("${l.vsFpm} ft/min przy przyziemieniu", "${l.vsFpm} ft/min at touchdown"), fontFamily = Mono, fontSize = 14.sp, color = c.ink)
             }
         }
@@ -168,7 +168,7 @@ private fun LandingCard(l: LandingReport, ordinal: String? = null) {
             Fact(loc("Odbicia", "Bounces"), l.bounces.toString(), accent = if (l.bounces > 0) c.caution else null),
         ))
         Spacer(Modifier.size(10.dp))
-        l.notes.forEach { n -> Text("• $n", style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.padding(vertical = 2.dp)) }
+        l.noteTexts.forEach { n -> Text("• $n", style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.padding(vertical = 2.dp)) }
     }
 }
 
