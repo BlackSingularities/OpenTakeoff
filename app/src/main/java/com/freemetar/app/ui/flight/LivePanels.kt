@@ -213,45 +213,6 @@ private fun RangeRow(range: Int, onRange: (Int) -> Unit) {
     }
 }
 
-/**
- * Postęp z planu lotu w symulatorze (GPS): następny punkt, czas do celu i ETA, początek zniżania (3°),
- * paliwo i jego starczalność. Bez aktywnego planu w symulatorze pola trasy są puste.
- */
-@Composable
-internal fun Progress(s: FlightState) {
-    val c = Fm.c
-    val g = s.avionics?.gps?.takeIf { it.activeFlightPlan }
-    val gs = s.speed.gsKt ?: 0.0
-    val destEteMin = g?.destEteSec?.takeIf { it > 0 }?.let { it / 60 }
-    // Odległość do celu z czasu GPS i prędkości względem ziemi (MSFS nie podaje jej wprost)
-    val toDest = destEteMin?.let { if (gs > 50) it / 60 * gs else null }
-    val eta = destEteMin?.let {
-        Instant.now().plusSeconds((it * 60).toLong()).atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("HH:mm")) + "Z"
-    }
-    val alt = s.position.altAglFt ?: s.position.altMslFt ?: 0.0
-    val todNm = (alt / 1000.0 * 3).coerceAtLeast(0.0)
-    val fuel = s.fuel.totalKg
-    val ff = s.engines.mapNotNull { it.fuelFlowKgH }.sum()
-    val endurance = if (fuel != null && ff > 1) fuel / ff * 60 else null
-    val nextEte = g?.nextEteSec?.takeIf { it > 0 }
-    FactGrid(
-        listOfNotNull(
-            Fact(g?.nextId?.takeIf { it.isNotBlank() } ?: loc("Następny punkt", "Next waypoint"),
-                g?.nextDistNm?.let { "%.1f NM".format(it) } ?: "—", accent = c.magenta,
-                sub = if (g == null) loc("brak planu w symulatorze", "no flight plan in the simulator")
-                else listOfNotNull(nextEte?.let { "%d:%02d".format(it.toInt() / 60, it.toInt() % 60) },
-                    g.wpCount?.takeIf { it > 0 }?.let { n -> "${g.wpIndex ?: 0}/$n" }).joinToString("  ").ifEmpty { null }),
-            Fact(loc("Przylot", "Arrival"), eta ?: "—", sub = destEteMin?.let { loc("za %d:%02d", "in %d:%02d").format(it.toInt() / 60, it.toInt() % 60) }),
-            Fact(loc("Początek zniżania", "Top of descent"), if (toDest == null || s.aircraft.onGround == true) "—" else if (toDest <= todNm) loc("teraz", "now") else loc("za ${(toDest - todNm).roundToInt()} NM", "in ${(toDest - todNm).roundToInt()} NM"),
-                accent = if (toDest != null && toDest - todNm < 10 && s.aircraft.onGround != true) c.caution else null, sub = loc("${todNm.roundToInt()} NM przed celem", "${todNm.roundToInt()} NM before destination")),
-            Fact("V/S", "${(s.speed.vsFpm ?: 0.0).roundToInt()} ft/min", sub = "GS ${gs.roundToInt()} kt"),
-            fuel?.let { Fact(loc("Paliwo", "Fuel"), "${it.roundToInt()} kg", sub = endurance?.let { e -> loc("starczy na %d:%02d", "endurance %d:%02d").format(e.toInt() / 60, e.toInt() % 60) }) },
-            Fact(loc("Wiatr", "Wind"), s.environment.windDirDeg?.let { d -> "%03d/%d".format(d.roundToInt(), (s.environment.windSpdKt ?: 0.0).roundToInt()) } ?: "—",
-                sub = s.environment.oatC?.let { "OAT ${it.roundToInt()} °C" }),
-        ),
-    )
-}
-
 @Composable
 internal fun Systems(s: FlightState) {
     val c = Fm.c

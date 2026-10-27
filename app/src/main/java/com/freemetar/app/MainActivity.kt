@@ -167,6 +167,15 @@ class MainActivity : ComponentActivity() {
                 val wide = isWide()
                 val c = Fm.c
                 val simLive = vm.flightState.collectAsStateWithLifecycle().value != null
+                // Android 13+: zgoda na powiadomienie o zapisie lotu w tle — raz, przy pierwszym połączeniu z symulatorem
+                val notifyPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+                    androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+                ) {}
+                androidx.compose.runtime.LaunchedEffect(simLive) {
+                    if (simLive && android.os.Build.VERSION.SDK_INT >= 33 &&
+                        checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    ) notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
                 // Ikona zakładki; przy Locie zielona kropka, gdy symulator jest połączony
                 val tabIcon: @androidx.compose.runtime.Composable (Tab, Boolean) -> Unit = { t, sel ->
                     Box {

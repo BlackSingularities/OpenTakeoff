@@ -73,32 +73,86 @@ internal fun trackGradient(track: List<TrackPoint>, n: Int = 48): List<Pair<Doub
 }
 
 /**
- * Tor w 3D jako cienka linia zawieszona na wysokości lotu: wąskie wstęgi wzdłuż kawałków toru,
- * wyciągnięte tylko o grubość linii (od [base] do [h], metry). Z [wall] — ściana od ziemi do spodu linii ([trackWall3d]).
- * Każda wstęga łączy kilka punktów, żeby nie zniknęła przy upraszczaniu geometrii na małym przybliżeniu.
+ * Tor w 3D jako cienka linia zawieszona na wysokości lotu (od [base] do [h], metry). Z [wall] — ściana od ziemi
+ * do spodu linii ([trackWall3d]).
+ *
+ * Bryła MapLibre ma płaski wierzch, więc linia jest złożona z krótkich czworokątów między kolejnymi punktami,
+ * a zmiana wysokości między punktami jest dzielona na stopnie najwyżej [stepFt] — wznoszenie wygląda jak gładka
+ * rampa, nie schody. Sąsiednie czworokąty mają wspólne krawędzie (narożniki liczone raz dla całego toru),
+ * więc na zakrętach nie ma szczelin.
  */
-internal fun trackLine3d(track: List<TrackPoint>, halfWidthM: Double = 45.0, thicknessM: Double = 70.0, pieces: Int = 240, wall: Boolean = false): FeatureCollection {
-    val t = thin(track, 1200)
+internal fun trackLine3d(track: List<TrackPoint>, halfWidthM: Double = 45.0, thicknessM: Double = 70.0, wall: Boolean = false, stepFt: Double = 25.0): FeatureCollection {
+    val t = dedupe(thin(track, 1200))
     if (t.size < 2) return FeatureCollection.fromFeatures(emptyList())
-    val step = ((t.size - 1) / pieces).coerceAtLeast(1)
-    val feats = ArrayList<Feature>()
-    var s = 0
-    while (s < t.size - 1) {
-        val e = minOf(s + step, t.size - 1)
-        val chunk = t.subList(s, e + 1)
-        ribbon(chunk, halfWidthM)?.let { ring ->
-            val alt = chunk.map { it.altFt }.average().toInt()
+    val (left, right) = edges(t, halfWidthM)
+    // Budżet stopni na cały tor, żeby długi lot nie dał dziesiątek tysięcy brył
+    var climb = 0.0
+    for (i in 1 until t.size) climb += kotlin.math.abs(t[i].altFt - t[i - 1].altFt)
+    val step = maxOf(stepFt, climb / 3000.0)
+    val feats = ArrayList<Feature>(t.size * 2)
+    fun lerp(a: Point, b: Point, f: Double) = Point.fromLngLat(a.longitude() + (b.longitude() - a.longitude()) * f, a.latitude() + (b.latitude() - a.latitude()) * f)
+    for (i in 0 until t.size - 1) {
+        val a0 = t[i].altFt.toDouble(); val a1 = t[i + 1].altFt.toDouble()
+        val n = kotlin.math.ceil(kotlin.math.abs(a1 - a0) / step).toInt().coerceIn(1, 12)
+        for (k in 0 until n) {
+            val f0 = k.toDouble() / n; val f1 = (k + 1).toDouble() / n
+            val l0 = lerp(left[i], left[i + 1], f0); val l1 = lerp(left[i], left[i + 1], f1)
+            val r0 = lerp(right[i], right[i + 1], f0); val r1 = lerp(right[i], right[i + 1], f1)
+            val alt = a0 + (a1 - a0) * (f0 + f1) / 2
             val h = alt * 0.3048 * LINE3D_EXAGGERATION
-            feats += Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).apply {
+            feats += Feature.fromGeometry(Polygon.fromLngLats(listOf(listOf(l0, l1, r1, r0, l0)))).apply {
                 addNumberProperty("alt", alt)
                 // Ściana: od ziemi do spodu linii; linia: tylko jej grubość
                 addNumberProperty("h", if (wall) (h - thicknessM / 2).coerceAtLeast(0.0) else h + thicknessM / 2)
                 addNumberProperty("base", if (wall) 0.0 else (h - thicknessM / 2).coerceAtLeast(0.0))
             }
         }
-        s = e
     }
     return FeatureCollection.fromFeatures(feats)
+}
+
+/** Bez punktów leżących (prawie) w tym samym miejscu — dla nich nie da się wyznaczyć kierunku toru. */
+private fun dedupe(pts: List<TrackPoint>): List<TrackPoint> {
+    val out = ArrayList<TrackPoint>(pts.size)
+    for (p in pts) {
+        val q = out.lastOrNull()
+        if (q == null || Geo.distanceNm(q.lat, q.lon, p.lat, p.lon) * 1852 >= 3.0) out += p
+    }
+    if (out.size == 1 && pts.size > 1) out += pts.last()
+    return out
+}
+
+/**
+ * Lewa i prawa krawędź wstęgi w każdym punkcie: przesunięcie prostopadle do dwusiecznej kierunków
+ * sąsiednich odcinków, wydłużone na zakręcie (ścięcie ograniczone do 2×, żeby ostre nawroty nie strzelały kolcami).
+ */
+private fun edges(pts: List<TrackPoint>, half: Double): Pair<List<Point>, List<Point>> {
+    val mPerLat = 111_320.0
+    val left = ArrayList<Point>(pts.size); val right = ArrayList<Point>(pts.size)
+    fun dir(a: TrackPoint, b: TrackPoint): Pair<Double, Double> {
+        val mPerLon = 111_320.0 * cos(Math.toRadians((a.lat + b.lat) / 2))
+        val dx = (b.lon - a.lon) * mPerLon; val dy = (b.lat - a.lat) * mPerLat
+        val len = hypot(dx, dy).coerceAtLeast(1e-6)
+        return dx / len to dy / len
+    }
+    pts.forEachIndexed { i, p ->
+        val d1 = if (i > 0) dir(pts[i - 1], p) else null
+        val d2 = if (i < pts.size - 1) dir(p, pts[i + 1]) else null
+        val (ux, uy) = when {
+            d1 != null && d2 != null -> (d1.first + d2.first) to (d1.second + d2.second)
+            else -> d1 ?: d2!!
+        }
+        val ul = hypot(ux, uy)
+        val (tx, ty) = if (ul < 1e-6) (d2 ?: d1!!) else (ux / ul) to (uy / ul)
+        // Długość ścięcia: half / cos(połowy kąta zakrętu)
+        val cosHalf = d2?.let { tx * it.first + ty * it.second } ?: 1.0
+        val miter = half / cosHalf.coerceAtLeast(0.5)
+        val mPerLon = 111_320.0 * cos(Math.toRadians(p.lat))
+        val ox = -ty * miter / mPerLon; val oy = tx * miter / mPerLat
+        left += Point.fromLngLat(p.lon + ox, p.lat + oy)
+        right += Point.fromLngLat(p.lon - ox, p.lat - oy)
+    }
+    return left to right
 }
 
 /**
@@ -106,24 +160,6 @@ internal fun trackLine3d(track: List<TrackPoint>, halfWidthM: Double = 45.0, thi
  * wyciągnięta od ziemi do spodu linii 3D (te same kawałki toru, więc ściana idzie dokładnie pod linią).
  */
 internal fun trackWall3d(track: List<TrackPoint>): FeatureCollection = trackLine3d(track, halfWidthM = 6.0, wall = true)
-
-/** Obrys wstęgi wokół łamanej: lewa krawędź w przód, prawa wstecz. */
-private fun ribbon(pts: List<TrackPoint>, half: Double): List<Point>? {
-    val mPerLat = 111_320.0
-    val left = ArrayList<Point>(); val right = ArrayList<Point>()
-    pts.forEachIndexed { i, p ->
-        val a = pts[maxOf(i - 1, 0)]; val b = pts[minOf(i + 1, pts.size - 1)]
-        val mPerLon = 111_320.0 * cos(Math.toRadians(p.lat))
-        val dx = (b.lon - a.lon) * mPerLon; val dy = (b.lat - a.lat) * mPerLat
-        val len = hypot(dx, dy)
-        if (len < 1.0) return@forEachIndexed
-        val ox = -dy / len * half / mPerLon; val oy = dx / len * half / mPerLat
-        left += Point.fromLngLat(p.lon + ox, p.lat + oy)
-        right += Point.fromLngLat(p.lon - ox, p.lat - oy)
-    }
-    if (left.size < 2) return null
-    return left + right.reversed() + left.first()
-}
 
 /**
  * Etykiety wysokości na torze: co ok. 1/10 długości oraz na szczycie wznoszenia,

@@ -30,6 +30,8 @@ import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.TrackChanges
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,6 +62,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.freemetar.app.MainViewModel
 import com.freemetar.app.data.Metar
 import com.freemetar.app.data.Sigmet
+import com.freemetar.app.domain.Geo
 import com.freemetar.app.ui.flight.avionics.gpsLeg
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLngBounds
@@ -106,6 +109,11 @@ private const val LYR_LINE3D = "oab-track-line3d-layer"
 private const val LYR_BUILDINGS = "oab-buildings-3d"
 private const val LYR_TRACK = "oab-track-line"
 private const val SRC_NAV = "oab-msfs-nav"
+private const val SRC_ROSE = "oab-rose"
+private const val SRC_ROSE_LBL = "oab-rose-labels"
+private const val SRC_ROSE_TAG = "oab-rose-tags"
+private const val SRC_RADIAL_DASH = "oab-radial-dash"
+private const val SRC_REF = "oab-radial-ref"
 private val METAR_LAYERS = listOf(LYR_METAR, "oab-metar-label")
 private val ROUTE_LAYERS = listOf("oab-route-line", "oab-route-pts", "oab-route-label")
 private val NAV_LAYERS = listOf("oab-nav-pts", "oab-nav-label")
@@ -184,6 +192,15 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     var showRoute by rememberSaveable { mutableStateOf(true) }
     var showNav by rememberSaveable { mutableStateOf(true) }
     var layersMenu by remember { mutableStateOf(false) }
+    // Róża kursów wokół samolotu i narzędzie radiali od wskazanego punktu
+    var showRose by rememberSaveable { mutableStateOf(false) }
+    var radialMode by rememberSaveable { mutableStateOf(false) }
+    var ref by remember { mutableStateOf<RefPoint?>(null) }
+    var selRadial by rememberSaveable { mutableStateOf<Int?>(null) }
+    var inbound by rememberSaveable { mutableStateOf(true) }
+    // Metry na 100 dp ekranu (w poziomie, w środku mapy) — róże mają stałą wielkość na ekranie
+    var roseScale by remember { mutableStateOf(0.0) }
+    var center by remember { mutableStateOf<LatLng?>(null) }
     val nearbyNav by vm.nearbyNav.collectAsStateWithLifecycle()
     // Kompas MapLibre w prawym dolnym rogu, nad paskiem nawigacji systemu
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -197,6 +214,13 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     var wired by remember { mutableStateOf(false) }
     val openLatest by rememberUpdatedState(onOpen)
     val metarsLatest by rememberUpdatedState(metars)
+    // Deklinacja z symulatora (E +); bez niej radiale i róże są w stopniach geograficznych
+    val magVar = live?.let { s -> s.avionics?.magVarDeg ?: s.attitude.hdgTrueDeg?.let { t -> s.attitude.hdgMagDeg?.let { m -> norm180(t - m) } } }
+    val mv = magVar ?: 0.0
+    val mvLatest by rememberUpdatedState(mv)
+    val planeLat = live?.position?.lat; val planeLon = live?.position?.lon
+    // Bez samolotu radial liczony od środka mapy (krzyżyk)
+    val needCenter by rememberUpdatedState(radialMode && (planeLat == null || planeLon == null))
 
     val mapView = remember {
         MapLibre.getInstance(ctx)
@@ -247,7 +271,45 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             if (wired) return@getMapAsync
             wired = true
             map.addOnCameraIdleListener { requestArea(map, vm) }
+            fun measure() {
+                val w = mapView.width; val h = mapView.height
+                if (w == 0 || h == 0) return
+                val px = with(density) { 100.dp.toPx() }
+                val a = map.projection.fromScreenLocation(PointF(w / 2f, h / 2f))
+                val b = map.projection.fromScreenLocation(PointF(w / 2f + px, h / 2f))
+                val m = Geo.distanceNm(a.latitude, a.longitude, b.latitude, b.longitude) * 1852
+                if (roseScale <= 0 || kotlin.math.abs(m - roseScale) / roseScale > 0.04) roseScale = m
+                if (needCenter) center = a
+            }
+            map.addOnCameraMoveListener { measure() }
+            map.addOnCameraIdleListener { measure() }
+            mapView.post { measure() }
+            // Punkt odniesienia: lotnisko, pomoc lub punkt trasy pod palcem (najbliższy), inaczej dokładnie to miejsce
+            fun snap(ll: LatLng): RefPoint {
+                val pt = map.projection.toScreenLocation(ll)
+                val box = android.graphics.RectF(pt.x - 28, pt.y - 28, pt.x + 28, pt.y + 28)
+                val f = map.queryRenderedFeatures(box, "oab-nav-pts", LYR_METAR, "oab-route-pts").minByOrNull {
+                    val g = it.geometry() as? Point ?: return@minByOrNull Double.MAX_VALUE
+                    val q = map.projection.toScreenLocation(LatLng(g.latitude(), g.longitude()))
+                    kotlin.math.hypot((q.x - pt.x).toDouble(), (q.y - pt.y).toDouble())
+                }
+                val g = f?.geometry() as? Point
+                return if (f != null && g != null) RefPoint(g.latitude(), g.longitude(), f.getStringProperty("ident") ?: f.getStringProperty("id"))
+                else RefPoint(ll.latitude, ll.longitude, null)
+            }
+            map.addOnMapLongClickListener { ll ->
+                radialMode = true; picked = null; selRadial = null
+                ref = snap(ll)
+                true
+            }
             map.addOnMapClickListener { ll ->
+                if (radialMode) {
+                    val r = ref
+                    // Bez punktu dotknięcie go wybiera; z punktem — ustawia radial, na którym leży dotknięte miejsce
+                    if (r == null) ref = snap(ll)
+                    else selRadial = radialOf(Geo.bearing(r.lat, r.lon, ll.latitude, ll.longitude) - mvLatest)
+                    return@addOnMapClickListener true
+                }
                 val pt: PointF = map.projection.toScreenLocation(ll)
                 val hit = map.queryRenderedFeatures(pt, LYR_METAR).firstOrNull()
                     ?: map.queryRenderedFeatures(android.graphics.RectF(pt.x - 24, pt.y - 24, pt.x + 24, pt.y + 24), LYR_METAR).firstOrNull()
@@ -329,8 +391,10 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             Expression.interpolate(Expression.linear(), Expression.lineProgress(),
                 *stops.map { (f, alt) -> val c = altRgb(alt); Expression.stop(f, Expression.rgb(c[0], c[1], c[2])) }.toTypedArray()),
         ))
-        (st.getSource(SRC_LINE3D) as? GeoJsonSource)?.setGeoJson(trackLine3d(track))
-        (st.getSource(SRC_WALL3D) as? GeoJsonSource)?.setGeoJson(trackWall3d(track))
+        // Bryły toru 3D liczone poza wątkiem UI — przy długim locie to kilka tysięcy czworokątów
+        val (line3d, wall3d) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { trackLine3d(track) to trackWall3d(track) }
+        (st.getSource(SRC_LINE3D) as? GeoJsonSource)?.setGeoJson(line3d)
+        (st.getSource(SRC_WALL3D) as? GeoJsonSource)?.setGeoJson(wall3d)
         (st.getSource(SRC_TRACK_LBL) as? GeoJsonSource)?.setGeoJson(trackLabels(track))
     }
     // Plan lotu z symulatora: bieżący odcinek GPS
@@ -350,6 +414,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         (style?.getSource(SRC_NAV) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(nearbyNav.map { f ->
             Feature.fromGeometry(Point.fromLngLat(f.lon, f.lat)).apply {
                 addStringProperty("type", f.type)
+                addStringProperty("ident", f.ident)
                 // Kolor gotowy w danych (jak przy METAR) — wyrażenie „match” wywracało renderer na części GPU
                 addStringProperty("color", when (f.type) { "airport" -> "#4FD1E8"; "vor" -> "#3FE07A"; "ndb" -> "#FFB020"; else -> "#9AA4AE" })
                 addStringProperty("id", if (f.type == "vor" && f.freqMhz != null) "${f.ident} ${"%.2f".format(java.util.Locale.US, f.freqMhz)}" else f.ident)
@@ -360,8 +425,75 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         (style?.getSource(SRC_SIGMET) as? GeoJsonSource)?.setGeoJson(sigmetFeatures(if (showSigmets) sigmets else emptyList()))
     }
 
+    // Róża kursów na samolocie, róża punktu odniesienia i wybrany radial
+    val ink = hex(c.ink); val ink2 = hex(c.ink2); val navHex = hex(c.magenta); val bugHex = hex(c.accent); val trkHex = hex(c.green)
+    val origin = if (planeLat != null && planeLon != null) LatLng(planeLat, planeLon) else if (radialMode) center else null
+    val fix = ref?.let { r -> origin?.let { radialFix(r, it.latitude, it.longitude, mv) } }
+    val guide = fix?.let { f ->
+        selRadial?.let { sel ->
+            radialGuide(sel, inbound, f, live?.environment?.windDirDeg?.let { norm360(it - mv) }, live?.environment?.windSpdKt,
+                live?.speed?.tasKt?.takeIf { planeLat != null })
+        }
+    }
+    LaunchedEffect(style, roseScale, showRose, radialMode, ref, selRadial, inbound, origin, live?.attitude, live?.autopilot?.hdgDeg, mv, c) {
+        val st = style ?: return@LaunchedEffect
+        val lines = ArrayList<Feature>(); val labels = ArrayList<Feature>(); val tags = ArrayList<Feature>(); val dash = ArrayList<Feature>()
+        val scale = roseScale
+        val r = ref?.takeIf { radialMode }
+        if (scale > 0 && showRose && planeLat != null && planeLon != null) {
+            val rM = scale * 1.5
+            val rose = compassRose(planeLat, planeLon, rM, mv, ink)
+            lines += rose.lines; labels += rose.labels
+            live?.attitude?.hdgTrueDeg?.let { h ->
+                // Kreska kursu od samolotu za obwód róży i odczyt kursu nad nią
+                lines += segment(destPoint(planeLat, planeLon, h, rM * 0.18), destPoint(planeLat, planeLon, h, rM * 1.12), "#FFC21A", 3f)
+                tags += roseLabel(destPoint(planeLat, planeLon, h, rM * 1.28), "HDG ${deg3(h - mv)}", 0.0, ink, 13f)
+            }
+            // Ślad (zielony, do środka), nastawa HDG autopilota (cyjan, na zewnątrz), namiar na punkt odniesienia (magenta)
+            live?.attitude?.trackTrueDeg?.takeIf { (live?.speed?.gsKt ?: 0.0) > 30 }?.let { t -> lines += roseMarker(planeLat, planeLon, rM, t, trkHex, outside = false) }
+            live?.autopilot?.hdgDeg?.let { b -> lines += roseMarker(planeLat, planeLon, rM, b + mv, bugHex) }
+            r?.let { lines += roseMarker(planeLat, planeLon, rM * 0.86, Geo.bearing(planeLat, planeLon, it.lat, it.lon), navHex) }
+        }
+        if (scale > 0 && r != null) {
+            val rr = scale * 1.1
+            val rose = compassRose(r.lat, r.lon, rr, mv, navHex, tickDeg = 10, labelSize = 11f)
+            lines += rose.lines; labels += rose.labels
+            r.name?.let { tags += roseLabel(destPoint(r.lat, r.lon, 180.0, rr * 0.3), it, 0.0, navHex, 12f) }
+            if (origin != null && fix != null) {
+                dash += segment(Point.fromLngLat(r.lon, r.lat), Point.fromLngLat(origin.longitude, origin.latitude), ink2, 1.8f)
+                val mid = destPoint(r.lat, r.lon, Geo.bearing(r.lat, r.lon, origin.latitude, origin.longitude), fix.distNm * 1852 / 2)
+                tags += roseLabel(mid, "R-${deg3(fix.radialMag)} · ${"%.1f".format(fix.distNm)} NM", 0.0, ink, 12f)
+            }
+            selRadial?.let { sel ->
+                val brg = sel + mv
+                val len = maxOf((fix?.distNm ?: 0.0) * 1852 * 1.3, rr * 4).coerceAtMost(750_000.0)
+                lines += segment(destPoint(r.lat, r.lon, brg, rr * 0.15), destPoint(r.lat, r.lon, brg, len), navHex, 3.4f)
+                // Grotki w kierunku lotu po radialu: IN do punktu, OUT od punktu
+                val dir = if (inbound) brg + 180 else brg
+                listOf(0.35, 0.7).forEach { f ->
+                    val tip = destPoint(r.lat, r.lon, brg, len * f)
+                    val a = rr * 0.16
+                    lines += segment(destPoint(tip.latitude(), tip.longitude(), dir + 150, a), tip, navHex, 3.4f)
+                    lines += segment(destPoint(tip.latitude(), tip.longitude(), dir - 150, a), tip, navHex, 3.4f)
+                }
+                val course = if (inbound) sel + 180.0 else sel.toDouble()
+                tags += roseLabel(destPoint(r.lat, r.lon, brg, len * 0.52), "R-${deg3(sel.toDouble())} ${if (inbound) "IN" else "OUT"} · ${deg3(course)}°", 0.0, navHex, 13f)
+            }
+        }
+        (st.getSource(SRC_ROSE) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(lines))
+        (st.getSource(SRC_ROSE_LBL) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(labels))
+        (st.getSource(SRC_ROSE_TAG) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(tags))
+        (st.getSource(SRC_RADIAL_DASH) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(dash))
+        (st.getSource(SRC_REF) as? GeoJsonSource)?.setGeoJson(
+            if (r == null) FeatureCollection.fromFeatures(emptyList()) else FeatureCollection.fromFeature(Feature.fromGeometry(Point.fromLngLat(r.lon, r.lat))))
+    }
+
     Box(Modifier.fillMaxSize()) {
         AndroidView({ mapView }, Modifier.fillMaxSize())
+        // Bez samolotu radial mierzony od środka mapy
+        if (radialMode && (planeLat == null || planeLon == null)) Text(
+            "+", color = c.magenta, fontSize = 30.sp, fontWeight = FontWeight.Light, modifier = Modifier.align(Alignment.Center),
+        )
 
         // Góra: legenda kategorii i (gdy jest) wyświetlany lot z dziennika; prawa strona: zwarta grupa przycisków
         Row(
@@ -389,9 +521,24 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                 }
             }
             if (live != null) MapKey(Icons.Outlined.MyLocation, loc("Śledź samolot", "Follow aircraft"), follow) { follow = !follow }
+            if (live != null) MapKey(Icons.Outlined.Explore, loc("Róża kursów na samolocie", "Heading rose on the aircraft"), showRose) { showRose = !showRose }
+            MapKey(Icons.Outlined.TrackChanges, loc("Radiale od punktu", "Radials from a point"), radialMode) {
+                radialMode = !radialMode; picked = null
+                if (!radialMode) { ref = null; selRadial = null }
+            }
             MapKey(Icons.Outlined.Add, loc("Przybliż", "Zoom in"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomIn(), 250) } }
             MapKey(Icons.Outlined.Remove, loc("Oddal", "Zoom out"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomOut(), 250) } }
         }
+
+        if (radialMode) RadialCard(
+            ref, fix, guide, selRadial, inbound, magnetic = magVar != null, hasAircraft = planeLat != null && planeLon != null,
+            gsKt = live?.speed?.gsKt,
+            onInbound = { inbound = it; if (selRadial == null) selRadial = fix?.let { f -> radialOf(f.radialMag) } },
+            onRadial = { selRadial = it },
+            onNewPoint = { ref = null; selRadial = null },
+            onClose = { radialMode = false; ref = null; selRadial = null },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
 
         picked?.let { m ->
             Column(
@@ -408,7 +555,18 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                 }
                 Text(m.name.orEmpty(), style = MaterialTheme.typography.bodySmall, color = c.ink2)
                 Text(m.raw, fontFamily = Mono, fontSize = 12.sp, color = c.accent, modifier = Modifier.padding(top = 6.dp))
-                Text(loc("Dotknij, aby otworzyć briefing", "Tap to open the briefing"), style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.padding(top = 6.dp))
+                Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(loc("Dotknij, aby otworzyć briefing", "Tap to open the briefing"), style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.weight(1f))
+                    // Radiale od tego lotniska
+                    Text(
+                        loc("Radiale", "Radials"), style = MaterialTheme.typography.labelMedium, color = c.accent,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, c.accent, RoundedCornerShape(50))
+                            .clickable {
+                                val lat = m.lat; val lon = m.lon
+                                if (lat != null && lon != null) { ref = RefPoint(lat, lon, m.station); selRadial = null; radialMode = true; picked = null }
+                            }.padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
             }
         }
     }
@@ -503,6 +661,48 @@ private fun addOverlay(st: Style, c: FmColors) {
         PropertyFactory.textHaloColor(hex(c.paper)),
         PropertyFactory.textHaloWidth(1.5f),
         // Wysokości toru są ważniejsze niż nazwy miejscowości podkładu
+        PropertyFactory.textAllowOverlap(true),
+        PropertyFactory.textIgnorePlacement(true),
+    ))
+    // Róże kursów i radiale: na ziemi, pod samolotem i stacjami METAR
+    st.addSource(GeoJsonSource(SRC_RADIAL_DASH))
+    st.addLayer(LineLayer("oab-radial-dash", SRC_RADIAL_DASH).withProperties(
+        PropertyFactory.lineColor(Expression.get("color")), PropertyFactory.lineWidth(Expression.get("w")),
+        PropertyFactory.lineDasharray(arrayOf(2.5f, 2f)),
+    ))
+    st.addSource(GeoJsonSource(SRC_ROSE, GeoJsonOptions().withTolerance(0.1f)))
+    st.addLayer(LineLayer("oab-rose-line", SRC_ROSE).withProperties(
+        PropertyFactory.lineColor(Expression.get("color")), PropertyFactory.lineWidth(Expression.get("w")),
+        PropertyFactory.lineCap("round"), PropertyFactory.lineJoin("round"), PropertyFactory.lineOpacity(0.92f),
+    ))
+    st.addSource(GeoJsonSource(SRC_ROSE_LBL))
+    // Opisy róży leżą na mapie, obrócone na zewnątrz jak na tarczy kompasu
+    st.addLayer(SymbolLayer("oab-rose-label", SRC_ROSE_LBL).withProperties(
+        PropertyFactory.textField(Expression.get("label")),
+        PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
+        PropertyFactory.textSize(Expression.get("size")),
+        PropertyFactory.textRotate(Expression.get("rot")),
+        PropertyFactory.textRotationAlignment("map"),
+        PropertyFactory.textPitchAlignment("map"),
+        PropertyFactory.textColor(Expression.get("color")),
+        PropertyFactory.textHaloColor(hex(c.paper)),
+        PropertyFactory.textHaloWidth(1.5f),
+        PropertyFactory.textAllowOverlap(true),
+        PropertyFactory.textIgnorePlacement(true),
+    ))
+    st.addSource(GeoJsonSource(SRC_REF))
+    st.addLayer(CircleLayer("oab-radial-ref", SRC_REF).withProperties(
+        PropertyFactory.circleRadius(5f), PropertyFactory.circleColor(hex(c.paper)),
+        PropertyFactory.circleStrokeColor(hex(c.magenta)), PropertyFactory.circleStrokeWidth(2.5f),
+    ))
+    st.addSource(GeoJsonSource(SRC_ROSE_TAG))
+    st.addLayer(SymbolLayer("oab-rose-tag", SRC_ROSE_TAG).withProperties(
+        PropertyFactory.textField(Expression.get("label")),
+        PropertyFactory.textFont(arrayOf("Noto Sans Regular")),
+        PropertyFactory.textSize(Expression.get("size")),
+        PropertyFactory.textColor(Expression.get("color")),
+        PropertyFactory.textHaloColor(hex(c.paper)),
+        PropertyFactory.textHaloWidth(2f),
         PropertyFactory.textAllowOverlap(true),
         PropertyFactory.textIgnorePlacement(true),
     ))

@@ -235,10 +235,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Stan zapisu lotu do kokpitu: nagrywa (od kiedy) albo wstrzymany po ręcznym zakończeniu. */
-    data class RecordingInfo(val recording: Boolean = false, val startedAt: Long? = null, val held: Boolean = false)
+    data class RecordingInfo(val recording: Boolean = false, val startedAt: Long? = null, val held: Boolean = false, val startFuelKg: Double? = null)
     private val _recordingInfo = MutableStateFlow(RecordingInfo())
     val recordingInfo = _recordingInfo.asStateFlow()
-    private fun publishRecording() { _recordingInfo.value = RecordingInfo(recorder.recording, recorder.startedAt, recorder.holdUntilGround) }
+    private fun publishRecording() {
+        _recordingInfo.value = RecordingInfo(recorder.recording, recorder.startedAt, recorder.holdUntilGround, recorder.startFuelKg)
+        // Powiadomienie usługi pokazuje, czy tor jest właśnie zapisywany
+        if (link.status.value.let { it is LinkStatus.Connected || it is LinkStatus.Lost }) com.freemetar.app.data.link.FlightLinkService.update(getApplication(), recorder.recording)
+    }
 
     /** Ręczne zakończenie zapisu bieżącego lotu — trafia do dziennika (jeśli trwał co najmniej 2 min). */
     fun stopRecording() {
@@ -352,7 +356,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             link.status.collect { s ->
-                if (s !is LinkStatus.Connected && s !is LinkStatus.Lost) saveFlight(recorder.finish())
+                if (s !is LinkStatus.Connected && s !is LinkStatus.Lost) {
+                    saveFlight(recorder.finish())
+                    com.freemetar.app.data.link.FlightLinkService.stop(getApplication())
+                } else com.freemetar.app.data.link.FlightLinkService.update(getApplication(), recorder.recording)
             }
         }
         // Po połączeniu z MSFS: dane nawigacyjne lotnisk trasy, ulubionych i otwartego briefingu
@@ -387,6 +394,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         saveFlight(recorder.finish())
         link.disconnect()
         link.stopDiscovery()
+        com.freemetar.app.data.link.FlightLinkService.stop(getApplication())
         super.onCleared()
     }
 
