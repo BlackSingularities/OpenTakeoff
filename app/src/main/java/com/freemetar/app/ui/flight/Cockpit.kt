@@ -31,7 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ThreeSixty
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.AirlineSeatReclineNormal
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material3.DropdownMenu
@@ -413,7 +413,7 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
             .padding(horizontal = if (vertical) 7.dp else 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.ThreeSixty, null, tint = if (looking) c.accent else c.ink, modifier = Modifier.size(18.dp))
+        Icon(Icons.Outlined.Visibility, null, tint = if (looking) c.accent else c.ink, modifier = Modifier.size(18.dp))
         if (!vertical) {
             Spacer(Modifier.width(5.dp))
             Text(
@@ -425,7 +425,7 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
 
     if (info) androidx.compose.material3.AlertDialog(
         onDismissRequest = { info = false },
-        icon = { Icon(Icons.Outlined.ThreeSixty, null) },
+        icon = { Icon(Icons.Outlined.Visibility, null) },
         title = { Text(tr("Rozglądanie się", "Look around")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
