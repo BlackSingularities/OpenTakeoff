@@ -116,15 +116,6 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean =
         com.freemetar.app.data.input.Gamepad.onKey(event) || super.dispatchKeyEvent(event)
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        // Google Sign-In result
-        if (requestCode == 9001) {
-            val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(data)
-            viewModel.syncViewModel.handleSignInResult(task)
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // ViewModel startuje (baza lotnisk, komunikaty) zanim wczytają się ustawienia — do tego czasu język systemu
@@ -271,15 +262,7 @@ class MainActivity : ComponentActivity() {
                             // Dopiero po wczytaniu ustawień — inaczej ekran mignąłby przy każdym starcie i zresetował nawigację
                             val settingsLoaded by vm.settingsLoaded.collectAsStateWithLifecycle()
                             if (settingsLoaded && !settings.welcomeShown) {
-                                WelcomeScreen(
-                                    onGetStarted = { vm.setWelcomeShown() },
-                                    onSignInToDrive = {
-                                        val signInIntent = vm.syncViewModel.driveSync.getSignInClient().signInIntent
-                                        startActivityForResult(signInIntent, 9001)
-                                        vm.setWelcomeShown()
-                                    },
-                                    onSkip = { vm.setWelcomeShown() }
-                                )
+                                WelcomeScreen(onGetStarted = { vm.setWelcomeShown() })
                             } else {
                             // Pływające stery nad wszystkimi zakładkami (rysowane po NavHost, więc na wierzchu)
                             val floating: @androidx.compose.runtime.Composable () -> Unit = {

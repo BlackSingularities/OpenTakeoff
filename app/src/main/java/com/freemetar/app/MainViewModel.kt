@@ -38,8 +38,6 @@ import com.freemetar.app.data.link.FlightRecorder
 import com.freemetar.app.data.link.LinkClient
 import com.freemetar.app.data.link.LinkStatus
 import com.freemetar.app.data.link.TrackPoint
-import com.freemetar.app.data.sync.DriveSync
-import com.freemetar.app.data.sync.SyncViewModel
 import android.net.Uri
 import com.freemetar.app.data.LatLon
 import com.freemetar.app.data.OpenMeteo
@@ -105,10 +103,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Ustawienia wczytane z dysku — do tego czasu [settings] ma wartości domyślne (np. welcomeShown = false). */
     val settingsLoaded: StateFlow<Boolean> = prefs.settings.map { true }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    // Google Drive sync
-    private val driveSync = DriveSync(app)
     private val flightLogStore = FlightLogStore(app)
-    val syncViewModel = SyncViewModel(driveSync, flightLogStore)
 
     private val _db = MutableStateFlow<DbState>(DbState.Idle)
     val dbState = _db.asStateFlow()
@@ -349,7 +344,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     // Ocena zaraz po przyziemieniu — nie trzeba czekać na koniec lotu
                     recorder.lastLanding?.takeIf { it !== announcedLanding }?.let { l ->
                         announcedLanding = l
-                        _flightMessage.value = loc("Lądowanie: ${l.score}/100, ${l.grade.lowercase()} — ${l.vsFpm} ft/min", "Landing: ${l.score}/100, ${l.grade.lowercase()} — ${l.vsFpm} ft/min") + (l.runway?.let { ", $it" } ?: "")
+                        _flightMessage.value = loc("Lądowanie: ${l.score}/100, ${l.gradeText.lowercase()} — ${l.vsFpm} ft/min", "Landing: ${l.score}/100, ${l.gradeText.lowercase()} — ${l.vsFpm} ft/min") + (l.runway?.let { ", $it" } ?: "")
                     }
                 }
             }

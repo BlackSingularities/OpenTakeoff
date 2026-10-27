@@ -34,11 +34,11 @@ import com.freemetar.app.data.UpdateInfo
 import com.freemetar.app.data.Updater
 import java.io.File
 
-private fun sizeMb(b: Long) = if (b > 0) " (%.1f MB)".format(b / 1_048_576.0) else ""
+internal fun sizeMb(b: Long) = if (b > 0) " (%.1f MB)".format(b / 1_048_576.0) else ""
 
 /** Instalacja wymaga zgody „Instaluj nieznane aplikacje” — jeśli jej brak, prowadzimy do ustawień. */
 @Composable
-private fun rememberInstaller(): (File) -> Unit {
+internal fun rememberInstaller(): (File) -> Unit {
     val ctx = LocalContext.current
     return { file -> if (Updater.canInstall(ctx)) Updater.install(ctx, file) else Updater.openInstallPermission(ctx) }
 }
@@ -95,36 +95,4 @@ fun UpdateDialog(vm: MainViewModel) {
             if (state !is UpdateState.Downloading) TextButton({ vm.dismissUpdatePrompt() }) { Text(loc("Później", "Later")) }
         },
     )
-}
-
-/** Sekcja w ustawieniach: wersja, ręczne sprawdzenie, pobranie, instalacja. */
-@Composable
-fun UpdateSection(vm: MainViewModel) {
-    val state by vm.update.collectAsStateWithLifecycle()
-    val install = rememberInstaller()
-    SectionCard(loc("Aktualizacje", "Updates"), icon = Icons.Outlined.SystemUpdate) {
-        Text(loc("Zainstalowana wersja: ${BuildConfig.VERSION_NAME}", "Installed version: ${BuildConfig.VERSION_NAME}"), color = Fm.c.ink)
-        Spacer(Modifier.size(6.dp))
-        when (val s = state) {
-            UpdateState.Idle -> Text(loc("Sprawdzane automatycznie przy starcie.", "Checked automatically at startup."), color = Fm.c.ink2, fontSize = 13.sp)
-            UpdateState.Checking -> Text(loc("Sprawdzanie…", "Checking…"), color = Fm.c.ink2, fontSize = 13.sp)
-            UpdateState.UpToDate -> Text(loc("Masz najnowszą wersję.", "You have the latest version."), color = Fm.c.vfr, fontSize = 13.sp)
-            is UpdateState.Error -> Text(s.message, color = Fm.c.ifr, fontSize = 13.sp)
-            is UpdateState.Available -> Text(loc("Dostępna wersja ${s.info.versionName}${sizeMb(s.info.sizeBytes)}", "Version ${s.info.versionName} available${sizeMb(s.info.sizeBytes)}"), color = Fm.c.caution, fontSize = 13.sp)
-            is UpdateState.Downloading -> {
-                LinearProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth())
-                Text(loc("Pobieranie ${s.info.versionName}… ${(s.progress * 100).toInt()}%", "Downloading ${s.info.versionName}… ${(s.progress * 100).toInt()}%"), color = Fm.c.ink2, fontSize = 12.sp)
-            }
-            is UpdateState.Ready -> Text(loc("Wersja ${s.info.versionName} pobrana — gotowa do instalacji.", "Version ${s.info.versionName} downloaded — ready to install."), color = Fm.c.vfr, fontSize = 13.sp)
-        }
-        Spacer(Modifier.size(10.dp))
-        Row {
-            when (val s = state) {
-                is UpdateState.Available -> Button({ vm.downloadUpdate(s.info) }) { Text(loc("Pobierz i zainstaluj", "Download and install")) }
-                is UpdateState.Ready -> Button({ install(s.file) }) { Text(loc("Zainstaluj", "Install")) }
-                is UpdateState.Downloading, UpdateState.Checking -> {}
-                else -> OutlinedButton({ vm.checkForUpdate() }) { Text(loc("Sprawdź teraz", "Check now")) }
-            }
-        }
-    }
 }

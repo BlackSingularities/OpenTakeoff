@@ -1,3 +1,14 @@
+## 2.5.1 — Look around in every view, cleaner About, English landing reports
+
+- Camera: the cockpit / external / drone buttons are gone (MSFS 2024 often ignored them); one look-around button
+  remains and works in every view — in the cockpit the pilot's head turns, in external, drone and other views the
+  camera circles the aircraft. After letting go the camera returns to the view it started from, also when MSFS gets
+  stuck in its free camera (it leaves through the drone view if needed). A short tap explains how it works.
+- Settings: "About" and "Updates" are one section — version with update status, the update action, and clear links
+  to "Buy me a coffee", the author and GitHub releases.
+- Landing grade and notes are shown in the current app language, also for flights recorded before switching it.
+- Google Drive sync removed from the app (it was never enabled); sync messages no longer appear anywhere.
+
 ## 2.5.0 — Heading rose and radials on the map, much richer Progress, background recording
 
 - Map: heading rose on the aircraft (compass button) — magnetic card with 5°/10°/30° ticks, heading line with an HDG

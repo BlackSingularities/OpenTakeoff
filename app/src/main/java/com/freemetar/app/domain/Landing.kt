@@ -68,7 +68,22 @@ data class LandingReport(
     val airport: String? = null,
     /** Chwila przyziemienia (ms). */
     val at: Long? = null,
-)
+    /** Długość pasa (ft) — do „zostało … ft pasa” przy odtwarzaniu uwag. */
+    val runwayLengthFt: Int? = null,
+) {
+    /**
+     * Ocena słowna i uwagi w bieżącym języku aplikacji. Zapisane [grade] i [notes] są w języku z chwili
+     * lądowania, więc do wyświetlania uwagi są odtwarzane z liczb tą samą oceną co przy zapisie.
+     */
+    val gradeText: String get() = LandingScore.gradeOf(score)
+    val noteTexts: List<String> get() = LandingScore.evaluate(
+        TouchdownData(
+            vsFpm = vsFpm.toDouble(), gForce = gForce, bankDeg = bankDeg, pitchDeg = pitchDeg, iasKt = iasKt?.toDouble(),
+            runway = runway, alongFt = alongFt?.toDouble(), crossFt = crossFt?.toDouble(), runwayLengthFt = runwayLengthFt?.toDouble(),
+            crosswindKt = crosswindKt?.toDouble(), bounces = bounces,
+        ),
+    ).notes
+}
 
 /**
  * Ocena lądowania 0–100. Progi odpowiadają typowym kryteriom: miękkie przyziemienie 60–240 ft/min,
@@ -133,17 +148,20 @@ object LandingScore {
         t.crosswindKt?.let { if (abs(it) >= 15) { score += 5; notes += loc("Wiatr boczny ${abs(it).roundToInt()} kt — wynik złagodzony.", "Crosswind ${abs(it).roundToInt()} kt — score adjusted.") } }
 
         val s = score.roundToInt().coerceIn(0, 100)
-        val grade = when {
-            s >= 90 -> loc("Doskonałe", "Excellent")
-            s >= 75 -> loc("Dobre", "Good")
-            s >= 55 -> loc("Poprawne", "Fair")
-            s >= 35 -> loc("Twarde", "Hard")
-            else -> loc("Bardzo twarde", "Very hard")
-        }
         return LandingReport(
-            score = s, grade = grade, vsFpm = t.vsFpm.roundToInt(), gForce = t.gForce, bankDeg = t.bankDeg, pitchDeg = t.pitchDeg,
+            score = s, grade = gradeOf(s), vsFpm = t.vsFpm.roundToInt(), gForce = t.gForce, bankDeg = t.bankDeg, pitchDeg = t.pitchDeg,
             iasKt = t.iasKt?.roundToInt(), runway = t.runway, alongFt = t.alongFt?.roundToInt(), crossFt = t.crossFt?.roundToInt(),
             crosswindKt = t.crosswindKt?.roundToInt(), bounces = t.bounces, notes = notes,
+            runwayLengthFt = t.runwayLengthFt?.roundToInt(),
         )
+    }
+
+    /** Ocena słowna z wyniku 0–100 w bieżącym języku. */
+    fun gradeOf(s: Int): String = when {
+        s >= 90 -> loc("Doskonałe", "Excellent")
+        s >= 75 -> loc("Dobre", "Good")
+        s >= 55 -> loc("Poprawne", "Fair")
+        s >= 35 -> loc("Twarde", "Hard")
+        else -> loc("Bardzo twarde", "Very hard")
     }
 }

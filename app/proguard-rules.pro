@@ -7,15 +7,8 @@
 -keep class org.maplibre.** { *; }
 -dontwarn org.maplibre.**
 
-# Google API Client / Drive: modele mapowane refleksją po polach @Key
--keep class com.google.api.services.drive.** { *; }
--keep class com.google.api.client.** { *; }
--keepclassmembers class * { @com.google.api.client.util.Key <fields>; }
 -keepattributes Signature, EnclosingMethod
--dontwarn com.google.api.client.**
--dontwarn com.google.common.**
 -dontwarn javax.annotation.**
 -dontwarn org.apache.http.**
 -dontwarn android.net.http.**
--dontwarn com.google.j2objc.**
 -dontwarn org.checkerframework.**

@@ -287,20 +287,25 @@ public sealed class MsfsSource : IFlightSource
     // Zdarzenia widoku — zapas, gdy CameraSetRelative6DOF jest niedostępne (wewnętrzne, spoza listy telefonu)
     private static readonly string[] CameraEvents = { "PAN_VIEW", "PAN_RESET_COCKPIT", "AXIS_PAN_HEADING", "AXIS_PAN_PITCH", "VIEW_MODE" };
     // CAMERA STATE: 2 kabina, 3 zewnętrzna, 4 dron, 7 kamera 6DOF (włączana przez CameraSetRelative6DOF)
-    private const int CamCockpit = 2, CamExternal = 3, CamSixDof = 7;
-    // Po tylu ms bez komend rozglądania (telefon śle je co 30 ms podczas przytrzymania) kamera wraca do kabiny
+    private const int CamCockpit = 2, CamExternal = 3, CamDrone = 4, CamSixDof = 7;
+    // Po tylu ms bez komend rozglądania (telefon śle je co 30 ms podczas przytrzymania) kamera wraca do widoku sprzed rozglądania
     private static readonly TimeSpan LookReleaseDelay = TimeSpan.FromMilliseconds(400);
+    // Poza kabiną kamera krąży wokół samolotu w tej odległości (m) od punktu oka
+    private const float OrbitRadiusM = 45f, OrbitBaseElevationDeg = 12f;
     private bool _look6DofFailed, _lookActive;
     private long _lookYaw, _lookPitch;
+    // Widok, z którego zaczęło się rozglądanie — do niego kamera wraca po puszczeniu przycisku
+    private int _lookOrigin = CamCockpit;
     private CancellationTokenSource? _lookRelease;
     private readonly SemaphoreSlim _cameraGate = new(1, 1);
 
     /// <summary>
-    /// Rozglądanie się z kabiny. MSFS 2024 ignoruje zapis CAMERA GAMEPLAY PITCH YAW i zdarzenia PAN_* (sprawdzone
-    /// na żywo), więc kamerę obraca CameraSetRelative6DOF z okiem w punkcie oka pilota (przesunięcie 0 — FLT_MAX
-    /// MSFS 2024 bierze dosłownie i stawia kamerę przed samolotem). Ta funkcja przełącza MSFS w osobny tryb kamery
-    /// (CAMERA STATE 7); do kabiny wracamy dopiero po puszczeniu przycisku (brak komend przez LookReleaseDelay),
-    /// a nie przy każdym przejściu przez „na wprost” — inaczej widok skakał w trakcie rozglądania.
+    /// Rozglądanie się w każdym widoku. MSFS 2024 ignoruje zapis CAMERA GAMEPLAY PITCH YAW i zdarzenia PAN_*
+    /// (sprawdzone na żywo), więc kamerę obraca CameraSetRelative6DOF. W kabinie obraca się wokół oka pilota
+    /// (przesunięcie 0 — FLT_MAX MSFS 2024 bierze dosłownie i stawia kamerę przed samolotem); w widoku zewnętrznym,
+    /// z drona i innych kamera krąży wokół samolotu (orbita o promieniu OrbitRadiusM), zamiast wskakiwać do kabiny.
+    /// Ta funkcja przełącza MSFS w osobny tryb kamery (CAMERA STATE 7); do widoku sprzed rozglądania wracamy dopiero
+    /// po puszczeniu przycisku (brak komend przez LookReleaseDelay), a nie przy każdym przejściu przez „na wprost”.
     /// </summary>
     private async Task<CommandResult> LookAsync(SimConnectClient client, bool pitchAxis, long valueDeg, CancellationToken ct)
     {
@@ -316,12 +321,13 @@ public sealed class MsfsSource : IFlightSource
                 if (!_lookActive)
                 {
                     if (centered) return CommandResult.Success;
-                    // Kamera 6DOF siedzi w kabinie — z widoku zewnętrznego czy drona przeskoczyłaby do środka
                     var raw = RawCameraState();
-                    if (raw is not (CamCockpit or CamSixDof)) return CommandResult.Success;
-                    Log?.Invoke($"Kamera: rozglądanie (MSFS zgłasza {raw})");
+                    // Kamera 7 bez aktywnego rozglądania = MSFS utknął po poprzednim — traktujemy jak kabinę
+                    _lookOrigin = raw is CamSixDof or < 0 ? CamCockpit : raw;
+                    Log?.Invoke($"Kamera: rozglądanie (MSFS zgłasza {raw}, powrót do {_lookOrigin})");
                 }
-                var hr = Native.SimConnect_CameraSetRelative6DOF(client.Handle, 0f, 0f, 0f, -_lookPitch, 0f, _lookYaw);
+                var (dx, dy, dz, camPitch) = _lookOrigin == CamCockpit ? (0f, 0f, 0f, (float)-_lookPitch) : Orbit(_lookYaw, _lookPitch);
+                var hr = Native.SimConnect_CameraSetRelative6DOF(client.Handle, dx, dy, dz, camPitch, 0f, _lookYaw);
                 if (hr >= 0)
                 {
                     _lookActive = true;
@@ -365,11 +371,11 @@ public sealed class MsfsSource : IFlightSource
             catch (OperationCanceledException) { return; }
             try
             {
-                if (_lookActive && client.IsConnected) await RestoreCameraAsync(client, CamCockpit, CancellationToken.None);
+                if (_lookActive && client.IsConnected) await RestoreCameraAsync(client, _lookOrigin, CancellationToken.None);
             }
             catch (Exception e)
             {
-                Log?.Invoke($"Kamera: powrót do kabiny nie powiódł się ({e.Message})");
+                Log?.Invoke($"Kamera: powrót do widoku nie powiódł się ({e.Message})");
             }
             finally
             {
@@ -405,14 +411,34 @@ public sealed class MsfsSource : IFlightSource
         }
     }
 
-    /// <summary>Wyjście z kamery 6DOF do [target]: wprost, a gdy MSFS nie przyjmie — przez inny widok. Wymaga _cameraGate.</summary>
+    /// <summary>
+    /// Kamera krążąca wokół samolotu: położenie na sferze o promieniu OrbitRadiusM (x w prawo, y w górę, z do przodu),
+    /// patrząca na samolot. Obrót w prawo przesuwa kamerę w lewo i za samolot; „w górę” obniża kamerę.
+    /// Zwraca przesunięcie i pochylenie kamery (+ = w dół) dla CameraSetRelative6DOF.
+    /// </summary>
+    internal static (float dx, float dy, float dz, float pitch) Orbit(long yawDeg, long pitchDeg)
+    {
+        var elev = Math.Clamp(OrbitBaseElevationDeg - pitchDeg, -10f, 80f) * Math.PI / 180;
+        var yaw = yawDeg * Math.PI / 180;
+        var horiz = OrbitRadiusM * Math.Cos(elev);
+        return ((float)(-horiz * Math.Sin(yaw)), (float)(OrbitRadiusM * Math.Sin(elev)), (float)(-horiz * Math.Cos(yaw)), (float)(elev * 180 / Math.PI));
+    }
+
+    /// <summary>
+    /// Wyjście z kamery 6DOF do [target]. MSFS 2024 często nie przyjmuje wprost zapisu CAMERA STATE z kamery 7
+    /// (dziennik: kabina i widok zewnętrzny odrzucane po kilka razy), a wychodzi z niej przez drona — więc:
+    /// wprost, potem przez drona, a do kabiny jeszcze przez widok zewnętrzny. Wymaga _cameraGate.
+    /// </summary>
     private async Task RestoreCameraAsync(SimConnectClient client, int target, CancellationToken ct)
     {
         _lookActive = false;
         _lookYaw = 0; _lookPitch = 0;
         if (await TryWriteCameraAsync(client, target, ct)) return;
-        await TryWriteCameraAsync(client, target == CamExternal ? CamCockpit : CamExternal, ct);
-        await WriteCameraAsync(client, target, ct);
+        if (target != CamDrone) await TryWriteCameraAsync(client, CamDrone, ct, attempts: 40);
+        if (await TryWriteCameraAsync(client, target, ct, attempts: 40)) return;
+        if (target == CamCockpit && await TryWriteCameraAsync(client, CamExternal, ct, attempts: 40)
+            && await TryWriteCameraAsync(client, CamCockpit, ct, attempts: 40)) return;
+        Log?.Invoke($"Kamera: MSFS nie wrócił do widoku {target} (zgłasza {RawCameraState()})");
     }
 
     private async Task WriteCameraAsync(SimConnectClient client, int target, CancellationToken ct)
@@ -429,12 +455,12 @@ public sealed class MsfsSource : IFlightSource
         Log?.Invoke($"Kamera: MSFS nie przełączył widoku na {target} (zgłasza {RawCameraState()})");
     }
 
-    private async Task<bool> TryWriteCameraAsync(SimConnectClient client, int target, CancellationToken ct)
+    private async Task<bool> TryWriteCameraAsync(SimConnectClient client, int target, CancellationToken ct, int attempts = 20)
     {
         try
         {
             await client.SimVars.SetAsync("CAMERA STATE", "Enum", (double)target, cancellationToken: ct);
-            return await WaitForCameraAsync(target, ct);
+            return await WaitForCameraAsync(target, ct, attempts);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
@@ -444,10 +470,10 @@ public sealed class MsfsSource : IFlightSource
         }
     }
 
-    // MSFS 2024 potrafi przełączać widok dłużej niż kilka klatek — czekamy do ok. 0,8 s
-    private async Task<bool> WaitForCameraAsync(int target, CancellationToken ct)
+    // MSFS 2024 potrafi przełączać widok dłużej niż kilka klatek — czekamy do ok. 0,8 s (z kamery 7 dłużej)
+    private async Task<bool> WaitForCameraAsync(int target, CancellationToken ct, int attempts = 20)
     {
-        for (var i = 0; i < 20; i++)
+        for (var i = 0; i < attempts; i++)
         {
             await Task.Delay(40, ct);
             if (RawCameraState() == target) return true;
