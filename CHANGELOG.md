@@ -1,3 +1,8 @@
+## 2.5.2 — Simpler About section
+
+- About: no update-status badge next to the version and no GitHub link; the version, updates, "Buy me a coffee"
+  and the author link remain.
+
 ## 2.5.1 — Look around in every view, cleaner About, English landing reports
 
 - Camera: the cockpit / external / drone buttons are gone (MSFS 2024 often ignored them); one look-around button
