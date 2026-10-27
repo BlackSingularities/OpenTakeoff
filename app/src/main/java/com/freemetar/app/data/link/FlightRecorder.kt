@@ -82,6 +82,10 @@ class FlightRecorder(
     private var recordingId = UUID.randomUUID().toString()
     private var airborneSince: Long? = null
 
+    /** Paliwo na początku nagrania (kg) — do zużycia w panelu postępu. */
+    var startFuelKg: Double? = null
+        private set
+
     /** Ostatnia ocena lądowania (do pokazania od razu po przyziemieniu). */
     var lastLanding: LandingReport? = null
         private set
@@ -112,6 +116,7 @@ class FlightRecorder(
                 stoppedSince = null
                 landing = null; bounces = 0; lastLanding = null; landings.clear()
                 airborneSince = now
+                startFuelKg = s.fuel.totalKg
                 lastTdSeq = s.touchdown?.seq
                 points += point(s, now, lat, lon, alt, gs)
             }

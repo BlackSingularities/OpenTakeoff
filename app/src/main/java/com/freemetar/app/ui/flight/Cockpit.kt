@@ -100,6 +100,7 @@ fun CockpitView(
     onShowChecklists: () -> Unit = {},
     recording: com.freemetar.app.MainViewModel.RecordingInfo = com.freemetar.app.MainViewModel.RecordingInfo(),
     onStopRecording: () -> Unit = {}, onResumeRecording: () -> Unit = {},
+    track: List<com.freemetar.app.data.link.TrackPoint> = emptyList(),
 ) {
     var tabName by rememberSaveable { mutableStateOf<String?>(null) }
     val tab = CockpitTab.entries.firstOrNull { it.name == tabName }
@@ -125,7 +126,7 @@ fun CockpitView(
                     CockpitTab.SYSTEMS -> SystemsFor(link, s, effective)
                     CockpitTab.STICK -> FlightControlPanel(link, s, controlMode, onControlMode, floating, onFloating)
                     CockpitTab.ENGINES -> EnginesFor(link, s, effective)
-                    CockpitTab.PROGRESS -> Progress(s)
+                    CockpitTab.PROGRESS -> Progress(s, track, recording, nearby)
                 }
             }
             val panel: (@Composable () -> Unit)? = tab?.takeIf { !persistent }?.let { t ->
@@ -136,7 +137,7 @@ fun CockpitView(
                         CockpitTab.SYSTEMS -> SystemsFor(link, s, effective)
                         CockpitTab.STICK -> FlightControlPanel(link, s, controlMode, onControlMode, floating, onFloating)
                         CockpitTab.ENGINES -> EnginesFor(link, s, effective)
-                        CockpitTab.PROGRESS -> Progress(s)
+                        CockpitTab.PROGRESS -> Progress(s, track, recording, nearby)
                     }
                 }
             }
@@ -196,7 +197,7 @@ fun CockpitView(
             }
         }
         // Stery zawsze pod ręką w widoku lotu (kontroler sprzętowy ich nie potrzebuje)
-        if (controlMode != "GAMEPAD") FloatingControl(link, controlMode, s, withTrim = floatingTrim, positionKey = "flight")
+        if (controlMode != "GAMEPAD") FloatingControl(link, controlMode, s, withTrim = floatingTrim)
     }
 }
 

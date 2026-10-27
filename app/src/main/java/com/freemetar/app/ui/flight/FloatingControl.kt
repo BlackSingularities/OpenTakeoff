@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -78,7 +80,7 @@ import kotlin.math.roundToInt
  * więc trym ma osobne przyciski obok.
  */
 @Composable
-fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, withTrim: Boolean = false, positionKey: String = "default", modifier: Modifier = Modifier) {
+fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, withTrim: Boolean = false, modifier: Modifier = Modifier) {
     val c = Fm.c
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -102,16 +104,20 @@ fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, 
     }
     val max = link.limits.maxDeflection
 
-    // Pozycja przycisku (ułamek dostępnego obszaru) zapamiętana osobno dla każdego widoku aplikacji
+    // Jedna pozycja przycisku w całej aplikacji: ułamek okna (nie obszaru danego widoku), wspólny stan dla wszystkich
+    // zakładek i widoków — przycisk jest w tym samym miejscu ekranu niezależnie od tego, gdzie jest rysowany.
     // Domyślnie lewa strona (z prawej są dźwignie mocy w widoku lotu), dolna część ekranu
     val context = androidx.compose.ui.platform.LocalContext.current
     val store = remember { context.getSharedPreferences("floating_control_pos", android.content.Context.MODE_PRIVATE) }
-    var fx by remember(positionKey) { mutableFloatStateOf(store.getFloat("$positionKey.x", 0f)) }
-    var fy by remember(positionKey) { mutableFloatStateOf(store.getFloat("$positionKey.y", 0.72f)) }
-    LaunchedEffect(positionKey, fx, fy) {
+    remember { FloatingPos.load(store) }
+    var fx by FloatingPos.x
+    var fy by FloatingPos.y
+    LaunchedEffect(fx, fy) {
         delay(300)   // zapis po zakończeniu przeciągania, nie co klatkę
-        store.edit().putFloat("$positionKey.x", fx).putFloat("$positionKey.y", fy).apply()
+        store.edit().putFloat("global.x", fx).putFloat("global.y", fy).apply()
     }
+    val rootView = androidx.compose.ui.platform.LocalView.current.rootView
+    var origin by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
 
     fun axes(): Pair<Double, Double> = if (tiltMode) {
         ControlMath.axis(tilt.roll - roll0, 35.0, 2.0, 1.0, max) to ControlMath.axis(tilt.pitch - pitch0, 30.0, 2.0, 1.0, max)
@@ -129,18 +135,27 @@ fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, 
     }
     DisposableEffect(Unit) { onDispose { link.releaseAxes() } }
 
-    BoxWithConstraints(modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInWindow() }) {
         val btn = 68.dp
         val trimW = if (withTrim && !tiltMode) 52.dp else 0.dp
         val total = btn + 22.dp   // przycisk + uchwyt
         val pad = 12.dp
-        val wPx = with(density) { (maxWidth - btn - trimW - pad * 2).toPx() }.coerceAtLeast(1f)
-        val hPx = with(density) { (maxHeight - total - pad * 2).toPx() }.coerceAtLeast(1f)
         val padPx = with(density) { pad.toPx() }
+        val bwPx = with(density) { (btn + trimW).toPx() }
+        val bhPx = with(density) { total.toPx() }
+        val boxW = with(density) { maxWidth.toPx() }
+        val boxH = with(density) { maxHeight.toPx() }
+        // Zakres ruchu liczony w oknie; w tym widoku przycisk jest dociskany do jego krawędzi
+        val winW = rootView.width.toFloat().takeIf { it > 0 } ?: boxW
+        val winH = rootView.height.toFloat().takeIf { it > 0 } ?: boxH
+        val wPx = (winW - bwPx - padPx * 2).coerceAtLeast(1f)
+        val hPx = (winH - bhPx - padPx * 2).coerceAtLeast(1f)
+        fun localX(f: Float) = (padPx + f * wPx - origin.x).coerceIn(padPx, (boxW - bwPx - padPx).coerceAtLeast(padPx))
+        fun localY(f: Float) = (padPx + f * hPx - origin.y).coerceIn(padPx, (boxH - bhPx - padPx).coerceAtLeast(padPx))
         val reach = with(density) { 56.dp.toPx() }
 
         Row(
-            Modifier.offset { IntOffset((padPx + fx * wPx).roundToInt(), (padPx + fy * hPx).roundToInt()) },
+            Modifier.offset { IntOffset(localX(fx).roundToInt(), localY(fy).roundToInt()) },
             verticalAlignment = Alignment.Top,
         ) {
         if (withTrim && !tiltMode) TrimColumn(link, s, Modifier.padding(end = 6.dp))
@@ -215,11 +230,12 @@ fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, 
             Box(
                 Modifier.width(36.dp).height(16.dp).clip(RoundedCornerShape(50)).background(c.terrain).border(1.dp, c.rule, RoundedCornerShape(50))
                     .semantics { contentDescription = loc("Uchwyt: przeciągnij, aby przesunąć przycisk", "Handle: drag to move the button") }
-                    .pointerInput(wPx, hPx) {
+                    .pointerInput(wPx, hPx, origin, boxW, boxH) {
                         detectDragGestures { ch, d ->
                             ch.consume()
-                            fx = (fx + d.x / wPx).coerceIn(0f, 1f)
-                            fy = (fy + d.y / hPx).coerceIn(0f, 1f)
+                            // Zapisywana jest pozycja widoczna (po dociśnięciu do krawędzi widoku), w ułamku okna
+                            fx = ((localX(fx) + d.x + origin.x - padPx) / wPx).coerceIn(0f, 1f)
+                            fy = ((localY(fy) + d.y + origin.y - padPx) / hPx).coerceIn(0f, 1f)
                         }
                     },
                 contentAlignment = Alignment.Center,
@@ -271,4 +287,19 @@ private fun TrimKey(label: String, desc: String, action: () -> Unit) {
             },
         contentAlignment = Alignment.Center,
     ) { Text(label, fontSize = 15.sp, color = if (pressed) Color.Black else c.ink) }
+}
+
+/** Wspólna pozycja pływającego przycisku (ułamek okna); odczyt z ustawień raz na proces. */
+private object FloatingPos {
+    private var loaded = false
+    val x = androidx.compose.runtime.mutableFloatStateOf(0f)
+    val y = androidx.compose.runtime.mutableFloatStateOf(0.72f)
+
+    fun load(store: android.content.SharedPreferences) {
+        if (loaded) return
+        loaded = true
+        // Starsze wersje pamiętały pozycję osobno dla każdego widoku — punktem wyjścia jest ta z widoku lotu
+        x.floatValue = store.getFloat("global.x", store.getFloat("flight.x", 0f))
+        y.floatValue = store.getFloat("global.y", store.getFloat("flight.y", 0.72f))
+    }
 }

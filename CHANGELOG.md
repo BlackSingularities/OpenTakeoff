@@ -1,3 +1,30 @@
+## 2.5.0 — Heading rose and radials on the map, much richer Progress, background recording
+
+- Map: heading rose on the aircraft (compass button) — magnetic card with 5°/10°/30° ticks, heading line with an HDG
+  readout, green track marker, cyan autopilot HDG bug and a magenta pointer to the reference point; it keeps the same
+  size on screen at every zoom.
+- Map: radials from any point (target button, a long press on the map, or "Radials" on an airport card). The point snaps
+  to the nearest airport, navaid or flight-plan waypoint and gets its own compass rose; the card shows the radial the
+  aircraft is on (QDR), the course to the point (QDM), distance and time. Pick a radial by tapping the map, with
+  ±1/±10 or "current radial", as IN or OUT: the radial is drawn with direction arrows and the card gives the course on
+  the radial, cross-track distance and the heading to fly with the intercept angle and wind correction. Without the
+  simulator the radial is measured from the map centre (+).
+- Map: the 3D track is a smooth ramp — altitude between track points is interpolated in small steps and neighbouring
+  segments share edges, so there are no stairs or gaps in turns; the geometry is built off the UI thread.
+- Progress tab: flight phase and route progress bar, then grouped Route (next waypoint with ETE/ETA, bearing and DTK,
+  cross-track, waypoint count, arrival, top of descent with time, 3° descent rate), Flight (time since takeoff, distance
+  flown, average speed, max altitude/GS/V/S, sim time, last touchdown), Speed (IAS/Mach, TAS, head/tailwind and
+  crosswind, V/S and FPA, margins to VMO and VS1), Altitude (MSL, RA/AGL, terrain, AP altitude with time to reach,
+  pressure and density altitude, minimums), Direction (heading, track, drift, variation, HDG bug turn, pitch/bank,
+  turn rate, g and AoA), Atmosphere (wind, OAT with ISA deviation, TAT, QNH), Fuel (on board, used, flow per engine,
+  endurance and range, fuel and reserve at destination, kg/NM, average burn) and Navigation (position, nearest
+  airport with bearing and time, NAV1/NAV2, COM1, transponder).
+- Flight recording no longer stops when the app goes to the home screen or the screen turns off: while connected to
+  the simulator a foreground service keeps the Link connection, Wi-Fi and CPU awake, with a notification showing
+  whether the track is being recorded.
+- The floating control button stays in the same place on screen in every tab, card and view: one position for the
+  whole app (a fraction of the window), shared live between views; older per-view positions start from the flight view's.
+
 ## 2.4.0 — Boeing 787 cockpit panels
 
 - 787 MCP: F/D, A/P, A/T ARM, CLB/CON, A/T, IAS ( ) MACH with the IAS/MACH changeover, LNAV, FLCH, HDG ( ) TRK with the
