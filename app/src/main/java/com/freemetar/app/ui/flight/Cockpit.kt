@@ -197,7 +197,7 @@ fun CockpitView(
             }
         }
         // Stery zawsze pod ręką w widoku lotu (kontroler sprzętowy ich nie potrzebuje)
-        if (controlMode != "GAMEPAD") FloatingControl(link, controlMode, s, withTrim = floatingTrim, positionKey = "flight")
+        if (controlMode != "GAMEPAD") FloatingControl(link, controlMode, s, withTrim = floatingTrim)
     }
 }
 

@@ -22,6 +22,8 @@
 - Flight recording no longer stops when the app goes to the home screen or the screen turns off: while connected to
   the simulator a foreground service keeps the Link connection, Wi-Fi and CPU awake, with a notification showing
   whether the track is being recorded.
+- The floating control button stays in the same place on screen in every tab, card and view: one position for the
+  whole app (a fraction of the window), shared live between views; older per-view positions start from the flight view's.
 
 ## 2.4.0 — Boeing 787 cockpit panels
 
