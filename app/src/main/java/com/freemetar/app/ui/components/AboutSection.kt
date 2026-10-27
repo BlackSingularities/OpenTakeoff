@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material.icons.outlined.Person
@@ -46,7 +45,6 @@ import com.freemetar.app.BuildConfig
 import com.freemetar.app.MainViewModel
 import com.freemetar.app.R
 import com.freemetar.app.UpdateState
-import com.freemetar.app.data.Updater
 import com.freemetar.app.domain.loc
 import com.freemetar.app.ui.theme.AUTHOR_SITE
 import com.freemetar.app.ui.theme.AUTHOR_URL
@@ -56,7 +54,7 @@ import com.freemetar.app.ui.theme.Mono
 
 /**
  * „O aplikacji” w ustawieniach: nazwa i wersja ze stanem aktualizacji w jednym miejscu,
- * pod spodem odnośniki — autor, wsparcie (kawa) i wydania na GitHubie.
+ * pod spodem odnośniki — wsparcie (kawa) i autor.
  */
 @Composable
 fun AboutSection(vm: MainViewModel) {
@@ -65,7 +63,7 @@ fun AboutSection(vm: MainViewModel) {
     val install = rememberInstaller()
     val uri = LocalUriHandler.current
     SectionCard(loc("O aplikacji", "About"), icon = Icons.Outlined.Info, dense = true) {
-        // Nagłówek: znak, nazwa, wersja i stan aktualizacji
+        // Nagłówek: znak, nazwa i wersja
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(46.dp).clip(RoundedCornerShape(12.dp)).background(c.terrain), contentAlignment = Alignment.Center) {
                 Image(painterResource(R.drawable.opentakeoff_mark), null, Modifier.size(32.dp))
@@ -75,19 +73,6 @@ fun AboutSection(vm: MainViewModel) {
                 Text("OpenTakeoff", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = c.ink)
                 Text(loc("wersja ", "version ") + BuildConfig.VERSION_NAME, fontFamily = Mono, fontSize = 12.sp, color = c.ink2)
             }
-            val (tag, tagColor) = when (val s = state) {
-                UpdateState.UpToDate -> loc("aktualna", "up to date") to c.vfr
-                is UpdateState.Available -> loc("nowa ${s.info.versionName}", "new ${s.info.versionName}") to c.caution
-                is UpdateState.Ready -> loc("gotowa ${s.info.versionName}", "ready ${s.info.versionName}") to c.vfr
-                is UpdateState.Downloading -> "${(s.progress * 100).toInt()}%" to c.accent
-                UpdateState.Checking -> loc("sprawdzanie…", "checking…") to c.ink2
-                is UpdateState.Error -> loc("błąd", "error") to c.ifr
-                UpdateState.Idle -> null to c.ink2
-            }
-            if (tag != null) Text(
-                tag, fontFamily = Mono, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = tagColor, maxLines = 1,
-                modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, tagColor, RoundedCornerShape(50)).padding(horizontal = 9.dp, vertical = 3.dp),
-            )
         }
         Text(
             loc("Darmowa aplikacja dla wirtualnych pilotów — bez reklam, kont i subskrypcji.",
@@ -122,8 +107,8 @@ fun AboutSection(vm: MainViewModel) {
                 LinearProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
             }
             Text(
-                loc("Aplikacja sama sprawdza nowe wersje i instaluje je z GitHuba — nie trzeba pobierać ich ręcznie.",
-                    "The app checks for new versions by itself and installs them from GitHub — no manual downloads."),
+                loc("Aplikacja sama sprawdza nowe wersje i instaluje je — nie trzeba pobierać ich ręcznie.",
+                    "The app checks for new versions by itself and installs them — no manual downloads."),
                 style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 6.dp),
             )
         }
@@ -133,8 +118,6 @@ fun AboutSection(vm: MainViewModel) {
             LinkRow(Icons.Outlined.LocalCafe, loc("Postaw kawę", "Buy me a coffee"),
                 loc("Wesprzyj rozwój aplikacji · buycoffee.to", "Support the app's development · buycoffee.to"), highlight = true) { uri.openUri(COFFEE_URL) }
             LinkRow(Icons.Outlined.Person, loc("Projekt i wykonanie", "Design and development"), AUTHOR_SITE) { uri.openUri(AUTHOR_URL) }
-            LinkRow(Icons.Outlined.Code, loc("Wydania na GitHubie", "Releases on GitHub"),
-                loc("Lista zmian i OpenTakeoff Link dla Windows", "Changelog and OpenTakeoff Link for Windows")) { uri.openUri("https://github.com/${Updater.REPO}/releases") }
         }
     }
 }
