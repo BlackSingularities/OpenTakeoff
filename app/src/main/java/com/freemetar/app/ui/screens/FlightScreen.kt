@@ -76,7 +76,7 @@ fun FlightScreen(vm: MainViewModel, onOpenLogbook: () -> Unit = {}, onOpenCheckl
                     onShowPlan = { cockpit = false },
                     onShowChecklists = onOpenChecklists,
                     recording = vm.recordingInfo.collectAsStateWithLifecycle().value,
-                    onStopRecording = { vm.stopRecording() }, onResumeRecording = { vm.resumeRecording() },
+                    onStopRecording = { vm.stopRecording() }, onResumeRecording = { vm.resumeRecording() }, onMark = { vm.markLive() },
                     track = vm.track.collectAsStateWithLifecycle().value)
             }
         } else Column(

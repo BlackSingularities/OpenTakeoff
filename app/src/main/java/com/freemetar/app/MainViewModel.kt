@@ -267,6 +267,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         flightLogStore.save(_flightLogs.value)
     }
 
+    /** Ręczny znacznik w trwającym nagraniu (przycisk w kokpicie) — z czasem od startu w opisie. */
+    fun markLive() {
+        val started = recorder.startedAt
+        val label = loc("Znacznik", "Marker") + (started?.let { " " + "%d:%02d".format((System.currentTimeMillis() - it) / 60_000, (System.currentTimeMillis() - it) / 1000 % 60) } ?: "")
+        _flightMessage.value = if (recorder.mark(label)) loc("Dodano znacznik — opis zmienisz w dzienniku.", "Marker added — edit its note in the logbook.")
+        else loc("Znaczniki dodaje się w trakcie zapisu lotu.", "Markers can be added while a flight is recording.")
+    }
+
+    private fun updateFlight(id: String, change: (FlightLog) -> FlightLog) = viewModelScope.launch {
+        _flightLogs.value = _flightLogs.value.map { if (it.id == id) change(it) else it }
+        flightLogStore.save(_flightLogs.value)
+    }
+
+    /** Znacznik w zapisanym locie (z odtwarzania); ten sam czas zastępuje poprzedni opis. */
+    fun setFlightMarker(id: String, t: Long, label: String) = updateFlight(id) { f ->
+        f.copy(markers = (f.markers.filterNot { it.t == t } + com.freemetar.app.data.link.FlightMarker(t, label)).sortedBy { it.t })
+    }
+
+    fun deleteFlightMarker(id: String, t: Long) = updateFlight(id) { f -> f.copy(markers = f.markers.filterNot { it.t == t }) }
+
+    fun setFlightScenario(id: String, scenario: String?) = updateFlight(id) { it.copy(scenario = scenario) }
+
     private fun saveFlight(log: FlightLog?) {
         log ?: return
         viewModelScope.launch {

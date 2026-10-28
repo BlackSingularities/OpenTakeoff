@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.AirlineSeatReclineNormal
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Flight
 import androidx.compose.material.icons.outlined.FlightTakeoff
 import androidx.compose.material.icons.outlined.Gamepad
@@ -100,7 +101,7 @@ fun CockpitView(
     onShowPlan: () -> Unit = {},
     onShowChecklists: () -> Unit = {},
     recording: com.freemetar.app.MainViewModel.RecordingInfo = com.freemetar.app.MainViewModel.RecordingInfo(),
-    onStopRecording: () -> Unit = {}, onResumeRecording: () -> Unit = {},
+    onStopRecording: () -> Unit = {}, onResumeRecording: () -> Unit = {}, onMark: () -> Unit = {},
     track: List<com.freemetar.app.data.link.TrackPoint> = emptyList(),
 ) {
     var tabName by rememberSaveable { mutableStateOf<String?>(null) }
@@ -143,7 +144,7 @@ fun CockpitView(
                 }
             }
             val actions: @Composable (Boolean, Modifier) -> Unit = { vertical, m ->
-                CockpitActions(link, s, profile, onProfile, controlMode, recording, onStopRecording, onResumeRecording,
+                CockpitActions(link, s, profile, onProfile, controlMode, recording, onStopRecording, onResumeRecording, onMark,
                     onShowChecklists, onShowPlan, vertical, m)
             }
             // Wszystko na jednym ekranie: otwarty panel zastępuje ND, PFD i dźwignie zostają.
@@ -210,7 +211,7 @@ fun CockpitView(
 @Composable
 private fun CockpitActions(
     link: LinkClient, s: FlightState, profile: AircraftProfile?, onProfile: (AircraftProfile?) -> Unit,
-    controlMode: String, rec: com.freemetar.app.MainViewModel.RecordingInfo, onStop: () -> Unit, onResume: () -> Unit,
+    controlMode: String, rec: com.freemetar.app.MainViewModel.RecordingInfo, onStop: () -> Unit, onResume: () -> Unit, onMark: () -> Unit,
     onShowChecklists: () -> Unit, onShowPlan: () -> Unit, vertical: Boolean, modifier: Modifier = Modifier,
 ) {
     val c = Fm.c
@@ -221,6 +222,16 @@ private fun CockpitActions(
     val aircraftMenu = tr("Samolot: ${style.label}. Profil, połączenie i dziennik", "Aircraft: ${style.label}. Profile, connection and logbook")
     val content: @Composable () -> Unit = {
         RecordChip(rec, onClick = { if (rec.recording) askStop = true else if (rec.held) onResume() })
+        // Znacznik na osi czasu lotu — do omówienia przy odtwarzaniu
+        if (rec.recording) {
+            val markLabel = tr("Dodaj znacznik w zapisie lotu", "Add a marker to the flight recording")
+            Box(
+                Modifier.size(34.dp).clip(CircleShape).border(1.dp, c.rule, CircleShape)
+                    .semantics { contentDescription = markLabel }
+                    .clickable(role = Role.Button, onClick = onMark),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Outlined.Flag, null, tint = c.ink, modifier = Modifier.size(18.dp)) }
+        }
         CameraSwitch(link, s, controlMode = controlMode, vertical = vertical)
         Box(
             Modifier.size(34.dp).clip(CircleShape).border(1.dp, c.rule, CircleShape)

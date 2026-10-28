@@ -28,6 +28,12 @@ data class TrackColumns(
     val vs: List<Int?> = emptyList(),
     val ias: List<Int?> = emptyList(),
     val hdg: List<Int?> = emptyList(),
+    /** Przechylenie i pochylenie w dziesiątych stopnia, przeciążenie w setnych g, na ziemi 1/0. */
+    val bank: List<Int?> = emptyList(),
+    val pitch: List<Int?> = emptyList(),
+    val agl: List<Int?> = emptyList(),
+    val g: List<Int?> = emptyList(),
+    val gnd: List<Int?> = emptyList(),
 )
 
 @Serializable
@@ -54,14 +60,24 @@ object FlightArchive {
             dt += p.t - pt; dLat += la - pLat; dLon += lo - pLon; dAlt += p.altFt - pAlt
             pt = p.t; pLat = la; pLon = lo; pAlt = p.altFt
         }
-        return TrackColumns(track.first().t, dt, dLat, dLon, dAlt, track.map { it.gsKt }, track.map { it.vsFpm }, track.map { it.iasKt }, track.map { it.hdg })
+        // Kolumny analizy tylko, gdy lot je ma — starsze wpisy nie rosną o listy pełne null
+        fun <T> opt(f: (TrackPoint) -> T?): List<T?> = if (track.any { f(it) != null }) track.map(f) else emptyList()
+        return TrackColumns(
+            track.first().t, dt, dLat, dLon, dAlt, track.map { it.gsKt }, track.map { it.vsFpm }, track.map { it.iasKt }, track.map { it.hdg },
+            bank = opt { p -> p.bankDeg?.let { (it * 10).roundToInt() } }, pitch = opt { p -> p.pitchDeg?.let { (it * 10).roundToInt() } },
+            agl = opt { it.aglFt }, g = opt { p -> p.gLoad?.let { (it * 100).roundToInt() } }, gnd = opt { p -> p.onGround?.let { if (it) 1 else 0 } },
+        )
     }
 
     fun track(c: TrackColumns): List<TrackPoint> {
         var t = c.t0; var la = 0L; var lo = 0L; var alt = 0
         return c.dt.indices.map { i ->
             t += c.dt[i]; la += c.dLat[i]; lo += c.dLon[i]; alt += c.dAlt[i]
-            TrackPoint(t, la / SCALE, lo / SCALE, alt, c.gs.getOrElse(i) { 0 }, c.vs.getOrNull(i), c.ias.getOrNull(i), c.hdg.getOrNull(i))
+            TrackPoint(
+                t, la / SCALE, lo / SCALE, alt, c.gs.getOrElse(i) { 0 }, c.vs.getOrNull(i), c.ias.getOrNull(i), c.hdg.getOrNull(i),
+                c.bank.getOrNull(i)?.let { it / 10f }, c.pitch.getOrNull(i)?.let { it / 10f }, c.agl.getOrNull(i),
+                c.g.getOrNull(i)?.let { it / 100f }, c.gnd.getOrNull(i)?.let { it == 1 },
+            )
         }
     }
 

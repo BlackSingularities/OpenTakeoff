@@ -14,6 +14,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.material.icons.outlined.FlightLand
+import androidx.compose.material.icons.outlined.Waves
+import com.freemetar.app.domain.FlightAnalysis
+import com.freemetar.app.domain.Lang
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -114,6 +119,61 @@ fun LogbookStatistics(logs: List<FlightLog>) {
             }
         }
 
+        // Jakość pilotażu z analizy torów: podejścia, płynność; tendencja z porównania połówek okresu
+        val quality = remember(logs, Lang.current) {
+            val per = logs.map { it to FlightAnalysis.analyze(it) }
+            val approaches = per.flatMap { it.second.approaches }
+            val smooth = per.mapNotNull { it.second.smoothness?.score }
+            val recentSmooth = per.take((per.size + 1) / 2).mapNotNull { it.second.smoothness?.score }
+            val olderSmooth = per.drop((per.size + 1) / 2).mapNotNull { it.second.smoothness?.score }
+            Quality(
+                approaches.map { it.score }.takeIf { it.isNotEmpty() }?.average()?.roundToInt(),
+                if (approaches.isEmpty()) null else approaches.count { it.stableFromFt >= 1000 } * 100 / approaches.size,
+                smooth.takeIf { it.isNotEmpty() }?.average()?.roundToInt(),
+                if (recentSmooth.isNotEmpty() && olderSmooth.isNotEmpty()) (recentSmooth.average() - olderSmooth.average()).roundToInt() else null,
+            )
+        }
+        if (quality.approach != null || quality.smooth != null) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatCard(
+                    icon = Icons.Outlined.FlightLand,
+                    value = quality.approach?.toString() ?: "—",
+                    label = loc("Śr. podejście", "Avg approach"),
+                    subtitle = quality.stablePct?.let { loc("stabilne od 1000 ft: $it%", "stable by 1000 ft: $it%") },
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    icon = Icons.Outlined.Waves,
+                    value = quality.smooth?.toString() ?: "—",
+                    label = loc("Płynność", "Smoothness"),
+                    subtitle = quality.smoothTrend?.let { (if (it >= 0) "+" else "") + it + loc(" w nowszych lotach", " in recent flights") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // Samoloty: liczba lotów i czas
+        val fleet = logs.groupBy { it.aircraft ?: "?" }.map { (a, l) -> Triple(a, l.size, l.sumOf { it.durationMin }) }.sortedByDescending { it.third }.take(5)
+        if (fleet.size > 1 || fleet.firstOrNull()?.first != "?") {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(c.card, RoundedCornerShape(12.dp))
+                    .padding(16.dp)
+            ) {
+                Text(loc("Samoloty", "Aircraft"), style = MaterialTheme.typography.titleSmall, color = c.ink)
+                Spacer(Modifier.height(8.dp))
+                val maxMin = fleet.maxOf { it.third }.coerceAtLeast(1)
+                fleet.forEach { (a, n, min) ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(a, color = c.ink, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f))
+                        Text(loc("$n lot. ", "$n fl. ") + "%d:%02d h".format(min / 60, min % 60), fontSize = 12.sp, color = c.ink2)
+                    }
+                    Box(Modifier.fillMaxWidth(min.toFloat() / maxMin).height(4.dp).background(c.accent, RoundedCornerShape(2.dp)))
+                }
+            }
+        }
+
         // Top lotniska: start i każde lądowanie (bez lądowań — lotnisko końcowe)
         val airports = logs.flatMap { f ->
             val landed = f.allLandings.mapNotNull { it.airport }
@@ -153,6 +213,8 @@ fun LogbookStatistics(logs: List<FlightLog>) {
         }
     }
 }
+
+private data class Quality(val approach: Int?, val stablePct: Int?, val smooth: Int?, val smoothTrend: Int?)
 
 @Composable
 private fun StatCard(

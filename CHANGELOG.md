@@ -1,3 +1,14 @@
+## 2.6.0 — Odtworzenie lotu i analiza pilotażu
+
+- Dziennik: odtworzenie lotu — mapa z samolotem, odczyty w wybranej chwili, suwak i odtwarzanie ×10/×30/×120,
+  wykresy wysokości, prędkości, V/S, przechylenia i pochylenia zsynchronizowane z kursorem, lista zdarzeń.
+- Znaczniki: przycisk z flagą w kokpicie podczas zapisu, dodawanie, edycja i usuwanie znaczników w odtworzeniu.
+- Analiza: podejście (stabilizacja, bramki 1000/500 ft, kąt ścieżki, rozrzut prędkości), płynność prowadzenia,
+  realizacja ćwiczenia (krąg, touch and go, przelot, podejście precyzyjne), porównanie z poprzednim lotem.
+- Raport instruktorski do udostępnienia.
+- Statystyki dziennika: średnia ocena podejścia, płynność z tendencją, zestawienie samolotów.
+- Zapis toru obejmuje przechylenie, pochylenie, wysokość nad terenem, przeciążenie i stan na ziemi.
+
 ## 2.5.3
 
 - Nowa strona aplikacji z opisem funkcji.

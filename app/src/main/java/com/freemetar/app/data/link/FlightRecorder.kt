@@ -18,7 +18,13 @@ import java.util.UUID
 data class TrackPoint(
     val t: Long, val lat: Double, val lon: Double, val altFt: Int, val gsKt: Int,
     val vsFpm: Int? = null, val iasKt: Int? = null, val hdg: Int? = null,
+    /** Przechylenie i pochylenie (°, dokładność 0,1), wysokość nad terenem, przeciążenie, na ziemi — do analizy pilotażu. */
+    val bankDeg: Float? = null, val pitchDeg: Float? = null, val aglFt: Int? = null, val gLoad: Float? = null, val onGround: Boolean? = null,
 )
+
+/** Znacznik na osi czasu lotu: ręczny (z kokpitu lub odtwarzania) z opisem. */
+@Serializable
+data class FlightMarker(val t: Long, val label: String)
 
 /** Zapisany lot z symulatora: tor, lotniska, czasy. */
 @Serializable
@@ -37,6 +43,10 @@ data class FlightLog(
     val category: String? = null,
     /** Wszystkie lądowania w kolejności (touch and go, międzylądowania); puste we wpisach ze starszych wersji. */
     val landings: List<LandingReport> = emptyList(),
+    /** Ręczne znaczniki (w kolejności czasu). */
+    val markers: List<FlightMarker> = emptyList(),
+    /** Ćwiczenie, z którym porównywany jest lot (id z [com.freemetar.app.domain.Scenario]). */
+    val scenario: String? = null,
 ) {
     val durationMin get() = ((end - start) / 60_000).toInt()
 
@@ -64,7 +74,17 @@ class FlightRecorder(
     private fun point(s: FlightState, now: Long, lat: Double, lon: Double, alt: Int, gs: Double) = TrackPoint(
         now, lat, lon, alt, gs.toInt(), s.speed.vsFpm?.toInt(), s.speed.iasKt?.toInt(),
         (s.attitude.hdgTrueDeg ?: s.attitude.trackTrueDeg)?.let { ((it % 360 + 360) % 360).toInt() },
+        s.attitude.bankDeg?.toFloat(), s.attitude.pitchDeg?.toFloat(),
+        (s.avionics?.radioAltFt ?: s.position.altAglFt)?.toInt(), s.avionics?.gForce?.toFloat(), s.aircraft.onGround,
     )
+    private val markers = ArrayList<FlightMarker>()
+
+    /** Ręczny znacznik w bieżącym nagraniu; false, gdy nic się nie nagrywa. */
+    fun mark(label: String, now: Long = System.currentTimeMillis()): Boolean {
+        if (!recording) return false
+        markers += FlightMarker(now, label)
+        return true
+    }
     private var aircraft: String? = null
     private var category: String? = null
     private var stoppedSince: Long? = null
@@ -114,7 +134,7 @@ class FlightRecorder(
                 aircraft = s.aircraft.title
                 category = s.aircraft.category
                 stoppedSince = null
-                landing = null; bounces = 0; lastLanding = null; landings.clear()
+                landing = null; bounces = 0; lastLanding = null; landings.clear(); markers.clear()
                 airborneSince = now
                 startFuelKg = s.fuel.totalKg
                 lastTdSeq = s.touchdown?.seq
@@ -242,7 +262,7 @@ class FlightRecorder(
             from = nearestAirport(pts.first().lat, pts.first().lon),
             to = nearestAirport(pts.last().lat, pts.last().lon),
             maxAltFt = pts.maxOf { it.altFt }, distanceNm = dist.toInt(),
-            landing = report(), category = category, landings = landings + listOfNotNull(report()),
+            landing = report(), category = category, landings = landings + listOfNotNull(report()), markers = markers.toList(),
             // Bezpiecznik: ponad 60 tys. punktów (np. 4 Hz przez 4 h) — co n-ty punkt, końce zawsze zostają
             track = if (pts.size <= MAX_POINTS) pts else pts.filterIndexed { i, _ -> i % (pts.size / MAX_POINTS + 1) == 0 } + pts.last(),
         )

@@ -39,6 +39,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.FilterChip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +61,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.freemetar.app.MainViewModel
 import com.freemetar.app.data.link.FlightLog
+import com.freemetar.app.domain.FlightAnalysis
 import com.freemetar.app.domain.LandingReport
+import com.freemetar.app.domain.Lang
+import com.freemetar.app.domain.Scenario
 import com.freemetar.app.ui.components.Fact
 import com.freemetar.app.ui.components.FactGrid
 import com.freemetar.app.ui.components.Rule
@@ -89,7 +98,7 @@ fun ScoreBadge(l: LandingReport?, size: Int = 44) {
     }
 }
 
-/** Szczegóły lotu: ocena lądowania, tor, wykresy, eksport. */
+/** Szczegóły lotu: odtworzenie z osią czasu i znacznikami, analiza (lądowanie, podejście, płynność, ćwiczenie, porównanie), raport instruktorski. */
 @Composable
 fun FlightDetailScreen(vm: MainViewModel, id: String, onBack: () -> Unit, onShowMap: () -> Unit = {}) {
     val c = Fm.c
@@ -111,33 +120,49 @@ fun FlightDetailScreen(vm: MainViewModel, id: String, onBack: () -> Unit, onShow
             IconButton({ vm.deleteFlightLog(f.id); onBack() }) { Icon(Icons.Outlined.Delete, loc("Usuń lot", "Delete flight"), tint = c.danger) }
         }
         Rule()
+        val analysis = remember(f, Lang.current) { FlightAnalysis.analyze(f) }
+        val scenario = Scenario.of(f.scenario)
+        val scenarioResult = remember(f, scenario, Lang.current) { scenario?.let { FlightAnalysis.scenario(f, it, analysis) } }
+        val comparison = remember(f, logs, Lang.current) { FlightAnalysis.compare(f, logs, analysis) }
+        val report = remember(f, analysis, scenarioResult, comparison, Lang.current) { FlightAnalysis.instructorReport(f, analysis, scenarioResult, comparison) }
+        var tab by rememberSaveable { mutableStateOf(0) }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(loc("Odtworzenie", "Replay"), loc("Analiza", "Analysis"), loc("Raport", "Report")).forEachIndexed { i, t ->
+                FilterChip(tab == i, { tab = i }, { Text(t) })
+            }
+        }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-            val landings = f.allLandings
-            landings.forEachIndexed { i, l -> LandingCard(l, if (landings.size > 1) "${i + 1}/${landings.size}" else null) }
-            if (landings.isEmpty()) Section(loc("Lądowanie", "Landing"), Icons.Outlined.FlightLand) {
-                Text(loc("Brak danych o przyziemieniu (lot zakończony w powietrzu albo nagrany starszą wersją).", "No touchdown data (the flight ended in the air or was recorded by an older version)."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
-            }
-            Section(loc("Lot", "Flight"), Icons.Outlined.Timeline) {
-                FactGrid(listOf(
-                    Fact(loc("Czas", "Time"), "%d:%02d".format(f.durationMin / 60, f.durationMin % 60)),
-                    Fact(loc("Dystans", "Distance"), "${f.distanceNm} NM"),
-                    Fact(loc("Najwyżej", "Highest"), "FL%03d".format(f.maxAltFt / 100)),
-                    Fact(loc("Średnia GS", "Average GS"), f.track.map { it.gsKt }.filter { it > 50 }.takeIf { it.isNotEmpty() }?.average()?.roundToInt()?.let { "$it kt" } ?: "—"),
-                ))
-                Spacer(Modifier.size(12.dp))
-                TrackPlot(f)
-                androidx.compose.material3.OutlinedButton({ vm.showFlightOnMap(f.id); onShowMap() }, Modifier.padding(top = 10.dp)) {
-                    Icon(Icons.Outlined.ViewInAr, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(loc("Pokaż na mapie 3D", "Show on the 3D map"))
+            when (tab) {
+                0 -> {
+                    Section(loc("Odtworzenie lotu", "Flight replay"), Icons.Outlined.History) {
+                        FlightReplay(f, analysis.events, { t, label -> vm.setFlightMarker(f.id, t, label) }, { t -> vm.deleteFlightMarker(f.id, t) })
+                        androidx.compose.material3.OutlinedButton({ vm.showFlightOnMap(f.id); onShowMap() }, Modifier.padding(top = 10.dp)) {
+                            Icon(Icons.Outlined.ViewInAr, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(loc("Pokaż na mapie 3D", "Show on the 3D map"))
+                        }
+                    }
+                    Section(loc("Lot", "Flight"), Icons.Outlined.Timeline) {
+                        FactGrid(listOf(
+                            Fact(loc("Czas", "Time"), "%d:%02d".format(f.durationMin / 60, f.durationMin % 60)),
+                            Fact(loc("Dystans", "Distance"), "${f.distanceNm} NM"),
+                            Fact(loc("Najwyżej", "Highest"), "FL%03d".format(f.maxAltFt / 100)),
+                            Fact(loc("Średnia GS", "Average GS"), f.track.map { it.gsKt }.filter { it > 50 }.takeIf { it.isNotEmpty() }?.average()?.roundToInt()?.let { "$it kt" } ?: "—"),
+                        ))
+                    }
                 }
-            }
-            Section(loc("Profil lotu", "Flight profile"), Icons.AutoMirrored.Outlined.ShowChart) {
-                TrendChart(loc("Wysokość ft", "Altitude ft"), f.track.map { it.altFt.toDouble() }, "", c.magenta, Modifier.fillMaxWidth())
-                Spacer(Modifier.size(14.dp))
-                TrendChart(loc("Prędkość względem ziemi kt", "Ground speed kt"), f.track.map { it.gsKt.toDouble() }, "", c.accent, Modifier.fillMaxWidth())
-                val vs = f.track.mapNotNull { it.vsFpm?.toDouble() }
-                if (vs.size >= 2) { Spacer(Modifier.size(14.dp)); TrendChart(loc("Prędkość pionowa ft/min", "Vertical speed ft/min"), vs, "", c.green, Modifier.fillMaxWidth()) }
+                1 -> {
+                    val landings = f.allLandings
+                    landings.forEachIndexed { i, l -> LandingCard(l, if (landings.size > 1) "${i + 1}/${landings.size}" else null) }
+                    if (landings.isEmpty()) Section(loc("Lądowanie", "Landing"), Icons.Outlined.FlightLand) {
+                        Text(loc("Brak danych o przyziemieniu (lot zakończony w powietrzu albo nagrany starszą wersją).", "No touchdown data (the flight ended in the air or was recorded by an older version)."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+                    }
+                    analysis.approaches.forEachIndexed { i, a -> ApproachSection(a, if (analysis.approaches.size > 1) "${i + 1}/${analysis.approaches.size}" else null) }
+                    SmoothnessSection(analysis.smoothness)
+                    ScenarioSection(scenario, scenarioResult) { vm.setFlightScenario(f.id, it?.id) }
+                    ComparisonSection(comparison)
+                }
+                else -> InstructorReportSection(report, "${f.from ?: "?"} → ${f.to ?: "?"}")
             }
         }
     }
@@ -169,31 +194,5 @@ private fun LandingCard(l: LandingReport, ordinal: String? = null) {
         ))
         Spacer(Modifier.size(10.dp))
         l.noteTexts.forEach { n -> Text("• $n", style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.padding(vertical = 2.dp)) }
-    }
-}
-
-/** Tor lotu w rzucie z góry (bez mapy — działa offline), start zielony, koniec czerwony. */
-@Composable
-private fun TrackPlot(f: FlightLog) {
-    val c = Fm.c
-    val pts = f.track
-    if (pts.size < 2) return
-    Canvas(Modifier.fillMaxWidth().aspectRatio(1.6f).clip(RoundedCornerShape(10.dp)).background(c.terrain)) {
-        val minLat = pts.minOf { it.lat }; val maxLat = pts.maxOf { it.lat }
-        val minLon = pts.minOf { it.lon }; val maxLon = pts.maxOf { it.lon }
-        val k = kotlin.math.cos(Math.toRadians((minLat + maxLat) / 2))
-        val spanX = ((maxLon - minLon) * k).coerceAtLeast(1e-4); val spanY = (maxLat - minLat).coerceAtLeast(1e-4)
-        val pad = 24f
-        val scale = minOf((size.width - 2 * pad) / spanX, (size.height - 2 * pad) / spanY).toFloat()
-        val ox = (size.width - spanX.toFloat() * scale) / 2; val oy = (size.height - spanY.toFloat() * scale) / 2
-        fun p(lat: Double, lon: Double) = Offset(ox + ((lon - minLon) * k).toFloat() * scale, size.height - oy - ((lat - minLat).toFloat() * scale))
-        val path = Path().apply { pts.forEachIndexed { i, t -> val o = p(t.lat, t.lon); if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) } }
-        drawPath(path, c.magenta, style = Stroke(3f, cap = StrokeCap.Round))
-        drawCircle(c.green, 7f, p(pts.first().lat, pts.first().lon))
-        drawCircle(c.danger, 7f, p(pts.last().lat, pts.last().lon))
-    }
-    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-        Text(f.from ?: "start", fontFamily = Mono, fontSize = 12.sp, color = c.green)
-        Text(f.to ?: loc("koniec", "end"), fontFamily = Mono, fontSize = 12.sp, color = c.danger, textAlign = TextAlign.End)
     }
 }
