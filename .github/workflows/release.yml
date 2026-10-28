@@ -2,11 +2,10 @@ name: Build & Release
 
 # Push na main = sam build (sprawdzenie, że się kompiluje).
 # Tag vX.Y.Z = release z podpisanym APK i OpenTakeoff-Link.exe w wersji X.Y.Z.
+# Budowanie i wydanie wyłącznie po wypchnięciu tagu wersji (np. v1.2.3).
 on:
   push:
-    branches: [main]
-    tags: ["v*.*.*"]
-  workflow_dispatch:
+    tags: ['v*']
 
 permissions:
   contents: write

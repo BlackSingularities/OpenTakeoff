@@ -229,7 +229,7 @@ fun HomeScreen(vm: MainViewModel, onFlight: () -> Unit = {}, onOpen: (String) ->
                     )
                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
                     Text(
-                        loc("Projekt i wykonanie: ", "Design and development: ") + com.freemetar.app.ui.theme.AUTHOR_SITE,
+                        loc("Pomysł i wykonanie: Adam Rędzikowski · ", "Idea and development: Adam Rędzikowski · ") + com.freemetar.app.ui.theme.AUTHOR_SITE,
                         style = MaterialTheme.typography.bodySmall, color = c.ink,
                         modifier = Modifier.padding(top = 6.dp, bottom = 8.dp).clickable { uri.openUri(com.freemetar.app.ui.theme.AUTHOR_URL) },
                     )

@@ -117,7 +117,7 @@ fun AboutSection(vm: MainViewModel) {
         Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             LinkRow(Icons.Outlined.LocalCafe, loc("Postaw kawę", "Buy me a coffee"),
                 loc("Wesprzyj rozwój aplikacji · buycoffee.to", "Support the app's development · buycoffee.to"), highlight = true) { uri.openUri(COFFEE_URL) }
-            LinkRow(Icons.Outlined.Person, loc("Projekt i wykonanie", "Design and development"), AUTHOR_SITE) { uri.openUri(AUTHOR_URL) }
+            LinkRow(Icons.Outlined.Person, loc("Pomysł i wykonanie", "Idea and development"), "Adam Rędzikowski · $AUTHOR_SITE") { uri.openUri(AUTHOR_URL) }
         }
     }
 }

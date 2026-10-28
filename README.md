@@ -91,7 +91,7 @@ powershell -ExecutionPolicy Bypass -File tools/build-local.ps1
 
 ### Wydania
 
-Każdy push na `main` uruchamia [workflow](.github/workflows/release.yml), który tylko buduje APK i `OpenTakeoff-Link.exe`. Wydanie powstaje po wypchnięciu tagu `vX.Y.Z` (np. `git tag v2.0.1 && git push origin v2.0.1`): workflow buduje obie aplikacje w wersji `X.Y.Z` i publikuje je w wydaniu o tej nazwie. Człony `Y` i `Z` muszą być mniejsze niż 100.
+Każdy wypchnięty tag `vX.Y.Z` uruchamia [workflow](.github/workflows/release.yml), który tylko buduje APK i `OpenTakeoff-Link.exe`. Wydanie powstaje po wypchnięciu tagu `vX.Y.Z` (np. `git tag v2.0.1 && git push origin v2.0.1`): workflow buduje obie aplikacje w wersji `X.Y.Z` i publikuje je w wydaniu o tej nazwie. Człony `Y` i `Z` muszą być mniejsze niż 100.
 
 Bez sekretów APK jest podpisane kluczem debug. Żeby aktualizacje instalowały się na stałym kluczu, dodaj sekrety repozytorium: `SIGNING_KEYSTORE_BASE64`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`.
 
