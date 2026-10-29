@@ -38,7 +38,7 @@ object Updater {
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun check(): UpdateInfo? {
-        val body = Http.get("https://api.github.com/repos/$REPO/releases/latest")
+        val body = Http.get("https://redzikowski.com/api/github/repos/$REPO/releases/latest")
         if (body.isBlank()) return null
         val o = json.parseToJsonElement(body).jsonObject
         fun s(k: String) = (o[k] as? JsonPrimitive)?.contentOrNull.orEmpty()
