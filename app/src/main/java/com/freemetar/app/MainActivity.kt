@@ -148,6 +148,13 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val nav = rememberNavController()
+                // „Wstecz” na pierwszym ekranie zamykało aplikację razem z połączeniem i zapisem lotu — w trakcie
+                // połączenia z symulatorem aplikacja tylko schodzi do tła (NavHost niżej ma pierwszeństwo, gdy jest dokąd wrócić)
+                val linkStatus by vm.linkStatus.collectAsStateWithLifecycle()
+                val recInfo by vm.recordingInfo.collectAsStateWithLifecycle()
+                androidx.activity.compose.BackHandler(
+                    enabled = recInfo.recording || linkStatus is com.freemetar.app.data.link.LinkStatus.Connected || linkStatus is com.freemetar.app.data.link.LinkStatus.Lost,
+                ) { moveTaskToBack(true) }
                 val entry by nav.currentBackStackEntryAsState()
                 val route = entry?.destination?.route
                 val activeTab = when {

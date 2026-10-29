@@ -353,7 +353,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     recorder.snapshot()?.let { flightLogStore.saveDraft(it) }
                     if (link.state.value == null) {
                         val since = noDataSince ?: System.currentTimeMillis().also { noDataSince = it }
-                        if (System.currentTimeMillis() - since >= 60_000) { saveFlight(recorder.finish()); noDataSince = null }
+                        // Zerwane Wi-Fi (np. po zablokowaniu telefonu) z trwającym ponownym łączeniem: dłużej czekamy na powrót
+                        val limitMs = if (link.status.value is LinkStatus.Lost) 10 * 60_000 else 60_000
+                        if (System.currentTimeMillis() - since >= limitMs) { saveFlight(recorder.finish()); noDataSince = null }
                     } else noDataSince = null
                 } else noDataSince = null
             }

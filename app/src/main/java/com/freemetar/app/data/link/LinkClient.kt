@@ -145,9 +145,13 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
         _state.value = null
     }
 
-    private fun open(ip: String, port: Int, code: String?) {
+    /**
+     * [retry] = ponowna próba po zerwaniu: status zostaje [LinkStatus.Lost], bo „Connecting” oznacza dla aplikacji
+     * nowe połączenie — zapis lotu by się zakończył, a usługa w tle (blokada Wi-Fi) zatrzymała.
+     */
+    private fun open(ip: String, port: Int, code: String?, retry: Boolean = false) {
         socket?.cancel()
-        _status.value = LinkStatus.Connecting(ip)
+        if (!retry) _status.value = LinkStatus.Connecting(ip)
         scope.launch {
             val token = if (code == null) tokens.token(ip) else null
             if (code == null && token == null) {
@@ -211,7 +215,7 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
             if (wantConnected) {
                 _status.value = LinkStatus.Lost(ip, reason)
                 reconnectJob?.cancel()
-                reconnectJob = scope.launch { delay(3000); if (wantConnected) open(ip, port, null) }
+                reconnectJob = scope.launch { delay(3000); if (wantConnected) open(ip, port, null, retry = true) }
             } else {
                 _status.value = LinkStatus.Idle
             }
