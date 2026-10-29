@@ -443,6 +443,10 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             val rM = scale * 1.5
             val rose = compassRose(planeLat, planeLon, rM, mv, ink)
             lines += rose.lines; labels += rose.labels
+            // Zasięg róży (promień obrysu) przy okręgu, z tyłu po prawej — z dala od kreski kursu i odczytu HDG
+            val rNm = rM / 1852
+            val back = (live?.attitude?.hdgTrueDeg ?: 0.0) + 135
+            tags += roseLabel(destPoint(planeLat, planeLon, back, rM * 1.14), if (rNm < 10) "%.1f NM".format(rNm) else "${rNm.roundToInt()} NM", 0.0, ink2, 11f)
             live?.attitude?.hdgTrueDeg?.let { h ->
                 // Kreska kursu od samolotu za obwód róży i odczyt kursu nad nią
                 lines += segment(destPoint(planeLat, planeLon, h, rM * 0.18), destPoint(planeLat, planeLon, h, rM * 1.12), "#FFC21A", 3f)
