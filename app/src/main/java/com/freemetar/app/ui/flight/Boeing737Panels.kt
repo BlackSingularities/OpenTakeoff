@@ -462,16 +462,13 @@ fun BoeingRadioPanel(link: LinkClient, s: FlightState) {
     val fmt = if (sel.com) "%.3f" else "%.2f"
     val stbyEvent = when (sel) { BoeingRadio.VHF1 -> "COM_STBY_RADIO_SET_HZ"; BoeingRadio.VHF2 -> "COM2_STBY_RADIO_SET_HZ"; BoeingRadio.NAV1 -> "NAV1_STBY_SET_HZ"; BoeingRadio.NAV2 -> "NAV2_STBY_SET_HZ" }
     val swap = when (sel) { BoeingRadio.VHF1 -> "COM_STBY_RADIO_SWAP"; BoeingRadio.VHF2 -> "COM2_RADIO_SWAP"; BoeingRadio.NAV1 -> "NAV1_RADIO_SWAP"; BoeingRadio.NAV2 -> "NAV2_RADIO_SWAP" }
+    val tuner = remember { StbyTuner() }
     fun setStby(stepKhz: Int) {
-        val cur = pick(link.state.value?.radios)?.standbyMhz ?: return
-        val (lo, hi) = if (sel.com) 118_000 to 136_975 else 108_000 to 117_950
-        var khz = (cur * 1000).roundToInt() + stepKhz
-        if (khz > hi) khz = lo + (khz - hi - 1)
-        if (khz < lo) khz = hi - (lo - khz - 1)
+        val khz = tuner.step(sel.name, pick(link.state.value?.radios)?.standbyMhz, stepKhz, sel.com) ?: return
         cmd(stbyEvent, khz.toLong() * 1000)
     }
     val active = radio?.activeMhz?.let { fmt.format(java.util.Locale.US, it) } ?: "---.---"
-    val stby = radio?.standbyMhz?.let { fmt.format(java.util.Locale.US, it) } ?: "---.---"
+    val stby = tuner.shown(sel.name, radio?.standbyMhz)?.let { fmt.format(java.util.Locale.US, it) } ?: "---.---"
 
     BoeingPlate(if (sel.com) "VHF COMM" else "NAV", plate = B_RMP_PLATE, titleColor = B_LABEL) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

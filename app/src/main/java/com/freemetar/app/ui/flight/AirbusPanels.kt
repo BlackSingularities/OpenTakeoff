@@ -467,6 +467,31 @@ internal fun RotaryKnob(size: Dp, desc: String, onStep: (Int) -> Unit, onBig: (I
 
 // ---------------- RMP i ATC ----------------
 
+/**
+ * Strojenie częstotliwości zapasowej pokrętłem. Kolejny ząbek liczy się od ostatnio wysłanej wartości, a nie od stanu
+ * z symulatora: ten dochodzi z opóźnieniem, więc przy kręceniu kroki 50 kHz (połówki NAV) ginęły albo się dublowały.
+ * Wysłana wartość jest też od razu pokazywana w okienku; po [HOLD_MS] bez ruchu okienko znów pokazuje symulator.
+ */
+internal class StbyTuner {
+    private var pending by mutableStateOf<Triple<String, Int, Long>?>(null)
+    private fun fresh(key: String) = pending?.takeIf { it.first == key && System.currentTimeMillis() - it.third < HOLD_MS }
+
+    /** Nowa częstotliwość w kHz o [stepKhz] dalej, zawinięta w paśmie VHF (118–136,975) albo NAV (108–117,95). */
+    fun step(key: String, liveMhz: Double?, stepKhz: Int, com: Boolean): Int? {
+        val base = fresh(key)?.second ?: liveMhz?.let { (it * 1000).roundToInt() } ?: return null
+        val (lo, hi, spacing) = if (com) Triple(118_000, 136_975, 25) else Triple(108_000, 117_950, 50)
+        var khz = base + stepKhz
+        if (khz > hi) khz -= hi - lo + spacing
+        if (khz < lo) khz += hi - lo + spacing
+        pending = Triple(key, khz, System.currentTimeMillis())
+        return khz
+    }
+
+    fun shown(key: String, liveMhz: Double?): Double? = fresh(key)?.let { it.second / 1000.0 } ?: liveMhz
+
+    private companion object { const val HOLD_MS = 1500L }
+}
+
 private enum class RmpSel(val label: String, val com: Boolean) { VHF1("VHF1", true), VHF2("VHF2", true), NAV1("NAV1", false), NAV2("NAV2", false) }
 
 /**
@@ -485,12 +510,9 @@ fun AirbusRmp(link: LinkClient, s: FlightState) {
     val fmt = if (sel.com) "%.3f" else "%.2f"
     fun liveStby(): Double? = link.state.value?.radios?.let { when (sel) { RmpSel.VHF1 -> it.com1; RmpSel.VHF2 -> it.com2; RmpSel.NAV1 -> it.nav1; RmpSel.NAV2 -> it.nav2 } }?.standbyMhz
     // Nowa częstotliwość zapasowa: krok w kHz, zawinięcie w zakresie pasma (VHF 118–136,975, NAV 108–117,95)
+    val tuner = remember { StbyTuner() }
     fun setStby(stepKhz: Int) {
-        val cur = liveStby() ?: return
-        val (lo, hi) = if (sel.com) 118_000 to 136_975 else 108_000 to 117_950
-        var khz = (cur * 1000).roundToInt() + stepKhz
-        if (khz > hi) khz = lo + (khz - hi - 1)
-        if (khz < lo) khz = hi - (lo - khz - 1)
+        val khz = tuner.step(sel.name, liveStby(), stepKhz, sel.com) ?: return
         val hz = khz.toLong() * 1000
         when (sel) {
             RmpSel.VHF1 -> cmd("COM_STBY_RADIO_SET_HZ", hz)
@@ -501,7 +523,7 @@ fun AirbusRmp(link: LinkClient, s: FlightState) {
     }
     val swap = when (sel) { RmpSel.VHF1 -> "COM_STBY_RADIO_SWAP"; RmpSel.VHF2 -> "COM2_RADIO_SWAP"; RmpSel.NAV1 -> "NAV1_RADIO_SWAP"; RmpSel.NAV2 -> "NAV2_RADIO_SWAP" }
     val active = radio?.activeMhz?.let { fmt.format(java.util.Locale.US, it) } ?: "---.---"
-    val stby = radio?.standbyMhz?.let { fmt.format(java.util.Locale.US, it) } ?: "---.---"
+    val stby = tuner.shown(sel.name, radio?.standbyMhz)?.let { fmt.format(java.util.Locale.US, it) } ?: "---.---"
 
     AirbusPlate("RMP") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
