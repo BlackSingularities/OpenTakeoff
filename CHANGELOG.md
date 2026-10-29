@@ -1,3 +1,17 @@
+## 2.6.2 — Mapa, zapis lotu w tle i radio
+
+- Zapis lotu nie przerywa się po zablokowaniu telefonu: chwilowe zerwanie Wi-Fi nie kończy już nagrania
+  ani usługi w tle, a lot czeka do 10 min na powrót połączenia.
+- „Wstecz” na pierwszym ekranie w trakcie połączenia z symulatorem przenosi aplikację do tła zamiast ją zamykać.
+- Mapa: radiale, róża kursów, warstwy, śledzenie i kadr zostają po powrocie na mapę w tym samym locie.
+- Mapa: przy obrysie róży kursów wokół samolotu jej zasięg w NM.
+- Radio A320 i 737: pokrętło NAV nie gubi kroków 50 kHz (połówki), okienko STBY od razu pokazuje
+  ustawioną częstotliwość; poprawne przejście na końcach pasma.
+
+## 2.6.1
+
+- Sprawdzanie i pobieranie aktualizacji przez redzikowski.com.
+
 ## 2.6.0 — Odtworzenie lotu i analiza pilotażu
 
 - Dziennik: odtworzenie lotu — mapa z samolotem, odczyty w wybranej chwili, suwak i odtwarzanie ×10/×30/×120,
