@@ -1,5 +1,9 @@
 ## 2.6.2 — Mapa, zapis lotu w tle i radio
 
+## 2.6.3
+
+- Dopasowane kolorystycznie tła ikon aplikacji i spójne zasoby graficzne.
+
 - Zapis lotu nie przerywa się po zablokowaniu telefonu: chwilowe zerwanie Wi-Fi nie kończy już nagrania
   ani usługi w tle, a lot czeka do 10 min na powrót połączenia.
 - „Wstecz” na pierwszym ekranie w trakcie połączenia z symulatorem przenosi aplikację do tła zamiast ją zamykać.
