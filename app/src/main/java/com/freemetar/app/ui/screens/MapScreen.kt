@@ -42,7 +42,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -186,18 +185,15 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     // Zapisany lot wybrany w historii ma pierwszeństwo przed torem bieżącego lotu
     val shownFlight = logs.firstOrNull { it.id == mapFlightId }
     val track = shownFlight?.track ?: liveTrack
-    var follow by rememberSaveable { mutableStateOf(true) }
-    var showSigmets by rememberSaveable { mutableStateOf(true) }
-    var showMetars by rememberSaveable { mutableStateOf(true) }
-    var showRoute by rememberSaveable { mutableStateOf(true) }
-    var showNav by rememberSaveable { mutableStateOf(true) }
+    // Warstwy, róża kursów i radiale od wskazanego punktu żyją w ViewModelu — zostają po powrocie na mapę w tym samym locie
+    val tools by vm.mapTools.collectAsStateWithLifecycle()
+    fun setTools(f: (MainViewModel.MapTools) -> MainViewModel.MapTools) = vm.updateMapTools(f)
+    val follow = tools.follow
+    val showSigmets = tools.showSigmets; val showMetars = tools.showMetars
+    val showRoute = tools.showRoute; val showNav = tools.showNav
+    val showRose = tools.showRose; val radialMode = tools.radialMode
+    val ref = tools.ref; val selRadial = tools.selRadial; val inbound = tools.inbound
     var layersMenu by remember { mutableStateOf(false) }
-    // Róża kursów wokół samolotu i narzędzie radiali od wskazanego punktu
-    var showRose by rememberSaveable { mutableStateOf(false) }
-    var radialMode by rememberSaveable { mutableStateOf(false) }
-    var ref by remember { mutableStateOf<RefPoint?>(null) }
-    var selRadial by rememberSaveable { mutableStateOf<Int?>(null) }
-    var inbound by rememberSaveable { mutableStateOf(true) }
     // Metry na 100 dp ekranu (w poziomie, w środku mapy) — róże mają stałą wielkość na ekranie
     var roseScale by remember { mutableStateOf(0.0) }
     var center by remember { mutableStateOf<LatLng?>(null) }
@@ -251,7 +247,8 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         mapView.getMapAsync { map ->
             if (map.cameraPosition.zoom < 2.0) {
                 val home = vm.mapHome()
-                map.cameraPosition = CameraPosition.Builder()
+                // Po powrocie na mapę — ostatni kadr
+                map.cameraPosition = vm.mapTools.value.camera ?: CameraPosition.Builder()
                     .target(LatLng(home?.lat ?: 52.0, home?.lon ?: 19.0))
                     .zoom(if (home != null) 6.5 else 5.0)
                     .tilt(defaultTilt)
@@ -270,7 +267,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             }
             if (wired) return@getMapAsync
             wired = true
-            map.addOnCameraIdleListener { requestArea(map, vm) }
+            map.addOnCameraIdleListener { requestArea(map, vm); vm.saveMapCamera(map.cameraPosition) }
             fun measure() {
                 val w = mapView.width; val h = mapView.height
                 if (w == 0 || h == 0) return
@@ -298,16 +295,18 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                 else RefPoint(ll.latitude, ll.longitude, null)
             }
             map.addOnMapLongClickListener { ll ->
-                radialMode = true; picked = null; selRadial = null
-                ref = snap(ll)
+                picked = null
+                val p = snap(ll)
+                setTools { it.copy(radialMode = true, ref = p, selRadial = null) }
                 true
             }
             map.addOnMapClickListener { ll ->
-                if (radialMode) {
-                    val r = ref
+                val t = vm.mapTools.value
+                if (t.radialMode) {
+                    val r = t.ref
                     // Bez punktu dotknięcie go wybiera; z punktem — ustawia radial, na którym leży dotknięte miejsce
-                    if (r == null) ref = snap(ll)
-                    else selRadial = radialOf(Geo.bearing(r.lat, r.lon, ll.latitude, ll.longitude) - mvLatest)
+                    if (r == null) { val p = snap(ll); setTools { it.copy(ref = p) } }
+                    else { val sel = radialOf(Geo.bearing(r.lat, r.lon, ll.latitude, ll.longitude) - mvLatest); setTools { it.copy(selRadial = sel) } }
                     return@addOnMapClickListener true
                 }
                 val pt: PointF = map.projection.toScreenLocation(ll)
@@ -378,7 +377,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     LaunchedEffect(style, shownFlight?.id) {
         val f = shownFlight ?: return@LaunchedEffect
         if (style == null || f.track.size < 2) return@LaunchedEffect
-        follow = false
+        setTools { it.copy(follow = false) }
         pendingFit[0] = LatLngBounds.Builder().apply { f.track.forEach { include(LatLng(it.lat, it.lon)) } }.build()
         fitTrackCamera()
     }
@@ -514,17 +513,17 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                 androidx.compose.material3.DropdownMenu(layersMenu, { layersMenu = false }) {
                     @Composable fun item(label: String, on: Boolean, toggle: () -> Unit) =
                         androidx.compose.material3.DropdownMenuItem(text = { Text((if (on) "✓  " else "     ") + label) }, onClick = toggle)
-                    item(loc("Pogoda na lotniskach (METAR)", "Airport weather (METAR)"), showMetars) { showMetars = !showMetars }
-                    item("SIGMET", showSigmets) { showSigmets = !showSigmets }
-                    item(loc("Plan lotu z symulatora (GPS)", "Simulator flight plan (GPS)"), showRoute) { showRoute = !showRoute }
-                    item(loc("Pomoce nawigacyjne z MSFS", "Navaids from MSFS") + if (nearbyNav.isEmpty()) loc(" (brak danych)", " (no data)") else "", showNav) { showNav = !showNav }
+                    item(loc("Pogoda na lotniskach (METAR)", "Airport weather (METAR)"), showMetars) { setTools { it.copy(showMetars = !it.showMetars) } }
+                    item("SIGMET", showSigmets) { setTools { it.copy(showSigmets = !it.showSigmets) } }
+                    item(loc("Plan lotu z symulatora (GPS)", "Simulator flight plan (GPS)"), showRoute) { setTools { it.copy(showRoute = !it.showRoute) } }
+                    item(loc("Pomoce nawigacyjne z MSFS", "Navaids from MSFS") + if (nearbyNav.isEmpty()) loc(" (brak danych)", " (no data)") else "", showNav) { setTools { it.copy(showNav = !it.showNav) } }
                 }
             }
-            if (live != null) MapKey(Icons.Outlined.MyLocation, loc("Śledź samolot", "Follow aircraft"), follow) { follow = !follow }
-            if (live != null) MapKey(Icons.Outlined.Explore, loc("Róża kursów na samolocie", "Heading rose on the aircraft"), showRose) { showRose = !showRose }
+            if (live != null) MapKey(Icons.Outlined.MyLocation, loc("Śledź samolot", "Follow aircraft"), follow) { setTools { it.copy(follow = !it.follow) } }
+            if (live != null) MapKey(Icons.Outlined.Explore, loc("Róża kursów na samolocie", "Heading rose on the aircraft"), showRose) { setTools { it.copy(showRose = !it.showRose) } }
             MapKey(Icons.Outlined.TrackChanges, loc("Radiale od punktu", "Radials from a point"), radialMode) {
-                radialMode = !radialMode; picked = null
-                if (!radialMode) { ref = null; selRadial = null }
+                picked = null
+                setTools { if (it.radialMode) it.copy(radialMode = false, ref = null, selRadial = null) else it.copy(radialMode = true) }
             }
             MapKey(Icons.Outlined.Add, loc("Przybliż", "Zoom in"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomIn(), 250) } }
             MapKey(Icons.Outlined.Remove, loc("Oddal", "Zoom out"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomOut(), 250) } }
@@ -533,10 +532,10 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         if (radialMode) RadialCard(
             ref, fix, guide, selRadial, inbound, magnetic = magVar != null, hasAircraft = planeLat != null && planeLon != null,
             gsKt = live?.speed?.gsKt,
-            onInbound = { inbound = it; if (selRadial == null) selRadial = fix?.let { f -> radialOf(f.radialMag) } },
-            onRadial = { selRadial = it },
-            onNewPoint = { ref = null; selRadial = null },
-            onClose = { radialMode = false; ref = null; selRadial = null },
+            onInbound = { inb -> setTools { it.copy(inbound = inb, selRadial = it.selRadial ?: fix?.let { f -> radialOf(f.radialMag) }) } },
+            onRadial = { sel -> setTools { it.copy(selRadial = sel) } },
+            onNewPoint = { setTools { it.copy(ref = null, selRadial = null) } },
+            onClose = { setTools { it.copy(radialMode = false, ref = null, selRadial = null) } },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
 
@@ -563,7 +562,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                         modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, c.accent, RoundedCornerShape(50))
                             .clickable {
                                 val lat = m.lat; val lon = m.lon
-                                if (lat != null && lon != null) { ref = RefPoint(lat, lon, m.station); selRadial = null; radialMode = true; picked = null }
+                                if (lat != null && lon != null) { setTools { it.copy(ref = RefPoint(lat, lon, m.station), selRadial = null, radialMode = true) }; picked = null }
                             }.padding(horizontal = 12.dp, vertical = 6.dp),
                     )
                 }

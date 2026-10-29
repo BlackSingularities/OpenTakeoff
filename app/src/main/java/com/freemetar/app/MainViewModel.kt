@@ -235,6 +235,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val recordingInfo = _recordingInfo.asStateFlow()
     private fun publishRecording() {
         _recordingInfo.value = RecordingInfo(recorder.recording, recorder.startedAt, recorder.holdUntilGround, recorder.startFuelKg)
+        recorder.startedAt?.let(::adoptMapTools)
         // Powiadomienie usługi pokazuje, czy tor jest właśnie zapisywany
         if (link.status.value.let { it is LinkStatus.Connected || it is LinkStatus.Lost }) com.freemetar.app.data.link.FlightLinkService.update(getApplication(), recorder.recording)
     }
@@ -258,6 +259,40 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Zapisany lot pokazywany na mapie (zamiast toru bieżącego lotu); null = brak. */
     val mapFlight = _mapFlight.asStateFlow()
     fun showFlightOnMap(id: String?) { _mapFlight.value = id }
+
+    /**
+     * Ustawienia mapy (warstwy, róża, radiale, kadr) — trzymane tu, a nie w ekranie, żeby po powrocie na mapę
+     * działały dalej. [flight] = początek nagrania lotu, w którym je ustawiono; nowy lot zaczyna od domyślnych.
+     */
+    data class MapTools(
+        val follow: Boolean = true,
+        val showSigmets: Boolean = true,
+        val showMetars: Boolean = true,
+        val showRoute: Boolean = true,
+        val showNav: Boolean = true,
+        val showRose: Boolean = false,
+        val radialMode: Boolean = false,
+        val ref: com.freemetar.app.ui.screens.RefPoint? = null,
+        val selRadial: Int? = null,
+        val inbound: Boolean = true,
+        val camera: org.maplibre.android.camera.CameraPosition? = null,
+        val flight: Long? = null,
+    )
+    private val _mapTools = MutableStateFlow(MapTools())
+    val mapTools = _mapTools.asStateFlow()
+    fun updateMapTools(f: (MapTools) -> MapTools) = _mapTools.update { t ->
+        f(t).let { n -> if (n == t) t else n.copy(flight = recorder.startedAt) }
+    }
+    /** Nowe nagranie: ustawienia z poprzedniego lotu wracają do domyślnych, ustawione przed startem przechodzą na ten lot. */
+    private fun adoptMapTools(startedAt: Long) = _mapTools.update { t ->
+        when (t.flight) {
+            startedAt -> t
+            null -> t.copy(flight = startedAt)
+            else -> MapTools(camera = t.camera, flight = startedAt)
+        }
+    }
+    /** Kadr nie zmienia lotu, do którego należą ustawienia. */
+    fun saveMapCamera(cp: org.maplibre.android.camera.CameraPosition) = _mapTools.update { it.copy(camera = cp) }
 
     /** Rozmiar archiwum lotów na dysku (do pokazania w ustawieniach). */
     fun flightArchiveBytes(): Long = flightLogStore.sizeBytes()
