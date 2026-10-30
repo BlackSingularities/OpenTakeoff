@@ -19,6 +19,7 @@ public sealed class LinkHost : IDisposable
     private static readonly string SettingsPath = Path.Combine(DataDir, "settings.json");
 
     private readonly DiscoveryBroadcaster _discovery;
+    private readonly Settings _settings;
     private IFlightSource _source;
 
     public LinkHost(bool? simulationOverride)
@@ -39,7 +40,8 @@ public sealed class LinkHost : IDisposable
         });
         _discovery.Log += m => Log?.Invoke(m);
 
-        SimulationMode = simulationOverride ?? LoadSettings().SimulationMode;
+        _settings = LoadSettings();
+        SimulationMode = simulationOverride ?? _settings.SimulationMode;
         _source = CreateSource(SimulationMode);
     }
 
@@ -48,6 +50,9 @@ public sealed class LinkHost : IDisposable
     public AxisController Axes { get; }
     public LinkServer Server { get; }
     public bool SimulationMode { get; private set; }
+
+    /// <summary>Czułość rozglądania (procent): 100 = 8 zliczeń myszy na stopień obrotu kamery w MSFS.</summary>
+    public int LookSensitivity => _settings.LookSensitivity;
     public IFlightSource Source => _source;
 
     public event Action<string>? Log;
@@ -66,7 +71,8 @@ public sealed class LinkHost : IDisposable
     {
         if (enabled == SimulationMode) return;
         SimulationMode = enabled;
-        SaveSettings(new Settings { SimulationMode = enabled });
+        _settings.SimulationMode = enabled;
+        SaveSettings(_settings);
 
         var old = _source;
         old.StatusChanged -= OnSourceStatusChanged;
@@ -77,6 +83,18 @@ public sealed class LinkHost : IDisposable
         Log?.Invoke(enabled ? "Tryb symulacji włączony: lot EPWA → EPGD" : "Tryb symulacji wyłączony — łączę z MSFS");
         SourceStatusChanged?.Invoke();
     }
+
+    public void SetLookSensitivity(int percent)
+    {
+        percent = Math.Clamp(percent, LookSensitivityMin, LookSensitivityMax);
+        if (percent == _settings.LookSensitivity) return;
+        _settings.LookSensitivity = percent;
+        SaveSettings(_settings);
+        if (_source is MsfsSource msfs) msfs.LookCountsPerDegree = CountsPerDegree(percent);
+    }
+
+    public const int LookSensitivityMin = 20, LookSensitivityMax = 400;
+    private static double CountsPerDegree(int percent) => 8.0 * percent / 100;
 
     public static IReadOnlyList<string> LocalAddresses() =>
         DiscoveryBroadcaster.LocalIPv4().Select(a => a.Address.ToString()).Distinct().ToList();
@@ -90,7 +108,7 @@ public sealed class LinkHost : IDisposable
         }
         else
         {
-            var msfs = new MsfsSource(Axes);
+            var msfs = new MsfsSource(Axes) { LookCountsPerDegree = CountsPerDegree(_settings.LookSensitivity) };
             msfs.Log += m => Log?.Invoke(m);
             source = msfs;
         }
@@ -107,6 +125,7 @@ public sealed class LinkHost : IDisposable
     private sealed class Settings
     {
         public bool SimulationMode { get; set; }
+        public int LookSensitivity { get; set; } = 100;
     }
 
     private static Settings LoadSettings()

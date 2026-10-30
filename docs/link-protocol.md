@@ -456,13 +456,18 @@ Wartość musi być liczbą całkowitą (lub liczbą z zerową częścią ułamk
 
 | name | value |
 |---|---|
-| `CAMERA_STATE` | 2 kabina, 3 zewnętrzna (pościg), 4 dron |
-| `CAMERA_PITCH_SET` | pochylenie kamery w stopniach: −90 (w dół) … 90 (w górę); zapis SimVar `CAMERA GAMEPLAY PITCH YAW:0` |
-| `CAMERA_YAW_SET` | obrót kamery w stopniach: −180 (w lewo) … 180 (w prawo); zapis SimVar `CAMERA GAMEPLAY PITCH YAW:1` |
+| `CAMERA_STATE` | 2 kabina, 3 zewnętrzna (pościg), 4 dron; zapas między 2 a 3: zdarzenie `VIEW_MODE` |
+| `CAMERA_PITCH_SET` | pochylenie kamery w stopniach od początku rozglądania: −90 (w dół) … 90 (w górę) |
+| `CAMERA_YAW_SET` | obrót kamery w stopniach od początku rozglądania: −180 (w lewo) … 180 (w prawo) |
 
-Rozglądanie się: Link najpierw zapisuje SimVar, a odczytane kąty kamery zwraca w `controls.cameraPitchDeg` /
-`controls.cameraYawDeg`. Jeśli po kilku żądaniach kamera nie podąża (MSFS nie przyjmuje zapisu), Link sam
-przechodzi na zdarzenia widoku `PAN_VIEW` (kierunek), `AXIS_PAN_HEADING`, `AXIS_PAN_PITCH` i `PAN_RESET_COCKPIT` (środek).
+Rozglądanie się działa w bieżącym widoku i nie zmienia `CAMERA STATE`. MSFS 2024 nie przyjmuje zapisu kąta kamery
+(`CAMERA GAMEPLAY PITCH YAW` jest tylko do odczytu, `PAN_*` są ignorowane), a `CameraSetRelative6DOF` przełącza w kamerę
+6DOF, z której MSFS często nie wraca. Link obraca więc kamerę jak użytkownik: przytrzymany prawy przycisk myszy i ruch
+(SendInput), tylko gdy okno MSFS jest na pierwszym planie; kursor stoi wtedy u góry okna, nad szybą. Telefon śle kąty
+ok. 33 razy na sekundę; 0/0 albo cisza przez 0,4 s = koniec: mysz wraca o tyle samo i puszcza przycisk. Tempo obrotu:
+ustawienie „Czułość rozglądania” w Linku (100 % = 8 zliczeń myszy na stopień). Odmowa (okno MSFS nieaktywne, MSFS
+jako administrator) to `error` z kodem `not_allowed`, raz na przytrzymanie. Odczytane kąty kamery (diagnostyka)
+są w `controls.cameraPitchDeg` / `controls.cameraYawDeg`.
 
 Odpowiedź: `ack` po przekazaniu do symulatora (nie oznacza, że samolot zareagował — skutek
 widać w kolejnych `state`), albo `error`.

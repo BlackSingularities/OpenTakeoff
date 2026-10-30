@@ -10,7 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -70,6 +72,9 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
     val state = _state.asStateFlow()
     private val _lastError = MutableStateFlow<String?>(null)
     val lastError = _lastError.asStateFlow()
+    // Każdy błąd z osobna (także powtórzony) — np. odmowa rozglądania, gdy okno MSFS nie jest aktywne
+    private val _errors = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    val errors = _errors.asSharedFlow()
     var limits = Limits()
         private set
 
@@ -199,7 +204,7 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
                         webSocket.close(1000, null)
                     }
                     "rate_limited" -> _lastError.value = loc("Za dużo prób — odczekaj minutę.", "Too many attempts — wait a minute.")
-                    else -> _lastError.value = m.message ?: m.code
+                    else -> (m.message ?: m.code)?.let { _lastError.value = it; _errors.tryEmit(it) }
                 }
             }
         }
