@@ -1,8 +1,18 @@
-## 2.6.2 — Mapa, zapis lotu w tle i radio
+## 2.6.4 — Kamera: przełącznik widoku i rozglądanie w bieżącym widoku
+
+- Kokpit: przycisk przełączania widoku kabina ↔ widok zewnętrzny (z innych kamer, np. drona, wraca do kabiny).
+- Rozglądanie się działa w widoku, który jest w symulatorze, i nie zmienia kamery — koniec z wpadaniem
+  w kamerę 6DOF / drona i z utykaniem w niej po puszczeniu przycisku. OpenTakeoff Link obraca kamerę tak jak mysz
+  z prawym przyciskiem; okno MSFS musi być aktywne. Po puszczeniu kamera wraca dokładnie na wprost.
+- Gdy rozglądanie jest niemożliwe (okno MSFS nieaktywne, MSFS uruchomiony jako administrator), telefon mówi dlaczego.
+- OpenTakeoff Link: ustawienie „Czułość rozglądania z telefonu”; przycisk myszy nigdy nie zostaje wciśnięty
+  (rozłączenie, zmiana okna, zamknięcie programu).
 
 ## 2.6.3
 
 - Dopasowane kolorystycznie tła ikon aplikacji i spójne zasoby graficzne.
+
+## 2.6.2 — Mapa, zapis lotu w tle i radio
 
 - Zapis lotu nie przerywa się po zablokowaniu telefonu: chwilowe zerwanie Wi-Fi nie kończy już nagrania
   ani usługi w tle, a lot czeka do 10 min na powrót połączenia.

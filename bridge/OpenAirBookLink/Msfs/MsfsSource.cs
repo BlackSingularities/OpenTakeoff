@@ -109,7 +109,7 @@ public sealed class MsfsSource : IFlightSource
     private async Task<CommandResult> ExecuteOnAsync(SimConnectClient client, ValidatedCommand command, CancellationToken ct)
     {
         if (command.Spec.Target is CommandTarget.CameraPitch or CommandTarget.CameraYaw)
-            return await LookAsync(client, command.Spec.Target == CommandTarget.CameraPitch, command.Value, ct);
+            return await LookAsync(command.Spec.Target == CommandTarget.CameraPitch, command.Value, ct);
 
         if (command.Spec.Target == CommandTarget.CameraState)
         {
@@ -169,7 +169,7 @@ public sealed class MsfsSource : IFlightSource
     {
         Interlocked.Exchange(ref _failStreak, 0);
         // Wyniki z poprzedniego (np. martwego) połączenia nie obowiązują
-        _look6DofFailed = false; _lookActive = false; CancelLookRelease();
+        StopLook();
         var client = new SimConnectClient("OpenTakeoff Link");
         _client = client;
         await client.ConnectAsync(cancellationToken: ct);
@@ -216,6 +216,7 @@ public sealed class MsfsSource : IFlightSource
 
     private async Task DisconnectAsync()
     {
+        StopLook();
         var client = _client;
         _client = null;
         _navData.Detach();
@@ -284,69 +285,57 @@ public sealed class MsfsSource : IFlightSource
 
     // ---------- rozglądanie się ----------
 
-    // Zdarzenia widoku — zapas, gdy CameraSetRelative6DOF jest niedostępne (wewnętrzne, spoza listy telefonu)
-    private static readonly string[] CameraEvents = { "PAN_VIEW", "PAN_RESET_COCKPIT", "AXIS_PAN_HEADING", "AXIS_PAN_PITCH", "VIEW_MODE" };
-    // CAMERA STATE: 2 kabina, 3 zewnętrzna, 4 dron, 7 kamera 6DOF (włączana przez CameraSetRelative6DOF)
-    private const int CamCockpit = 2, CamExternal = 3, CamDrone = 4, CamSixDof = 7;
-    // Po tylu ms bez komend rozglądania (telefon śle je co 30 ms podczas przytrzymania) kamera wraca do widoku sprzed rozglądania
-    private static readonly TimeSpan LookReleaseDelay = TimeSpan.FromMilliseconds(400);
-    // Poza kabiną kamera krąży wokół samolotu w tej odległości (m) od punktu oka
-    private const float OrbitRadiusM = 45f, OrbitBaseElevationDeg = 12f;
-    private bool _look6DofFailed, _lookActive;
-    private long _lookYaw, _lookPitch;
-    // Widok, z którego zaczęło się rozglądanie — do niego kamera wraca po puszczeniu przycisku
-    private int _lookOrigin = CamCockpit;
-    private CancellationTokenSource? _lookRelease;
+    // Zdarzenie widoku — zapas przy zmianie kabina ↔ widok zewnętrzny (wewnętrzne, spoza listy telefonu)
+    private static readonly string[] CameraEvents = { "VIEW_MODE" };
+    // CAMERA STATE: 2 kabina, 3 zewnętrzna (w MSFS 2020 i 2024 te same numery)
+    private const int CamCockpit = 2, CamExternal = 3;
+    // Po tylu ms bez komend rozglądania (telefon śle je co 30 ms podczas przytrzymania) kamera wraca na wprost
+    private const long LookReleaseDelayMs = 400;
+    // Przycisk myszy puszczamy dopiero po tylu ms „na wprost” — przechodzenie przez środek nie klika w MSFS
+    private const long LookCenteredHoldMs = 300;
+    private readonly MouseLook _mouse = new();
+    private long _lookYaw, _lookPitch, _lookLastCommand, _lookLastOffCenter;
+    // Odmowa (MSFS nie na pierwszym planie) zgłaszana telefonowi raz na przytrzymanie, a nie 60 razy na sekundę
+    private bool _lookRefused;
     private readonly SemaphoreSlim _cameraGate = new(1, 1);
 
+    /// <summary>Czułość rozglądania: zliczenia myszy na stopień (ustawienie mostka, zależy od czułości myszy w MSFS).</summary>
+    public double LookCountsPerDegree { get => _mouse.CountsPerDegree; set => _mouse.CountsPerDegree = Math.Clamp(value, 1, 60); }
+
     /// <summary>
-    /// Rozglądanie się w każdym widoku. MSFS 2024 ignoruje zapis CAMERA GAMEPLAY PITCH YAW i zdarzenia PAN_*
-    /// (sprawdzone na żywo), więc kamerę obraca CameraSetRelative6DOF. W kabinie obraca się wokół oka pilota
-    /// (przesunięcie 0 — FLT_MAX MSFS 2024 bierze dosłownie i stawia kamerę przed samolotem); w widoku zewnętrznym,
-    /// z drona i innych kamera krąży wokół samolotu (orbita o promieniu OrbitRadiusM), zamiast wskakiwać do kabiny.
-    /// Ta funkcja przełącza MSFS w osobny tryb kamery (CAMERA STATE 7); do widoku sprzed rozglądania wracamy dopiero
-    /// po puszczeniu przycisku (brak komend przez LookReleaseDelay), a nie przy każdym przejściu przez „na wprost”.
+    /// Rozglądanie się w bieżącym widoku, bez zmiany kamery. MSFS 2024 nie przyjmuje zapisu kąta kamery
+    /// (CAMERA GAMEPLAY PITCH YAW jest tylko do odczytu, PAN_* ignoruje), a CameraSetRelative6DOF przełącza
+    /// w osobną kamerę 6DOF, z której MSFS często nie wraca (dziennik: odrzucane powroty do kabiny). Dlatego obraca
+    /// kamerę tak jak użytkownik myszą — patrz MouseLook. Kąty z telefonu są liczone od początku przytrzymania;
+    /// po puszczeniu (0/0 albo cisza przez LookReleaseDelayMs) mysz wraca o tyle samo i puszcza przycisk.
     /// </summary>
-    private async Task<CommandResult> LookAsync(SimConnectClient client, bool pitchAxis, long valueDeg, CancellationToken ct)
+    private async Task<CommandResult> LookAsync(bool pitchAxis, long valueDeg, CancellationToken ct)
     {
-        CancelLookRelease();
         await _cameraGate.WaitAsync(ct);
         try
         {
+            var now = Environment.TickCount64;
             if (pitchAxis) _lookPitch = valueDeg; else _lookYaw = valueDeg;
-            var centered = Math.Abs(_lookYaw) < 1 && Math.Abs(_lookPitch) < 1;
+            _lookLastCommand = now;
+            var centered = _lookYaw == 0 && _lookPitch == 0;
+            if (!centered) _lookLastOffCenter = now;
 
-            if (!_look6DofFailed)
+            if (!_mouse.Active)
             {
-                if (!_lookActive)
+                if (centered) { _lookRefused = false; return CommandResult.Success; }
+                if (_lookRefused) return CommandResult.Success;
+                var refusal = _mouse.Begin();
+                if (refusal != null)
                 {
-                    if (centered) return CommandResult.Success;
-                    var raw = RawCameraState();
-                    // Kamera 7 bez aktywnego rozglądania = MSFS utknął po poprzednim — traktujemy jak kabinę
-                    _lookOrigin = raw is CamSixDof or < 0 ? CamCockpit : raw;
-                    Log?.Invoke($"Kamera: rozglądanie (MSFS zgłasza {raw}, powrót do {_lookOrigin})");
+                    _lookRefused = true;
+                    Log?.Invoke($"Kamera: rozglądanie niemożliwe — {refusal}");
+                    return CommandResult.Fail(ErrorCodes.NotAllowed, refusal);
                 }
-                var (dx, dy, dz, camPitch) = _lookOrigin == CamCockpit ? (0f, 0f, 0f, (float)-_lookPitch) : Orbit(_lookYaw, _lookPitch);
-                var hr = Native.SimConnect_CameraSetRelative6DOF(client.Handle, dx, dy, dz, camPitch, 0f, _lookYaw);
-                if (hr >= 0)
-                {
-                    _lookActive = true;
-                    if (centered) ScheduleLookRelease(client);
-                    return CommandResult.Success;
-                }
-                _look6DofFailed = true;
-                Log?.Invoke($"Kamera: CameraSetRelative6DOF niedostępne (0x{hr:X8}) — rozglądanie przez zdarzenia widoku");
+                Log?.Invoke($"Kamera: rozglądanie w bieżącym widoku (MSFS zgłasza {RawCameraState()}, {CameraAngles()})");
+                _ = LookPumpAsync();
             }
-
-            // Zapas: zdarzenia widoku
-            if (centered)
-            {
-                await TransmitAsync(client, "PAN_RESET_COCKPIT", 0, ct);
-                return CommandResult.Success;
-            }
-            if (!pitchAxis) await TransmitAsync(client, "PAN_VIEW", (uint)(((_lookYaw % 360) + 360) % 360), ct);
-            await TransmitAsync(client, pitchAxis ? "AXIS_PAN_PITCH" : "AXIS_PAN_HEADING", unchecked((uint)(int)(pitchAxis ? -_lookPitch : _lookYaw)), ct);
-            return CommandResult.Success;
+            return Step() ? CommandResult.Success
+                : CommandResult.Fail(ErrorCodes.NotAllowed, "Okno MSFS przestało być aktywne — rozglądanie przerwane");
         }
         finally
         {
@@ -354,34 +343,63 @@ public sealed class MsfsSource : IFlightSource
         }
     }
 
-    private void CancelLookRelease() => Interlocked.Exchange(ref _lookRelease, null)?.Cancel();
-
-    // Powrót do zwykłej kabiny po puszczeniu przycisku; kolejna komenda rozglądania go odwołuje.
-    private void ScheduleLookRelease(SimConnectClient client)
+    // Co 15 ms dociąga mysz do ostatnich kątów (duże skoki w kilku krokach) i kończy rozglądanie po puszczeniu.
+    private async Task LookPumpAsync()
     {
-        var cts = new CancellationTokenSource();
-        Interlocked.Exchange(ref _lookRelease, cts)?.Cancel();
-        _ = Task.Run(async () =>
+        while (true)
         {
+            await Task.Delay(15);
+            await _cameraGate.WaitAsync();
             try
             {
-                await Task.Delay(LookReleaseDelay, cts.Token);
-                await _cameraGate.WaitAsync(cts.Token);
-            }
-            catch (OperationCanceledException) { return; }
-            try
-            {
-                if (_lookActive && client.IsConnected) await RestoreCameraAsync(client, _lookOrigin, CancellationToken.None);
+                if (!_mouse.Active) return;
+                var now = Environment.TickCount64;
+                // Telefon zamilkł (puszczony przycisk bez 0/0, zerwane połączenie) — powrót na wprost
+                if (now - _lookLastCommand > LookReleaseDelayMs) { _lookYaw = 0; _lookPitch = 0; }
+                if (!Step()) return;
+                if (_lookYaw == 0 && _lookPitch == 0 && _mouse.Reached(0, 0) && now - _lookLastOffCenter > LookCenteredHoldMs)
+                {
+                    _mouse.Release();
+                    _lookRefused = false;
+                    Log?.Invoke($"Kamera: koniec rozglądania ({CameraAngles()})");
+                    return;
+                }
             }
             catch (Exception e)
             {
-                Log?.Invoke($"Kamera: powrót do widoku nie powiódł się ({e.Message})");
+                _mouse.Release();
+                Log?.Invoke($"Kamera: rozglądanie przerwane ({e.Message})");
+                return;
             }
             finally
             {
                 _cameraGate.Release();
             }
-        });
+        }
+    }
+
+    // Wymaga _cameraGate. false = MSFS przestał być na pierwszym planie (przycisk myszy już puszczony).
+    private bool Step()
+    {
+        if (!_mouse.Active) return false;
+        if (_mouse.Step(_lookYaw, _lookPitch)) return true;
+        Log?.Invoke("Kamera: okno MSFS przestało być aktywne — rozglądanie przerwane");
+        _lookRefused = true;
+        return false;
+    }
+
+    // Puszcza przycisk myszy (rozłączenie, zamknięcie mostka) — nigdy nie zostaje wciśnięty
+    private void StopLook()
+    {
+        _cameraGate.Wait();
+        try { _mouse.Release(); _lookYaw = 0; _lookPitch = 0; _lookRefused = false; }
+        finally { _cameraGate.Release(); }
+    }
+
+    private string CameraAngles()
+    {
+        lock (_lock)
+            return _last is { } d ? $"kamera {d.CamYawRad * 180 / Math.PI:+0;-0;0}° / {-d.CamPitchRad * 180 / Math.PI:+0;-0;0}°" : "brak danych kamery";
     }
 
     private int RawCameraState()
@@ -390,20 +408,28 @@ public sealed class MsfsSource : IFlightSource
     }
 
     /// <summary>
-    /// Zmiana kamery (kabina / zewnętrzna / dron). Dotknięcie widoku, który już jest, nic nie robi. Po rozglądaniu
-    /// MSFS siedzi w kamerze 6DOF i nie zawsze przyjmuje od razu nowy CAMERA STATE — wtedy przez inny widok.
+    /// Zmiana kamery (kabina ↔ widok zewnętrzny). Dotknięcie widoku, który już jest, nic nie robi. Trwające
+    /// rozglądanie najpierw się kończy (powrót myszy), żeby nowy widok nie zaczął się obrócony.
     /// </summary>
     private async Task<CommandResult> SetCameraAsync(SimConnectClient client, int target, CancellationToken ct)
     {
-        CancelLookRelease();
+        if (_mouse.Active)
+        {
+            await _cameraGate.WaitAsync(ct);
+            try { _lookYaw = 0; _lookPitch = 0; _lookLastOffCenter = 0; }
+            finally { _cameraGate.Release(); }
+            for (var i = 0; i < 100 && _mouse.Active; i++) await Task.Delay(20, ct);
+        }
         await _cameraGate.WaitAsync(ct);
         try
         {
             var raw = RawCameraState();
-            Log?.Invoke($"Kamera: zmiana na {target} (MSFS zgłasza {raw}, rozglądanie {(_lookActive ? "aktywne" : "nie")})");
-            if (_lookActive || raw == CamSixDof) await RestoreCameraAsync(client, target, ct);
-            else if (raw != target) await WriteCameraAsync(client, target, ct);
-            return CommandResult.Success;
+            Log?.Invoke($"Kamera: zmiana na {target} (MSFS zgłasza {raw})");
+            if (raw == target) return CommandResult.Success;
+            if (await WriteCameraAsync(client, target, ct)) return CommandResult.Success;
+            return CommandResult.Fail(ErrorCodes.SimError, target == CamCockpit
+                ? "MSFS nie przełączył na widok z kabiny"
+                : "MSFS nie przełączył na widok zewnętrzny");
         }
         finally
         {
@@ -411,48 +437,23 @@ public sealed class MsfsSource : IFlightSource
         }
     }
 
-    /// <summary>
-    /// Kamera krążąca wokół samolotu: położenie na sferze o promieniu OrbitRadiusM (x w prawo, y w górę, z do przodu),
-    /// patrząca na samolot. Obrót w prawo przesuwa kamerę w lewo i za samolot; „w górę” obniża kamerę.
-    /// Zwraca przesunięcie i pochylenie kamery (+ = w dół) dla CameraSetRelative6DOF.
-    /// </summary>
-    internal static (float dx, float dy, float dz, float pitch) Orbit(long yawDeg, long pitchDeg)
+    // Wymaga _cameraGate.
+    private async Task<bool> WriteCameraAsync(SimConnectClient client, int target, CancellationToken ct)
     {
-        var elev = Math.Clamp(OrbitBaseElevationDeg - pitchDeg, -10f, 80f) * Math.PI / 180;
-        var yaw = yawDeg * Math.PI / 180;
-        var horiz = OrbitRadiusM * Math.Cos(elev);
-        return ((float)(-horiz * Math.Sin(yaw)), (float)(OrbitRadiusM * Math.Sin(elev)), (float)(-horiz * Math.Cos(yaw)), (float)(elev * 180 / Math.PI));
-    }
-
-    /// <summary>
-    /// Wyjście z kamery 6DOF do [target]. MSFS 2024 często nie przyjmuje wprost zapisu CAMERA STATE z kamery 7
-    /// (dziennik: kabina i widok zewnętrzny odrzucane po kilka razy), a wychodzi z niej przez drona — więc:
-    /// wprost, potem przez drona, a do kabiny jeszcze przez widok zewnętrzny. Wymaga _cameraGate.
-    /// </summary>
-    private async Task RestoreCameraAsync(SimConnectClient client, int target, CancellationToken ct)
-    {
-        _lookActive = false;
-        _lookYaw = 0; _lookPitch = 0;
-        if (await TryWriteCameraAsync(client, target, ct)) return;
-        if (target != CamDrone) await TryWriteCameraAsync(client, CamDrone, ct, attempts: 40);
-        if (await TryWriteCameraAsync(client, target, ct, attempts: 40)) return;
-        if (target == CamCockpit && await TryWriteCameraAsync(client, CamExternal, ct, attempts: 40)
-            && await TryWriteCameraAsync(client, CamCockpit, ct, attempts: 40)) return;
-        Log?.Invoke($"Kamera: MSFS nie wrócił do widoku {target} (zgłasza {RawCameraState()})");
-    }
-
-    private async Task WriteCameraAsync(SimConnectClient client, int target, CancellationToken ct)
-    {
-        if (await TryWriteCameraAsync(client, target, ct)) return;
+        if (await TryWriteCameraAsync(client, target, ct)) return true;
         // Zapas: część wersji MSFS ignoruje zapis CAMERA STATE bez błędu. Między kabiną a widokiem zewnętrznym
         // przełącza wtedy zdarzenie VIEW_MODE (jak klawisz zmiany widoku) — tylko gdy MSFS jest w jednym z nich,
-        // bo z innych kamer (np. 6DOF) VIEW_MODE wędruje po widokach nieprzewidywalnie.
-        if (target is CamCockpit or CamExternal && RawCameraState() is CamCockpit or CamExternal)
+        // bo z innych kamer VIEW_MODE wędruje po widokach nieprzewidywalnie.
+        if (RawCameraState() is CamCockpit or CamExternal)
         {
             await TransmitAsync(client, "VIEW_MODE", 0, ct);
-            if (await WaitForCameraAsync(target, ct)) return;
+            if (await WaitForCameraAsync(target, ct)) return true;
         }
+        // Z innej kamery (np. 6DOF po starszym mostku) do kabiny często wchodzi się tylko przez widok zewnętrzny
+        else if (target == CamCockpit && await TryWriteCameraAsync(client, CamExternal, ct, attempts: 40)
+            && await TryWriteCameraAsync(client, CamCockpit, ct, attempts: 40)) return true;
         Log?.Invoke($"Kamera: MSFS nie przełączył widoku na {target} (zgłasza {RawCameraState()})");
+        return false;
     }
 
     private async Task<bool> TryWriteCameraAsync(SimConnectClient client, int target, CancellationToken ct, int attempts = 20)
@@ -676,6 +677,7 @@ public sealed class MsfsSource : IFlightSource
 
     public void Dispose()
     {
+        StopLook();
         _cts?.Cancel();
         _cts = null;
     }
@@ -685,9 +687,5 @@ public sealed class MsfsSource : IFlightSource
         [DllImport("SimConnect.dll")]
         public static extern int SimConnect_MapClientEventToSimEvent(IntPtr hSimConnect, uint eventId,
             [MarshalAs(UnmanagedType.LPStr)] string eventName);
-
-        [DllImport("SimConnect.dll")]
-        public static extern int SimConnect_CameraSetRelative6DOF(IntPtr hSimConnect, float deltaX, float deltaY, float deltaZ,
-            float pitchDeg, float bankDeg, float headingDeg);
     }
 }

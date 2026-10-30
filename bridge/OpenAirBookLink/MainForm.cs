@@ -79,6 +79,18 @@ public sealed class MainForm : Form
         _simMode.Checked = host.SimulationMode;
         _simMode.CheckedChanged += (_, _) => host.SetSimulationMode(_simMode.Checked);
         simFlow.Controls.Add(_simMode);
+        // Rozglądanie z telefonu porusza kamerą jak mysz z prawym przyciskiem — tempo zależy od czułości myszy w MSFS
+        var lookLine = Flow(FlowDirection.LeftToRight);
+        lookLine.Controls.Add(new Label { AutoSize = true, Margin = new Padding(0, 6, 6, 0), Text = "Czułość rozglądania z telefonu (%):" });
+        var look = new NumericUpDown
+        {
+            Minimum = LinkHost.LookSensitivityMin, Maximum = LinkHost.LookSensitivityMax, Increment = 10,
+            Value = Math.Clamp(host.LookSensitivity, LinkHost.LookSensitivityMin, LinkHost.LookSensitivityMax), Width = 70,
+        };
+        look.ValueChanged += (_, _) => host.SetLookSensitivity((int)look.Value);
+        lookLine.Controls.Add(look);
+        lookLine.Controls.Add(new Label { AutoSize = true, Margin = new Padding(8, 6, 0, 0), ForeColor = SystemColors.GrayText, Text = "okno MSFS musi być aktywne" });
+        simFlow.Controls.Add(lookLine);
         simBox.Controls.Add(simFlow);
         root.Controls.Add(simBox);
 

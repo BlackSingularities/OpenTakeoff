@@ -232,6 +232,7 @@ private fun CockpitActions(
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Outlined.Flag, null, tint = c.ink, modifier = Modifier.size(18.dp)) }
         }
+        ViewToggle(link, s, vertical)
         CameraSwitch(link, s, controlMode = controlMode, vertical = vertical)
         Box(
             Modifier.size(34.dp).clip(CircleShape).border(1.dp, c.rule, CircleShape)
@@ -353,10 +354,45 @@ private fun PanelBar(tab: CockpitTab?, onTab: (CockpitTab) -> Unit, modifier: Mo
 }
 
 /**
- * Rozglądanie się w MSFS: jeden przycisk. **Przytrzymanie** obraca kamerę tym samym sposobem co sterowanie —
- * żyroskop (przechylanie telefonu od pozycji z chwili naciśnięcia) albo przesuwanie palca; w kabinie obraca się
- * głowa pilota, w innych widokach kamera krąży wokół samolotu. Puszczenie wraca do widoku sprzed rozglądania.
- * Krótkie dotknięcie pokazuje, co to za przycisk i jak go używać. Widok zmienia się w samym symulatorze.
+ * Widok MSFS: kabina ↔ widok zewnętrzny jednym dotknięciem. Ikona i podpis pokazują bieżący widok
+ * (CAMERA STATE z symulatora); z każdego innego widoku (dron, kamery samolotu) dotknięcie wraca do kabiny.
+ */
+@Composable
+private fun ViewToggle(link: LinkClient, s: FlightState, vertical: Boolean) {
+    val c = Fm.c
+    val actual = s.controls.cameraState
+    // Zmiana widoku w MSFS trwa chwilę — do tego czasu przycisk pokazuje widok, o który poproszono
+    var pending by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(pending, actual) { if (pending != null) { if (actual == pending) pending = null else { delay(2500); pending = null } } }
+    val cam = pending ?: actual
+    val (icon, name) = when (cam) {
+        2 -> Icons.Outlined.AirlineSeatReclineNormal to tr("Kabina", "Cockpit")
+        3 -> Icons.Outlined.FlightTakeoff to tr("Zewn.", "Outside")
+        else -> Icons.Outlined.Videocam to tr("Kamera", "Camera")
+    }
+    val target = if (cam == 2) 3 else 2
+    val desc = if (target == 3) tr("Widok: kabina. Przełącz na widok zewnętrzny", "View: cockpit. Switch to the outside view")
+    else tr("Przełącz na widok z kabiny", "Switch to the cockpit view")
+    Row(
+        Modifier.clip(RoundedCornerShape(50)).border(1.dp, c.rule, RoundedCornerShape(50))
+            .semantics { contentDescription = desc }
+            .clickable(role = Role.Button) { if (link.command("CAMERA_STATE", target.toDouble())) pending = target }
+            .padding(horizontal = if (vertical) 7.dp else 10.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = c.ink, modifier = Modifier.size(18.dp))
+        if (!vertical) {
+            Spacer(Modifier.width(5.dp))
+            Text(name, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = c.ink, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * Rozglądanie się w MSFS w bieżącym widoku (kabina, zewnętrzny, dron) — bez zmiany kamery. **Przytrzymanie**
+ * obraca kamerę tym samym sposobem co sterowanie: żyroskop (przechylanie telefonu od pozycji z chwili naciśnięcia)
+ * albo przesuwanie palca. Link porusza kamerą jak mysz z prawym przyciskiem, więc okno MSFS musi być aktywne.
+ * Puszczenie wraca na wprost. Krótkie dotknięcie pokazuje, jak go używać; odmowa Linka — po puszczeniu.
  */
 @Composable
 internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier = Modifier, controlMode: String = "TILT", vertical: Boolean = false) {
@@ -367,6 +403,14 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
     val tilt = rememberTilt(enabled = tiltMode)
     var looking by remember { mutableStateOf(false) }
     var info by remember { mutableStateOf(false) }
+    // Odmowa Linka w czasie przytrzymania (np. okno MSFS nieaktywne) — pokazywana po puszczeniu
+    var problem by remember { mutableStateOf<String?>(null) }
+    var shownProblem by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(looking) {
+        if (!looking) { if (problem != null) { shownProblem = problem; problem = null }; return@LaunchedEffect }
+        problem = null
+        link.errors.collect { problem = it }
+    }
     var yaw by remember { mutableFloatStateOf(0f) }    // stopnie, + w prawo
     var pitch by remember { mutableFloatStateOf(0f) }  // stopnie, + w górę
     var roll0 by remember { mutableFloatStateOf(0f) }
@@ -446,15 +490,26 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
                     else tr("Przytrzymaj przycisk i przesuwaj palec: w bok — obrót w lewo i w prawo, w górę i w dół — spojrzenie w górę i w dół.",
                         "Hold the button and slide your finger: sideways to look left and right, up and down to look up and down."),
                 )
-                Text(tr("W kabinie obracasz głowę pilota. W widoku zewnętrznym, z drona i w innych widokach kamera krąży wokół samolotu.",
-                    "In the cockpit you turn the pilot's head. In the external, drone and other views the camera circles around the aircraft."))
-                Text(tr("Puść przycisk, a kamera wróci do widoku, w którym była. Widok zmieniasz w samym symulatorze.",
-                    "Let go and the camera returns to the view it was in. Change views in the simulator itself."),
+                Text(tr("Kamera obraca się w widoku, który jest teraz w symulatorze — w kabinie jak głowa pilota, na zewnątrz wokół samolotu. Puść przycisk, a wróci na wprost.",
+                    "The camera turns in whatever view the simulator is in now — like the pilot's head in the cockpit, around the aircraft outside. Let go and it returns to straight ahead."))
+                Text(tr("Kabinę i widok zewnętrzny przełączasz przyciskiem obok.",
+                    "Switch between the cockpit and the outside view with the button next to it."))
+                Text(tr("Na komputerze okno MSFS musi być aktywne (kliknij w nie raz). Tempo obrotu ustawisz w OpenTakeoff Link.",
+                    "On the PC the MSFS window must be active (click it once). Set the turning speed in OpenTakeoff Link."),
                     color = c.ink2, style = MaterialTheme.typography.bodySmall)
             }
         },
         confirmButton = { androidx.compose.material3.TextButton({ info = false }) { Text(tr("Rozumiem", "Got it")) } },
     )
+    shownProblem?.let { msg ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { shownProblem = null },
+            icon = { Icon(Icons.Outlined.Visibility, null) },
+            title = { Text(tr("Nie można się rozglądać", "Cannot look around")) },
+            text = { Text(msg) },
+            confirmButton = { androidx.compose.material3.TextButton({ shownProblem = null }) { Text(tr("Rozumiem", "Got it")) } },
+        )
+    }
 }
 
 /**
