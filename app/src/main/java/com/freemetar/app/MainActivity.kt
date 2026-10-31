@@ -1,5 +1,7 @@
 package com.freemetar.app
 
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.unit.sp
 import com.freemetar.app.domain.loc
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
@@ -191,19 +193,30 @@ class MainActivity : ComponentActivity() {
                         if (!wide && route in tabs.map { it.route }) {
                             androidx.compose.foundation.layout.Column {
                             Rule()
-                            NavigationBar(containerColor = c.paper, tonalElevation = 0.dp) {
+                            // Styl wspólny dla aplikacji Open: wybrana zakładka to kafel w kolorze tekstu z odwróconą ikoną i podpisem
+                            Row(
+                                Modifier.fillMaxWidth().background(c.paper).windowInsetsPadding(WindowInsets.navigationBars)
+                                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+                            ) {
                                 tabs.forEach { t ->
                                     val sel = activeTab == t.route
-                                    NavigationBarItem(
-                                        selected = sel,
-                                        onClick = { nav.goTab(t.route) },
-                                        icon = { tabIcon(t, sel) },
-                                        label = { Text(t.label) },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            indicatorColor = c.ink, selectedIconColor = c.paper, selectedTextColor = c.ink,
-                                            unselectedIconColor = c.ink2, unselectedTextColor = c.ink2,
-                                        ),
-                                    )
+                                    val bg by androidx.compose.animation.animateColorAsState(if (sel) c.ink else androidx.compose.ui.graphics.Color.Transparent, label = "tabBg")
+                                    val tint by androidx.compose.animation.animateColorAsState(if (sel) c.paper else c.ink2, label = "tabTint")
+                                    androidx.compose.foundation.layout.Column(
+                                        Modifier.weight(1f).clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp)).background(bg)
+                                            .clickable { nav.goTab(t.route) }.padding(top = 7.dp, bottom = 6.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                    ) {
+                                        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides tint) {
+                                            Box(Modifier.size(21.dp), contentAlignment = Alignment.Center) { tabIcon(t, sel) }
+                                        }
+                                        Spacer(Modifier.size(3.dp))
+                                        Text(
+                                            t.label, color = tint, fontSize = 10.sp, maxLines = 1, softWrap = false,
+                                            fontWeight = if (sel) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Medium,
+                                        )
+                                    }
                                 }
                             }
                             }
