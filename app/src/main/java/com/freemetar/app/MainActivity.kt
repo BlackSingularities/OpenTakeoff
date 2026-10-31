@@ -1,5 +1,6 @@
 package com.freemetar.app
 
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.unit.sp
 import com.freemetar.app.domain.loc
@@ -193,7 +194,7 @@ class MainActivity : ComponentActivity() {
                         if (!wide && route in tabs.map { it.route }) {
                             androidx.compose.foundation.layout.Column {
                             Rule()
-                            // Styl wspólny dla aplikacji Open: wybrana zakładka to kafel w kolorze tekstu z odwróconą ikoną i podpisem
+                            // Styl wspólny dla aplikacji Open: wybrana zakładka to kafel w kolorze przewodnim z kontrastową ikoną i podpisem
                             Row(
                                 Modifier.fillMaxWidth().background(c.paper).windowInsetsPadding(WindowInsets.navigationBars)
                                     .padding(horizontal = 6.dp, vertical = 4.dp),
@@ -201,8 +202,8 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 tabs.forEach { t ->
                                     val sel = activeTab == t.route
-                                    val bg by androidx.compose.animation.animateColorAsState(if (sel) c.ink else androidx.compose.ui.graphics.Color.Transparent, label = "tabBg")
-                                    val tint by androidx.compose.animation.animateColorAsState(if (sel) c.paper else c.ink2, label = "tabTint")
+                                    val bg by androidx.compose.animation.animateColorAsState(if (sel) c.accent else androidx.compose.ui.graphics.Color.Transparent, label = "tabBg")
+                                    val tint by androidx.compose.animation.animateColorAsState(if (sel) (if (c.accent.luminance() > 0.5f) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White) else c.ink2, label = "tabTint")
                                     androidx.compose.foundation.layout.Column(
                                         Modifier.weight(1f).clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp)).background(bg)
                                             .clickable { nav.goTab(t.route) }.padding(top = 7.dp, bottom = 6.dp),
