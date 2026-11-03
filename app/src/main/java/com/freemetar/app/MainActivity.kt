@@ -272,6 +272,8 @@ class MainActivity : ComponentActivity() {
                         Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
                             // Pasek aktywnego lotu na pozostałych zakładkach (zajmuje miejsce paska stanu, ekran pod nim nie dodaje odstępu)
                             val showStrip = liveState != null && activeTab != "flight" && route in tabs.map { it.route }
+                            // Kokpit czy połączenie na ekranie Lot: od tego zależy też widoczność pływających sterów
+                            var flightCockpit by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(true) }
                             androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
                             if (showStrip) com.freemetar.app.ui.flight.LiveFlightStrip(liveState!!, onClick = { nav.goTab("flight") },
                                 Modifier.statusBarsPadding().padding(start = if (wide && railHidden) 44.dp else 0.dp))
@@ -285,12 +287,6 @@ class MainActivity : ComponentActivity() {
                             if (settingsLoaded && !settings.welcomeShown) {
                                 WelcomeScreen(onGetStarted = { vm.setWelcomeShown() })
                             } else {
-                            // Pływające stery nad wszystkimi zakładkami (rysowane po NavHost, więc na wierzchu)
-                            val floating: @androidx.compose.runtime.Composable () -> Unit = {
-                                // Na ekranie Lot kokpit ma własny przycisk — tu tylko na pozostałych zakładkach
-                                if (settings.floatingControl && liveState != null && settings.controlMode != "GAMEPAD" && activeTab != "flight")
-                                    com.freemetar.app.ui.flight.FloatingControl(vm.link, settings.controlMode, liveState, withTrim = settings.floatingStyle == "TRIM")
-                            }
                             NavHost(
                                 nav, startDestination = "home",
                                 modifier = Modifier.widthIn(max = 1280.dp),
@@ -326,6 +322,8 @@ class MainActivity : ComponentActivity() {
                                 composable("flight") {
                                     FlightScreen(
                                         vm,
+                                        cockpit = flightCockpit,
+                                        onCockpit = { flightCockpit = it },
                                         onOpenLogbook = { nav.goTab("logbook") },
                                         onOpenChecklists = { nav.navigate("checklists") },
                                     )
@@ -363,10 +361,16 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
-                            floating()
                             }
                             }
                             }
+                            // Pływające stery: jeden przycisk nad wszystkimi zakładkami, poza NavHost i zawsze w tym samym miejscu drzewa,
+                            // więc przełączenie zakładki nie przerywa przytrzymania. Na ekranie Lot zawsze w kokpicie, gdzie indziej wg ustawienia.
+                            com.freemetar.app.ui.flight.FloatingControl(
+                                vm.link, settings.controlMode, liveState, withTrim = settings.floatingStyle == "TRIM",
+                                visible = settings.welcomeShown && liveState != null && settings.controlMode != "GAMEPAD" &&
+                                    (if (activeTab == "flight") route == "flight" && flightCockpit else settings.floatingControl),
+                            )
                             // Schowany pasek: mały przycisk w lewym górnym rogu przywraca zakładki
                             if (wide && railHidden) androidx.compose.material3.IconButton(
                                 { railHidden = false },

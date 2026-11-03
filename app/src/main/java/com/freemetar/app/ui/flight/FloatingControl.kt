@@ -78,9 +78,10 @@ import kotlin.math.roundToInt
  * Wariant z trymem: przy żyroskopie palec na przycisku jest wolny, więc trymuje się przeciągnięciem —
  * w dół = nos w górę, w górę = nos w dół (im dalej, tym szybciej). Przy drążku palec steruje,
  * więc trym ma osobne przyciski obok.
+ * [visible] = false chowa przycisk dopiero po puszczeniu: trzymany steruje dalej, także po przejściu na zakładkę bez sterów.
  */
 @Composable
-fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, withTrim: Boolean = false, modifier: Modifier = Modifier) {
+fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, withTrim: Boolean = false, visible: Boolean = true, modifier: Modifier = Modifier) {
     val c = Fm.c
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -90,7 +91,7 @@ fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, 
     var y by remember { mutableFloatStateOf(0f) }        // −1…1 ster wysokości, + = nos w górę
     var roll0 by remember { mutableDoubleStateOf(0.0) }
     var pitch0 by remember { mutableDoubleStateOf(0.0) }
-    val tilt = rememberTilt(enabled = tiltMode)
+    val tilt = rememberTilt(enabled = tiltMode && (visible || active))
     // Trym przeciągnięciem (żyroskop): −1 nos w dół, 0 nic, +1 nos w górę; siła 0…1 = tempo powtarzania
     var trimDir by remember { mutableIntStateOf(0) }
     var trimForce by remember { mutableFloatStateOf(0f) }
@@ -135,7 +136,7 @@ fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, 
     }
     DisposableEffect(Unit) { onDispose { link.releaseAxes() } }
 
-    BoxWithConstraints(modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInWindow() }) {
+    if (visible || active) BoxWithConstraints(modifier.fillMaxSize().onGloballyPositioned { origin = it.positionInWindow() }) {
         val btn = 68.dp
         val trimW = if (withTrim && !tiltMode) 52.dp else 0.dp
         val total = btn + 22.dp   // przycisk + uchwyt

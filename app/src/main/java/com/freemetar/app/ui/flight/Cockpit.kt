@@ -97,7 +97,7 @@ private fun CockpitTab.label(): String = when (this) {
 fun CockpitView(
     link: LinkClient, s: FlightState, profile: AircraftProfile?, onProfile: (AircraftProfile?) -> Unit,
     controlMode: String = "TILT", onControlMode: (String) -> Unit = {}, floating: Boolean = false, onFloating: (Boolean) -> Unit = {},
-    nearby: List<com.freemetar.app.data.nav.FixResult> = emptyList(), floatingTrim: Boolean = false, leversLeft: Boolean = false,
+    nearby: List<com.freemetar.app.data.nav.FixResult> = emptyList(), leversLeft: Boolean = false,
     onShowPlan: () -> Unit = {},
     onShowChecklists: () -> Unit = {},
     recording: com.freemetar.app.MainViewModel.RecordingInfo = com.freemetar.app.MainViewModel.RecordingInfo(),
@@ -198,8 +198,6 @@ fun CockpitView(
                 }
             }
         }
-        // Stery zawsze pod ręką w widoku lotu (kontroler sprzętowy ich nie potrzebuje)
-        if (controlMode != "GAMEPAD") FloatingControl(link, controlMode, s, withTrim = floatingTrim)
     }
 }
 

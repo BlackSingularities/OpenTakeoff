@@ -1,3 +1,9 @@
+## 2.6.5 — Sterowanie bez przerw przy zmianie zakładki
+
+- Pływający przycisk sterowania: przytrzymany steruje dalej podczas przełączania zakładek, także na ekran Lot i z niego.
+  Na zakładce, na której przycisku normalnie nie ma, znika dopiero po puszczeniu.
+- Nowy dolny pasek zakładek (wybrana w kolorze przewodnim) i adres kontaktowy przy informacjach o autorze.
+
 ## 2.6.4 — Kamera: przełącznik widoku i rozglądanie w bieżącym widoku
 
 - Kokpit: przycisk przełączania widoku kabina ↔ widok zewnętrzny (z innych kamer, np. drona, wraca do kabiny).

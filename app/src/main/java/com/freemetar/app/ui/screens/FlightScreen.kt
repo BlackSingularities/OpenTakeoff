@@ -32,10 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +49,7 @@ import com.freemetar.app.ui.theme.Fm
 
 /** Sekcja Lot: kokpit przy połączonym symulatorze, a pod przełącznikiem połączenie, checklisty i dziennik lotów. */
 @Composable
-fun FlightScreen(vm: MainViewModel, onOpenLogbook: () -> Unit = {}, onOpenChecklists: () -> Unit = {}) {
+fun FlightScreen(vm: MainViewModel, cockpit: Boolean, onCockpit: (Boolean) -> Unit, onOpenLogbook: () -> Unit = {}, onOpenChecklists: () -> Unit = {}) {
     val c = Fm.c
     val settings by vm.settings.collectAsStateWithLifecycle()
     val message by vm.flightMessage.collectAsStateWithLifecycle()
@@ -64,16 +61,14 @@ fun FlightScreen(vm: MainViewModel, onOpenLogbook: () -> Unit = {}, onOpenCheckl
 
     val live by vm.flightState.collectAsStateWithLifecycle()
     // Po połączeniu z symulatorem domyślnie kokpit (PFD + panele) na cały ekran; połączenie i dziennik pod przełącznikiem.
-    var cockpit by rememberSaveable { mutableStateOf(true) }
-
     Box(Modifier.fillMaxSize()) {
         val state = live
         if (state != null && cockpit) {
             Column(Modifier.fillMaxSize().statusBarsPadding()) {
                 CockpitView(vm.link, state, AircraftProfile.fromName(settings.aircraftProfile), { p -> vm.setAircraftProfile(p) },
                     settings.controlMode, { vm.setControlMode(it) }, settings.floatingControl, { vm.setFloatingControl(it) },
-                    vm.nearbyNav.collectAsStateWithLifecycle().value, floatingTrim = settings.floatingStyle == "TRIM", leversLeft = settings.leversLeft,
-                    onShowPlan = { cockpit = false },
+                    vm.nearbyNav.collectAsStateWithLifecycle().value, leversLeft = settings.leversLeft,
+                    onShowPlan = { onCockpit(false) },
                     onShowChecklists = onOpenChecklists,
                     recording = vm.recordingInfo.collectAsStateWithLifecycle().value,
                     onStopRecording = { vm.stopRecording() }, onResumeRecording = { vm.resumeRecording() }, onMark = { vm.markLive() },
@@ -83,7 +78,7 @@ fun FlightScreen(vm: MainViewModel, onOpenLogbook: () -> Unit = {}, onOpenCheckl
             Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 820.dp)
                 .statusBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
         ) {
-            if (state != null) ModeSwitch(cockpit) { cockpit = it }
+            if (state != null) ModeSwitch(cockpit, onCockpit)
             else Text(loc("Lot", "Flight"), style = MaterialTheme.typography.headlineLarge, color = c.ink, modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
 
             ConnectionSection(vm)
