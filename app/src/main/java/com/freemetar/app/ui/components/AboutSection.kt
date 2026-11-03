@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
@@ -118,6 +119,7 @@ fun AboutSection(vm: MainViewModel) {
             LinkRow(Icons.Outlined.LocalCafe, loc("Postaw kawę", "Buy me a coffee"),
                 loc("Wesprzyj rozwój aplikacji · buycoffee.to", "Support the app's development · buycoffee.to"), highlight = true) { uri.openUri(COFFEE_URL) }
             LinkRow(Icons.Outlined.Person, loc("Pomysł i wykonanie", "Idea and development"), "Adam Rędzikowski · $AUTHOR_SITE") { uri.openUri(AUTHOR_URL) }
+            LinkRow(Icons.Outlined.Email, loc("Kontakt", "Contact"), "kontakt@redzikowski.com") { uri.openUri("mailto:kontakt@redzikowski.com") }
         }
     }
 }
