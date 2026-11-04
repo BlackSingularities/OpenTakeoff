@@ -66,7 +66,7 @@ public static class Updater
                 asset.GetProperty("browser_download_url").GetString()!,
                 asset.GetProperty("size").GetInt64(),
                 sha,
-                root.TryGetProperty("html_url", out var page) ? page.GetString() ?? "" : "");
+                "");
         }
         return null;
     }

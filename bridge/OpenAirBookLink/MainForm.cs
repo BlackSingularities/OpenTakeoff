@@ -194,10 +194,10 @@ public sealed class MainForm : Form
             _update = update;
             AddLog($"Dostępna nowa wersja {update.Version}");
 
-            // Exe w folderze bez prawa zapisu (np. Program Files) — tylko odsyłamy na stronę wydania.
+            // Exe w folderze bez prawa zapisu (np. Program Files) — tylko komunikat o nowej wersji.
             if (!Updater.CanWriteNextToExe())
             {
-                ShowUpdateBar($"Dostępna wersja {update.Version}. Brak prawa zapisu w folderze programu — pobierz ją ręcznie.", "Otwórz stronę wydania");
+                ShowUpdateBar($"Dostępna jest nowa wersja {update.Version}.", null);
                 return;
             }
 
@@ -228,9 +228,7 @@ public sealed class MainForm : Form
     {
         if (_update is null) return;
         if (_downloaded is not null) ApplyUpdate();
-        else if (!Updater.CanWriteNextToExe())
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_update.PageUrl) { UseShellExecute = true });
-        else _ = CheckForUpdateAsync(manual: true);
+        else if (Updater.CanWriteNextToExe()) _ = CheckForUpdateAsync(manual: true);
     }
 
     // Nie przerywamy lotu: nowa wersja wchodzi sama dopiero, gdy żaden telefon nie jest połączony.

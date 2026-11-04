@@ -63,13 +63,7 @@ fun UpdateDialog(vm: MainViewModel) {
         title = { Text(loc("Nowa wersja ${info.versionName}", "New version ${info.versionName}")) },
         text = {
             Column {
-                Text(loc("Masz ${BuildConfig.VERSION_NAME}. Aktualizacja pobierze się z GitHuba${sizeMb(info.sizeBytes)}.", "You have ${BuildConfig.VERSION_NAME}. The update will download from GitHub${sizeMb(info.sizeBytes)}."), color = Fm.c.ink2, fontSize = 13.sp)
-                if (info.notes.isNotBlank()) {
-                    Spacer(Modifier.size(10.dp))
-                    Column(Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState())) {
-                        Text(info.notes, color = Fm.c.ink, fontSize = 13.sp)
-                    }
-                }
+                Text(loc("Masz ${BuildConfig.VERSION_NAME}. Dostępna jest nowa wersja${sizeMb(info.sizeBytes)}.", "You have ${BuildConfig.VERSION_NAME}. A new version is available${sizeMb(info.sizeBytes)}."), color = Fm.c.ink2, fontSize = 13.sp)
                 when (val s = state) {
                     is UpdateState.Downloading -> {
                         Spacer(Modifier.size(12.dp))

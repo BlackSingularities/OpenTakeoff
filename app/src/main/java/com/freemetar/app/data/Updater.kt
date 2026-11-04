@@ -52,10 +52,10 @@ object Updater {
         return UpdateInfo(
             versionName = tag,
             versionCode = code,
-            notes = s("body"),
+            notes = "",
             apkUrl = (apk["browser_download_url"] as JsonPrimitive).content,
             sizeBytes = (apk["size"] as? JsonPrimitive)?.longOrNull ?: 0L,
-            pageUrl = s("html_url"),
+            pageUrl = "",
         )
     }
 

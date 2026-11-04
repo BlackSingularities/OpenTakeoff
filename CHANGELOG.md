@@ -1,3 +1,7 @@
+## 2.6.6
+
+- Komunikat o nowej wersji bez listy zmian, linków i informacji, skąd pobierana jest aktualizacja.
+
 ## 2.6.5 — Sterowanie bez przerw przy zmianie zakładki
 
 - Pływający przycisk sterowania: przytrzymany steruje dalej podczas przełączania zakładek, także na ekran Lot i z niego.
