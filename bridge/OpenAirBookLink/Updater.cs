@@ -45,8 +45,8 @@ public static class Updater
 
     public static async Task<LinkUpdate?> CheckAsync(CancellationToken ct = default)
     {
-        using var req = new HttpRequestMessage(HttpMethod.Get, $"https://redzikowski.com/api/github/repos/{Repo}/releases/latest");
-        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"https://redzikowski.com/api/releases/repos/{Repo}/releases/latest");
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         using var resp = await Http.SendAsync(req, ct);
         if (!resp.IsSuccessStatusCode) return null;
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
