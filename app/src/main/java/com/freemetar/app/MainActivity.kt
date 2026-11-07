@@ -1,5 +1,7 @@
 package com.freemetar.app
 
+import com.freemetar.app.feedback.Feedback
+import com.freemetar.app.feedback.CrashReportPrompt
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.unit.sp
@@ -121,6 +123,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Feedback.install(this, "opentakeoff")
         // ViewModel startuje (baza lotnisk, komunikaty) zanim wczytają się ustawienia — do tego czasu język systemu
         com.freemetar.app.domain.Lang.current = com.freemetar.app.domain.Lang.resolve(null)
         enableEdgeToEdge()
@@ -133,6 +136,7 @@ class MainActivity : ComponentActivity() {
             com.freemetar.app.domain.Lang.current = lang
             androidx.compose.runtime.CompositionLocalProvider(com.freemetar.app.ui.theme.LocalLang provides lang) {
             OpenTakeoffTheme(settings.themeMode) {
+                CrashReportPrompt()
                 val night = Fm.c.isNight
                 // Ikony paska stanu muszą pasować do motywu wybranego w aplikacji, nie do systemu
                 // Pełny ekran: pasek stanu schowany, wysuwa się na chwilę przeciągnięciem od góry.

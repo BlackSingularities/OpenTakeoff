@@ -25,6 +25,7 @@ internal static class Program
         Task.Run(Updater.CleanUp);
 
         ApplicationConfiguration.Initialize();
+        Feedback.Install();
         using var host = new LinkHost(simulate);
         using var form = new MainForm(host, minimized, args);
         try
@@ -37,6 +38,7 @@ internal static class Program
                             "Czy inny program go nie zajmuje?", "OpenTakeoff Link", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
+        Feedback.OfferPendingCrash(null);
         Application.Run(form);
     }
 }

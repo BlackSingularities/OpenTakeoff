@@ -115,6 +115,9 @@ public sealed class MainForm : Form
         };
         buttons.Controls.Add(newCode);
         buttons.Controls.Add(revoke);
+        var report = new Button { AutoSize = true, Text = "Zgłoś błąd lub sugestię…" };
+        report.Click += (_, _) => Feedback.ShowForm(this);
+        buttons.Controls.Add(report);
         pairFlow.Controls.Add(buttons);
         pairFlow.Controls.Add(_ips);
         pairBox.Controls.Add(pairFlow);
@@ -145,6 +148,7 @@ public sealed class MainForm : Form
         menu.Items.Add(_traySim);
         if (Updater.ExePath is not null)
             menu.Items.Add("Sprawdź aktualizacje", null, (_, _) => _ = CheckForUpdateAsync(manual: true));
+        menu.Items.Add("Zgłoś błąd lub sugestię…", null, (_, _) => Feedback.ShowForm(Visible ? this : null));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Zakończ", null, (_, _) => ExitApp());
         _tray = new NotifyIcon { Icon = Icon, Text = "OpenTakeoff Link", Visible = true, ContextMenuStrip = menu };

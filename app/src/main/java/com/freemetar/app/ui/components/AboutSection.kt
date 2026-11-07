@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Button
@@ -120,6 +121,9 @@ fun AboutSection(vm: MainViewModel) {
                 loc("Wesprzyj rozwój aplikacji · buycoffee.to", "Support the app's development · buycoffee.to"), highlight = true) { uri.openUri(COFFEE_URL) }
             LinkRow(Icons.Outlined.Person, loc("Pomysł i wykonanie", "Idea and development"), "Adam Rędzikowski · $AUTHOR_SITE") { uri.openUri(AUTHOR_URL) }
             LinkRow(Icons.Outlined.Email, loc("Kontakt", "Contact"), "kontakt@redzikowski.com") { uri.openUri("mailto:kontakt@redzikowski.com") }
+            com.freemetar.app.feedback.FeedbackEntry { open ->
+                LinkRow(Icons.Outlined.Build, loc("Zgłoś błąd lub sugestię", "Report a bug or suggestion"), loc("Wiadomość trafia prosto do autora", "Goes straight to the developer")) { open() }
+            }
         }
     }
 }
