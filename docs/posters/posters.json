@@ -1,0 +1,23 @@
+{
+  "slug": "opentakeoff",
+  "name": "OpenTakeoff",
+  "label": "pogoda, lotniska i kokpit dla symulatorów lotu",
+  "icon": "icon.png",
+  "url": "https://redzikowski.com/portfolio/opentakeoff",
+  "posters": [
+    {
+      "platform": "android",
+      "file": "android.png",
+      "title": "Odprawa przed lotem *w kieszeni*",
+      "lead": "Aktualna pogoda lotniskowa, pas w użyciu, planowanie trasy i checklisty, a po połączeniu z MSFS cały kokpit na telefonie.",
+      "shots": [
+        { "src": "../screenshots/android/01-lotniska.png", "caption": "Lotniska" },
+        { "src": "../screenshots/android/02-odprawa.png", "caption": "METAR" },
+        { "src": "../screenshots/android/03-trasa.png", "caption": "Trasa" },
+        { "src": "../screenshots/android/04-checklista.png", "caption": "Checklisty" }
+      ],
+      "features": ["METAR, TAF i SIGMET", "ATIS czytany na głos", "pas wg wiatru", "kokpit dla MSFS 2024", "mapa 3D ze śladem lotu", "dziennik lotów"],
+      "meta": "Android 8 lub nowszy"
+    }
+  ]
+}

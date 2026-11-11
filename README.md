@@ -1,5 +1,13 @@
 # OpenTakeoff
 
+<!-- posters:start -->
+<p align="center">
+  <img src="docs/posters/android.png" alt="OpenTakeoff – Android" width="460">
+</p>
+
+<p align="center"><a href="https://redzikowski.com/portfolio/opentakeoff">redzikowski.com/portfolio/opentakeoff</a></p>
+<!-- posters:end -->
+
 **Projekt i wykonanie: [redzikowski.com](https://redzikowski.com)**
 
 [Polski](#polski) · [English](#english)
