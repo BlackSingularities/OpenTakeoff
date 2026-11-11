@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Runtime.InteropServices;
 using OpenAirBookLink.Core.Control;
 using OpenAirBookLink.Core.NavData;
@@ -35,7 +36,7 @@ public sealed class MsfsSource : IFlightSource
     private ISimVarSubscription? _subscription;
     private MsfsData? _last;
     private bool _paused;
-    private string _status = "Czekam na MSFS…";
+    private string _status = L.T("msfs.waiting");
     private bool _connected;
     private string? _lastError;
 
@@ -138,8 +139,8 @@ public sealed class MsfsSource : IFlightSource
                     await Task.Delay(1000, ct);
                 if (!ct.IsCancellationRequested)
                     Log?.Invoke(Volatile.Read(ref _failStreak) >= FailLimit
-                        ? "MSFS nie przyjmuje komend (martwe połączenie SimConnect) — łączę ponownie"
-                        : "MSFS rozłączony");
+                        ? L.T("msfs.dead")
+                        : L.T("msfs.disconnected"));
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -147,13 +148,13 @@ public sealed class MsfsSource : IFlightSource
             }
             catch (DllNotFoundException e)
             {
-                SetStatus(false, "Brak SimConnect.dll: " + e.Message);
+                SetStatus(false, L.T("msfs.no_dll", e.Message));
             }
             catch (Exception e)
             {
                 // MSFS nie działa albo jeszcze się ładuje — normalny stan, spróbuj za chwilę.
-                SetStatus(false, "Czekam na MSFS…");
-                if (e.Message != _lastError) Log?.Invoke($"MSFS niedostępny — ponawiam co 5 s ({e.Message})");
+                SetStatus(false, L.T("msfs.waiting"));
+                if (e.Message != _lastError) Log?.Invoke(L.T("msfs.unavailable", e.Message));
                 _lastError = e.Message;
             }
 
@@ -177,7 +178,7 @@ public sealed class MsfsSource : IFlightSource
         foreach (var (name, id) in _eventIds)
         {
             var hr = Native.SimConnect_MapClientEventToSimEvent(client.Handle, id, name);
-            if (hr < 0) Log?.Invoke($"Nie zmapowano zdarzenia {name}: 0x{hr:X8}");
+            if (hr < 0) Log?.Invoke(L.T("msfs.map_failed", name, hr.ToString("X8")));
         }
 
         client.SystemEventReceived += (_, e) =>
@@ -205,13 +206,13 @@ public sealed class MsfsSource : IFlightSource
         }
         catch (Exception e) when (e is InvalidOperationException or EntryPointNotFoundException)
         {
-            Log?.Invoke($"Dane nawigacyjne MSFS niedostępne: {e.Message}");
+            Log?.Invoke(L.T("msfs.no_navdata", e.Message));
         }
 
         var sim = client.IsMSFS2024 ? "MSFS 2024" : "MSFS";
         _lastError = null;
-        SetStatus(true, $"Połączono z {sim}");
-        Log?.Invoke($"Połączono z {sim} przez SimConnect");
+        SetStatus(true, L.T("msfs.connected", sim));
+        Log?.Invoke(L.T("msfs.connected_simconnect", sim));
     }
 
     private async Task DisconnectAsync()
@@ -223,7 +224,7 @@ public sealed class MsfsSource : IFlightSource
         _subscription?.Dispose();
         _subscription = null;
         lock (_lock) _last = null;
-        if (_connected) SetStatus(false, "Czekam na MSFS…");
+        if (_connected) SetStatus(false, L.T("msfs.waiting"));
         if (client == null) return;
         try
         {
@@ -268,7 +269,7 @@ public sealed class MsfsSource : IFlightSource
             catch (Exception e) when (e is not OperationCanceledException)
             {
                 SimCallFailed();
-                Log?.Invoke($"Osie: {e.Message}");
+                Log?.Invoke(L.T("msfs.axes_error", e.Message));
             }
         }
     }
@@ -328,10 +329,10 @@ public sealed class MsfsSource : IFlightSource
                 if (refusal != null)
                 {
                     _lookRefused = true;
-                    Log?.Invoke($"Kamera: rozglądanie niemożliwe — {refusal}");
+                    Log?.Invoke(L.T("camera.refused", refusal));
                     return CommandResult.Fail(ErrorCodes.NotAllowed, refusal);
                 }
-                Log?.Invoke($"Kamera: rozglądanie w bieżącym widoku (MSFS zgłasza {RawCameraState()}, {CameraAngles()})");
+                Log?.Invoke(L.T("camera.looking", RawCameraState(), CameraAngles()));
                 _ = LookPumpAsync();
             }
             return Step() ? CommandResult.Success
@@ -361,14 +362,14 @@ public sealed class MsfsSource : IFlightSource
                 {
                     _mouse.Release();
                     _lookRefused = false;
-                    Log?.Invoke($"Kamera: koniec rozglądania ({CameraAngles()})");
+                    Log?.Invoke(L.T("camera.look_end", CameraAngles()));
                     return;
                 }
             }
             catch (Exception e)
             {
                 _mouse.Release();
-                Log?.Invoke($"Kamera: rozglądanie przerwane ({e.Message})");
+                Log?.Invoke(L.T("camera.look_aborted", e.Message));
                 return;
             }
             finally
@@ -383,7 +384,7 @@ public sealed class MsfsSource : IFlightSource
     {
         if (!_mouse.Active) return false;
         if (_mouse.Step(_lookYaw, _lookPitch)) return true;
-        Log?.Invoke("Kamera: okno MSFS przestało być aktywne — rozglądanie przerwane");
+        Log?.Invoke(L.T("camera.window_inactive"));
         _lookRefused = true;
         return false;
     }
@@ -424,7 +425,7 @@ public sealed class MsfsSource : IFlightSource
         try
         {
             var raw = RawCameraState();
-            Log?.Invoke($"Kamera: zmiana na {target} (MSFS zgłasza {raw})");
+            Log?.Invoke(L.T("camera.change", target, raw));
             if (raw == target) return CommandResult.Success;
             if (await WriteCameraAsync(client, target, ct)) return CommandResult.Success;
             return CommandResult.Fail(ErrorCodes.SimError, target == CamCockpit
@@ -452,7 +453,7 @@ public sealed class MsfsSource : IFlightSource
         // Z innej kamery (np. 6DOF po starszym mostku) do kabiny często wchodzi się tylko przez widok zewnętrzny
         else if (target == CamCockpit && await TryWriteCameraAsync(client, CamExternal, ct, attempts: 40)
             && await TryWriteCameraAsync(client, CamCockpit, ct, attempts: 40)) return true;
-        Log?.Invoke($"Kamera: MSFS nie przełączył widoku na {target} (zgłasza {RawCameraState()})");
+        Log?.Invoke(L.T("camera.change_failed", target, RawCameraState()));
         return false;
     }
 
@@ -466,7 +467,7 @@ public sealed class MsfsSource : IFlightSource
         catch (Exception e) when (e is not OperationCanceledException)
         {
             SimCallFailed();
-            Log?.Invoke($"Kamera: zapis CAMERA STATE nie powiódł się ({e.Message})");
+            Log?.Invoke(L.T("camera.write_failed", e.Message));
             return false;
         }
     }

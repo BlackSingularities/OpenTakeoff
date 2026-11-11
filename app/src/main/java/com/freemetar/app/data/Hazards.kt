@@ -30,22 +30,22 @@ data class Sigmet(
 ) {
     val hazardLabel: String
         get() = when (hazard.uppercase()) {
-            "TS", "CONVECTIVE", "CONV" -> loc("Burze", "Thunderstorms")
-            "TURB" -> loc("Turbulencja", "Turbulence")
-            "ICE" -> loc("Oblodzenie", "Icing")
-            "MTW" -> loc("Fala górska", "Mountain wave")
-            "VA" -> loc("Pył wulkaniczny", "Volcanic ash")
-            "TC" -> loc("Cyklon tropikalny", "Tropical cyclone")
-            "DS" -> loc("Burza pyłowa", "Dust storm")
-            "SS" -> loc("Burza piaskowa", "Sandstorm")
-            "IFR" -> loc("Warunki IFR", "IFR conditions")
+            "TS", "CONVECTIVE", "CONV" -> loc("hazards.thunderstorms")
+            "TURB" -> loc("hazards.turbulence")
+            "ICE" -> loc("hazards.icing")
+            "MTW" -> loc("hazards.mountain_wave")
+            "VA" -> loc("hazards.volcanic_ash")
+            "TC" -> loc("hazards.tropical_cyclone")
+            "DS" -> loc("hazards.dust_storm")
+            "SS" -> loc("hazards.sandstorm")
+            "IFR" -> loc("common.ifr_conditions")
             else -> hazard
         } + (qualifier?.takeIf { it.isNotBlank() && it.length <= 6 }?.let { " ($it)" } ?: "")
 
     val levels: String
         get() = when {
-            baseFt == null && topFt == null -> loc("wysokość nieokreślona", "levels not specified")
-            (baseFt ?: 0) == 0 -> loc("od ziemi do ${fl(topFt)}", "surface to ${fl(topFt)}")
+            baseFt == null && topFt == null -> loc("hazards.levels_not_specified")
+            (baseFt ?: 0) == 0 -> loc("hazards.surface_to", fl(topFt))
             else -> "${fl(baseFt)}–${fl(topFt)}"
         }
 
@@ -75,15 +75,15 @@ data class Pirep(
 
     val summary: String
         get() = listOfNotNull(
-            turbulence?.let { if (it.contains("NEG")) loc("bez turbulencji", "no turbulence") else "turbulencja ${intensity(it, neuter = false)}" },
-            icing?.let { if (it.contains("NEG")) loc("bez oblodzenia", "no icing") else "oblodzenie ${intensity(it, neuter = true)}" },
-        ).joinToString(", ").ifBlank { loc("bez zjawisk", "nothing reported") }
+            turbulence?.let { if (it.contains("NEG")) loc("hazards.no_turbulence") else "turbulencja ${intensity(it, neuter = false)}" },
+            icing?.let { if (it.contains("NEG")) loc("hazards.no_icing") else "oblodzenie ${intensity(it, neuter = true)}" },
+        ).joinToString(", ").ifBlank { loc("hazards.nothing_reported") }
 
     // turbulencja (r. żeński) / oblodzenie (r. nijaki)
     private fun intensity(s: String, neuter: Boolean) = when {
-        s.contains("SEV") -> if (neuter) loc("silne", "severe") else loc("silna", "severe")
-        s.contains("MOD") -> if (neuter) loc("umiarkowane", "moderate") else loc("umiarkowana", "moderate")
-        s.contains("LGT") -> if (neuter) loc("słabe", "light") else loc("słaba", "light")
+        s.contains("SEV") -> if (neuter) loc("hazards.severe_2") else loc("hazards.severe")
+        s.contains("MOD") -> if (neuter) loc("hazards.moderate_2") else loc("hazards.moderate")
+        s.contains("LGT") -> if (neuter) loc("hazards.light_2") else loc("hazards.light")
         else -> s.lowercase()
     }
 }

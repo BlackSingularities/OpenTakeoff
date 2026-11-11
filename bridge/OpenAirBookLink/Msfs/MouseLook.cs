@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -39,16 +40,16 @@ internal sealed class MouseLook
         var window = SimWindow(out var reason);
         if (window == IntPtr.Zero) return reason;
         if (!GetClientRect(window, out var rc) || rc.Right - rc.Left < 50 || rc.Bottom - rc.Top < 50)
-            return "Nie można odczytać okna MSFS";
+            return L.T("look.no_window");
         var park = new POINT { X = (rc.Right - rc.Left) / 2, Y = (int)((rc.Bottom - rc.Top) * ParkFromTop) };
-        if (!ClientToScreen(window, ref park)) return "Nie można odczytać okna MSFS";
+        if (!ClientToScreen(window, ref park)) return L.T("look.no_window");
 
         GetCursorPos(out _cursor);
         SetCursorPos(park.X, park.Y);
         if (Send(Mouse(0, 0, MOUSEEVENTF_RIGHTDOWN)) == 0)
         {
             SetCursorPos(_cursor.X, _cursor.Y);
-            return "Windows zablokował sterowanie myszą (SendInput)";
+            return L.T("look.blocked");
         }
         _window = window;
         _held = true;
@@ -103,19 +104,19 @@ internal sealed class MouseLook
             using var p = Process.GetProcessById((int)pid);
             if (!SimProcesses.Contains(p.ProcessName, StringComparer.OrdinalIgnoreCase))
             {
-                reason = "Rozglądanie działa, gdy okno MSFS jest aktywne na komputerze — kliknij w nie raz";
+                reason = L.T("look.activate");
                 return IntPtr.Zero;
             }
             if (IsElevated(pid) && !IsElevated((uint)Environment.ProcessId))
             {
-                reason = "MSFS działa jako administrator — uruchom OpenTakeoff Link też jako administrator";
+                reason = L.T("look.admin");
                 return IntPtr.Zero;
             }
             return window;
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException)
         {
-            reason = "Rozglądanie działa, gdy okno MSFS jest aktywne na komputerze — kliknij w nie raz";
+            reason = L.T("look.activate");
             return IntPtr.Zero;
         }
     }

@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Reflection;
 using System.Text.Json;
 using OpenAirBookLink.Core.Control;
@@ -64,7 +65,7 @@ public sealed class LinkHost : IDisposable
         _discovery.Start();
         _source.Start();
         Server.Source = _source;
-        Log?.Invoke($"Rozgłaszanie UDP na porcie {LinkProtocol.DiscoveryPort} co 2 s");
+        Log?.Invoke(L.T("log.broadcasting", LinkProtocol.DiscoveryPort));
     }
 
     public void SetSimulationMode(bool enabled)
@@ -80,8 +81,17 @@ public sealed class LinkHost : IDisposable
         _source = CreateSource(enabled);
         _source.Start();
         Server.Source = _source;
-        Log?.Invoke(enabled ? "Tryb symulacji włączony: lot EPWA → EPGD" : "Tryb symulacji wyłączony — łączę z MSFS");
+        Log?.Invoke(enabled ? L.T("log.sim_on") : L.T("log.sim_off"));
         SourceStatusChanged?.Invoke();
+    }
+
+    /// <summary>Zapisane ustawienie języka: SYSTEM albo kod języka. Odczytywane przed utworzeniem okna.</summary>
+    public static string SavedLanguage => LoadSettings().Language;
+
+    public void SetLanguage(string setting)
+    {
+        _settings.Language = setting;
+        SaveSettings(_settings);
     }
 
     public void SetLookSensitivity(int percent)
@@ -126,6 +136,7 @@ public sealed class LinkHost : IDisposable
     {
         public bool SimulationMode { get; set; }
         public int LookSensitivity { get; set; } = 100;
+        public string Language { get; set; } = "SYSTEM";
     }
 
     private static Settings LoadSettings()

@@ -110,14 +110,14 @@ fun FlightDetailScreen(vm: MainViewModel, id: String, onBack: () -> Unit, onShow
     }
     Column(Modifier.fillMaxSize().background(c.paper)) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, loc("Wróć", "Back"), tint = c.ink) }
+            IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, loc("common.back"), tint = c.ink) }
             Column(Modifier.weight(1f)) {
                 Text("${f.from ?: "?"} → ${f.to ?: "?"}", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = c.ink)
                 Text(DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(f.start)) + (f.aircraft?.let { ", $it" } ?: ""),
                     style = MaterialTheme.typography.bodySmall, color = c.ink2, maxLines = 1)
             }
-            IconButton({ exporter.launch("lot-${f.from ?: "x"}-${f.to ?: "y"}.gpx") }) { Icon(Icons.Outlined.FileDownload, loc("Eksportuj tor do GPX", "Export track to GPX"), tint = c.ink) }
-            IconButton({ vm.deleteFlightLog(f.id); onBack() }) { Icon(Icons.Outlined.Delete, loc("Usuń lot", "Delete flight"), tint = c.danger) }
+            IconButton({ exporter.launch("lot-${f.from ?: "x"}-${f.to ?: "y"}.gpx") }) { Icon(Icons.Outlined.FileDownload, loc("flight_detail.export_track_to_gpx"), tint = c.ink) }
+            IconButton({ vm.deleteFlightLog(f.id); onBack() }) { Icon(Icons.Outlined.Delete, loc("flight_detail.delete_flight"), tint = c.danger) }
         }
         Rule()
         val analysis = remember(f, Lang.current) { FlightAnalysis.analyze(f) }
@@ -127,35 +127,35 @@ fun FlightDetailScreen(vm: MainViewModel, id: String, onBack: () -> Unit, onShow
         val report = remember(f, analysis, scenarioResult, comparison, Lang.current) { FlightAnalysis.instructorReport(f, analysis, scenarioResult, comparison) }
         var tab by rememberSaveable { mutableStateOf(0) }
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(loc("Odtworzenie", "Replay"), loc("Analiza", "Analysis"), loc("Raport", "Report")).forEachIndexed { i, t ->
+            listOf(loc("flight_detail.replay"), loc("flight_detail.analysis"), loc("flight_detail.report")).forEachIndexed { i, t ->
                 FilterChip(tab == i, { tab = i }, { Text(t) })
             }
         }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
             when (tab) {
                 0 -> {
-                    Section(loc("Odtworzenie lotu", "Flight replay"), Icons.Outlined.History) {
+                    Section(loc("flight_detail.flight_replay"), Icons.Outlined.History) {
                         FlightReplay(f, analysis.events, { t, label -> vm.setFlightMarker(f.id, t, label) }, { t -> vm.deleteFlightMarker(f.id, t) })
                         androidx.compose.material3.OutlinedButton({ vm.showFlightOnMap(f.id); onShowMap() }, Modifier.padding(top = 10.dp)) {
                             Icon(Icons.Outlined.ViewInAr, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(loc("Pokaż na mapie 3D", "Show on the 3D map"))
+                            Text(loc("flight_detail.show_on_the_3d_map"))
                         }
                     }
-                    Section(loc("Lot", "Flight"), Icons.Outlined.Timeline) {
+                    Section(loc("common.flight"), Icons.Outlined.Timeline) {
                         FactGrid(listOf(
-                            Fact(loc("Czas", "Time"), "%d:%02d".format(f.durationMin / 60, f.durationMin % 60)),
-                            Fact(loc("Dystans", "Distance"), "${f.distanceNm} NM"),
-                            Fact(loc("Najwyżej", "Highest"), "FL%03d".format(f.maxAltFt / 100)),
-                            Fact(loc("Średnia GS", "Average GS"), f.track.map { it.gsKt }.filter { it > 50 }.takeIf { it.isNotEmpty() }?.average()?.roundToInt()?.let { "$it kt" } ?: "—"),
+                            Fact(loc("common.time"), "%d:%02d".format(f.durationMin / 60, f.durationMin % 60)),
+                            Fact(loc("common.distance"), "${f.distanceNm} NM"),
+                            Fact(loc("flight_detail.highest"), "FL%03d".format(f.maxAltFt / 100)),
+                            Fact(loc("flight_detail.average_gs"), f.track.map { it.gsKt }.filter { it > 50 }.takeIf { it.isNotEmpty() }?.average()?.roundToInt()?.let { "$it kt" } ?: "—"),
                         ))
                     }
                 }
                 1 -> {
                     val landings = f.allLandings
                     landings.forEachIndexed { i, l -> LandingCard(l, if (landings.size > 1) "${i + 1}/${landings.size}" else null) }
-                    if (landings.isEmpty()) Section(loc("Lądowanie", "Landing"), Icons.Outlined.FlightLand) {
-                        Text(loc("Brak danych o przyziemieniu (lot zakończony w powietrzu albo nagrany starszą wersją).", "No touchdown data (the flight ended in the air or was recorded by an older version)."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+                    if (landings.isEmpty()) Section(loc("common.landing"), Icons.Outlined.FlightLand) {
+                        Text(loc("flight_detail.no_touchdown_data_the_flight_ended"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
                     }
                     analysis.approaches.forEachIndexed { i, a -> ApproachSection(a, if (analysis.approaches.size > 1) "${i + 1}/${analysis.approaches.size}" else null) }
                     SmoothnessSection(analysis.smoothness)
@@ -172,25 +172,25 @@ fun FlightDetailScreen(vm: MainViewModel, id: String, onBack: () -> Unit, onShow
 private fun LandingCard(l: LandingReport, ordinal: String? = null) {
     val c = Fm.c
     val col = scoreColor(l.score)
-    Section(loc("Lądowanie", "Landing") + (ordinal?.let { " $it" } ?: "") + ((l.runway ?: l.airport)?.let { " — $it" } ?: ""), Icons.Outlined.FlightLand, frame = if (l.score < 55) c.danger else null) {
+    Section(loc("common.landing") + (ordinal?.let { " $it" } ?: "") + ((l.runway ?: l.airport)?.let { " — $it" } ?: ""), Icons.Outlined.FlightLand, frame = if (l.score < 55) c.danger else null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             ScoreBadge(l, 72)
             Spacer(Modifier.width(16.dp))
             Column {
                 Text(l.gradeText, style = MaterialTheme.typography.headlineMedium, color = col)
-                Text(loc("${l.vsFpm} ft/min przy przyziemieniu", "${l.vsFpm} ft/min at touchdown"), fontFamily = Mono, fontSize = 14.sp, color = c.ink)
+                Text(loc("flight_detail.ft_min_at_touchdown", l.vsFpm), fontFamily = Mono, fontSize = 14.sp, color = c.ink)
             }
         }
         Spacer(Modifier.size(12.dp))
         FactGrid(listOfNotNull(
-            Fact(loc("Prędkość pionowa", "Vertical speed"), "${l.vsFpm} ft/min"),
-            Fact(loc("Przeciążenie", "G-force"), l.gForce?.let { "%.2f g".format(it) } ?: "—"),
-            Fact(loc("Przechylenie", "Bank"), l.bankDeg?.let { "%.1f°".format(abs(it)) } ?: "—"),
-            Fact(loc("Pochylenie", "Pitch"), l.pitchDeg?.let { "%.1f°".format(it) } ?: "—"),
-            Fact(loc("Za progiem", "Past threshold"), l.alongFt?.let { "$it ft" } ?: "—"),
-            Fact(loc("Od osi", "Off centreline"), l.crossFt?.let { "${abs(it)} ft " + if (it >= 0) "P" else "L" } ?: "—"),
-            Fact(loc("Prędkość IAS", "IAS"), l.iasKt?.let { "$it kt" } ?: "—"),
-            Fact(loc("Odbicia", "Bounces"), l.bounces.toString(), accent = if (l.bounces > 0) c.caution else null),
+            Fact(loc("common.vertical_speed"), "${l.vsFpm} ft/min"),
+            Fact(loc("common.g_force"), l.gForce?.let { "%.2f g".format(it) } ?: "—"),
+            Fact(loc("common.bank"), l.bankDeg?.let { "%.1f°".format(abs(it)) } ?: "—"),
+            Fact(loc("common.pitch"), l.pitchDeg?.let { "%.1f°".format(it) } ?: "—"),
+            Fact(loc("flight_detail.past_threshold"), l.alongFt?.let { "$it ft" } ?: "—"),
+            Fact(loc("flight_detail.off_centreline"), l.crossFt?.let { "${abs(it)} ft " + if (it >= 0) "P" else "L" } ?: "—"),
+            Fact(loc("flight_detail.ias"), l.iasKt?.let { "$it kt" } ?: "—"),
+            Fact(loc("flight_detail.bounces"), l.bounces.toString(), accent = if (l.bounces > 0) c.caution else null),
         ))
         Spacer(Modifier.size(10.dp))
         l.noteTexts.forEach { n -> Text("• $n", style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.padding(vertical = 2.dp)) }

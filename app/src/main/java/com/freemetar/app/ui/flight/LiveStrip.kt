@@ -48,7 +48,7 @@ private val STRIP_LIVE = Color(0xFFFF4D4D)
  */
 @Composable
 fun LiveFlightStrip(s: FlightState, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val desc = tr("Lot na żywo — dotknij, aby przejść do kokpitu", "Live flight — tap to open the cockpit")
+    val desc = tr("live_strip.live_flight_tap_to_open_the")
     val alt = (s.position.altIndFt ?: s.position.altMslFt)?.roundToInt()
     val vs = s.speed.vsFpm?.roundToInt()
     val gs = s.speed.gsKt
@@ -77,8 +77,8 @@ fun LiveFlightStrip(s: FlightState, onClick: () -> Unit, modifier: Modifier = Mo
         Spacer(Modifier.width(6.dp))
         Column(Modifier.weight(1f, fill = false).padding(end = 10.dp)) {
             Text(
-                listOfNotNull(next?.let { "→ $it" }, if (s.aircraft.paused == true) tr("PAUZA", "PAUSED") else null).joinToString("  ")
-                    .ifEmpty { tr("LOT NA ŻYWO", "LIVE FLIGHT") },
+                listOfNotNull(next?.let { "→ $it" }, if (s.aircraft.paused == true) tr("live_strip.paused") else null).joinToString("  ")
+                    .ifEmpty { tr("live_strip.live_flight") },
                 fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = STRIP_ACCENT, maxLines = 1,
             )
             Text(s.aircraft.atcModel?.takeIf { it.isNotBlank() } ?: s.aircraft.title ?: "", fontSize = 10.sp, color = STRIP_LABEL,

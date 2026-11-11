@@ -1,5 +1,7 @@
 package com.freemetar.app.ui.screens
 
+import com.freemetar.app.domain.pick
+import com.freemetar.app.domain.itemCount
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,9 +54,9 @@ fun ChecklistsScreen(
                 title = {
                     Text(
                         if (selectedChecklist != null) {
-                            loc(selectedChecklist.name_pl, selectedChecklist.name_en)
+                            pick(selectedChecklist.name_pl, selectedChecklist.name_en, selectedChecklist.name_es)
                         } else {
-                            loc("Checklisty", "Checklists")
+                            loc("common.checklists")
                         }
                     )
                 },
@@ -85,14 +87,11 @@ fun ChecklistsScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        loc("Brak checklistów", "No checklists"),
+                        loc("checklists.no_checklists"),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        loc(
-                            "Nie rozpoznano samolotu. Wybierz checklisty ręcznie:",
-                            "Aircraft not recognised. Pick checklists manually:"
-                        ),
+                        loc("checklists.aircraft_not_recognised_pick_checklists_manually"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -164,7 +163,7 @@ private fun ChecklistsListView(
 
         // Lista checklistów
         Text(
-            loc("Dostępne checklisty", "Available checklists"),
+            loc("checklists.available_checklists"),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 8.dp)
         )
@@ -197,11 +196,11 @@ private fun ChecklistCard(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    loc(checklist.name_pl, checklist.name_en),
+                    pick(checklist.name_pl, checklist.name_en, checklist.name_es),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    "${checklist.items.size} " + loc("pozycji", "items"),
+                    itemCount(checklist.items.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -251,7 +250,7 @@ private fun ChecklistDetailView(
                 )
                 if (progress == 1f) {
                     Text(
-                        loc("Ukończono", "Completed"),
+                        loc("checklists.completed"),
                         fontSize = 14.sp,
                         color = Color(0xFF00FF00),
                         fontWeight = FontWeight.Bold
@@ -264,7 +263,7 @@ private fun ChecklistDetailView(
             )
             if (completedCount > 0) {
                 TextButton(onClick = onResetChecklist) {
-                    Text(loc("Resetuj", "Reset"))
+                    Text(loc("checklists.reset"))
                 }
             }
         }
@@ -314,7 +313,7 @@ private fun ChecklistItemRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                loc(item.item_pl, item.item_en),
+                pick(item.item_pl, item.item_en, item.item_es),
                 fontWeight = FontWeight.Medium,
                 color = if (checked) Color(0xFF00FF00) else c.ink
             )

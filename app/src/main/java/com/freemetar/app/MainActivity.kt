@@ -97,12 +97,12 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 // Getter: etykiety w bieżącym języku przy każdym rysowaniu paska
 private val tabs get() = listOf(
-    Tab("home", loc("Lotniska", "Airports"), Icons.Outlined.LocalAirport, Icons.Filled.LocalAirport),
-    Tab("map", loc("Mapa", "Map"), Icons.Outlined.Map, Icons.Filled.Map),
-    Tab("flight", loc("Lot", "Flight"), Icons.Outlined.FlightTakeoff, Icons.Filled.FlightTakeoff),
-    Tab("logbook", loc("Dziennik", "Logbook"), Icons.Outlined.Book, Icons.Filled.Book),
-    Tab("tools", loc("Narzędzia", "Tools"), Icons.Outlined.Calculate, Icons.Filled.Calculate),
-    Tab("settings", loc("Ustawienia", "Settings"), Icons.Outlined.Settings, Icons.Filled.Settings),
+    Tab("home", loc("common.airports"), Icons.Outlined.LocalAirport, Icons.Filled.LocalAirport),
+    Tab("map", loc("common.map"), Icons.Outlined.Map, Icons.Filled.Map),
+    Tab("flight", loc("common.flight"), Icons.Outlined.FlightTakeoff, Icons.Filled.FlightTakeoff),
+    Tab("logbook", loc("main_activity.logbook"), Icons.Outlined.Book, Icons.Filled.Book),
+    Tab("tools", loc("common.tools"), Icons.Outlined.Calculate, Icons.Filled.Calculate),
+    Tab("settings", loc("common.settings"), Icons.Outlined.Settings, Icons.Filled.Settings),
 )
 
 private fun NavHostController.goTab(route: String) = navigate(route) {
@@ -121,19 +121,22 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean =
         com.freemetar.app.data.input.Gamepad.onKey(event) || super.dispatchKeyEvent(event)
 
+    /** Język telefonu; Locale.getDefault() po wyborze języka w aplikacji wskazuje już ten wybór. */
+    private fun systemLocale() = android.content.res.Resources.getSystem().configuration.locales[0]
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Feedback.install(this, "opentakeoff")
         // ViewModel startuje (baza lotnisk, komunikaty) zanim wczytają się ustawienia — do tego czasu język systemu
-        com.freemetar.app.domain.Lang.current = com.freemetar.app.domain.Lang.resolve(null)
+        com.freemetar.app.domain.Lang.activate(com.freemetar.app.domain.Lang.resolve(null, systemLocale()))
         enableEdgeToEdge()
         setContent {
             val vm: MainViewModel = viewModel()
             viewModel = vm
             val settings by vm.settings.collectAsStateWithLifecycle()
             // Język: ustawienie albo system; Lang.current dla logiki, LocalLang dla przebudowy interfejsu
-            val lang = com.freemetar.app.domain.Lang.resolve(settings.language)
-            com.freemetar.app.domain.Lang.current = lang
+            val lang = com.freemetar.app.domain.Lang.resolve(settings.language, systemLocale())
+            com.freemetar.app.domain.Lang.activate(lang)
             androidx.compose.runtime.CompositionLocalProvider(com.freemetar.app.ui.theme.LocalLang provides lang) {
             OpenTakeoffTheme(settings.themeMode) {
                 CrashReportPrompt()
@@ -239,7 +242,7 @@ class MainActivity : ComponentActivity() {
                                 else {
                                     Spacer(Modifier.statusBarsPadding().size(16.dp))
                                     // Logo prowadzi na pulpit (ekran główny) z każdego miejsca
-                                    Icon(androidx.compose.ui.res.painterResource(R.drawable.opentakeoff_mark), loc("OpenTakeoff — pulpit", "OpenTakeoff — dashboard"), tint = androidx.compose.ui.graphics.Color.Unspecified,
+                                    Icon(androidx.compose.ui.res.painterResource(R.drawable.opentakeoff_mark), loc("common.opentakeoff_dashboard"), tint = androidx.compose.ui.graphics.Color.Unspecified,
                                         modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).clickable { nav.goTab("home") }.padding(6.dp))
                                     Spacer(Modifier.size(24.dp))
                                 }
@@ -259,7 +262,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 Spacer(Modifier.weight(1f))
                                 androidx.compose.material3.IconButton({ railHidden = true }) {
-                                    Icon(Icons.AutoMirrored.Outlined.MenuOpen, loc("Schowaj pasek zakładek", "Hide the tab bar"), tint = c.ink2)
+                                    Icon(Icons.AutoMirrored.Outlined.MenuOpen, loc("main_activity.hide_the_tab_bar"), tint = c.ink2)
                                 }
                                 Spacer(Modifier.size(8.dp))
                             }
@@ -344,11 +347,9 @@ class MainActivity : ComponentActivity() {
                                     com.freemetar.app.ui.screens.CalloutsSettingsScreen(
                                         enabled = vm.calloutsEnabled.collectAsState().value,
                                         enabledCallouts = vm.enabledCallouts.collectAsState().value,
-                                        language = vm.calloutsLanguage.collectAsState().value,
                                         speechRate = vm.calloutsSpeechRate.collectAsState().value,
                                         onEnabledChange = { vm.setCalloutsEnabled(it) },
                                         onCalloutToggle = { id, enabled -> vm.toggleCallout(id, enabled) },
-                                        onLanguageChange = { vm.setCalloutsLanguage(it) },
                                         onSpeechRateChange = { vm.setCalloutsSpeechRate(it) },
                                         onBack = { nav.popBackStack() }
                                     )
@@ -380,7 +381,7 @@ class MainActivity : ComponentActivity() {
                                 { railHidden = false },
                                 Modifier.align(Alignment.TopStart).statusBarsPadding().padding(2.dp).size(40.dp)
                                     .clip(androidx.compose.foundation.shape.CircleShape).background(c.paper.copy(alpha = 0.85f)),
-                            ) { Icon(Icons.Outlined.Menu, loc("Pokaż pasek zakładek", "Show the tab bar"), tint = c.ink) }
+                            ) { Icon(Icons.Outlined.Menu, loc("main_activity.show_the_tab_bar"), tint = c.ink) }
                         }
                     }
                 }

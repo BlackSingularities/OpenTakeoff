@@ -88,6 +88,16 @@ Telefon wysyła wychylenia lotek, steru wysokości i kierunku. Program ogranicza
 wychylenia, a gdy przez pół sekundy nie dostanie aktualizacji (np. zerwane Wi-Fi), sam ustawia
 stery w neutrum i oddaje sterowanie joystickowi. Naraz osiami steruje tylko jeden telefon.
 
+## 8. X-Plane 11 i 12
+
+Dla X-Plane zamiast programu Windows uruchom most `bridge-xplane/xplane_link.py` (Python 3.9+). Nie potrzebuje wtyczek.
+
+1. Zainstaluj zależność: `pip install "websockets>=10.1"`.
+2. Uruchom X-Plane, a potem `python xplane_link.py`. Jeśli X-Plane działa na innym komputerze, dodaj `--xplane-host ADRES`.
+3. Sparuj telefon kodem wypisanym w oknie, jak w punkcie 3.
+
+Most podaje pozycję, przyrządy, autopilota, radia, silniki i przyziemienia oraz przyjmuje komendy i sterowanie osiami. Nie ma danych nawigacyjnych z bazy (punkt 5), planu lotu GPS, odbiorników NAV ani rozglądania się. Nie uruchamiaj go razem z programem dla MSFS, bo oba używają portu 47810.
+
 ## Problemy
 
 | Objaw | Co zrobić |

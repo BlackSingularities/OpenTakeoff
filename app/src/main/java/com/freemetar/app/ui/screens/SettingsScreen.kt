@@ -1,5 +1,7 @@
 package com.freemetar.app.ui.screens
 
+import com.freemetar.app.domain.flightCount
+import com.freemetar.app.domain.airportCount
 import androidx.compose.foundation.layout.wrapContentWidth
 
 import com.freemetar.app.domain.loc
@@ -73,82 +75,80 @@ fun SettingsScreen(vm: MainViewModel, onOpenCallouts: () -> Unit = {}) {
             .statusBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(loc("Ustawienia", "Settings"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 4.dp))
+        Text(loc("common.settings"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 4.dp))
 
-        SectionCard(loc("Ogólne", "General"), icon = Icons.Outlined.Straighten, dense = true) {
-            ChipRow(loc("Ciśnienie", "Pressure")) {
+        SectionCard(loc("settings.general"), icon = Icons.Outlined.Straighten, dense = true) {
+            ChipRow(loc("settings.pressure")) {
                 FilterChip(s.pressureUnit == PressureUnit.HPA, { vm.setPressure(PressureUnit.HPA) }, { Text("hPa") })
                 FilterChip(s.pressureUnit == PressureUnit.INHG, { vm.setPressure(PressureUnit.INHG) }, { Text("inHg") })
             }
-            ChipRow(loc("Wysokość", "Altitude")) {
-                FilterChip(s.altUnit == AltUnit.FT, { vm.setAlt(AltUnit.FT) }, { Text(loc("stopy", "feet")) })
-                FilterChip(s.altUnit == AltUnit.M, { vm.setAlt(AltUnit.M) }, { Text(loc("metry", "metres")) })
+            ChipRow(loc("common.altitude")) {
+                FilterChip(s.altUnit == AltUnit.FT, { vm.setAlt(AltUnit.FT) }, { Text(loc("settings.feet")) })
+                FilterChip(s.altUnit == AltUnit.M, { vm.setAlt(AltUnit.M) }, { Text(loc("settings.metres")) })
             }
-            ChipRow(loc("Język", "Language")) {
-                listOf("SYSTEM" to loc("System", "System"), "PL" to "Polski", "EN" to "English").forEach { (code, label) ->
+            ChipRow(loc("settings.language")) {
+                listOf("SYSTEM" to loc("settings.system"), "PL" to "Polski", "EN" to "English", "ES" to "Español").forEach { (code, label) ->
                     FilterChip(s.language == code, { vm.setLanguage(code) }, { Text(label) })
                 }
             }
         }
 
-        SectionCard(loc("Wyświetlanie", "Display"), icon = Icons.Outlined.Tune, dense = true) {
-            ChipRow(loc("Motyw", "Theme")) {
+        SectionCard(loc("settings.display"), icon = Icons.Outlined.Tune, dense = true) {
+            ChipRow(loc("settings.theme")) {
                 listOf(
                     com.freemetar.app.data.ThemeMode.SYSTEM to "AMOLED",
-                    com.freemetar.app.data.ThemeMode.NIGHT to loc("Grafit", "Graphite"),
-                    com.freemetar.app.data.ThemeMode.DAY to loc("Jasny", "Bright"),
+                    com.freemetar.app.data.ThemeMode.NIGHT to loc("settings.graphite"),
+                    com.freemetar.app.data.ThemeMode.DAY to loc("settings.bright"),
                 ).forEach { (mode, label) ->
                     FilterChip(s.themeMode == mode, { vm.setTheme(mode) }, { Text(label) })
                 }
             }
-            ToggleRow(Icons.Outlined.Fullscreen, loc("Ukryj pasek stanu", "Hide the status bar"),
-                loc("Pasek wysuniesz przeciągnięciem od góry", "Swipe down from the top to show it"),
+            ToggleRow(Icons.Outlined.Fullscreen, loc("settings.hide_the_status_bar"),
+                loc("settings.swipe_down_from_the_top_to"),
                 s.hideStatusBar) { vm.setHideStatusBar(it) }
-            ToggleRow(Icons.Outlined.Autorenew, loc("Automatyczne odświeżanie", "Auto refresh"),
-                loc("Co 5 minut, gdy aplikacja jest otwarta", "Every 5 minutes while the app is open"), s.autoRefresh) { vm.setAutoRefresh(it) }
-            ToggleRow(Icons.Outlined.ViewDay, loc("Stały pasek rozdziałów", "Always show section bar"),
-                loc("W briefingu lotniska; wyłączony pokazuje się tylko podczas przewijania", "In the airport briefing; when off it appears only while scrolling"),
+            ToggleRow(Icons.Outlined.Autorenew, loc("settings.auto_refresh"),
+                loc("settings.every_5_minutes_while_the_app"), s.autoRefresh) { vm.setAutoRefresh(it) }
+            ToggleRow(Icons.Outlined.ViewDay, loc("settings.always_show_section_bar"),
+                loc("settings.in_the_airport_briefing_when_off"),
                 s.pinJumpBar) { vm.setPinJumpBar(it) }
         }
 
-        SectionCard(loc("Sterowanie samolotem", "Flying the aircraft"), icon = Icons.Outlined.ScreenRotation, dense = true) {
-            ChipRow(loc("Tryb", "Mode")) {
-                listOf("TILT" to loc("Żyroskop", "Gyro"), "TOUCH" to loc("Drążek", "Stick"), "GAMEPAD" to loc("Kontroler", "Controller")).forEach { (code, label) ->
+        SectionCard(loc("settings.flying_the_aircraft"), icon = Icons.Outlined.ScreenRotation, dense = true) {
+            ChipRow(loc("settings.mode")) {
+                listOf("TILT" to loc("common.gyro"), "TOUCH" to loc("common.stick"), "GAMEPAD" to loc("common.controller")).forEach { (code, label) ->
                     FilterChip(s.controlMode == code, { vm.setControlMode(code) }, { Text(label) })
                 }
             }
-            ChipRow(loc("Dźwignie mocy", "Power levers")) {
-                FilterChip(s.leversLeft, { vm.setLeversLeft(true) }, { Text(loc("Z lewej", "Left")) })
-                FilterChip(!s.leversLeft, { vm.setLeversLeft(false) }, { Text(loc("Z prawej", "Right")) })
+            ChipRow(loc("settings.power_levers")) {
+                FilterChip(s.leversLeft, { vm.setLeversLeft(true) }, { Text(loc("settings.left")) })
+                FilterChip(!s.leversLeft, { vm.setLeversLeft(false) }, { Text(loc("settings.right")) })
             }
-            ToggleRow(Icons.Outlined.TouchApp, loc("Pływający przycisk sterowania", "Floating control button"),
-                loc("Na każdej zakładce; przytrzymaj, żeby sterować", "On every tab; hold it to fly"),
+            ToggleRow(Icons.Outlined.TouchApp, loc("common.floating_control_button"),
+                loc("settings.on_every_tab_hold_it_to"),
                 s.floatingControl) { vm.setFloatingControl(it) }
-            if (s.floatingControl) ChipRow(loc("Wariant", "Style")) {
-                FilterChip(s.floatingStyle == "SIMPLE", { vm.setFloatingStyle("SIMPLE") }, { Text(loc("Prosty", "Simple")) })
-                FilterChip(s.floatingStyle == "TRIM", { vm.setFloatingStyle("TRIM") }, { Text(loc("Z trymem", "With trim")) })
+            if (s.floatingControl) ChipRow(loc("settings.style")) {
+                FilterChip(s.floatingStyle == "SIMPLE", { vm.setFloatingStyle("SIMPLE") }, { Text(loc("settings.simple")) })
+                FilterChip(s.floatingStyle == "TRIM", { vm.setFloatingStyle("TRIM") }, { Text(loc("settings.with_trim")) })
             }
             if (s.floatingControl && s.floatingStyle == "TRIM") Text(
-                loc("Żyroskop: palec w dół = nos w górę, w górę = nos w dół. Drążek: osobne przyciski trymu.",
-                    "Gyro: drag down = nose up, drag up = nose down. Stick: separate trim buttons."),
+                loc("settings.gyro_drag_down_nose_up_drag"),
                 color = Fm.c.ink2, fontSize = 12.sp,
             )
         }
 
-        SectionCard(loc("Zapowiedzi głosowe", "Voice callouts"), icon = Icons.Outlined.RecordVoiceOver, dense = true) {
+        SectionCard(loc("common.voice_callouts"), icon = Icons.Outlined.RecordVoiceOver, dense = true) {
             Row(Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).clickable(onClick = onOpenCallouts).padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(if (s.calloutsEnabled) loc("Włączone", "On") else loc("Wyłączone", "Off"), color = Fm.c.ink)
-                    Text(loc("Wysokości przy lądowaniu, V1 i Rotate, autopilot — czytane przez syntezator mowy",
-                        "Landing altitudes, V1 and Rotate, autopilot — read by text-to-speech"), color = Fm.c.ink2, fontSize = 12.sp)
+                    Text(if (s.calloutsEnabled) loc("settings.on") else loc("settings.off"), color = Fm.c.ink)
+                    Text(loc("settings.landing_altitudes_positive_rate_autopilot_read"), color = Fm.c.ink2, fontSize = 12.sp)
                 }
                 Icon(Icons.Outlined.ChevronRight, null, tint = Fm.c.ink2)
             }
         }
 
-        SectionCard(loc("Zapis lotów", "Flight recording"), icon = Icons.Outlined.History, dense = true) {
-            ChipRow(loc("Próbki", "Rate")) {
+        SectionCard(loc("settings.flight_recording"), icon = Icons.Outlined.History, dense = true) {
+            ChipRow(loc("settings.rate")) {
                 listOf(250 to "4/s", 500 to "2/s", 1000 to "1/s", 2000 to "2 s", 5000 to "5 s").forEach { (ms, label) ->
                     FilterChip(s.recordIntervalMs == ms, { vm.setRecordInterval(ms) }, { Text(label) })
                 }
@@ -163,28 +163,28 @@ fun SettingsScreen(vm: MainViewModel, onOpenCallouts: () -> Unit = {}) {
                 uri?.let { vm.importFlightArchive(ctx, it) }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(loc("${logs.size} lotów · $kb KB", "${logs.size} flights · $kb KB"), color = Fm.c.ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Text("${flightCount(logs.size)} · $kb KB", color = Fm.c.ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
                 OutlinedButton({ exporter.launch("OpenTakeoff-loty.oab") }, enabled = logs.isNotEmpty()) {
-                    Icon(Icons.Outlined.Upload, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(loc("Eksport", "Export"))
+                    Icon(Icons.Outlined.Upload, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(loc("settings.export"))
                 }
                 OutlinedButton({ importer.launch(arrayOf("*/*")) }) {
-                    Icon(Icons.Outlined.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(loc("Import", "Import"))
+                    Icon(Icons.Outlined.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(loc("settings.import"))
                 }
             }
         }
 
-        SectionCard(loc("Baza lotnisk", "Airport database"), icon = Icons.Outlined.Storage, dense = true) {
+        SectionCard(loc("settings.airport_database"), icon = Icons.Outlined.Storage, dense = true) {
             val txt = when (val d = db) {
-                is DbState.Ready -> loc("${d.count} lotnisk · ", "${d.count} airports · ") +
-                    (d.updated?.let { DateFormat.getDateInstance().format(Date(it)) } ?: "—") + loc(" · sama odświeża się co 30 dni", " · refreshes every 30 days")
+                is DbState.Ready -> "${airportCount(d.count)} · " +
+                    (d.updated?.let { DateFormat.getDateInstance().format(Date(it)) } ?: "—") + loc("settings.refreshes_every_30_days")
                 is DbState.Loading -> d.message
-                is DbState.Error -> loc("Błąd: ${d.message}", "Error: ${d.message}")
+                is DbState.Error -> loc("settings.error", d.message)
                 DbState.Idle -> "—"
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(txt, color = Fm.c.ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
                 OutlinedButton({ vm.loadDb(force = true) }, enabled = db !is DbState.Loading) {
-                    Icon(Icons.Outlined.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(loc("Pobierz", "Download"))
+                    Icon(Icons.Outlined.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(loc("common.download"))
                 }
             }
         }

@@ -8,22 +8,22 @@ enum class Category { STATION, TIME, WIND, VISIBILITY, RVR, WEATHER, CLOUDS, TEM
 object MetarDecoder {
 
     // Słowniki jako właściwości z getterem — budowane przy każdym użyciu, więc zawsze w bieżącym języku
-    private val intensity get() = mapOf("-" to loc("słaby", "light"), "+" to loc("silny", "heavy"), "VC" to loc("w pobliżu", "in the vicinity"))
+    private val intensity get() = mapOf("-" to loc("metar_decoder.light"), "+" to loc("metar_decoder.heavy"), "VC" to loc("metar_decoder.in_the_vicinity"))
     private val descriptors get() = mapOf(
-        "MI" to loc("płytki", "shallow"), "PR" to loc("częściowy", "partial"), "BC" to loc("płaty", "patches of"), "DR" to loc("zamieć niska", "low drifting"),
-        "BL" to loc("zamieć wysoka", "blowing"), "SH" to loc("przelotny", "showers of"), "TS" to loc("burza", "thunderstorm with"), "FZ" to loc("marznący", "freezing"),
+        "MI" to loc("metar_decoder.shallow"), "PR" to loc("metar_decoder.partial"), "BC" to loc("metar_decoder.patches_of"), "DR" to loc("metar_decoder.low_drifting"),
+        "BL" to loc("metar_decoder.blowing"), "SH" to loc("metar_decoder.showers_of"), "TS" to loc("metar_decoder.thunderstorm_with"), "FZ" to loc("metar_decoder.freezing"),
     )
     private val phenomena get() = mapOf(
-        "DZ" to loc("mżawka", "drizzle"), "RA" to loc("deszcz", "rain"), "SN" to loc("śnieg", "snow"), "SG" to loc("śnieg ziarnisty", "snow grains"),
-        "IC" to loc("słupki lodowe", "ice crystals"), "PL" to loc("deszcz lodowy", "ice pellets"), "GR" to loc("grad", "hail"), "GS" to loc("krupa", "small hail"),
-        "UP" to loc("nieznany opad", "unknown precipitation"), "BR" to loc("zamglenie", "mist"), "FG" to loc("mgła", "fog"), "FU" to loc("dym", "smoke"),
-        "VA" to loc("pył wulkaniczny", "volcanic ash"), "DU" to loc("pył", "dust"), "SA" to loc("piasek", "sand"), "HZ" to loc("zmętnienie", "haze"),
-        "PY" to loc("pył wodny", "spray"), "PO" to loc("wiry pyłowe", "dust whirls"), "SQ" to loc("szkwał", "squalls"), "FC" to loc("lej/trąba", "funnel cloud"),
-        "SS" to loc("burza piaskowa", "sandstorm"), "DS" to loc("burza pyłowa", "dust storm"),
+        "DZ" to loc("metar_decoder.drizzle"), "RA" to loc("metar_decoder.rain"), "SN" to loc("metar_decoder.snow"), "SG" to loc("metar_decoder.snow_grains"),
+        "IC" to loc("metar_decoder.ice_crystals"), "PL" to loc("metar_decoder.ice_pellets"), "GR" to loc("metar_decoder.hail"), "GS" to loc("metar_decoder.small_hail"),
+        "UP" to loc("metar_decoder.unknown_precipitation"), "BR" to loc("metar_decoder.mist"), "FG" to loc("metar_decoder.fog"), "FU" to loc("metar_decoder.smoke"),
+        "VA" to loc("metar_decoder.volcanic_ash"), "DU" to loc("metar_decoder.dust"), "SA" to loc("metar_decoder.sand"), "HZ" to loc("metar_decoder.haze"),
+        "PY" to loc("metar_decoder.spray"), "PO" to loc("metar_decoder.dust_whirls"), "SQ" to loc("metar_decoder.squalls"), "FC" to loc("metar_decoder.funnel_cloud"),
+        "SS" to loc("metar_decoder.sandstorm"), "DS" to loc("metar_decoder.dust_storm"),
     )
     private val cover get() = mapOf(
-        "FEW" to loc("nieliczne (1–2/8)", "few (1–2/8)"), "SCT" to loc("rozproszone (3–4/8)", "scattered (3–4/8)"),
-        "BKN" to loc("poprzerywane (5–7/8)", "broken (5–7/8)"), "OVC" to loc("całkowite (8/8)", "overcast (8/8)"), "VV" to loc("widzialność pionowa", "vertical visibility"),
+        "FEW" to loc("metar_decoder.few_1_2_8"), "SCT" to loc("metar_decoder.scattered_3_4_8"),
+        "BKN" to loc("metar_decoder.broken_5_7_8"), "OVC" to loc("metar_decoder.overcast_8_8"), "VV" to loc("metar_decoder.vertical_visibility"),
     )
 
     private val reTime = Regex("""^(\d{2})(\d{2})(\d{2})Z$""")
@@ -67,61 +67,61 @@ object MetarDecoder {
             }
             out += when {
                 i == 0 && (t == "METAR" || t == "SPECI" || t == "TAF") ->
-                    Decoded(t, Category.OTHER, when (t) { "SPECI" -> loc("Depesza specjalna (zmiana warunków)", "Special report (conditions changed)"); "TAF" -> loc("Prognoza lotniskowa", "Terminal aerodrome forecast"); else -> loc("Rutynowa depesza METAR", "Routine METAR report") })
-                t == "AMD" -> Decoded(t, Category.OTHER, loc("Prognoza poprawiona", "Amended forecast"))
+                    Decoded(t, Category.OTHER, when (t) { "SPECI" -> loc("metar_decoder.special_report_conditions_changed"); "TAF" -> loc("metar_decoder.terminal_aerodrome_forecast"); else -> loc("metar_decoder.routine_metar_report") })
+                t == "AMD" -> Decoded(t, Category.OTHER, loc("metar_decoder.amended_forecast"))
                 (i <= 1 || (i == 2 && (tokens[1] == "AMD" || tokens[1] == "COR"))) && t.length == 4 && t.all { it.isLetterOrDigit() } && t.first().isLetter() && out.none { it.category == Category.STATION } ->
-                    Decoded(t, Category.STATION, loc("Lotnisko $t", "Airport $t"))
-                reTime.matches(t) -> reTime.find(t)!!.destructured.let { (d, h, m) -> Decoded(t, Category.TIME, loc("Dzień $d, godz. $h:$m UTC", "Day $d, $h:$m UTC")) }
-                t == "AUTO" -> Decoded(t, Category.OTHER, loc("Depesza automatyczna (bez obserwatora)", "Automated report (no observer)"))
-                t == "COR" -> Decoded(t, Category.OTHER, loc("Depesza skorygowana", "Corrected report"))
-                t == "NIL" -> Decoded(t, Category.OTHER, loc("Brak depeszy", "No report"))
+                    Decoded(t, Category.STATION, loc("metar_decoder.airport", t))
+                reTime.matches(t) -> reTime.find(t)!!.destructured.let { (d, h, m) -> Decoded(t, Category.TIME, loc("metar_decoder.day_utc", d, h, m)) }
+                t == "AUTO" -> Decoded(t, Category.OTHER, loc("metar_decoder.automated_report_no_observer"))
+                t == "COR" -> Decoded(t, Category.OTHER, loc("metar_decoder.corrected_report"))
+                t == "NIL" -> Decoded(t, Category.OTHER, loc("metar_decoder.no_report"))
                 reWind.matches(t) -> wind(t)
-                t == "00000KT" -> Decoded(t, Category.WIND, loc("Cisza", "Calm"))
-                reWindVar.matches(t) -> reWindVar.find(t)!!.destructured.let { (a, b) -> Decoded(t, Category.WIND, loc("Kierunek zmienny od $a° do $b°", "Direction varying between $a° and $b°")) }
-                t == "CAVOK" -> Decoded(t, Category.VISIBILITY, loc("CAVOK — widzialność ≥10 km, brak chmur poniżej 5000 ft i CB, brak zjawisk", "CAVOK — visibility ≥10 km, no cloud below 5000 ft and no CB, no significant weather"))
-                t == "9999" -> Decoded(t, Category.VISIBILITY, loc("Widzialność 10 km lub więcej", "Visibility 10 km or more"))
+                t == "00000KT" -> Decoded(t, Category.WIND, loc("metar_decoder.calm"))
+                reWindVar.matches(t) -> reWindVar.find(t)!!.destructured.let { (a, b) -> Decoded(t, Category.WIND, loc("metar_decoder.direction_varying_between_and", a, b)) }
+                t == "CAVOK" -> Decoded(t, Category.VISIBILITY, loc("metar_decoder.cavok_visibility_10_km_no_cloud"))
+                t == "9999" -> Decoded(t, Category.VISIBILITY, loc("metar_decoder.visibility_10_km_or_more"))
                 // Po temperaturze 4 cyfry to widzialność tylko w trendzie (TEMPO 4000)
                 reVis.matches(t) && out.lastOrNull { it.category == Category.TEMP || it.category == Category.TREND }?.category != Category.TEMP ->
                     reVis.find(t)!!.destructured.let { (v, dir) ->
                         val m = v.toInt()
-                        val txt = if (m >= 9999) loc("10 km lub więcej", "10 km or more") else if (m >= 5000) "${m / 1000} km" else "$m m"
+                        val txt = if (m >= 9999) loc("metar_decoder.10_km_or_more") else if (m >= 5000) "${m / 1000} km" else "$m m"
                         Decoded(t, Category.VISIBILITY, when (dir) {
-                            "" -> loc("Widzialność $txt", "Visibility $txt")
-                            "NDV" -> loc("Widzialność $txt (brak zmienności kierunkowej)", "Visibility $txt (no directional variation)")
-                            else -> loc("Minimalna widzialność $txt w kierunku $dir", "Minimum visibility $txt towards $dir")
+                            "" -> loc("metar_decoder.visibility_2", txt)
+                            "NDV" -> loc("metar_decoder.visibility_no_directional_variation", txt)
+                            else -> loc("metar_decoder.minimum_visibility_towards", txt, dir)
                         })
                     }
                 reVisSm.matches(t) -> Decoded(
                     t, Category.VISIBILITY,
-                    when (t.first()) { 'P' -> loc("Widzialność powyżej ", "Visibility above "); else -> loc("Widzialność ", "Visibility ") } +
-                        t.removeSuffix("SM").trimStart('M', 'P') + loc(" mil lądowych", " statute miles") + if (t.startsWith("M")) loc(" (mniej niż)", " (less than)") else "",
+                    when (t.first()) { 'P' -> loc("metar_decoder.visibility_above"); else -> loc("metar_decoder.visibility") } +
+                        t.removeSuffix("SM").trimStart('M', 'P') + loc("metar_decoder.statute_miles") + if (t.startsWith("M")) loc("metar_decoder.less_than") else "",
                 )
                 reRvr.matches(t) -> rvr(t)
-                reRwyState.matches(t) && t.contains("/") && t.length >= 8 -> Decoded(t, Category.OTHER, loc("Stan nawierzchni pasa ${reRwyState.find(t)!!.groupValues[1]}", "Runway ${reRwyState.find(t)!!.groupValues[1]} surface condition"))
-                t == "NSC" -> Decoded(t, Category.CLOUDS, loc("Brak znaczących chmur", "No significant cloud"))
-                t == "NCD" -> Decoded(t, Category.CLOUDS, loc("Nie wykryto chmur (stacja automatyczna)", "No cloud detected (automated station)"))
-                t == "SKC" || t == "CLR" -> Decoded(t, Category.CLOUDS, loc("Niebo bezchmurne", "Sky clear"))
-                t == "NSW" -> Decoded(t, Category.WEATHER, loc("Ustąpienie zjawisk", "No significant weather"))
+                reRwyState.matches(t) && t.contains("/") && t.length >= 8 -> Decoded(t, Category.OTHER, loc("metar_decoder.runway_surface_condition", reRwyState.find(t)!!.groupValues[1]))
+                t == "NSC" -> Decoded(t, Category.CLOUDS, loc("metar_decoder.no_significant_cloud"))
+                t == "NCD" -> Decoded(t, Category.CLOUDS, loc("metar_decoder.no_cloud_detected_automated_station"))
+                t == "SKC" || t == "CLR" -> Decoded(t, Category.CLOUDS, loc("metar_decoder.sky_clear"))
+                t == "NSW" -> Decoded(t, Category.WEATHER, loc("metar_decoder.no_significant_weather"))
                 reCloud.matches(t) -> cloud(t)
                 reTemp.matches(t) -> reTemp.find(t)!!.destructured.let { (a, b) ->
                     val tt = a.replace("M", "-").toInt()
                     val dd = b.takeIf { it.isNotEmpty() }?.replace("M", "-")?.toInt()
-                    Decoded(t, Category.TEMP, loc("Temperatura $tt °C", "Temperature $tt °C") + (dd?.let { loc(", punkt rosy $it °C (różnica ${tt - it}°)", ", dew point $it °C (spread ${tt - it}°)") } ?: ""))
+                    Decoded(t, Category.TEMP, loc("metar_decoder.temperature_c", tt) + (dd?.let { loc("metar_decoder.dew_point_c_spread", it, tt - it) } ?: ""))
                 }
                 reQ.matches(t) -> Decoded(t, Category.PRESSURE, "QNH ${t.drop(1).toInt()} hPa (${Atmo.hpaToInHg(t.drop(1).toDouble()).fmt(2)} inHg)")
-                reA.matches(t) -> t.drop(1).toInt().let { v -> Decoded(t, Category.PRESSURE, loc("Altymetr", "Altimeter") + " ${v / 100}." + "%02d".format(v % 100) + " inHg (${Atmo.inHgToHpa(v / 100.0).fmt()} hPa)") }
-                reRecent.matches(t) -> Decoded(t, Category.WEATHER, loc("Niedawno: ", "Recent: ") + weatherText(t.drop(2)))
-                reWs.matches(t) -> Decoded(t, Category.WIND, loc("Uskok wiatru", "Wind shear"))
-                t == "NOSIG" -> Decoded(t, Category.TREND, loc("Bez istotnych zmian w ciągu 2 h", "No significant change expected within 2 h"))
-                t == "BECMG" -> Decoded(t, Category.TREND, loc("Stopniowo zmieni się na:", "Becoming:"))
-                t == "TEMPO" -> Decoded(t, Category.TREND, loc("Okresowo:", "Temporarily:"))
-                t == "INTER" -> Decoded(t, Category.TREND, loc("Krótkotrwale:", "Intermittently:"))
-                reProb.matches(t) -> Decoded(t, Category.TREND, loc("Prawdopodobieństwo ${t.drop(4)}%", "Probability ${t.drop(4)}%"))
-                reFm.matches(t) -> reFm.find(t)!!.destructured.let { (d, h, m) -> Decoded(t, Category.TREND, loc("Od dnia $d, $h:$m UTC:", "From day $d, $h:$m UTC:")) }
-                reTafValid.matches(t) -> reTafValid.find(t)!!.destructured.let { (d1, h1, d2, h2) -> Decoded(t, Category.TIME, loc("Ważna od dnia $d1 $h1:00 do dnia $d2 $h2:00 UTC", "Valid from day $d1 $h1:00 to day $d2 $h2:00 UTC")) }
-                t.startsWith("TX") || t.startsWith("TN") -> Decoded(t, Category.TEMP, (if (t.startsWith("TX")) loc("Maks. ", "Max ") else loc("Min. ", "Min ")) + loc("temperatura ", "temperature ") + t.drop(2).substringBefore("/").replace("M", "-") + " °C")
-                t == "RMK" -> { inRemarks = true; Decoded(t, Category.REMARK, loc("Uwagi:", "Remarks:")) }
-                t.startsWith("AT") || t.startsWith("TL") -> Decoded(t, Category.TREND, loc("Czas: ${t.drop(2)} UTC", "Time: ${t.drop(2)} UTC"))
+                reA.matches(t) -> t.drop(1).toInt().let { v -> Decoded(t, Category.PRESSURE, loc("metar_decoder.altimeter") + " ${v / 100}." + "%02d".format(v % 100) + " inHg (${Atmo.inHgToHpa(v / 100.0).fmt()} hPa)") }
+                reRecent.matches(t) -> Decoded(t, Category.WEATHER, loc("metar_decoder.recent") + weatherText(t.drop(2)))
+                reWs.matches(t) -> Decoded(t, Category.WIND, loc("metar_decoder.wind_shear"))
+                t == "NOSIG" -> Decoded(t, Category.TREND, loc("metar_decoder.no_significant_change_expected_within_2"))
+                t == "BECMG" -> Decoded(t, Category.TREND, loc("metar_decoder.becoming"))
+                t == "TEMPO" -> Decoded(t, Category.TREND, loc("metar_decoder.temporarily"))
+                t == "INTER" -> Decoded(t, Category.TREND, loc("metar_decoder.intermittently"))
+                reProb.matches(t) -> Decoded(t, Category.TREND, loc("metar_decoder.probability", t.drop(4)))
+                reFm.matches(t) -> reFm.find(t)!!.destructured.let { (d, h, m) -> Decoded(t, Category.TREND, loc("metar_decoder.from_day_utc", d, h, m)) }
+                reTafValid.matches(t) -> reTafValid.find(t)!!.destructured.let { (d1, h1, d2, h2) -> Decoded(t, Category.TIME, loc("metar_decoder.valid_from_day_00_to_day", d1, h1, d2, h2)) }
+                t.startsWith("TX") || t.startsWith("TN") -> Decoded(t, Category.TEMP, (if (t.startsWith("TX")) loc("metar_decoder.max") else loc("metar_decoder.min")) + loc("metar_decoder.temperature") + t.drop(2).substringBefore("/").replace("M", "-") + " °C")
+                t == "RMK" -> { inRemarks = true; Decoded(t, Category.REMARK, loc("metar_decoder.remarks")) }
+                t.startsWith("AT") || t.startsWith("TL") -> Decoded(t, Category.TREND, loc("metar_decoder.time_utc", t.drop(2)))
                 t != "" && reWx.matches(t) && t.length >= 2 -> Decoded(t, Category.WEATHER, weatherText(t))
                 else -> Decoded(t, Category.OTHER, "—")
             }
@@ -133,26 +133,26 @@ object MetarDecoder {
         val (dir, spd, _, gust, unit) = reWind.find(t)!!.destructured
         val u = when (unit) { "MPS" -> "m/s"; "KMH" -> "km/h"; else -> "kt" }
         val speed = spd.toInt()
-        if (speed == 0) return Decoded(t, Category.WIND, loc("Cisza", "Calm"))
-        val d = if (dir == "VRB") loc("zmienny", "variable") else loc("z $dir°", "from $dir°")
-        val g = if (gust.isNotEmpty()) loc(", w porywach ${gust.toInt()} $u", ", gusting ${gust.toInt()} $u") else ""
-        return Decoded(t, Category.WIND, loc("Wiatr $d, $speed $u$g", "Wind $d, $speed $u$g"))
+        if (speed == 0) return Decoded(t, Category.WIND, loc("metar_decoder.calm"))
+        val d = if (dir == "VRB") loc("common.variable") else loc("metar_decoder.from", dir)
+        val g = if (gust.isNotEmpty()) loc("metar_decoder.gusting", gust.toInt(), u) else ""
+        return Decoded(t, Category.WIND, loc("metar_decoder.wind", d, speed, u, g))
     }
 
     private fun rvr(t: String): Decoded {
         val m = reRvr.find(t)!!.groupValues
-        val trend = when (m[8]) { "U" -> loc(", rośnie", ", increasing"); "D" -> loc(", maleje", ", decreasing"); "N" -> loc(", bez zmian", ", no change"); else -> "" }
-        val pre = when (m[2]) { "P" -> loc("powyżej ", "above "); "M" -> loc("poniżej ", "below "); else -> "" }
+        val trend = when (m[8]) { "U" -> loc("metar_decoder.increasing"); "D" -> loc("metar_decoder.decreasing"); "N" -> loc("metar_decoder.no_change"); else -> "" }
+        val pre = when (m[2]) { "P" -> loc("metar_decoder.above"); "M" -> loc("metar_decoder.below"); else -> "" }
         val unit = if (m[7] == "FT") "ft" else "m"
         val range = if (m[4].isNotEmpty()) " – ${m[6].toInt()}" else ""
-        return Decoded(t, Category.RVR, loc("RVR pas ${m[1]}: $pre${m[3].toInt()}$range $unit$trend", "RVR runway ${m[1]}: $pre${m[3].toInt()}$range $unit$trend"))
+        return Decoded(t, Category.RVR, loc("metar_decoder.rvr_runway", m[1], pre, m[3].toInt(), range, unit, trend))
     }
 
     private fun cloud(t: String): Decoded {
         val (c, h, type) = reCloud.find(t)!!.destructured
-        val height = h.toIntOrNull()?.let { "${it * 100} ft" } ?: loc("wysokość nieznana", "height unknown")
-        val ty = when (type) { "CB" -> " — cumulonimbus!"; "TCU" -> loc(" — cumulus wypiętrzony", " — towering cumulus"); else -> "" }
-        return Decoded(t, Category.CLOUDS, loc("${cover[c]?.replaceFirstChar { it.uppercase() }} na $height$ty", "${cover[c]?.replaceFirstChar { it.uppercase() }} at $height$ty"))
+        val height = h.toIntOrNull()?.let { "${it * 100} ft" } ?: loc("metar_decoder.height_unknown")
+        val ty = when (type) { "CB" -> " — cumulonimbus!"; "TCU" -> loc("metar_decoder.towering_cumulus"); else -> "" }
+        return Decoded(t, Category.CLOUDS, loc("metar_decoder.at", cover[c]?.replaceFirstChar { it.uppercase() }, height, ty))
     }
 
     /** Czy token jest grupą zjawisk (np. -SHRA, TSRA, BR). */
@@ -185,21 +185,30 @@ object MetarDecoder {
 
     fun weatherText(t: String): String {
         var rest = t
-        val parts = mutableListOf<String>()
-        listOf("+", "-", "VC").firstOrNull { rest.startsWith(it) }?.let { parts += intensity[it]!!; rest = rest.removePrefix(it) }
-        descriptors.keys.firstOrNull { rest.startsWith(it) }?.let { parts += descriptors[it]!!; rest = rest.removePrefix(it) }
-        rest.chunked(2).forEach { phenomena[it]?.let(parts::add) }
+        val intensityText = listOf("+", "-", "VC").firstOrNull { rest.startsWith(it) }?.let { rest = rest.removePrefix(it); intensity[it]!! }
+        val descriptorCode = descriptors.keys.firstOrNull { rest.startsWith(it) }?.also { rest = rest.removePrefix(it) }
+        val phenomenaText = rest.chunked(2).mapNotNull { phenomena[it] }
         // „showers of” / „thunderstorm with” bez dalszego zjawiska — obcinamy łącznik
-        return parts.joinToString(" ").removeSuffix(" with").removeSuffix(" of").replaceFirstChar { it.uppercase() }.ifBlank { t }
+        val descriptor = descriptorCode?.let { descriptors[it]!! }?.let { d ->
+            if (phenomenaText.isEmpty()) d.removeSuffix(" with").removeSuffix(" of").removeSuffix(" con").removeSuffix(" de") else d
+        }
+        val parts = if (Lang.current == AppLang.ES) {
+            // Po hiszpańsku przymiotnik i intensywność stoją za rzeczownikiem: „lluvia engelante débil”
+            val adjective = descriptorCode in setOf("MI", "PR", "FZ")
+            listOfNotNull(descriptor.takeUnless { adjective }) + phenomenaText + listOfNotNull(descriptor.takeIf { adjective }, intensityText)
+        } else {
+            listOfNotNull(intensityText, descriptor) + phenomenaText
+        }
+        return parts.joinToString(" ").replaceFirstChar { it.uppercase() }.ifBlank { t }
     }
 
     private fun remark(t: String) = when {
-        t == "AO2" -> loc("Stacja automatyczna z czujnikiem opadów", "Automated station with precipitation sensor")
-        t == "AO1" -> loc("Stacja automatyczna bez czujnika opadów", "Automated station without precipitation sensor")
-        t.startsWith("SLP") -> loc("Ciśnienie zredukowane: ", "Sea-level pressure: ") + t.drop(3).toIntOrNull()?.let { (if (it < 500) 1000 + it / 10.0 else 900 + it / 10.0).fmt(1) + " hPa" }.orEmpty()
+        t == "AO2" -> loc("metar_decoder.automated_station_with_precipitation_sensor")
+        t == "AO1" -> loc("metar_decoder.automated_station_without_precipitation_sensor")
+        t.startsWith("SLP") -> loc("metar_decoder.sea_level_pressure") + t.drop(3).toIntOrNull()?.let { (if (it < 500) 1000 + it / 10.0 else 900 + it / 10.0).fmt(1) + " hPa" }.orEmpty()
         t.matches(Regex("""T[01]\d{3}[01]\d{3}""")) -> {
             fun v(s: String) = (if (s[0] == '1') -1 else 1) * s.drop(1).toInt() / 10.0
-            loc("Dokładnie: temp. ${v(t.substring(1, 5))} °C, rosa ${v(t.substring(5, 9))} °C", "Precisely: temp ${v(t.substring(1, 5))} °C, dew point ${v(t.substring(5, 9))} °C")
+            loc("metar_decoder.precisely_temp_c_dew_point_c", v(t.substring(1, 5)), v(t.substring(5, 9)))
         }
         else -> ""
     }

@@ -154,7 +154,7 @@ private fun SegWindow(value: String, color: Color, modifier: Modifier = Modifier
     Box(
         modifier.clip(RoundedCornerShape(5.dp)).background(AB_WINDOW).border(1.dp, Color(0xFF22282E), RoundedCornerShape(5.dp))
             .semantics { contentDescription = desc }
-            .let { if (onClick != null) it.clickable(onClickLabel = loc("Wpisz wartość", "Type a value"), onClick = onClick) else it }
+            .let { if (onClick != null) it.clickable(onClickLabel = loc("common.type_a_value"), onClick = onClick) else it }
             .padding(horizontal = 8.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center,
     ) { Text(value, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = size.sp, color = color, maxLines = 1, softWrap = false) }
@@ -285,22 +285,21 @@ fun AirbusFcu(link: LinkClient, s: FlightState, compact: Boolean = false) {
             }
         }
     }
-    if (!compact) Text(loc("Kręć pokrętłem palcem: brzeg — duży krok, środek — mały. Dotknięcie = PUSH. Dotknij cyfr, aby wpisać wartość.",
-        "Turn a knob with your finger: the edge for big steps, the centre for small ones. A tap = PUSH. Tap the digits to type a value."),
+    if (!compact) Text(loc("airbus.turn_a_knob_with_your_finger"),
         style = MaterialTheme.typography.labelSmall, color = Fm.c.ink2, modifier = Modifier.padding(top = 8.dp))
 
     when (enter) {
-        "HDG" -> EnterDialog(loc("Kurs (HDG)", "Heading (HDG)"), loc("np. 270", "e.g. 270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
-        "ALT" -> EnterDialog(loc("Wysokość (ALT, ft)", "Altitude (ALT, ft)"), loc("np. 12000", "e.g. 12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
-        "SPD" -> EnterDialog(loc("Prędkość (SPD, kt)", "Speed (SPD, kt)"), loc("np. 250", "e.g. 250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
-        "VS" -> EnterDialog(loc("Prędkość pionowa (V/S, ft/min)", "Vertical speed (V/S, ft/min)"), loc("np. -1500", "e.g. -1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "HDG" -> EnterDialog(loc("airbus.heading_hdg"), loc("common.e_g_270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
+        "ALT" -> EnterDialog(loc("airbus.altitude_alt_ft"), loc("common.e_g_12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "SPD" -> EnterDialog(loc("airbus.speed_spd_kt"), loc("common.e_g_250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
+        "VS" -> EnterDialog(loc("airbus.vertical_speed_v_s_ft_min"), loc("common.e_g_1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
     }
 }
 
 /** Odczyt na pasie FCU: mały pomarańczowy opis nad dużymi cyframi; dotknięcie — wpisanie wartości. */
 @Composable
 private fun FcuReadout(label: String, value: String, modifier: Modifier, onClick: () -> Unit) {
-    Column(modifier.clickable(onClickLabel = loc("Wpisz wartość", "Type a value"), onClick = onClick).semantics { contentDescription = "${label.filter { it.isLetter() || it == '/' }} $value" }) {
+    Column(modifier.clickable(onClickLabel = loc("common.type_a_value"), onClick = onClick).semantics { contentDescription = "${label.filter { it.isLetter() || it == '/' }} $value" }) {
         Text(label, fontFamily = Mono, fontSize = 9.sp, color = AB_ORANGE, maxLines = 1, softWrap = false)
         Text(value, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 24.sp, color = AB_ORANGE, maxLines = 1, softWrap = false)
     }
@@ -314,7 +313,7 @@ private fun AltStepSelector(step: Int, onStep: (Int) -> Unit) {
             Text("$v", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 10.sp,
                 color = if (step == v) Color.Black else AB_LEGEND,
                 modifier = Modifier.clip(RoundedCornerShape(3.dp)).background(if (step == v) AB_LEGEND else Color(0x33000000))
-                    .semantics { contentDescription = loc("Krok ALT $v ft", "ALT step $v ft") + if (step == v) loc(", wybrany", ", selected") else ""; role = Role.RadioButton }
+                    .semantics { contentDescription = loc("airbus.alt_step_ft", v) + if (step == v) loc("airbus.selected") else ""; role = Role.RadioButton }
                     .clickable { onStep(v) }.padding(horizontal = 5.dp, vertical = 2.dp))
         }
     }
@@ -329,7 +328,7 @@ private fun FcuKnobColumn(
 ) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.height(20.dp), contentAlignment = Alignment.Center) { top?.invoke() }
-        AirbusKnob(kind, size, loc("Pokrętło $label: $value", "$label knob: $value"), onStep, onBig, onTap)
+        AirbusKnob(kind, size, loc("common.knob", label, value), onStep, onBig, onTap)
         Spacer(Modifier.height(6.dp))
         // Na wąskiej kolumnie (tablet, pięć kolumn) klawisze się zwężają, na szerokiej mają do 56 dp
         Row(Modifier.widthIn(max = 116.dp).padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
@@ -420,8 +419,8 @@ internal fun RotaryKnob(size: Dp, desc: String, onStep: (Int) -> Unit, onBig: (I
                 role = Role.Button
                 onClick { tap(); true }
                 customActions = listOf(
-                    androidx.compose.ui.semantics.CustomAccessibilityAction(loc("W górę", "Increase")) { step(1); true },
-                    androidx.compose.ui.semantics.CustomAccessibilityAction(loc("W dół", "Decrease")) { step(-1); true },
+                    androidx.compose.ui.semantics.CustomAccessibilityAction(loc("common.increase")) { step(1); true },
+                    androidx.compose.ui.semantics.CustomAccessibilityAction(loc("common.decrease")) { step(-1); true },
                 )
             }
             .pointerInput(Unit) {
@@ -529,17 +528,17 @@ fun AirbusRmp(link: LinkClient, s: FlightState) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("ACTIVE", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = AB_LEGEND)
-                SegWindow(active, Color.White, Modifier.fillMaxWidth().padding(top = 3.dp), size = 22, desc = loc("${sel.label} aktywna $active", "${sel.label} active $active"))
+                SegWindow(active, Color.White, Modifier.fillMaxWidth().padding(top = 3.dp), size = 22, desc = loc("airbus.active", sel.label, active))
             }
             Box(
                 Modifier.size(width = 52.dp, height = 40.dp).clip(RoundedCornerShape(6.dp)).background(AB_KEY)
-                    .semantics { contentDescription = loc("Zamień aktywną i zapasową ${sel.label}", "Swap active and standby ${sel.label}") }
+                    .semantics { contentDescription = loc("common.swap_active_and_standby", sel.label) }
                     .clickable(role = Role.Button) { cmd(swap) },
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Outlined.SwapHoriz, null, tint = AB_LAMP, modifier = Modifier.size(30.dp)) }
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("STBY/CRS", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = AB_LEGEND)
-                SegWindow(stby, Color.White, Modifier.fillMaxWidth().padding(top = 3.dp), size = 22, desc = loc("${sel.label} zapasowa $stby", "${sel.label} standby $stby")) { enter = true }
+                SegWindow(stby, Color.White, Modifier.fillMaxWidth().padding(top = 3.dp), size = 22, desc = loc("airbus.standby", sel.label, stby)) { enter = true }
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -556,16 +555,16 @@ fun AirbusRmp(link: LinkClient, s: FlightState) {
                     RmpKey("NAV2", sel == RmpSel.NAV2, Modifier.weight(1f)) { selName = RmpSel.NAV2.name }
                 }
             }
-            DualKnob(84.dp, loc("Pokrętło częstotliwości ${sel.label}", "${sel.label} frequency knob"), skin = airbusSkin(),
+            DualKnob(84.dp, loc("common.frequency_knob", sel.label), skin = airbusSkin(),
                 onStep = { setStby(it * if (sel.com) 25 else 50) }, onBigStep = { setStby(it * 1000) }, onPush = { enter = true })
         }
     }
     if (enter) {
         val name = sel.label
-        if (sel.com) EnterDialog(loc("$name — częstotliwość zapasowa (MHz)", "$name — standby frequency (MHz)"), "np. 121.500", KeyboardType.Decimal,
+        if (sel.com) EnterDialog(loc("common.standby_frequency_mhz", name), loc("common.e_g_121_500"), KeyboardType.Decimal,
             { ControlMath.parseMhz(it)?.let(ControlMath::comHz) != null },
             { t -> ControlMath.parseMhz(t)?.let(ControlMath::comHz)?.let { hz -> cmd(if (sel == RmpSel.VHF1) "COM_STBY_RADIO_SET_HZ" else "COM2_STBY_RADIO_SET_HZ", hz) } }) { enter = false }
-        else EnterDialog(loc("$name — częstotliwość zapasowa (MHz)", "$name — standby frequency (MHz)"), "np. 110.30", KeyboardType.Decimal,
+        else EnterDialog(loc("common.standby_frequency_mhz", name), loc("common.e_g_110_30"), KeyboardType.Decimal,
             { ControlMath.parseMhz(it)?.let(ControlMath::navHz) != null },
             { t -> ControlMath.parseMhz(t)?.let(ControlMath::navHz)?.let { hz -> cmd(if (sel == RmpSel.NAV1) "NAV1_STBY_SET_HZ" else "NAV2_STBY_SET_HZ", hz) } }) { enter = false }
     }
@@ -579,7 +578,7 @@ private fun RmpKey(label: String, on: Boolean, modifier: Modifier = Modifier, on
         Text("▼", fontSize = 9.sp, color = if (on) AB_LAMP else Color(0x33FFFFFF))
         Box(
             Modifier.fillMaxWidth().height(38.dp).clip(RoundedCornerShape(5.dp)).background(AB_KEY).border(1.dp, Color(0x40FFFFFF), RoundedCornerShape(5.dp))
-                .semantics { contentDescription = label + if (on) loc(", wybrane", ", selected") else ""; role = Role.RadioButton }
+                .semantics { contentDescription = label + if (on) loc("common.selected") else ""; role = Role.RadioButton }
                 .clickable { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() },
             contentAlignment = Alignment.Center,
         ) { Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = AB_LEGEND) }
@@ -600,7 +599,7 @@ fun AirbusAtc(link: LinkClient, s: FlightState) {
 
     AirbusPlate("ATC / XPDR") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SegWindow(shown, if (emergency) AB_RED else AB_ORANGE, Modifier.weight(1f), size = 26, desc = loc("Kod transpondera $shown", "Transponder code $shown"))
+            SegWindow(shown, if (emergency) AB_RED else AB_ORANGE, Modifier.weight(1f), size = 26, desc = loc("airbus.transponder_code", shown))
             Box(
                 Modifier.size(width = 72.dp, height = 44.dp).clip(RoundedCornerShape(5.dp)).background(AB_KEY)
                     .border(1.dp, if (x?.ident == true) AB_LAMP else Color(0x40FFFFFF), RoundedCornerShape(5.dp))
@@ -628,7 +627,7 @@ fun AirbusAtc(link: LinkClient, s: FlightState) {
                 Box(
                     Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(5.dp)).background(if (on) Color(0xFF1C2228) else AB_KEY)
                         .border(1.dp, if (on) AB_LAMP else Color(0x40FFFFFF), RoundedCornerShape(5.dp))
-                        .semantics { contentDescription = loc("Tryb $label", "Mode $label") + if (on) loc(", wybrany", ", selected") else ""; role = Role.RadioButton }
+                        .semantics { contentDescription = loc("common.mode", label) + if (on) loc("airbus.selected") else ""; role = Role.RadioButton }
                         .clickable { cmd("XPNDR_MODE", mv.second) },
                     contentAlignment = Alignment.Center,
                 ) { Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = if (on) AB_LAMP else AB_LEGEND) }
@@ -656,7 +655,7 @@ private fun OverheadSwitch(label: String, on: Boolean, modifier: Modifier = Modi
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFF1A1E22)).border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(4.dp))
-                .semantics { contentDescription = label + if (on) loc(", włączone", ", on") else loc(", wyłączone", ", off"); role = Role.Switch }
+                .semantics { contentDescription = label + if (on) loc("common.on") else loc("common.off"); role = Role.Switch }
                 .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
             contentAlignment = Alignment.Center,
         ) { Text(if (on) "ON" else "OFF", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (on) Color.White else Color(0x66FFFFFF)) }
@@ -670,7 +669,7 @@ private fun DetentKey(label: String, on: Boolean, modifier: Modifier = Modifier,
     val haptic = LocalHapticFeedback.current
     Box(
         modifier.height(42.dp).clip(RoundedCornerShape(5.dp)).background(if (on) Color.White else AB_KEY).border(1.dp, Color(0x40FFFFFF), RoundedCornerShape(5.dp))
-            .semantics { contentDescription = desc + if (on) loc(", ustawione", ", set") else ""; role = Role.RadioButton }
+            .semantics { contentDescription = desc + if (on) loc("common.set") else ""; role = Role.RadioButton }
             .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
         contentAlignment = Alignment.Center,
     ) { Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = if (on) Color.Black else AB_LEGEND, maxLines = 1) }
@@ -735,7 +734,7 @@ fun AirbusSystems(link: LinkClient, s: FlightState) {
                         textAlign = TextAlign.Center)
                 }
             }
-            DetentKey(if (gearDown) "DOWN" else "UP", true, Modifier.width(96.dp), loc("Dźwignia podwozia", "Gear lever")) {
+            DetentKey(if (gearDown) "DOWN" else "UP", true, Modifier.width(96.dp), loc("common.gear_lever")) {
                 if (gearDown && s.aircraft.onGround == true) confirmGear = true else cmd("GEAR_TOGGLE")
             }
         }
@@ -749,7 +748,7 @@ fun AirbusSystems(link: LinkClient, s: FlightState) {
         else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             repeat(positions) { i ->
                 val label = if (positions == 5) listOf("0", "1", "2", "3", "FULL")[i] else "$i"
-                DetentKey(label, ctl.flapsIndex == i, Modifier.weight(1f), loc("Klapy $label", "Flaps $label")) {
+                DetentKey(label, ctl.flapsIndex == i, Modifier.weight(1f), loc("common.flaps", label)) {
                     cmd("FLAPS_SET", (16383.0 * i / (positions - 1)).roundToInt())
                 }
             }
@@ -760,7 +759,7 @@ fun AirbusSystems(link: LinkClient, s: FlightState) {
     // Hamulec aerodynamiczny: ARM (uzbrojenie spoilerów do lądowania) i obok oś dźwigni
     AirbusPlate("SPEED BRAKE") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            DetentKey("ARM", ctl.spoilersArmed == true, Modifier.width(72.dp), loc("Uzbrojenie spoilerów", "Ground spoilers arm")) { cmd("SPOILERS_ARM_TOGGLE") }
+            DetentKey("ARM", ctl.spoilersArmed == true, Modifier.width(72.dp), loc("airbus.ground_spoilers_arm")) { cmd("SPOILERS_ARM_TOGGLE") }
             SpeedBrakeAxis(link, s, Modifier.weight(1f), label = "SPEED BRAKE", labelColor = AB_LEGEND)
         }
     }
@@ -769,7 +768,7 @@ fun AirbusSystems(link: LinkClient, s: FlightState) {
     // Hamulec postojowy (mały klawisz) i obok oś hamulców kół (pedały)
     AirbusPlate("PARK BRK / BRAKES") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            DetentKey(if (ctl.parkingBrake == true) "ON" else "OFF", ctl.parkingBrake == true, Modifier.width(72.dp), loc("Hamulec postojowy", "Parking brake")) { cmd("PARKING_BRAKES") }
+            DetentKey(if (ctl.parkingBrake == true) "ON" else "OFF", ctl.parkingBrake == true, Modifier.width(72.dp), loc("common.parking_brake")) { cmd("PARKING_BRAKES") }
             WheelBrakeAxis(link, s, Modifier.weight(1f), labelColor = AB_LEGEND)
         }
     }
@@ -778,18 +777,18 @@ fun AirbusSystems(link: LinkClient, s: FlightState) {
     // Trymer wysokości (koło trymera na pedestale)
     AirbusPlate("PITCH TRIM") {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            HoldKey("DN", loc("Trym nosem w dół", "Trim nose down"), Modifier.weight(1f)) { cmd("ELEV_TRIM_DN") }
-            SegWindow(ctl.elevatorTrimPct?.let { "%+.1f".format(it) } ?: "--", Color.White, Modifier.weight(1.2f), size = 16, desc = loc("Trym", "Trim"))
-            HoldKey("UP", loc("Trym nosem w górę", "Trim nose up"), Modifier.weight(1f)) { cmd("ELEV_TRIM_UP") }
+            HoldKey("DN", loc("common.trim_nose_down"), Modifier.weight(1f)) { cmd("ELEV_TRIM_DN") }
+            SegWindow(ctl.elevatorTrimPct?.let { "%+.1f".format(it) } ?: "--", Color.White, Modifier.weight(1.2f), size = 16, desc = loc("common.trim"))
+            HoldKey("UP", loc("common.trim_nose_up"), Modifier.weight(1f)) { cmd("ELEV_TRIM_UP") }
         }
     }
 
     if (confirmGear) AlertDialog(
         onDismissRequest = { confirmGear = false },
-        title = { Text(loc("Schować podwozie na ziemi?", "Retract the gear on the ground?")) },
-        text = { Text(loc("Samolot stoi na ziemi. Schowanie podwozia może go uszkodzić w symulatorze.", "The aircraft is on the ground. Retracting the gear may damage it in the simulator.")) },
-        confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("Schowaj", "Retract"), color = Fm.c.danger) } },
-        dismissButton = { TextButton({ confirmGear = false }) { Text(loc("Anuluj", "Cancel")) } },
+        title = { Text(loc("common.retract_the_gear_on_the_ground")) },
+        text = { Text(loc("common.the_aircraft_is_on_the_ground")) },
+        confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("common.retract"), color = Fm.c.danger) } },
+        dismissButton = { TextButton({ confirmGear = false }) { Text(loc("common.cancel")) } },
     )
 }
 
@@ -800,7 +799,7 @@ fun AirbusEngines(link: LinkClient, s: FlightState) {
     EngineDisplayBox { AirbusEwd(s) }
     Spacer(Modifier.height(12.dp))
     Quadrant(link, s, AircraftProfile.A320)
-    if (s.autopilot.athr) Text(loc("A/THR włączony — symulator może sam przestawiać ciąg.", "A/THR is on — the simulator may move the thrust itself."),
+    if (s.autopilot.athr) Text(loc("airbus.a_thr_is_on_the_simulator"),
         style = MaterialTheme.typography.labelSmall, color = Fm.c.caution, modifier = Modifier.padding(top = 8.dp))
 }
 

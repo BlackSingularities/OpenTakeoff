@@ -103,7 +103,7 @@ fun FlightReplay(
     val c = Fm.c
     val tr = f.track
     if (tr.size < 2) {
-        Text(loc("Za mało punktów toru do odtworzenia.", "Not enough track points to replay."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+        Text(loc("flight_replay.not_enough_track_points_to_replay"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
         return
     }
     val t0 = tr.first().t; val t1 = tr.last().t
@@ -135,8 +135,8 @@ fun FlightReplay(
         Readout("GS", "${p.gsKt}")
         p.iasKt?.let { Readout("IAS", "$it") }
         p.vsFpm?.let { Readout("V/S", (if (it > 0) "+" else "") + it) }
-        p.bankDeg?.let { Readout(loc("PRZECH", "BANK"), "${abs(it).roundToInt()}°") }
-        p.pitchDeg?.let { Readout(loc("POCH", "PITCH"), "%.1f°".format(it)) }
+        p.bankDeg?.let { Readout(loc("flight_replay.bank"), "${abs(it).roundToInt()}°") }
+        p.pitchDeg?.let { Readout(loc("flight_replay.pitch"), "%.1f°".format(it)) }
         p.hdg?.let { Readout("HDG", "%03d".format(it)) }
     }
     Spacer(Modifier.size(6.dp))
@@ -146,30 +146,30 @@ fun FlightReplay(
     )
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton({ events.lastOrNull { it.t < cursor - 1000 }?.let { cursor = it.t } ?: run { cursor = t0 } }) {
-            Icon(Icons.Outlined.SkipPrevious, loc("Poprzednie zdarzenie", "Previous event"), tint = c.ink)
+            Icon(Icons.Outlined.SkipPrevious, loc("flight_replay.previous_event"), tint = c.ink)
         }
         IconButton({ playing = !playing }, Modifier.clip(CircleShape).background(c.terrain)) {
-            Icon(if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, if (playing) loc("Pauza", "Pause") else loc("Odtwórz", "Play"), tint = c.accent)
+            Icon(if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, if (playing) loc("flight_replay.pause") else loc("flight_replay.play"), tint = c.accent)
         }
         IconButton({ events.firstOrNull { it.t > cursor + 1000 }?.let { cursor = it.t } }) {
-            Icon(Icons.Outlined.SkipNext, loc("Następne zdarzenie", "Next event"), tint = c.ink)
+            Icon(Icons.Outlined.SkipNext, loc("flight_replay.next_event"), tint = c.ink)
         }
         Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(10, 30, 120).forEach { s -> FilterChip(speed == s, { speed = s }, { Text("×$s", fontFamily = Mono, fontSize = 12.sp) }) }
         }
         IconButton({ playing = false; editing = cursor to (f.markers.firstOrNull { it.t == cursor }?.label ?: "") }) {
-            Icon(Icons.Outlined.Flag, loc("Dodaj znacznik w tym miejscu", "Add a marker here"), tint = c.magenta)
+            Icon(Icons.Outlined.Flag, loc("flight_replay.add_a_marker_here"), tint = c.magenta)
         }
     }
 
     // Wykresy zsynchronizowane z kursorem
     val series = remember(f.id) {
         buildList {
-            add(Series(loc("Wysokość", "Altitude"), "ft", Color.Unspecified) { it.altFt.toDouble() })
-            add(Series(loc("Prędkość", "Speed"), "kt", Color.Unspecified) { (it.iasKt ?: it.gsKt).toDouble() })
-            if (tr.any { it.vsFpm != null }) add(Series(loc("Prędkość pionowa", "Vertical speed"), "ft/min", Color.Unspecified) { it.vsFpm?.toDouble() })
-            if (tr.any { it.bankDeg != null }) add(Series(loc("Przechylenie", "Bank"), "°", Color.Unspecified) { it.bankDeg?.toDouble() })
-            if (tr.any { it.pitchDeg != null }) add(Series(loc("Pochylenie", "Pitch"), "°", Color.Unspecified) { it.pitchDeg?.toDouble() })
+            add(Series(loc("common.altitude"), "ft", Color.Unspecified) { it.altFt.toDouble() })
+            add(Series(loc("common.speed"), "kt", Color.Unspecified) { (it.iasKt ?: it.gsKt).toDouble() })
+            if (tr.any { it.vsFpm != null }) add(Series(loc("common.vertical_speed"), "ft/min", Color.Unspecified) { it.vsFpm?.toDouble() })
+            if (tr.any { it.bankDeg != null }) add(Series(loc("common.bank"), "°", Color.Unspecified) { it.bankDeg?.toDouble() })
+            if (tr.any { it.pitchDeg != null }) add(Series(loc("common.pitch"), "°", Color.Unspecified) { it.pitchDeg?.toDouble() })
         }
     }
     val colors = listOf(c.magenta, c.accent, c.green, c.caution, c.ink)
@@ -180,7 +180,7 @@ fun FlightReplay(
 
     // Lista zdarzeń
     Spacer(Modifier.size(12.dp))
-    Text(loc("Zdarzenia", "Events"), style = MaterialTheme.typography.labelLarge, color = c.ink2)
+    Text(loc("flight_replay.events"), style = MaterialTheme.typography.labelLarge, color = c.ink2)
     Spacer(Modifier.size(4.dp))
     events.forEach { e ->
         val active = abs(e.t - cursor) < 1500
@@ -194,8 +194,8 @@ fun FlightReplay(
             Text(FlightAnalysis.timeOf(f, e.t), fontFamily = Mono, fontSize = 12.sp, color = c.ink2, modifier = Modifier.width(62.dp))
             Text(e.label, style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
             if (e.kind == EventKind.MARKER) {
-                IconButton({ editing = e.t to e.label }, Modifier.size(32.dp)) { Icon(Icons.Outlined.Edit, loc("Zmień opis", "Edit note"), tint = c.ink2, modifier = Modifier.size(16.dp)) }
-                IconButton({ onDeleteMarker(e.t) }, Modifier.size(32.dp)) { Icon(Icons.Outlined.Delete, loc("Usuń znacznik", "Delete marker"), tint = c.ink2, modifier = Modifier.size(16.dp)) }
+                IconButton({ editing = e.t to e.label }, Modifier.size(32.dp)) { Icon(Icons.Outlined.Edit, loc("flight_replay.edit_note"), tint = c.ink2, modifier = Modifier.size(16.dp)) }
+                IconButton({ onDeleteMarker(e.t) }, Modifier.size(32.dp)) { Icon(Icons.Outlined.Delete, loc("flight_replay.delete_marker"), tint = c.ink2, modifier = Modifier.size(16.dp)) }
             }
         }
     }
@@ -204,10 +204,10 @@ fun FlightReplay(
         var text by remember(t) { mutableStateOf(initial) }
         AlertDialog(
             onDismissRequest = { editing = null },
-            title = { Text(loc("Znacznik w T+", "Marker at T+") + FlightAnalysis.timeOf(f, t)) },
-            text = { OutlinedTextField(text, { text = it }, placeholder = { Text(loc("np. za późno wypuszczone klapy", "e.g. flaps set too late")) }, singleLine = false) },
-            confirmButton = { TextButton({ onSetMarker(t, text.ifBlank { loc("Znacznik", "Marker") }); editing = null }) { Text(loc("Zapisz", "Save")) } },
-            dismissButton = { TextButton({ editing = null }) { Text(loc("Anuluj", "Cancel")) } },
+            title = { Text(loc("flight_replay.marker_at_t") + FlightAnalysis.timeOf(f, t)) },
+            text = { OutlinedTextField(text, { text = it }, placeholder = { Text(loc("flight_replay.e_g_flaps_set_too_late")) }, singleLine = false) },
+            confirmButton = { TextButton({ onSetMarker(t, text.ifBlank { loc("common.marker") }); editing = null }) { Text(loc("flight_replay.save")) } },
+            dismissButton = { TextButton({ editing = null }) { Text(loc("common.cancel")) } },
         )
     }
 }

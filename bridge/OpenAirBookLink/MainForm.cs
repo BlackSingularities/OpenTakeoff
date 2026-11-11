@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Drawing.Drawing2D;
 using OpenAirBookLink.Core.Protocol;
 
@@ -16,7 +17,7 @@ public sealed class MainForm : Form
     private readonly ToolStripMenuItem _traySim;
     private readonly Label _simDot = new() { AutoSize = true, Font = new Font("Segoe UI", 14f), Text = "●" };
     private readonly Label _simStatus = new() { AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) };
-    private readonly CheckBox _simMode = new() { AutoSize = true, Text = "Tryb symulacji — lot testowy EPWA → EPGD bez MSFS" };
+    private readonly CheckBox _simMode = new() { AutoSize = true, Text = L.T("window.sim_mode_long") };
     private readonly Label _code = new() { AutoSize = true, Font = new Font("Consolas", 30f, FontStyle.Bold) };
     private readonly Label _ips = new() { AutoSize = true, MaximumSize = new Size(560, 0) };
     private readonly ListView _clients = new() { View = View.Details, FullRowSelect = true, Dock = DockStyle.Fill, HeaderStyle = ColumnHeaderStyle.Nonclickable };
@@ -49,8 +50,8 @@ public sealed class MainForm : Form
         Text = $"OpenTakeoff Link {host.Version}";
         Icon = CreateIcon();
         Font = new Font("Segoe UI", 9.5f);
-        MinimumSize = new Size(620, 640);
-        Size = new Size(680, 760);
+        MinimumSize = new Size(700, 680);
+        Size = new Size(720, 800);
         StartPosition = FormStartPosition.CenterScreen;
 
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, Padding = new Padding(12) };
@@ -66,10 +67,10 @@ public sealed class MainForm : Form
         _updateButton.Click += (_, _) => OnUpdateButton();
         _updateBar.Controls.Add(_updateText);
         _updateBar.Controls.Add(_updateButton);
-        root.Controls.Add(_updateBar);
+        root.Controls.Add(_updateBar, 0, 0);
 
         // Symulator
-        var simBox = Group("Symulator");
+        var simBox = Group(L.T("window.simulator"));
         var simFlow = Flow();
         var simLine = Flow(FlowDirection.LeftToRight);
         simLine.Controls.Add(_simDot);
@@ -81,7 +82,7 @@ public sealed class MainForm : Form
         simFlow.Controls.Add(_simMode);
         // Rozglądanie z telefonu porusza kamerą jak mysz z prawym przyciskiem — tempo zależy od czułości myszy w MSFS
         var lookLine = Flow(FlowDirection.LeftToRight);
-        lookLine.Controls.Add(new Label { AutoSize = true, Margin = new Padding(0, 6, 6, 0), Text = "Czułość rozglądania z telefonu (%):" });
+        lookLine.Controls.Add(new Label { AutoSize = true, Margin = new Padding(0, 6, 6, 0), Text = L.T("window.look_sensitivity") });
         var look = new NumericUpDown
         {
             Minimum = LinkHost.LookSensitivityMin, Maximum = LinkHost.LookSensitivityMax, Increment = 10,
@@ -89,68 +90,71 @@ public sealed class MainForm : Form
         };
         look.ValueChanged += (_, _) => host.SetLookSensitivity((int)look.Value);
         lookLine.Controls.Add(look);
-        lookLine.Controls.Add(new Label { AutoSize = true, Margin = new Padding(8, 6, 0, 0), ForeColor = SystemColors.GrayText, Text = "okno MSFS musi być aktywne" });
+        lookLine.Controls.Add(new Label { AutoSize = true, Margin = new Padding(8, 6, 0, 0), ForeColor = SystemColors.GrayText, Text = L.T("window.msfs_must_be_active") });
         simFlow.Controls.Add(lookLine);
+        simFlow.Controls.Add(LanguageLine());
         simBox.Controls.Add(simFlow);
-        root.Controls.Add(simBox);
+        root.Controls.Add(simBox, 0, 1);
 
         // Parowanie
-        var pairBox = Group("Parowanie telefonu");
+        var pairBox = Group(L.T("window.pairing"));
         var pairFlow = Flow();
-        pairFlow.Controls.Add(new Label { AutoSize = true, Text = "Wpisz ten kod w aplikacji OpenTakeoff na telefonie:" });
+        pairFlow.Controls.Add(new Label { AutoSize = true, Text = L.T("window.enter_code") });
         _code.ForeColor = Accent;
         pairFlow.Controls.Add(_code);
         var buttons = Flow(FlowDirection.LeftToRight);
-        var newCode = new Button { AutoSize = true, Text = "Nowy kod" };
+        var newCode = new Button { AutoSize = true, Text = L.T("window.new_code") };
         newCode.Click += (_, _) => { host.Pairing.RegenerateCode(); UpdateCode(); };
-        var revoke = new Button { AutoSize = true, Text = "Unieważnij sparowania" };
+        var revoke = new Button { AutoSize = true, Text = L.T("window.revoke") };
         revoke.Click += (_, _) =>
         {
-            if (MessageBox.Show(this, "Wszystkie telefony będą musiały sparować się ponownie kodem. Kontynuować?",
+            if (MessageBox.Show(this, L.T("window.revoke_confirm"),
                     "OpenTakeoff Link", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             host.Pairing.RevokeAll();
             host.Pairing.RegenerateCode();
             UpdateCode();
-            AddLog("Unieważniono wszystkie sparowania");
+            AddLog(L.T("log.revoked"));
         };
         buttons.Controls.Add(newCode);
         buttons.Controls.Add(revoke);
-        var report = new Button { AutoSize = true, Text = "Zgłoś błąd lub sugestię…" };
+        var report = new Button { AutoSize = true, Text = L.T("window.report") };
         report.Click += (_, _) => Feedback.ShowForm(this);
         buttons.Controls.Add(report);
         pairFlow.Controls.Add(buttons);
         pairFlow.Controls.Add(_ips);
         pairBox.Controls.Add(pairFlow);
-        root.Controls.Add(pairBox);
+        root.Controls.Add(pairBox, 0, 2);
 
         // Telefony
-        var clientsBox = Group("Połączone telefony");
+        var clientsBox = Group(L.T("window.phones"));
         clientsBox.Dock = DockStyle.Fill;
-        _clients.Columns.Add("Telefon", 170);
-        _clients.Columns.Add("Adres IP", 120);
-        _clients.Columns.Add("Stan", 110);
-        _clients.Columns.Add("Od", 80);
+        clientsBox.AutoSize = false;
+        _clients.Columns.Add(L.T("window.col_phone"), 170);
+        _clients.Columns.Add(L.T("window.col_ip"), 120);
+        _clients.Columns.Add(L.T("window.col_state"), 110);
+        _clients.Columns.Add(L.T("window.col_since"), 80);
         _clients.Columns.Add("Hz", 50);
         clientsBox.Controls.Add(_clients);
-        root.Controls.Add(clientsBox);
+        root.Controls.Add(clientsBox, 0, 3);
 
         // Dziennik
-        var logBox = Group("Dziennik zdarzeń");
+        var logBox = Group(L.T("window.log"));
         logBox.Dock = DockStyle.Fill;
+        logBox.AutoSize = false;
         logBox.Controls.Add(_log);
-        root.Controls.Add(logBox);
+        root.Controls.Add(logBox, 0, 4);
 
         // Zasobnik
-        _traySim = new ToolStripMenuItem("Tryb symulacji") { CheckOnClick = true, Checked = host.SimulationMode };
+        _traySim = new ToolStripMenuItem(L.T("tray.sim_mode")) { CheckOnClick = true, Checked = host.SimulationMode };
         _traySim.CheckedChanged += (_, _) => _simMode.Checked = _traySim.Checked;
         var menu = new ContextMenuStrip();
-        menu.Items.Add("Pokaż okno", null, (_, _) => ShowFromTray());
+        menu.Items.Add(L.T("tray.show"), null, (_, _) => ShowFromTray());
         menu.Items.Add(_traySim);
         if (Updater.ExePath is not null)
-            menu.Items.Add("Sprawdź aktualizacje", null, (_, _) => _ = CheckForUpdateAsync(manual: true));
-        menu.Items.Add("Zgłoś błąd lub sugestię…", null, (_, _) => Feedback.ShowForm(Visible ? this : null));
+            menu.Items.Add(L.T("tray.check_updates"), null, (_, _) => _ = CheckForUpdateAsync(manual: true));
+        menu.Items.Add(L.T("window.report"), null, (_, _) => Feedback.ShowForm(Visible ? this : null));
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Zakończ", null, (_, _) => ExitApp());
+        menu.Items.Add(L.T("tray.exit"), null, (_, _) => ExitApp());
         _tray = new NotifyIcon { Icon = Icon, Text = "OpenTakeoff Link", Visible = true, ContextMenuStrip = menu };
         _tray.DoubleClick += (_, _) => ShowFromTray();
 
@@ -180,7 +184,41 @@ public sealed class MainForm : Form
         UpdateStatus();
         UpdateClients();
         _ips.Text = IpText();
-        AddLog($"OpenTakeoff Link {host.Version} uruchomiony" + (args.Contains(Updater.UpdatedArg) ? " (po aktualizacji)" : ""));
+        AddLog(L.T("log.started", host.Version));
+    }
+
+    public const string RestartArg = "--restarted";
+
+    private FlowLayoutPanel LanguageLine()
+    {
+        var line = Flow(FlowDirection.LeftToRight);
+        line.Controls.Add(new Label { AutoSize = true, Margin = new Padding(0, 6, 6, 0), Text = L.T("window.language") });
+        var settings = new[] { "SYSTEM", "pl", "en", "es" };
+        var combo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 130 };
+        combo.Items.AddRange(new object[] { L.T("window.language_system"), "Polski", "English", "Español" });
+        var saved = Array.IndexOf(settings, LinkHost.SavedLanguage);
+        combo.SelectedIndex = Math.Max(saved, 0);
+        var applied = combo.SelectedIndex;
+        combo.SelectionChangeCommitted += (_, _) =>
+        {
+            if (combo.SelectedIndex == applied) return;
+            applied = combo.SelectedIndex;
+            _host.SetLanguage(settings[applied]);
+            if (MessageBox.Show(this, L.T("window.language_restart"), "OpenTakeoff Link", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                Restart();
+        };
+        line.Controls.Add(combo);
+        return line;
+    }
+
+    private void Restart()
+    {
+        if (Environment.ProcessPath is not { } exe) return;
+        var psi = new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = false };
+        foreach (var a in _args.Where(a => a != RestartArg && a != Updater.UpdatedArg && !a.StartsWith("--lang="))) psi.ArgumentList.Add(a);
+        psi.ArgumentList.Add(RestartArg);
+        System.Diagnostics.Process.Start(psi);
+        ExitApp();
     }
 
     private async Task CheckForUpdateAsync(bool manual)
@@ -192,35 +230,35 @@ public sealed class MainForm : Form
             var update = await Updater.CheckAsync();
             if (update is null)
             {
-                if (manual) _tray.ShowBalloonTip(3000, "OpenTakeoff Link", $"Masz najnowszą wersję ({_host.Version}).", ToolTipIcon.Info);
+                if (manual) _tray.ShowBalloonTip(3000, "OpenTakeoff Link", L.T("update.latest", _host.Version), ToolTipIcon.Info);
                 return;
             }
             _update = update;
-            AddLog($"Dostępna nowa wersja {update.Version}");
+            AddLog(L.T("log.update_available", update.Version));
 
             // Exe w folderze bez prawa zapisu (np. Program Files) — tylko komunikat o nowej wersji.
             if (!Updater.CanWriteNextToExe())
             {
-                ShowUpdateBar($"Dostępna jest nowa wersja {update.Version}.", null);
+                ShowUpdateBar(L.T("update.available", update.Version), null);
                 return;
             }
 
-            ShowUpdateBar($"Pobieranie wersji {update.Version}…", null);
-            var progress = new Progress<double>(p => _updateText.Text = $"Pobieranie wersji {update.Version}… {p:P0}");
+            ShowUpdateBar(L.T("update.downloading", update.Version), null);
+            var progress = new Progress<double>(p => _updateText.Text = L.T("update.downloading_pct", update.Version, p.ToString("P0")));
             _downloaded = await Updater.DownloadAsync(update, progress);
-            AddLog($"Pobrano wersję {update.Version}");
+            AddLog(L.T("log.update_downloaded", update.Version));
             if (!ApplyUpdateIfIdle())
             {
-                ShowUpdateBar($"Wersja {update.Version} gotowa — zainstaluje się sama po rozłączeniu telefonów.", "Zainstaluj teraz");
-                _tray.ShowBalloonTip(4000, "OpenTakeoff Link — aktualizacja",
-                    $"Wersja {update.Version} zainstaluje się po rozłączeniu telefonów.", ToolTipIcon.Info);
+                ShowUpdateBar(L.T("update.ready", update.Version), L.T("update.install_now"));
+                _tray.ShowBalloonTip(4000, L.T("update.title"),
+                    L.T("update.after_disconnect", update.Version), ToolTipIcon.Info);
             }
         }
         catch (Exception e) // wynik zadania nikt nie odbiera — każdy błąd musi trafić do dziennika
         {
-            AddLog($"Aktualizacja nieudana: {e.Message}");
-            if (manual) _tray.ShowBalloonTip(3000, "OpenTakeoff Link", $"Nie udało się sprawdzić aktualizacji: {e.Message}", ToolTipIcon.Warning);
-            if (_update is not null && _downloaded is null) ShowUpdateBar($"Nie udało się pobrać wersji {_update.Version}.", "Spróbuj ponownie");
+            AddLog(L.T("log.update_failed", e.Message));
+            if (manual) _tray.ShowBalloonTip(3000, "OpenTakeoff Link", L.T("update.check_failed", e.Message), ToolTipIcon.Warning);
+            if (_update is not null && _downloaded is null) ShowUpdateBar(L.T("update.download_failed", _update.Version), L.T("update.retry"));
         }
         finally
         {
@@ -253,13 +291,13 @@ public sealed class MainForm : Form
         if (!Visible) args.Add("--minimized");
         try
         {
-            AddLog($"Instalowanie wersji {_update.Version} i ponowne uruchomienie");
+            AddLog(L.T("log.update_installing", _update.Version));
             Updater.ApplyAndRestart(downloaded, args);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
-            AddLog($"Nie udało się podmienić pliku programu: {e.Message}");
-            ShowUpdateBar($"Nie udało się zainstalować wersji {_update.Version}: {e.Message}", "Spróbuj ponownie");
+            AddLog(L.T("log.update_replace_failed", e.Message));
+            ShowUpdateBar(L.T("update.install_failed", _update.Version, e.Message), L.T("update.retry"));
             return;
         }
         ExitApp();
@@ -293,8 +331,8 @@ public sealed class MainForm : Form
             if (!_trayHintShown)
             {
                 _trayHintShown = true;
-                _tray.ShowBalloonTip(3000, "OpenTakeoff Link działa dalej",
-                    "Program jest w zasobniku obok zegara. Zakończysz go z menu ikony.", ToolTipIcon.Info);
+                _tray.ShowBalloonTip(3000, L.T("tray.still_running"),
+                    L.T("tray.still_running_hint"), ToolTipIcon.Info);
             }
             return;
         }
@@ -327,7 +365,7 @@ public sealed class MainForm : Form
         var source = _host.Source;
         var connected = source.IsConnected;
         _simDot.ForeColor = connected ? Ok : Waiting;
-        _simStatus.Text = source.StatusText + (_host.Axes.IsActive ? "  ·  sterowanie osiami z telefonu" : "");
+        _simStatus.Text = source.StatusText + (_host.Axes.IsActive ? L.T("window.axes_from_phone") : "");
         _tray.Text = Truncate($"OpenTakeoff Link — {source.StatusText}", 63);
     }
 
@@ -340,12 +378,12 @@ public sealed class MainForm : Form
         {
             var item = new ListViewItem(c.Name);
             item.SubItems.Add(c.RemoteIp);
-            item.SubItems.Add(c.Paired ? (_host.Axes.Owner == c.Id ? "steruje osiami" : "sparowany") : "czeka na kod");
+            item.SubItems.Add(c.Paired ? (_host.Axes.Owner == c.Id ? L.T("window.state_axes") : L.T("window.state_paired")) : L.T("window.state_waiting"));
             item.SubItems.Add(c.ConnectedAt.ToLocalTime().ToString("HH:mm:ss"));
             item.SubItems.Add(c.Paired ? c.RateHz.ToString() : "–");
             _clients.Items.Add(item);
         }
-        if (list.Count == 0) _clients.Items.Add(new ListViewItem("Brak połączeń") { ForeColor = SystemColors.GrayText });
+        if (list.Count == 0) _clients.Items.Add(new ListViewItem(L.T("window.no_connections")) { ForeColor = SystemColors.GrayText });
         _clients.EndUpdate();
         _ips.Text = IpText();
     }
@@ -353,8 +391,8 @@ public sealed class MainForm : Form
     private static string IpText()
     {
         var ips = LinkHost.LocalAddresses();
-        var list = ips.Count == 0 ? "brak sieci" : string.Join(", ", ips);
-        return $"Adresy tego komputera: {list}   ·   port {LinkProtocol.WebSocketPort} (WebSocket), {LinkProtocol.DiscoveryPort} (UDP)";
+        var list = ips.Count == 0 ? L.T("window.no_network") : string.Join(", ", ips);
+        return L.T("window.addresses", list, LinkProtocol.WebSocketPort, LinkProtocol.DiscoveryPort);
     }
 
     protected override void OnHandleCreated(EventArgs e)

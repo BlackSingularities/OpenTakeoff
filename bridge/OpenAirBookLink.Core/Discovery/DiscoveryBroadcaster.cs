@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -41,7 +42,7 @@ public sealed class DiscoveryBroadcaster : IDisposable
                 catch (SocketException e) when (!warned)
                 {
                     warned = true;
-                    Log?.Invoke($"Broadcast UDP nie działa ({e.Message}) — telefon może wymagać ręcznego IP");
+                    Log?.Invoke(L.T("discovery.failed", e.Message));
                 }
                 catch (SocketException)
                 {

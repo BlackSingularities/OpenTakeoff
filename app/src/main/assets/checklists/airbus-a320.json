@@ -7,31 +7,37 @@
     "before_start": {
       "name_pl": "Przed startem silników",
       "name_en": "Before Start",
+      "name_es": "Antes de arrancar motores",
       "phase": "preflight",
       "items": [
         {
           "item_pl": "Parking brake",
           "item_en": "Parking brake",
+          "item_es": "Parking brake",
           "expected": "ON"
         },
         {
           "item_pl": "Electrical power",
           "item_en": "Electrical power",
+          "item_es": "Electrical power",
           "expected": "ESTABLISHED"
         },
         {
           "item_pl": "Fuel quantity",
           "item_en": "Fuel quantity",
+          "item_es": "Fuel quantity",
           "expected": "CHECKED"
         },
         {
           "item_pl": "Seat belts",
           "item_en": "Seat belts",
+          "item_es": "Seat belts",
           "expected": "ON"
         },
         {
           "item_pl": "Flight controls",
           "item_en": "Flight controls",
+          "item_es": "Flight controls",
           "expected": "CHECKED"
         }
       ]
@@ -39,21 +45,25 @@
     "after_start": {
       "name_pl": "Po starcie silników",
       "name_en": "After Start",
+      "name_es": "Tras arrancar motores",
       "phase": "preflight",
       "items": [
         {
           "item_pl": "Anti-ice",
           "item_en": "Anti-ice",
+          "item_es": "Anti-ice",
           "expected": "AS REQUIRED"
         },
         {
           "item_pl": "Flaps",
           "item_en": "Flaps",
+          "item_es": "Flaps",
           "expected": "CONF 1+F"
         },
         {
           "item_pl": "Ground spoilers",
           "item_en": "Ground spoilers",
+          "item_es": "Ground spoilers",
           "expected": "ARMED"
         }
       ]
@@ -61,26 +71,31 @@
     "before_takeoff": {
       "name_pl": "Przed startem",
       "name_en": "Before Takeoff",
+      "name_es": "Antes del despegue",
       "phase": "takeoff",
       "items": [
         {
           "item_pl": "Flight controls",
           "item_en": "Flight controls",
+          "item_es": "Flight controls",
           "expected": "CHECKED"
         },
         {
           "item_pl": "Takeoff config",
           "item_en": "Takeoff config",
+          "item_es": "Takeoff config",
           "expected": "TESTED"
         },
         {
           "item_pl": "Transponder",
           "item_en": "Transponder",
+          "item_es": "Transponder",
           "expected": "TA/RA"
         },
         {
           "item_pl": "Strobe lights",
           "item_en": "Strobe lights",
+          "item_es": "Strobe lights",
           "expected": "ON"
         }
       ]
@@ -88,16 +103,19 @@
     "after_takeoff": {
       "name_pl": "Po starcie",
       "name_en": "After Takeoff",
+      "name_es": "Tras el despegue",
       "phase": "climb",
       "items": [
         {
           "item_pl": "Landing gear",
           "item_en": "Landing gear",
+          "item_es": "Landing gear",
           "expected": "UP"
         },
         {
           "item_pl": "Flaps",
           "item_en": "Flaps",
+          "item_es": "Flaps",
           "expected": "RETRACTED"
         }
       ]
@@ -105,21 +123,25 @@
     "descent": {
       "name_pl": "Zniżanie",
       "name_en": "Descent",
+      "name_es": "Descenso",
       "phase": "descent",
       "items": [
         {
           "item_pl": "Altimeters",
           "item_en": "Altimeters",
+          "item_es": "Altimeters",
           "expected": "SET"
         },
         {
           "item_pl": "Approach briefing",
           "item_en": "Approach briefing",
+          "item_es": "Approach briefing",
           "expected": "COMPLETED"
         },
         {
           "item_pl": "Seat belts",
           "item_en": "Seat belts",
+          "item_es": "Seat belts",
           "expected": "ON"
         }
       ]
@@ -127,21 +149,25 @@
     "approach": {
       "name_pl": "Podejście",
       "name_en": "Approach",
+      "name_es": "Aproximación",
       "phase": "approach",
       "items": [
         {
           "item_pl": "Landing gear",
           "item_en": "Landing gear",
+          "item_es": "Landing gear",
           "expected": "DOWN"
         },
         {
           "item_pl": "Flaps",
           "item_en": "Flaps",
+          "item_es": "Flaps",
           "expected": "FULL"
         },
         {
           "item_pl": "Ground spoilers",
           "item_en": "Ground spoilers",
+          "item_es": "Ground spoilers",
           "expected": "ARMED"
         }
       ]
@@ -149,16 +175,19 @@
     "landing": {
       "name_pl": "Lądowanie",
       "name_en": "Landing",
+      "name_es": "Aterrizaje",
       "phase": "landing",
       "items": [
         {
           "item_pl": "Landing clearance",
           "item_en": "Landing clearance",
+          "item_es": "Landing clearance",
           "expected": "RECEIVED"
         },
         {
           "item_pl": "Autobrake",
           "item_en": "Autobrake",
+          "item_es": "Autobrake",
           "expected": "MAX"
         }
       ]
@@ -166,21 +195,25 @@
     "after_landing": {
       "name_pl": "Po lądowaniu",
       "name_en": "After Landing",
+      "name_es": "Tras el aterrizaje",
       "phase": "taxi",
       "items": [
         {
           "item_pl": "Flaps",
           "item_en": "Flaps",
+          "item_es": "Flaps",
           "expected": "RETRACTED"
         },
         {
           "item_pl": "Ground spoilers",
           "item_en": "Ground spoilers",
+          "item_es": "Ground spoilers",
           "expected": "DISARMED"
         },
         {
           "item_pl": "Transponder",
           "item_en": "Transponder",
+          "item_es": "Transponder",
           "expected": "ALT"
         }
       ]
@@ -188,21 +221,25 @@
     "shutdown": {
       "name_pl": "Wyłączenie",
       "name_en": "Shutdown",
+      "name_es": "Parada de motores",
       "phase": "shutdown",
       "items": [
         {
           "item_pl": "Parking brake",
           "item_en": "Parking brake",
+          "item_es": "Parking brake",
           "expected": "ON"
         },
         {
           "item_pl": "Fuel pumps",
           "item_en": "Fuel pumps",
+          "item_es": "Fuel pumps",
           "expected": "OFF"
         },
         {
           "item_pl": "Electrical power",
           "item_en": "Electrical power",
+          "item_es": "Electrical power",
           "expected": "OFF"
         }
       ]

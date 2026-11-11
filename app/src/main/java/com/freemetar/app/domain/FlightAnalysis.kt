@@ -51,16 +51,16 @@ enum class Scenario(val id: String) {
     PATTERN("pattern"), TOUCH_AND_GO("touch-and-go"), CROSS_COUNTRY("cross-country"), PRECISION_APPROACH("approach");
 
     val title: String get() = when (this) {
-        PATTERN -> loc("Krąg nadlotniskowy", "Traffic pattern")
-        TOUCH_AND_GO -> loc("Seria touch and go", "Touch-and-go series")
-        CROSS_COUNTRY -> loc("Przelot", "Cross-country")
-        PRECISION_APPROACH -> loc("Podejście precyzyjne", "Precision approach")
+        PATTERN -> loc("flight_analysis.traffic_pattern")
+        TOUCH_AND_GO -> loc("flight_analysis.touch_and_go_series")
+        CROSS_COUNTRY -> loc("flight_analysis.cross_country")
+        PRECISION_APPROACH -> loc("flight_analysis.precision_approach")
     }
     val description: String get() = when (this) {
-        PATTERN -> loc("Start i lądowanie na tym samym lotnisku, wysokość kręgu 600–1500 ft, do 20 min.", "Take-off and landing at the same airport, pattern height 600–1500 ft, up to 20 min.")
-        TOUCH_AND_GO -> loc("Co najmniej 3 przyziemienia, każde z oceną od 60.", "At least 3 touchdowns, each scoring 60 or more.")
-        CROSS_COUNTRY -> loc("Lądowanie na innym lotnisku, wznoszenie co najmniej 3000 ft, płynny pilotaż.", "Landing at another airport, climbing at least 3000 ft, smooth handling.")
-        PRECISION_APPROACH -> loc("Stabilne od 1000 ft, ścieżka 2,5–3,5°, przyziemienie w strefie.", "Stable from 1000 ft, 2.5–3.5° path, touchdown in the zone.")
+        PATTERN -> loc("flight_analysis.take_off_and_landing_at_the")
+        TOUCH_AND_GO -> loc("flight_analysis.at_least_3_touchdowns_each_scoring")
+        CROSS_COUNTRY -> loc("flight_analysis.landing_at_another_airport_climbing_at")
+        PRECISION_APPROACH -> loc("flight_analysis.stable_from_1000_ft_2_5")
     }
 
     companion object { fun of(id: String?) = entries.firstOrNull { it.id == id } }
@@ -103,18 +103,18 @@ object FlightAnalysis {
         if (tr.size < 2) return f.markers.map { FlightEvent(it.t, EventKind.MARKER, it.label) }
         val ev = ArrayList<FlightEvent>()
         val takeoff = tr.firstOrNull { it.onGround == false } ?: tr.first()
-        ev += FlightEvent(takeoff.t, EventKind.TAKEOFF, loc("Start", "Take-off") + (f.from?.let { " $it" } ?: ""))
+        ev += FlightEvent(takeoff.t, EventKind.TAKEOFF, loc("flight_analysis.take_off") + (f.from?.let { " $it" } ?: ""))
         val base = tr.first().altFt
         if (f.maxAltFt - base >= 2000) {
             val cruise = f.maxAltFt - 300
-            tr.firstOrNull { it.altFt >= cruise }?.let { ev += FlightEvent(it.t, EventKind.TOC, loc("Koniec wznoszenia", "Top of climb") + " ${altLabel(f.maxAltFt)}") }
-            tr.lastOrNull { it.altFt >= cruise }?.let { ev += FlightEvent(it.t, EventKind.TOD, loc("Początek zniżania", "Top of descent")) }
+            tr.firstOrNull { it.altFt >= cruise }?.let { ev += FlightEvent(it.t, EventKind.TOC, loc("flight_analysis.top_of_climb") + " ${altLabel(f.maxAltFt)}") }
+            tr.lastOrNull { it.altFt >= cruise }?.let { ev += FlightEvent(it.t, EventKind.TOD, loc("common.top_of_descent")) }
         }
         f.allLandings.forEach { l ->
-            l.at?.let { ev += FlightEvent(it, EventKind.LANDING, loc("Przyziemienie", "Touchdown") + " ${l.vsFpm} ft/min" + ((l.runway ?: l.airport)?.let { r -> ", $r" } ?: "")) }
+            l.at?.let { ev += FlightEvent(it, EventKind.LANDING, loc("flight_analysis.touchdown") + " ${l.vsFpm} ft/min" + ((l.runway ?: l.airport)?.let { r -> ", $r" } ?: "")) }
         }
         approaches.filter { it.stableFromFt < 500 }.forEach {
-            ev += FlightEvent(it.startAt, EventKind.EXCEEDANCE, loc("Podejście niestabilne", "Unstable approach"))
+            ev += FlightEvent(it.startAt, EventKind.EXCEEDANCE, loc("flight_analysis.unstable_approach"))
         }
         // Przekroczenia: pierwsze w serii, kolejne tego samego rodzaju dopiero po 30 s spokoju
         val lastOf = HashMap<String, Long>()
@@ -125,11 +125,11 @@ object FlightAnalysis {
         }
         tr.forEach { p ->
             if (p.onGround == true) return@forEach
-            p.bankDeg?.let { if (abs(it) > 45) flag("bank", p, loc("Przechylenie", "Bank") + " ${abs(it).roundToInt()}°") }
-            p.gLoad?.let { if (it > 2.0f || it < 0f) flag("g", p, loc("Przeciążenie", "G-load") + " %.1f g".format(it)) }
+            p.bankDeg?.let { if (abs(it) > 45) flag("bank", p, loc("common.bank") + " ${abs(it).roundToInt()}°") }
+            p.gLoad?.let { if (it > 2.0f || it < 0f) flag("g", p, loc("flight_analysis.g_load") + " %.1f g".format(it)) }
             val h = p.aglFt
-            if (h != null && h < 1000 && (p.vsFpm ?: 0) < -2000) flag("sink", p, loc("Duże opadanie nisko", "High sink rate low") + " ${p.vsFpm} ft/min")
-            p.pitchDeg?.let { if (it > 25 || it < -20) flag("pitch", p, loc("Pochylenie", "Pitch") + " ${it.roundToInt()}°") }
+            if (h != null && h < 1000 && (p.vsFpm ?: 0) < -2000) flag("sink", p, loc("flight_analysis.high_sink_rate_low") + " ${p.vsFpm} ft/min")
+            p.pitchDeg?.let { if (it > 25 || it < -20) flag("pitch", p, loc("common.pitch") + " ${it.roundToInt()}°") }
         }
         f.markers.forEach { ev += FlightEvent(it.t, EventKind.MARKER, it.label) }
         return ev.sortedBy { it.t }
@@ -172,17 +172,17 @@ object FlightAnalysis {
         var score = 100.0
         val notes = ArrayList<String>()
         when {
-            stableFrom >= 1000 -> notes += loc("Stabilne od 1000 ft — wzorowo.", "Stable from 1000 ft — textbook.")
-            stableFrom >= 500 -> { score -= 10; notes += loc("Stabilne dopiero od $stableFrom ft (zalecane 1000 ft w IMC).", "Stable only from $stableFrom ft (1000 ft recommended in IMC).") }
-            else -> { score -= 35; notes += loc("Niestabilne poniżej 500 ft (stabilne od $stableFrom ft) — w liniach lotniczych wymagane odejście na drugi krąg.", "Unstable below 500 ft (stable from $stableFrom ft) — airlines would require a go-around.") }
+            stableFrom >= 1000 -> notes += loc("flight_analysis.stable_from_1000_ft_textbook")
+            stableFrom >= 500 -> { score -= 10; notes += loc("flight_analysis.stable_only_from_ft_1000_ft", stableFrom) }
+            else -> { score -= 35; notes += loc("flight_analysis.unstable_below_500_ft_stable_from", stableFrom) }
         }
         angle?.let { a ->
             val dev = abs(a - 3.0)
-            if (dev > 0.5) { score -= (dev * 10).coerceAtMost(25.0); notes += if (a > 3) loc("Ścieżka stroma: %.1f°.", "Steep path: %.1f°.").format(a) else loc("Ścieżka płaska: %.1f°.", "Shallow path: %.1f°.").format(a) }
+            if (dev > 0.5) { score -= (dev * 10).coerceAtMost(25.0); notes += if (a > 3) loc("flight_analysis.steep_path_1f").format(a) else loc("flight_analysis.shallow_path_1f").format(a) }
         }
-        spread?.let { if (it > 15) { score -= ((it - 15) * 0.8).coerceAtMost(20.0); notes += loc("Prędkość niestała: rozrzut $it kt.", "Speed not held: $it kt spread.") } }
-        maxSink?.let { if (it > 1200) { score -= 15; notes += loc("Opadanie do $it ft/min na prostej.", "Sink rate up to $it ft/min on final.") } }
-        maxBank?.let { if (it > 10) { score -= 10; notes += loc("Przechylenie do ${it.roundToInt()}° na prostej.", "Bank up to ${it.roundToInt()}° on final.") } }
+        spread?.let { if (it > 15) { score -= ((it - 15) * 0.8).coerceAtMost(20.0); notes += loc("flight_analysis.speed_not_held_kt_spread", it) } }
+        maxSink?.let { if (it > 1200) { score -= 15; notes += loc("flight_analysis.sink_rate_up_to_ft_min", it) } }
+        maxBank?.let { if (it > 10) { score -= 10; notes += loc("flight_analysis.bank_up_to_on_final", it.roundToInt()) } }
         return ApproachAnalysis(landingAt, seg.first().t, gates, stableFrom, angle, spread, maxSink, maxBank, score.roundToInt().coerceIn(0, 100), notes)
     }
 
@@ -217,13 +217,13 @@ object FlightAnalysis {
         val maxBank = air.mapNotNull { it.bankDeg?.let(::abs) }.maxOrNull()
         val maxG = air.mapNotNull { it.gLoad }.maxOrNull()
         val notes = ArrayList<String>()
-        if (jerks == 0) notes += loc("Bez gwałtownych ruchów sterami.", "No abrupt control inputs.")
-        else notes += loc("Gwałtowne ruchy: $jerks (%.1f na 10 min).", "Abrupt inputs: $jerks (%.1f per 10 min).").format(jerksPer10)
-        bRms?.let { if (it > 3) notes += loc("Przechylenie zmieniane nerwowo (%.1f°/s średnio).", "Bank changed nervously (%.1f°/s on average).").format(it) }
-        pRms?.let { if (it > 1.2) notes += loc("Pochylenie niespokojne (%.1f°/s średnio).", "Pitch unsteady (%.1f°/s on average).").format(it) }
-        if (vRms > 400) notes += loc("Prędkość pionowa skacze — trymuj i prowadź łagodniej.", "Vertical speed jumps around — trim and fly more gently.")
-        maxBank?.let { if (it > 35) notes += loc("Największe przechylenie ${it.roundToInt()}°.", "Largest bank ${it.roundToInt()}°.") }
-        if (bRms == null) notes += loc("Lot bez zapisu przechylenia — ocena tylko z prędkości pionowej.", "No bank data recorded — rated from vertical speed only.")
+        if (jerks == 0) notes += loc("flight_analysis.no_abrupt_control_inputs")
+        else notes += loc("flight_analysis.abrupt_inputs_1f_per_10_min", jerks).format(jerksPer10)
+        bRms?.let { if (it > 3) notes += loc("flight_analysis.bank_changed_nervously_1f_s_on").format(it) }
+        pRms?.let { if (it > 1.2) notes += loc("flight_analysis.pitch_unsteady_1f_s_on_average").format(it) }
+        if (vRms > 400) notes += loc("flight_analysis.vertical_speed_jumps_around_trim_and")
+        maxBank?.let { if (it > 35) notes += loc("flight_analysis.largest_bank", it.roundToInt()) }
+        if (bRms == null) notes += loc("flight_analysis.no_bank_data_recorded_rated_from")
         return Smoothness(score.roundToInt().coerceIn(0, 100), bRms, pRms, vRms, jerks, maxBank, maxG, notes)
     }
 
@@ -233,35 +233,35 @@ object FlightAnalysis {
         val base = f.track.firstOrNull()?.altFt ?: 0
         val app = a.approaches.lastOrNull()
         fun c(label: String, value: String, ok: Boolean?) = Criterion(label, value, ok)
-        val landed = c(loc("Lądowanie z oceną", "Scored landing"), last?.let { "${it.score}" } ?: "—", last?.let { it.score >= 75 } ?: false)
+        val landed = c(loc("flight_analysis.scored_landing"), last?.let { "${it.score}" } ?: "—", last?.let { it.score >= 75 } ?: false)
         val list = when (s) {
             Scenario.PATTERN -> {
                 val climb = f.maxAltFt - base
                 listOf(
-                    c(loc("To samo lotnisko", "Same airport"), "${f.from ?: "?"} → ${f.to ?: "?"}", if (f.from == null || f.to == null) null else f.from == f.to),
-                    c(loc("Wysokość kręgu", "Pattern height"), "$climb ft", climb in 600..1500),
-                    c(loc("Czas do 20 min", "Up to 20 min"), "${f.durationMin} min", f.durationMin <= 20),
-                    c(loc("Stabilne od 500 ft", "Stable from 500 ft"), app?.let { "${it.stableFromFt} ft" } ?: "—", app?.let { it.stableFromFt >= 500 }),
+                    c(loc("flight_analysis.same_airport"), "${f.from ?: "?"} → ${f.to ?: "?"}", if (f.from == null || f.to == null) null else f.from == f.to),
+                    c(loc("flight_analysis.pattern_height"), "$climb ft", climb in 600..1500),
+                    c(loc("flight_analysis.up_to_20_min"), "${f.durationMin} min", f.durationMin <= 20),
+                    c(loc("flight_analysis.stable_from_500_ft"), app?.let { "${it.stableFromFt} ft" } ?: "—", app?.let { it.stableFromFt >= 500 }),
                     landed,
                 )
             }
             Scenario.TOUCH_AND_GO -> listOf(
-                c(loc("Przyziemienia (min. 3)", "Touchdowns (min. 3)"), "${landings.size}", landings.size >= 3),
-                c(loc("Każde od 60 pkt", "Each 60 or more"), landings.minOfOrNull { it.score }?.let { loc("najsłabsze $it", "lowest $it") } ?: "—", landings.isNotEmpty() && landings.all { it.score >= 60 }),
-                c(loc("Bez odbić", "No bounces"), "${landings.sumOf { it.bounces }}", landings.none { it.bounces > 0 }),
+                c(loc("flight_analysis.touchdowns_min_3"), "${landings.size}", landings.size >= 3),
+                c(loc("flight_analysis.each_60_or_more"), landings.minOfOrNull { it.score }?.let { loc("flight_analysis.lowest", it) } ?: "—", landings.isNotEmpty() && landings.all { it.score >= 60 }),
+                c(loc("flight_analysis.no_bounces"), "${landings.sumOf { it.bounces }}", landings.none { it.bounces > 0 }),
             )
             Scenario.CROSS_COUNTRY -> listOf(
-                c(loc("Inne lotnisko docelowe", "Different destination"), "${f.from ?: "?"} → ${f.to ?: "?"}", if (f.from == null || f.to == null) null else f.from != f.to),
-                c(loc("Wznoszenie od 3000 ft", "Climb of 3000 ft+"), "${f.maxAltFt - base} ft", f.maxAltFt - base >= 3000),
-                c(loc("Płynność od 70", "Smoothness 70+"), a.smoothness?.score?.toString() ?: "—", a.smoothness?.let { it.score >= 70 }),
-                c(loc("Stabilne od 1000 ft", "Stable from 1000 ft"), app?.let { "${it.stableFromFt} ft" } ?: "—", app?.let { it.stableFromFt >= 1000 }),
+                c(loc("flight_analysis.different_destination"), "${f.from ?: "?"} → ${f.to ?: "?"}", if (f.from == null || f.to == null) null else f.from != f.to),
+                c(loc("flight_analysis.climb_of_3000_ft"), "${f.maxAltFt - base} ft", f.maxAltFt - base >= 3000),
+                c(loc("flight_analysis.smoothness_70"), a.smoothness?.score?.toString() ?: "—", a.smoothness?.let { it.score >= 70 }),
+                c(loc("flight_analysis.stable_from_1000_ft"), app?.let { "${it.stableFromFt} ft" } ?: "—", app?.let { it.stableFromFt >= 1000 }),
                 landed,
             )
             Scenario.PRECISION_APPROACH -> listOf(
-                c(loc("Stabilne od 1000 ft", "Stable from 1000 ft"), app?.let { "${it.stableFromFt} ft" } ?: "—", app?.let { it.stableFromFt >= 1000 } ?: false),
-                c(loc("Ścieżka 2,5–3,5°", "Path 2.5–3.5°"), app?.pathAngleDeg?.let { "%.1f°".format(it) } ?: "—", app?.pathAngleDeg?.let { it in 2.5..3.5 }),
-                c(loc("Rozrzut prędkości ≤ 10 kt", "Speed spread ≤ 10 kt"), app?.iasSpreadKt?.let { "$it kt" } ?: "—", app?.iasSpreadKt?.let { it <= 10 }),
-                c(loc("Strefa przyziemienia", "Touchdown zone"), last?.alongFt?.let { "$it ft" } ?: "—", last?.alongFt?.let { it in 500..3000 }),
+                c(loc("flight_analysis.stable_from_1000_ft"), app?.let { "${it.stableFromFt} ft" } ?: "—", app?.let { it.stableFromFt >= 1000 } ?: false),
+                c(loc("flight_analysis.path_2_5_3_5"), app?.pathAngleDeg?.let { "%.1f°".format(it) } ?: "—", app?.pathAngleDeg?.let { it in 2.5..3.5 }),
+                c(loc("flight_analysis.speed_spread_10_kt"), app?.iasSpreadKt?.let { "$it kt" } ?: "—", app?.iasSpreadKt?.let { it <= 10 }),
+                c(loc("flight_analysis.touchdown_zone"), last?.alongFt?.let { "$it ft" } ?: "—", last?.alongFt?.let { it in 500..3000 }),
                 landed,
             )
         }
@@ -288,13 +288,13 @@ object FlightAnalysis {
             val better = if (now == null || before == null || higherBetter == null || now == before) null else (now > before) == higherBetter
             rows += CompareRow(label, now?.let { "$it$unit" } ?: "—", before?.let { "$it$unit" } ?: "—", better)
         }
-        row(loc("Ocena lądowania", "Landing score"), f.allLandings.lastOrNull()?.score, p.allLandings.lastOrNull()?.score, "", true)
-        row(loc("Prędkość przyziemienia", "Touchdown rate"), f.allLandings.lastOrNull()?.vsFpm?.let(::abs), p.allLandings.lastOrNull()?.vsFpm?.let(::abs), " ft/min", false)
-        row(loc("Ocena podejścia", "Approach score"), a.approaches.lastOrNull()?.score, b.approaches.lastOrNull()?.score, "", true)
-        row(loc("Stabilne od", "Stable from"), a.approaches.lastOrNull()?.stableFromFt, b.approaches.lastOrNull()?.stableFromFt, " ft", true)
-        row(loc("Płynność", "Smoothness"), a.smoothness?.score, b.smoothness?.score, "", true)
-        row(loc("Gwałtowne ruchy", "Abrupt inputs"), a.smoothness?.jerks, b.smoothness?.jerks, "", false)
-        row(loc("Czas lotu", "Flight time"), f.durationMin, p.durationMin, " min", if (same) false else null)
+        row(loc("flight_analysis.landing_score"), f.allLandings.lastOrNull()?.score, p.allLandings.lastOrNull()?.score, "", true)
+        row(loc("flight_analysis.touchdown_rate"), f.allLandings.lastOrNull()?.vsFpm?.let(::abs), p.allLandings.lastOrNull()?.vsFpm?.let(::abs), " ft/min", false)
+        row(loc("flight_analysis.approach_score"), a.approaches.lastOrNull()?.score, b.approaches.lastOrNull()?.score, "", true)
+        row(loc("flight_analysis.stable_from"), a.approaches.lastOrNull()?.stableFromFt, b.approaches.lastOrNull()?.stableFromFt, " ft", true)
+        row(loc("common.smoothness"), a.smoothness?.score, b.smoothness?.score, "", true)
+        row(loc("flight_analysis.abrupt_inputs"), a.smoothness?.jerks, b.smoothness?.jerks, "", false)
+        row(loc("common.flight_time"), f.durationMin, p.durationMin, " min", if (same) false else null)
         return Comparison(p, same, rows)
     }
 
@@ -304,48 +304,48 @@ object FlightAnalysis {
         val last = f.allLandings.lastOrNull()
         val app = a.approaches.lastOrNull()
         val sm = a.smoothness
-        appendLine(loc("RAPORT INSTRUKTORSKI — OpenTakeoff", "INSTRUCTOR REPORT — OpenTakeoff"))
+        appendLine(loc("flight_analysis.instructor_report_opentakeoff"))
         appendLine("${f.from ?: "?"} → ${f.to ?: "?"}" + (f.aircraft?.let { ", $it" } ?: ""))
         appendLine(java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, Lang.locale).format(java.util.Date(f.start)) +
-            loc(", czas %d:%02d, %d NM, najwyżej %s", ", time %d:%02d, %d NM, highest %s").format(f.durationMin / 60, f.durationMin % 60, f.distanceNm, altLabel(f.maxAltFt)))
+            loc("flight_analysis.time_d_02d_d_nm_highest").format(f.durationMin / 60, f.durationMin % 60, f.distanceNm, altLabel(f.maxAltFt)))
         appendLine()
-        appendLine(loc("OCENY", "SCORES"))
-        f.allLandings.forEachIndexed { i, l -> appendLine(loc("• Lądowanie", "• Landing") + (if (f.allLandings.size > 1) " ${i + 1}" else "") + ": ${l.score}/100 (${l.gradeText}), ${l.vsFpm} ft/min") }
-        a.approaches.forEachIndexed { i, ap -> appendLine(loc("• Podejście", "• Approach") + (if (a.approaches.size > 1) " ${i + 1}" else "") + ": ${ap.score}/100, " + loc("stabilne od ${ap.stableFromFt} ft", "stable from ${ap.stableFromFt} ft")) }
-        sm?.let { appendLine(loc("• Płynność: ${it.score}/100", "• Smoothness: ${it.score}/100")) }
-        scenario?.let { appendLine(loc("• Ćwiczenie ", "• Exercise ") + "„${it.scenario.title}”: ${it.passed}/${it.judged} " + loc("kryteriów", "criteria")) }
+        appendLine(loc("flight_analysis.scores"))
+        f.allLandings.forEachIndexed { i, l -> appendLine(loc("flight_analysis.landing") + (if (f.allLandings.size > 1) " ${i + 1}" else "") + ": ${l.score}/100 (${l.gradeText}), ${l.vsFpm} ft/min") }
+        a.approaches.forEachIndexed { i, ap -> appendLine(loc("flight_analysis.approach") + (if (a.approaches.size > 1) " ${i + 1}" else "") + ": ${ap.score}/100, " + loc("common.stable_from_ft", ap.stableFromFt)) }
+        sm?.let { appendLine(loc("flight_analysis.smoothness_100", it.score)) }
+        scenario?.let { appendLine(loc("flight_analysis.exercise_2") + "„${it.scenario.title}”: ${it.passed}/${it.judged} " + criteriaWord(it.judged)) }
 
         last?.let { l ->
-            if (l.score >= 85) strengths += loc("Przyziemienie na ${l.score} pkt (${l.vsFpm} ft/min).", "Touchdown scored ${l.score} (${l.vsFpm} ft/min).")
-            else if (l.score < 70) improve += l.noteTexts.firstOrNull() ?: loc("Przyziemienie poniżej oczekiwań (${l.score}).", "Touchdown below expectations (${l.score}).")
-            if (abs(l.vsFpm) > 400) advice += loc("Wyrównanie zacznij wcześniej (ok. 20–30 ft) i stopniowo zmniejszaj opadanie, zamiast dociągać tuż nad pasem.", "Start the flare earlier (about 20–30 ft) and reduce the sink gradually instead of pulling just above the runway.")
-            if ((l.alongFt ?: 0) > 3000) advice += loc("Ustal punkt celowania 1000 ft za progiem i trzymaj go w jednym miejscu szyby.", "Pick an aiming point 1000 ft past the threshold and keep it fixed in the windscreen.")
-            if (abs(l.crossFt ?: 0) > 25) advice += loc("Pracuj sterem kierunku w wyrównaniu, żeby utrzymać oś pasa.", "Use the rudder in the flare to stay on the centreline.")
+            if (l.score >= 85) strengths += loc("flight_analysis.touchdown_scored_ft_min", l.score, l.vsFpm)
+            else if (l.score < 70) improve += l.noteTexts.firstOrNull() ?: loc("flight_analysis.touchdown_below_expectations", l.score)
+            if (abs(l.vsFpm) > 400) advice += loc("flight_analysis.start_the_flare_earlier_about_20")
+            if ((l.alongFt ?: 0) > 3000) advice += loc("flight_analysis.pick_an_aiming_point_1000_ft")
+            if (abs(l.crossFt ?: 0) > 25) advice += loc("flight_analysis.use_the_rudder_in_the_flare")
         }
         app?.let { ap ->
-            if (ap.stableFromFt >= 1000) strengths += loc("Podejście ustabilizowane od 1000 ft.", "Approach stabilised from 1000 ft.")
+            if (ap.stableFromFt >= 1000) strengths += loc("flight_analysis.approach_stabilised_from_1000_ft")
             else improve += ap.notes.first()
-            ap.pathAngleDeg?.let { if (abs(it - 3) > 0.5) advice += loc("Pilnuj ścieżki 3°: ok. 300 ft na każdą milę do progu, prędkość pionowa ≈ 5 × GS.", "Keep a 3° path: about 300 ft per mile to the threshold, vertical speed ≈ 5 × GS.") }
-            ap.iasSpreadKt?.let { if (it > 15) advice += loc("Ustal konfigurację i prędkość podejścia przed 1000 ft; korekty mocy małe i wcześnie.", "Set the approach configuration and speed before 1000 ft; make small, early power corrections.") }
+            ap.pathAngleDeg?.let { if (abs(it - 3) > 0.5) advice += loc("flight_analysis.keep_a_3_path_about_300") }
+            ap.iasSpreadKt?.let { if (it > 15) advice += loc("flight_analysis.set_the_approach_configuration_and_speed") }
         }
         sm?.let {
-            if (it.score >= 85) strengths += loc("Płynne prowadzenie samolotu.", "Smooth aircraft handling.")
+            if (it.score >= 85) strengths += loc("flight_analysis.smooth_aircraft_handling")
             else if (it.score < 65) improve += it.notes.first()
-            if (it.jerks > 3) advice += loc("Wykonuj ruchy sterami małe i płynne; trymuj po każdej zmianie prędkości lub mocy.", "Keep control inputs small and smooth; trim after every speed or power change.")
+            if (it.jerks > 3) advice += loc("flight_analysis.keep_control_inputs_small_and_smooth")
         }
         a.events.filter { it.kind == EventKind.EXCEEDANCE }.take(3).forEach { improve += it.label + " (" + timeOf(f, it.t) + ")" }
-        scenario?.criteria?.filter { it.passed == false }?.forEach { improve += loc("Ćwiczenie: ", "Exercise: ") + "${it.label} — ${it.value}" }
+        scenario?.criteria?.filter { it.passed == false }?.forEach { improve += loc("flight_analysis.exercise") + "${it.label} — ${it.value}" }
         cmp?.let { c ->
             val better = c.rows.count { it.better == true }; val worse = c.rows.count { it.better == false }
-            val what = if (c.sameRoute) loc("poprzednim lotem na tej trasie", "the previous flight on this route") else loc("poprzednim podobnym lotem", "the previous similar flight")
-            (if (better >= worse) strengths else improve) += loc("W porównaniu z $what: lepiej w $better, gorzej w $worse pozycjach.", "Compared with $what: better in $better, worse in $worse items.")
+            val what = if (c.sameRoute) loc("flight_analysis.the_previous_flight_on_this_route") else loc("flight_analysis.the_previous_similar_flight")
+            (if (better >= worse) strengths else improve) += loc("flight_analysis.compared_with_better_in_worse_in", what, better, worse, plural(worse, "items_in"))
         }
-        if (f.markers.isNotEmpty()) { appendLine(); appendLine(loc("ZNACZNIKI", "MARKERS")); f.markers.forEach { appendLine("• ${timeOf(f, it.t)} ${it.label}") } }
-        appendLine(); appendLine(loc("MOCNE STRONY", "STRENGTHS"))
-        (strengths.ifEmpty { listOf(loc("Lot ukończony bez poważnych uwag.", "Flight completed without major remarks.")) }).forEach { appendLine("+ $it") }
-        appendLine(); appendLine(loc("DO POPRAWY", "TO IMPROVE"))
-        (improve.ifEmpty { listOf(loc("Brak istotnych uwag.", "No significant remarks.")) }).forEach { appendLine("− $it") }
-        if (advice.isNotEmpty()) { appendLine(); appendLine(loc("ZALECENIA NA NASTĘPNY LOT", "FOR THE NEXT FLIGHT")); advice.distinct().forEach { appendLine("→ $it") } }
+        if (f.markers.isNotEmpty()) { appendLine(); appendLine(loc("flight_analysis.markers")); f.markers.forEach { appendLine("• ${timeOf(f, it.t)} ${it.label}") } }
+        appendLine(); appendLine(loc("flight_analysis.strengths"))
+        (strengths.ifEmpty { listOf(loc("flight_analysis.flight_completed_without_major_remarks")) }).forEach { appendLine("+ $it") }
+        appendLine(); appendLine(loc("flight_analysis.to_improve"))
+        (improve.ifEmpty { listOf(loc("flight_analysis.no_significant_remarks")) }).forEach { appendLine("− $it") }
+        if (advice.isNotEmpty()) { appendLine(); appendLine(loc("flight_analysis.for_the_next_flight")); advice.distinct().forEach { appendLine("→ $it") } }
     }.trimEnd()
 
     /** Czas od początku lotu jako „m:ss” albo „h:mm:ss”. */

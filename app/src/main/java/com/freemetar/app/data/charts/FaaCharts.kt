@@ -34,10 +34,10 @@ import javax.xml.parsers.SAXParserFactory
  * karty jako osobne PDF-y (100–500 kB). Cykl to numer AIRAC (RRNN, np. 2610), zmiana co 28 dni o 0901Z.
  */
 enum class ChartType(private val labelOf: () -> String) {
-    APD({ loc("Diagram lotniska", "Airport diagram") }),
-    IAP({ loc("Podejścia", "Approaches") }),
-    DP({ loc("Odloty", "Departures") }),
-    STAR({ loc("Dolot (STAR)", "Arrivals (STAR)") }),
+    APD({ loc("faa_charts.airport_diagram") }),
+    IAP({ loc("faa_charts.approaches") }),
+    DP({ loc("faa_charts.departures") }),
+    STAR({ loc("faa_charts.arrivals_star") }),
     MIN({ "Minima" }),
     HOT({ "Hot spots" });
 
@@ -325,7 +325,7 @@ class FaaCharts(
         } catch (e: IOException) {
             // Metaplik nowego cyklu bywa publikowany z opóźnieniem — próbujemy poprzedni
             if (have == null) runCatching { fetchIndex(DtppCycle.previous(clock())) }.getOrNull()
-                ?: run { _status.value = ChartsStatus.Failed(e.message ?: loc("Brak połączenia", "No connection")); throw e }
+                ?: run { _status.value = ChartsStatus.Failed(e.message ?: loc("faa_charts.no_connection")); throw e }
             else { _status.value = ChartsStatus.Ready(have.cycle, stale = true); throw e }
         }
         index = idx
@@ -369,8 +369,8 @@ class FaaCharts(
     private suspend fun fetchIndex(cycle: String): DtppIndex = withContext(Dispatchers.IO) {
         val req = Request.Builder().url(DtppCycle.metafileUrl(cycle)).header("User-Agent", UA).build()
         val idx = client.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IOException(loc("HTTP ${resp.code} dla metapliku d-TPP $cycle", "HTTP ${resp.code} for d-TPP metafile $cycle"))
-            val body = resp.body ?: throw IOException(loc("Pusta odpowiedź FAA", "Empty response from FAA"))
+            if (!resp.isSuccessful) throw IOException(loc("faa_charts.http_for_d_tpp_metafile", resp.code, cycle))
+            val body = resp.body ?: throw IOException(loc("faa_charts.empty_response_from_faa"))
             val total = body.contentLength()
             _status.value = ChartsStatus.Downloading(cycle, 0, total)
             val counting = object : FilterInputStream(body.byteStream()) {
@@ -388,10 +388,10 @@ class FaaCharts(
             } catch (e: IOException) {
                 throw e
             } catch (e: Exception) {
-                throw IOException(loc("Nie udało się odczytać metapliku d-TPP: ", "Could not read the d-TPP metafile: ") + e.message, e)
+                throw IOException(loc("faa_charts.could_not_read_the_d_tpp") + e.message, e)
             }
         }
-        if (idx.airports.isEmpty()) throw IOException(loc("Metaplik d-TPP $cycle nie zawiera lotnisk", "d-TPP metafile $cycle contains no airports"))
+        if (idx.airports.isEmpty()) throw IOException(loc("faa_charts.d_tpp_metafile_contains_no_airports", cycle))
         val dir = File(root, idx.cycle.ifEmpty { cycle }).apply { mkdirs() }
         val f = File(dir, INDEX)
         val tmp = File(dir, "$INDEX.tmp")
@@ -403,7 +403,7 @@ class FaaCharts(
     private fun download(url: String, target: File) {
         val req = Request.Builder().url(url).header("User-Agent", UA).build()
         client.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IOException(loc("HTTP ${resp.code} dla $url", "HTTP ${resp.code} for $url"))
+            if (!resp.isSuccessful) throw IOException(loc("common.http_for", resp.code, url))
             val tmp = File(target.parentFile, target.name + ".part")
             resp.body!!.byteStream().use { input -> tmp.outputStream().use { input.copyTo(it) } }
             if (!tmp.renameTo(target)) { target.delete(); tmp.renameTo(target) }

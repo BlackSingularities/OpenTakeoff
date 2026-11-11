@@ -48,8 +48,6 @@ data class Settings(
     val calloutsEnabled: Boolean = false,
     /** Włączone zapowiedzi (identyfikatory z [CalloutsList]). */
     val enabledCallouts: Set<String> = CalloutsList.ALL.map { it.first }.toSet(),
-    /** "en" / "pl" */
-    val calloutsLanguage: String = "en",
     val calloutsSpeechRate: Float = 1.0f,
 )
 
@@ -74,7 +72,6 @@ class Prefs(private val context: Context) {
     private val WELCOME_SHOWN = booleanPreferencesKey("welcome_shown")
     private val CALLOUTS_ON = booleanPreferencesKey("callouts_enabled")
     private val CALLOUTS_LIST = stringPreferencesKey("callouts_list")
-    private val CALLOUTS_LANG = stringPreferencesKey("callouts_language")
     private val CALLOUTS_RATE = floatPreferencesKey("callouts_rate")
 
     private fun list(v: String?) = v?.split(",")?.filter { it.isNotBlank() }
@@ -100,7 +97,6 @@ class Prefs(private val context: Context) {
             calloutsEnabled = p[CALLOUTS_ON] ?: false,
             // Pusty zapis = wszystkie wyłączone; brak klucza = domyślna lista
             enabledCallouts = p[CALLOUTS_LIST]?.split(",")?.filter { it.isNotBlank() }?.toSet() ?: Settings().enabledCallouts,
-            calloutsLanguage = p[CALLOUTS_LANG] ?: "en",
             calloutsSpeechRate = p[CALLOUTS_RATE] ?: 1.0f,
         )
     }
@@ -164,6 +160,5 @@ class Prefs(private val context: Context) {
         val cur = p[CALLOUTS_LIST]?.split(",")?.filter { it.isNotBlank() }?.toSet() ?: Settings().enabledCallouts
         p[CALLOUTS_LIST] = (if (on) cur + id else cur - id).joinToString(",")
     }
-    suspend fun setCalloutsLanguage(v: String) = context.dataStore.edit { it[CALLOUTS_LANG] = v }
     suspend fun setCalloutsSpeechRate(v: Float) = context.dataStore.edit { it[CALLOUTS_RATE] = v }
 }

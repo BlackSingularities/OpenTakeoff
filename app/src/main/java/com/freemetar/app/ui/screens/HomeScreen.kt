@@ -1,5 +1,6 @@
 package com.freemetar.app.ui.screens
 
+import com.freemetar.app.domain.grouped
 import com.freemetar.app.domain.loc
 
 import android.Manifest
@@ -151,9 +152,9 @@ fun HomeScreen(vm: MainViewModel, onFlight: () -> Unit = {}, onOpen: (String) ->
                     value = query,
                     onValueChange = { query = it; vm.onQuery(it) },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-                    placeholder = { Text(loc("Lotnisko: ICAO, IATA lub miasto", "Airport: ICAO, IATA or city")) },
+                    placeholder = { Text(loc("home.airport_icao_iata_or_city")) },
                     leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                    trailingIcon = { if (query.isNotEmpty()) IconButton({ query = ""; vm.onQuery("") }) { Icon(Icons.Outlined.Close, loc("Wyczyść", "Clear")) } },
+                    trailingIcon = { if (query.isNotEmpty()) IconButton({ query = ""; vm.onQuery("") }) { Icon(Icons.Outlined.Close, loc("common.clear")) } },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Search),
@@ -169,8 +170,8 @@ fun HomeScreen(vm: MainViewModel, onFlight: () -> Unit = {}, onOpen: (String) ->
             if (query.length >= 2) {
                 if (results.isEmpty()) item(span = Full) {
                     EmptyState(
-                        Icons.Outlined.SearchOff, loc("Nie ma takiego lotniska w bazie", "No such airport in the database"),
-                        if (db is DbState.Ready) loc("Sprawdź kod albo naciśnij Szukaj na klawiaturze, żeby pobrać METAR dla ${query.uppercase()} bezpośrednio.", "Check the code, or press Search on the keyboard to fetch the METAR for ${query.uppercase()} directly.") else loc("Baza lotnisk jeszcze się wczytuje.", "The airport database is still loading."),
+                        Icons.Outlined.SearchOff, loc("home.no_such_airport_in_the_database"),
+                        if (db is DbState.Ready) loc("home.check_the_code_or_press_search", query.uppercase()) else loc("home.the_airport_database_is_still_loading"),
                     )
                 }
                 items(results, key = { "s" + it.ident }) { a -> SearchRow(a) { onOpen(a.ident) } }
@@ -179,7 +180,7 @@ fun HomeScreen(vm: MainViewModel, onFlight: () -> Unit = {}, onOpen: (String) ->
                 if (settings.recent.isNotEmpty()) item(span = Full) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 6.dp)) {
                         settings.recent.forEach { id -> Pill(id, icon = Icons.Outlined.History, mono = true) { onOpen(id) } }
-                        Text(loc("Wyczyść", "Clear"), color = c.ink2, style = MaterialTheme.typography.labelMedium,
+                        Text(loc("common.clear"), color = c.ink2, style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier.clip(RoundedCornerShape(50)).clickable { vm.clearRecent() }.padding(horizontal = 8.dp, vertical = 7.dp))
                     }
                 }
@@ -187,10 +188,10 @@ fun HomeScreen(vm: MainViewModel, onFlight: () -> Unit = {}, onOpen: (String) ->
                 item(span = Full) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
                         Column(Modifier.weight(1f)) {
-                            Text(loc("Twoje lotniska", "Your airports"), style = MaterialTheme.typography.titleLarge, color = c.ink)
+                            Text(loc("home.your_airports"), style = MaterialTheme.typography.titleLarge, color = c.ink)
                             val newest = metars.values.maxOfOrNull { it.obsTimeEpoch }
                             Text(
-                                if (loading) loc("Pobieranie pogody…", "Loading weather…") else newest?.let { loc("Najnowsza obserwacja ${hhmmZ.format(Instant.ofEpochSecond(it))}Z", "Latest observation ${hhmmZ.format(Instant.ofEpochSecond(it))}Z") } ?: loc("Pociągnij w dół, aby odświeżyć", "Pull down to refresh"),
+                                if (loading) loc("common.loading_weather") else newest?.let { loc("home.latest_observation_z", hhmmZ.format(Instant.ofEpochSecond(it))) } ?: loc("home.pull_down_to_refresh"),
                                 style = MaterialTheme.typography.bodySmall, color = c.ink2,
                             )
                         }
@@ -198,14 +199,14 @@ fun HomeScreen(vm: MainViewModel, onFlight: () -> Unit = {}, onOpen: (String) ->
                             TextButton({ editing = !editing }) {
                                 Icon(if (editing) Icons.Outlined.Close else Icons.Outlined.Edit, null, Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
-                                Text(if (editing) loc("Gotowe", "Done") else loc("Ułóż", "Arrange"))
+                                Text(if (editing) loc("home.done") else loc("home.arrange"))
                             }
                         }
-                        IconButton({ vm.refreshFavorites() }) { Icon(Icons.Outlined.Refresh, loc("Odśwież pogodę", "Refresh weather"), tint = c.ink2) }
+                        IconButton({ vm.refreshFavorites() }) { Icon(Icons.Outlined.Refresh, loc("home.refresh_weather"), tint = c.ink2) }
                     }
                 }
                 if (settings.favorites.isEmpty()) item(span = Full) {
-                    EmptyState(Icons.Outlined.StarBorder, loc("Nie masz jeszcze ulubionych lotnisk", "No favourite airports yet"), loc("Wyszukaj lotnisko i dotknij gwiazdki na jego karcie, a pojawi się tutaj z bieżącą pogodą.", "Search for an airport and tap the star on its page — it will appear here with current weather."))
+                    EmptyState(Icons.Outlined.StarBorder, loc("home.no_favourite_airports_yet"), loc("home.search_for_an_airport_and_tap"))
                 }
                 items(settings.favorites, key = { "f$it" }) { id ->
                     FlightStrip(
@@ -224,12 +225,12 @@ fun HomeScreen(vm: MainViewModel, onFlight: () -> Unit = {}, onOpen: (String) ->
                 item(span = Full) { NearMeBlock(vm, nearMe, onOpen) }
                 item(span = Full) { Column {
                     Text(
-                        loc("Pogoda: NOAA Aviation Weather Center. Lotniska: OurAirports. Tylko do symulacji lotów — nie używaj do rzeczywistej nawigacji.", "Weather: NOAA Aviation Weather Center. Airports: OurAirports. For flight simulation only — not for real-world navigation."),
+                        loc("home.weather_noaa_aviation_weather_center_airports"),
                         style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 12.dp),
                     )
                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
                     Text(
-                        loc("Pomysł i wykonanie: Adam Rędzikowski · ", "Idea and development: Adam Rędzikowski · ") + com.freemetar.app.ui.theme.AUTHOR_SITE,
+                        loc("home.idea_and_development_adam_r_dzikowski") + com.freemetar.app.ui.theme.AUTHOR_SITE,
                         style = MaterialTheme.typography.bodySmall, color = c.ink,
                         modifier = Modifier.padding(top = 6.dp, bottom = 8.dp).clickable { uri.openUri(com.freemetar.app.ui.theme.AUTHOR_URL) },
                     )
@@ -248,9 +249,9 @@ private fun Header(onLogo: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 10.dp), verticalAlignment = Alignment.Bottom) {
         Image(
             painter = painterResource(R.drawable.opentakeoff_mark),
-            contentDescription = loc("OpenTakeoff — pulpit", "OpenTakeoff — dashboard"),
+            contentDescription = loc("common.opentakeoff_dashboard"),
             modifier = Modifier.size(48.dp)
-                .clickable(onClickLabel = loc("Pulpit", "Dashboard"), onClick = onLogo),
+                .clickable(onClickLabel = loc("home.dashboard"), onClick = onLogo),
         )
         Spacer(Modifier.width(10.dp))
         Text(
@@ -259,11 +260,11 @@ private fun Header(onLogo: () -> Unit) {
                 withStyle(SpanStyle(color = c.ink2)) { append("Takeoff") }
             },
             style = MaterialTheme.typography.headlineLarge, color = c.ink,
-            modifier = Modifier.weight(1f).clickable(onClickLabel = loc("Pulpit", "Dashboard"), onClick = onLogo),
+            modifier = Modifier.weight(1f).clickable(onClickLabel = loc("home.dashboard"), onClick = onLogo),
         )
         Column(horizontalAlignment = Alignment.End) {
             Text(now.format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "Z", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = c.green)
-            Text(loc("czas lokalny ", "local time ") + local.format(DateTimeFormatter.ofPattern("HH:mm")), style = MaterialTheme.typography.bodySmall, color = c.ink2)
+            Text(loc("home.local_time") + local.format(DateTimeFormatter.ofPattern("HH:mm")), style = MaterialTheme.typography.bodySmall, color = c.ink2)
         }
     }
 }
@@ -285,11 +286,11 @@ private fun YourFlightCard(vm: MainViewModel, onFlight: () -> Unit, onOpen: (Str
                 Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(c.green))
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    s.aircraft.title ?: loc("Symulator połączony", "Simulator connected"),
+                    s.aircraft.title ?: loc("home.simulator_connected"),
                     style = MaterialTheme.typography.labelLarge, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
                 )
                 Text(
-                    loc("Kokpit", "Cockpit"),
+                    loc("common.cockpit"),
                     fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = c.paper,
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(c.ink).padding(horizontal = 12.dp, vertical = 5.dp),
                 )
@@ -302,7 +303,7 @@ private fun YourFlightCard(vm: MainViewModel, onFlight: () -> Unit, onOpen: (Str
             run {
                 Spacer(Modifier.size(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StripField("ALT", s.position.altIndFt?.let { "%,d".format(it.roundToInt()).replace(',', ' ') } ?: "—", Modifier.weight(1.2f))
+                    StripField("ALT", s.position.altIndFt?.let { it.roundToInt().grouped() } ?: "—", Modifier.weight(1.2f))
                     StripField("IAS", s.speed.iasKt?.let { "${it.roundToInt()} kt" } ?: "—", Modifier.weight(1f))
                     StripField("GS", s.speed.gsKt?.let { "${it.roundToInt()} kt" } ?: "—", Modifier.weight(1f))
                     StripField("HDG", s.attitude.hdgMagDeg?.let { "%03d°".format(((it.roundToInt() % 360) + 360) % 360) } ?: "—", Modifier.weight(0.9f))
@@ -322,7 +323,7 @@ private fun DbBanner(db: DbState, onRetry: () -> Unit) {
                 Spacer(Modifier.size(8.dp))
                 LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.ink, trackColor = c.terrain)
                 Spacer(Modifier.size(6.dp))
-                Text(loc("Pierwsze uruchomienie pobiera ok. 15 MB danych lotnisk. Potem aplikacja korzysta z kopii w telefonie.", "The first launch downloads about 15 MB of airport data. After that the app uses the copy on the phone."), style = MaterialTheme.typography.bodySmall, color = c.ink2)
+                Text(loc("home.the_first_launch_downloads_about_15"), style = MaterialTheme.typography.bodySmall, color = c.ink2)
             }
         }
         is DbState.Error -> Panel {
@@ -330,10 +331,10 @@ private fun DbBanner(db: DbState, onRetry: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.CloudOff, null, tint = c.ifr)
                     Spacer(Modifier.width(10.dp))
-                    Text(loc("Nie pobrano bazy lotnisk: ${db.message}. Sprawdź połączenie z internetem.", "Airport database not downloaded: ${db.message}. Check your internet connection."), style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
+                    Text(loc("home.airport_database_not_downloaded_check_your", db.message), style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
                 }
                 Spacer(Modifier.size(10.dp))
-                Button(onRetry) { Text(loc("Pobierz bazę ponownie", "Download the database again")) }
+                Button(onRetry) { Text(loc("home.download_the_database_again")) }
             }
         }
         else -> {}
@@ -397,23 +398,23 @@ fun FlightStrip(
                 if (metar != null) {
                     // Kolumny o stałych proporcjach: wiatr z porywami potrzebuje najwięcej miejsca
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StripField(loc("Wiatr", "Wind"), windShort(metar), Modifier.weight(1.5f))
+                        StripField(loc("common.wind"), windShort(metar), Modifier.weight(1.5f))
                         StripField("QNH", metar.altimHpa?.roundToInt()?.toString() ?: "—", Modifier.weight(1f))
                         StripField("Temp", metar.tempC?.let { "${it.roundToInt()}°" } ?: "—", Modifier.weight(0.8f))
-                        StripField(loc("Obs.", "Obs."), ageMinutes(metar.obsTimeEpoch), Modifier.weight(1.2f), stale = isStale(metar.obsTimeEpoch))
+                        StripField("Obs.", ageMinutes(metar.obsTimeEpoch), Modifier.weight(1.2f), stale = isStale(metar.obsTimeEpoch))
                     }
                 } else {
-                    Text(if (loading) loc("Pobieranie METAR…", "Loading METAR…") else loc("Brak bieżącego METAR", "No current METAR"), style = MaterialTheme.typography.bodySmall, color = c.ink2,
+                    Text(if (loading) loc("home.loading_metar") else loc("home.no_current_metar"), style = MaterialTheme.typography.bodySmall, color = c.ink2,
                         modifier = Modifier.padding(vertical = 6.dp))
                 }
             }
             if (editing) {
                 Column(Modifier.fillMaxHeight().background(c.terrain), verticalArrangement = Arrangement.Center) {
                     Row {
-                        IconButton(onUp) { Icon(Icons.Outlined.ArrowUpward, loc("Przesuń wyżej", "Move up"), tint = c.ink) }
-                        IconButton(onDown) { Icon(Icons.Outlined.ArrowDownward, loc("Przesuń niżej", "Move down"), tint = c.ink) }
+                        IconButton(onUp) { Icon(Icons.Outlined.ArrowUpward, loc("home.move_up"), tint = c.ink) }
+                        IconButton(onDown) { Icon(Icons.Outlined.ArrowDownward, loc("home.move_down"), tint = c.ink) }
                     }
-                    IconButton(onRemove, Modifier.align(Alignment.CenterHorizontally)) { Icon(Icons.Outlined.Delete, loc("Usuń z ulubionych", "Remove from favourites"), tint = c.ifr) }
+                    IconButton(onRemove, Modifier.align(Alignment.CenterHorizontally)) { Icon(Icons.Outlined.Delete, loc("common.remove_from_favourites"), tint = c.ifr) }
                 }
             } else {
                 CategoryBlock(metar)
@@ -444,9 +445,9 @@ private fun NearMeBlock(vm: MainViewModel, state: NearMe, onOpen: (String) -> Un
     Column(Modifier.padding(top = 18.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             val byAircraft = (state as? NearMe.Found)?.aircraft == true
-            Text(if (byAircraft) loc("W pobliżu samolotu", "Near the aircraft") else loc("W pobliżu Ciebie", "Near you"),
+            Text(if (byAircraft) loc("home.near_the_aircraft") else loc("home.near_you"),
                 style = MaterialTheme.typography.titleLarge, color = c.ink, modifier = Modifier.weight(1f))
-            if (state is NearMe.Found && !byAircraft) IconButton({ start() }) { Icon(Icons.Outlined.MyLocation, loc("Ustal pozycję ponownie", "Locate again"), tint = c.ink2) }
+            if (state is NearMe.Found && !byAircraft) IconButton({ start() }) { Icon(Icons.Outlined.MyLocation, loc("home.locate_again"), tint = c.ink2) }
         }
         Spacer(Modifier.size(8.dp))
         when (state) {
@@ -454,25 +455,25 @@ private fun NearMeBlock(vm: MainViewModel, state: NearMe, onOpen: (String) -> Un
                 Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.MyLocation, null, tint = c.ink, modifier = Modifier.size(26.dp))
                     Spacer(Modifier.width(12.dp))
-                    Text(loc("Najbliższe lotniska z bieżącą pogodą, wg przybliżonej lokalizacji telefonu.", "The nearest airports with current weather, based on the phone's approximate location."), style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
+                    Text(loc("home.the_nearest_airports_with_current_weather"), style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
                 }
                 Box(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp)) {
-                    OutlinedButton({ start() }) { Text(loc("Pokaż lotniska w pobliżu", "Show nearby airports")) }
+                    OutlinedButton({ start() }) { Text(loc("home.show_nearby_airports")) }
                 }
             }
             NearMe.Locating -> Row(Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = c.ink)
                 Spacer(Modifier.width(12.dp))
-                Text(loc("Ustalanie pozycji…", "Locating…"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+                Text(loc("home.locating"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
             }
             is NearMe.Failed -> Column {
                 Text(state.message, style = MaterialTheme.typography.bodyMedium, color = c.ink)
-                TextButton({ start() }) { Text(loc("Spróbuj ponownie", "Try again")) }
+                TextButton({ start() }) { Text(loc("common.try_again")) }
             }
             is NearMe.Found -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (state.aircraft) Text(loc("Wg pozycji samolotu w symulatorze — odświeża się co ok. 10 NM lotu.", "From the aircraft's position in the simulator — refreshes about every 10 NM."),
+                if (state.aircraft) Text(loc("home.from_the_aircraft_s_position_in"),
                     style = MaterialTheme.typography.bodySmall, color = c.ink2)
-                if (state.airports.isEmpty()) Text(loc("Brak lotnisk w promieniu 120 NM.", "No airports within 120 NM."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+                if (state.airports.isEmpty()) Text(loc("home.no_airports_within_120_nm"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
                 state.airports.forEach { (a, dist) ->
                     FlightStrip(
                         ident = a.ident, name = a.name, metar = state.metars[a.ident],
@@ -497,7 +498,7 @@ fun ageMinutes(epoch: Long): String {
     if (epoch == 0L) return "—"
     val min = (System.currentTimeMillis() / 1000 - epoch) / 60
     return when {
-        min < 1 -> loc("teraz", "now")
+        min < 1 -> loc("common.now")
         min < 60 -> "${min} min"
         else -> "${min / 60} h ${min % 60} min"
     }

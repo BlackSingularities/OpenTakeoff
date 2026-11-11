@@ -138,7 +138,7 @@ private fun EjVsWheel(height: Dp, onDelta: (Int) -> Unit) {
         Canvas(
             Modifier.size(width = 28.dp, height = height)
                 .semantics {
-                    contentDescription = loc("Kółko prędkości pionowej", "Vertical speed wheel")
+                    contentDescription = loc("common.vertical_speed_wheel")
                     customActions = listOf(CustomAccessibilityAction("UP") { delta(100); true }, CustomAccessibilityAction("DN") { delta(-100); true })
                 }
                 .pointerInput(Unit) {
@@ -204,7 +204,7 @@ fun EmbraerGuidancePanel(link: LinkClient, s: FlightState, compact: Boolean = fa
 
     val readout: @Composable (String, String, Color, String) -> Unit = { label, value, col, key ->
         Column(
-            Modifier.clip(RoundedCornerShape(4.dp)).background(Color.Black).clickable(onClickLabel = loc("Wpisz wartość", "Type a value")) { enter = key }
+            Modifier.clip(RoundedCornerShape(4.dp)).background(Color.Black).clickable(onClickLabel = loc("common.type_a_value")) { enter = key }
                 .semantics { contentDescription = "$label $value" }.padding(horizontal = 8.dp, vertical = 3.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -230,7 +230,7 @@ fun EmbraerGuidancePanel(link: LinkClient, s: FlightState, compact: Boolean = fa
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     readout("HDG", hdgV, D_CYAN, "HDG")
                     Spacer(Modifier.height(6.dp))
-                    EjKnob(kn, "HDG SEL", "PUSH SYNC", loc("Pokrętło kursu $hdgV — dotknięcie ustawia bieżący kurs", "Heading knob $hdgV — tap syncs to the current heading"),
+                    EjKnob(kn, "HDG SEL", "PUSH SYNC", loc("e190.heading_knob_tap_syncs_to_the", hdgV),
                         { d -> cmd("HEADING_BUG_SET", ControlMath.heading(live()?.hdgDeg, d)) }, { d -> cmd("HEADING_BUG_SET", ControlMath.heading(live()?.hdgDeg, d * 10)) },
                         // PUSH SYNC: kurs zadany = bieżący kurs samolotu
                         { trackNow?.let { cmd("HEADING_BUG_SET", ((it.roundToInt() % 360) + 360) % 360) } })
@@ -249,7 +249,7 @@ fun EmbraerGuidancePanel(link: LinkClient, s: FlightState, compact: Boolean = fa
             Column(mod, horizontalAlignment = Alignment.CenterHorizontally) {
                 readout("SPD", spdV, D_CYAN, "SPD")
                 Spacer(Modifier.height(6.dp))
-                EjKnob(kn, "SPEED", null, loc("Pokrętło prędkości $spdV", "Speed knob $spdV"),
+                EjKnob(kn, "SPEED", null, loc("e190.speed_knob", spdV),
                     { d -> cmd("AP_SPD_VAR_SET", ControlMath.speed(live()?.spdKt, d)) }, { d -> cmd("AP_SPD_VAR_SET", ControlMath.speed(live()?.spdKt, d * 10)) }) { enter = "SPD" }
                 AfdsKey("FLCH", m.flc, Modifier.width(keyW).padding(top = 6.dp), skin) { cmd("FLIGHT_LEVEL_CHANGE") }
             }
@@ -258,7 +258,7 @@ fun EmbraerGuidancePanel(link: LinkClient, s: FlightState, compact: Boolean = fa
             Column(mod, horizontalAlignment = Alignment.CenterHorizontally) {
                 readout("ALT SEL", altV, D_CYAN, "ALT")
                 Spacer(Modifier.height(6.dp))
-                EjKnob(kn, "ALT SEL", null, loc("Pokrętło wysokości $altV", "Altitude knob $altV"),
+                EjKnob(kn, "ALT SEL", null, loc("common.altitude_knob", altV),
                     { d -> cmd("AP_ALT_VAR_SET_ENGLISH", ControlMath.altitude(live()?.altFt, d * 100)) }, { d -> cmd("AP_ALT_VAR_SET_ENGLISH", ControlMath.altitude(live()?.altFt, d * 1000)) }) { enter = "ALT" }
                 AfdsKey("ALT", m.alt, Modifier.width(keyW).padding(top = 6.dp), skin) { cmd("AP_ALT_HOLD") }
             }
@@ -283,15 +283,14 @@ fun EmbraerGuidancePanel(link: LinkClient, s: FlightState, compact: Boolean = fa
             }
         }
     }
-    if (!compact) Text(loc("Kręć pokrętłem: brzeg — duży krok, środek — mały. HDG SEL: dotknięcie ustawia bieżący kurs. Dotknij cyfr, aby wpisać wartość.",
-        "Turn a knob: the edge for big steps, the centre for small ones. HDG SEL: a tap syncs to the current heading. Tap the digits to type a value."),
+    if (!compact) Text(loc("e190.turn_a_knob_the_edge_for"),
         style = MaterialTheme.typography.labelSmall, color = Fm.c.ink2, modifier = Modifier.padding(top = 8.dp))
 
     when (enter) {
-        "HDG" -> EnterDialog("HDG", loc("np. 270", "e.g. 270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
-        "ALT" -> EnterDialog("ALT SEL (ft)", loc("np. 12000", "e.g. 12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
-        "SPD" -> EnterDialog("SPEED (kt)", loc("np. 250", "e.g. 250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
-        "VS" -> EnterDialog("V/S (ft/min)", loc("np. -1500", "e.g. -1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "HDG" -> EnterDialog("HDG", loc("common.e_g_270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
+        "ALT" -> EnterDialog("ALT SEL (ft)", loc("common.e_g_12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "SPD" -> EnterDialog("SPEED (kt)", loc("common.e_g_250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
+        "VS" -> EnterDialog("V/S (ft/min)", loc("common.e_g_1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
     }
 }
 
@@ -320,18 +319,18 @@ fun EmbraerRadio(link: LinkClient, s: FlightState) {
                 Triple("COM2", r.com2 to false, "NAV2" to r.nav2),
             ).forEach { (comName, com, nav) ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    McduLsk(loc("Zamień $comName", "Swap $comName")) { cmd(if (comName == "COM1") "COM_STBY_RADIO_SWAP" else "COM2_RADIO_SWAP") }
+                    McduLsk(loc("e190.swap", comName)) { cmd(if (comName == "COM1") "COM_STBY_RADIO_SWAP" else "COM2_RADIO_SWAP") }
                     Column(Modifier.weight(1f).padding(start = 6.dp)) {
                         Text(comName, fontFamily = Mono, fontSize = 10.sp, color = D_WHITE.copy(alpha = 0.75f))
                         Text(f(com.first, false, false), fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = D_GREEN)
-                        Text(f(com.first, false, true), fontFamily = Mono, fontSize = 14.sp, color = D_CYAN, modifier = Modifier.clickable(onClickLabel = loc("Wpisz", "Type")) { enter = comName })
+                        Text(f(com.first, false, true), fontFamily = Mono, fontSize = 14.sp, color = D_CYAN, modifier = Modifier.clickable(onClickLabel = loc("e190.type")) { enter = comName })
                     }
                     Column(Modifier.weight(1f).padding(end = 6.dp), horizontalAlignment = Alignment.End) {
                         Text(nav.first, fontFamily = Mono, fontSize = 10.sp, color = D_WHITE.copy(alpha = 0.75f))
                         Text(f(nav.second, true, false), fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = D_GREEN)
-                        Text(f(nav.second, true, true), fontFamily = Mono, fontSize = 14.sp, color = D_CYAN, modifier = Modifier.clickable(onClickLabel = loc("Wpisz", "Type")) { enter = nav.first })
+                        Text(f(nav.second, true, true), fontFamily = Mono, fontSize = 14.sp, color = D_CYAN, modifier = Modifier.clickable(onClickLabel = loc("e190.type")) { enter = nav.first })
                     }
-                    McduLsk(loc("Zamień ${nav.first}", "Swap ${nav.first}")) { cmd(if (nav.first == "NAV1") "NAV1_RADIO_SWAP" else "NAV2_RADIO_SWAP") }
+                    McduLsk(loc("e190.swap", nav.first)) { cmd(if (nav.first == "NAV1") "NAV1_RADIO_SWAP" else "NAV2_RADIO_SWAP") }
                 }
             }
             Spacer(Modifier.height(6.dp))
@@ -350,7 +349,7 @@ fun EmbraerRadio(link: LinkClient, s: FlightState) {
                     listOf("STBY" to ("standby" to 1), "ALT" to ("alt" to 4), "ON" to ("on" to 3)).forEach { (label, mv) ->
                         val on = x?.mode == mv.first
                         Text(label + if (on) " ◄" else " >", fontFamily = Mono, fontSize = 13.sp, color = if (on) D_GREEN else D_CYAN,
-                            modifier = Modifier.clickable(onClickLabel = loc("Tryb $label", "Mode $label")) { cmd("XPNDR_MODE", mv.second) }.padding(horizontal = 4.dp, vertical = 2.dp))
+                            modifier = Modifier.clickable(onClickLabel = loc("common.mode", label)) { cmd("XPNDR_MODE", mv.second) }.padding(horizontal = 4.dp, vertical = 2.dp))
                     }
                 }
             }
@@ -363,7 +362,7 @@ fun EmbraerRadio(link: LinkClient, s: FlightState) {
                     if (k.isEmpty()) Spacer(Modifier.weight(1f))
                     else Box(
                         Modifier.weight(1f).height(38.dp).clip(RoundedCornerShape(19.dp)).background(EJ_KEY)
-                            .clickable(role = Role.Button, onClickLabel = if (k == "CLR") loc("Wyczyść kod", "Clear code") else k) {
+                            .clickable(role = Role.Button, onClickLabel = if (k == "CLR") loc("e190.clear_code") else k) {
                                 if (k == "CLR") typed = ""
                                 else {
                                     val next = typed + k
@@ -380,7 +379,7 @@ fun EmbraerRadio(link: LinkClient, s: FlightState) {
         val nav = name.startsWith("NAV")
         val ev = when (name) { "COM1" -> "COM_STBY_RADIO_SET_HZ"; "COM2" -> "COM2_STBY_RADIO_SET_HZ"; "NAV1" -> "NAV1_STBY_SET_HZ"; else -> "NAV2_STBY_SET_HZ" }
         fun hz(t: String) = ControlMath.parseMhz(t)?.let { if (nav) ControlMath.navHz(it) else ControlMath.comHz(it) }
-        EnterDialog(loc("$name — częstotliwość zapasowa (MHz)", "$name — standby frequency (MHz)"), if (nav) "np. 110.30" else "np. 121.500", KeyboardType.Decimal,
+        EnterDialog(loc("common.standby_frequency_mhz", name), if (nav) loc("common.e_g_110_30") else loc("common.e_g_121_500"), KeyboardType.Decimal,
             { hz(it) != null }, { t -> hz(t)?.let { cmd(ev, it) } }) { enter = null }
     }
 }
@@ -406,7 +405,7 @@ private fun EjToggle(label: String, on: Boolean, modifier: Modifier = Modifier, 
         Box(
             Modifier.padding(top = 3.dp).size(width = 28.dp, height = 44.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xFF111315))
                 .border(1.dp, Color(0x44FFFFFF), RoundedCornerShape(14.dp))
-                .semantics { contentDescription = label + if (on) loc(", włączone", ", on") else loc(", wyłączone", ", off"); role = Role.Switch }
+                .semantics { contentDescription = label + if (on) loc("common.on") else loc("common.off"); role = Role.Switch }
                 .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
         ) {
             Box(Modifier.align(if (on) Alignment.TopCenter else Alignment.BottomCenter).padding(4.dp).size(20.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFFCFD3D6)))
@@ -420,7 +419,7 @@ private fun EjDetent(label: String, on: Boolean, modifier: Modifier = Modifier, 
     val haptic = LocalHapticFeedback.current
     Box(
         modifier.height(40.dp).clip(RoundedCornerShape(4.dp)).background(if (on) EJ_LEGEND else EJ_KEY).border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(4.dp))
-            .semantics { contentDescription = desc + if (on) loc(", ustawione", ", set") else ""; role = Role.RadioButton }
+            .semantics { contentDescription = desc + if (on) loc("common.set") else ""; role = Role.RadioButton }
             .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
         contentAlignment = Alignment.Center,
     ) { Text(label, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = if (on) Color.Black else EJ_LEGEND, maxLines = 1) }
@@ -470,7 +469,7 @@ fun EmbraerSystems(link: LinkClient, s: FlightState) {
                     }
                 }
             }
-            EjDetent(if (gearDown) "DN" else "UP", true, Modifier.width(80.dp), loc("Dźwignia podwozia", "Gear lever")) {
+            EjDetent(if (gearDown) "DN" else "UP", true, Modifier.width(80.dp), loc("common.gear_lever")) {
                 if (gearDown && s.aircraft.onGround == true) confirmGear = true else cmd("GEAR_TOGGLE")
             }
         }
@@ -484,7 +483,7 @@ fun EmbraerSystems(link: LinkClient, s: FlightState) {
         else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             repeat(positions) { i ->
                 val name = if (positions == 7) listOf("0", "1", "2", "3", "4", "5", "FULL")[i] else "$i"
-                EjDetent(name, ctl.flapsIndex == i, Modifier.weight(if (name == "FULL") 1.6f else 1f), loc("Klapy $name", "Flaps $name")) {
+                EjDetent(name, ctl.flapsIndex == i, Modifier.weight(if (name == "FULL") 1.6f else 1f), loc("common.flaps", name)) {
                     cmd("FLAPS_SET", (16383.0 * i / (positions - 1)).roundToInt())
                 }
             }
@@ -502,7 +501,7 @@ fun EmbraerSystems(link: LinkClient, s: FlightState) {
                 Modifier.size(width = 64.dp, height = 40.dp).clip(RoundedCornerShape(4.dp))
                     .background(if (ctl.parkingBrake == true) Brush.linearGradient(listOf(Color(0xFFF2C21B), Color(0xFF1A1A1A), Color(0xFFF2C21B), Color(0xFF1A1A1A)), Offset.Zero, Offset(40f, 40f), androidx.compose.ui.graphics.TileMode.Repeated)
                     else Brush.linearGradient(listOf(EJ_KEY, EJ_KEY)))
-                    .semantics { contentDescription = loc("Hamulec postojowy", "Parking brake") + if (ctl.parkingBrake == true) loc(", zaciągnięty", ", set") else ""; role = Role.Switch }
+                    .semantics { contentDescription = loc("common.parking_brake") + if (ctl.parkingBrake == true) loc("e190.set") else ""; role = Role.Switch }
                     .clickable { cmd("PARKING_BRAKES") },
                 contentAlignment = Alignment.Center,
             ) { Text(if (ctl.parkingBrake == true) "SET" else "OFF", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = if (ctl.parkingBrake == true) Color.Black else EJ_LEGEND,
@@ -514,19 +513,19 @@ fun EmbraerSystems(link: LinkClient, s: FlightState) {
 
     EjPlate("PITCH TRIM") {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            EjDetent("DN", false, Modifier.weight(1f), loc("Trym nosem w dół", "Trim nose down")) { cmd("ELEV_TRIM_DN") }
+            EjDetent("DN", false, Modifier.weight(1f), loc("common.trim_nose_down")) { cmd("ELEV_TRIM_DN") }
             Text(ctl.elevatorTrimPct?.let { "%+.1f".format(it) } ?: "--", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = D_GREEN,
                 textAlign = TextAlign.Center, modifier = Modifier.weight(1f).clip(RoundedCornerShape(4.dp)).background(Color.Black).padding(vertical = 8.dp))
-            EjDetent("UP", false, Modifier.weight(1f), loc("Trym nosem w górę", "Trim nose up")) { cmd("ELEV_TRIM_UP") }
+            EjDetent("UP", false, Modifier.weight(1f), loc("common.trim_nose_up")) { cmd("ELEV_TRIM_UP") }
         }
     }
 
     if (confirmGear) AlertDialog(
         onDismissRequest = { confirmGear = false },
-        title = { Text(loc("Schować podwozie na ziemi?", "Retract the gear on the ground?")) },
-        text = { Text(loc("Samolot stoi na ziemi. Schowanie podwozia może go uszkodzić w symulatorze.", "The aircraft is on the ground. Retracting the gear may damage it in the simulator.")) },
-        confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("Schowaj", "Retract"), color = Fm.c.danger) } },
-        dismissButton = { TextButton({ confirmGear = false }) { Text(loc("Anuluj", "Cancel")) } },
+        title = { Text(loc("common.retract_the_gear_on_the_ground")) },
+        text = { Text(loc("common.the_aircraft_is_on_the_ground")) },
+        confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("common.retract"), color = Fm.c.danger) } },
+        dismissButton = { TextButton({ confirmGear = false }) { Text(loc("common.cancel")) } },
     )
 }
 
@@ -537,7 +536,7 @@ fun EmbraerEngines(link: LinkClient, s: FlightState) {
     EngineDisplayBox { EmbraerEicas(s) }
     Spacer(Modifier.height(12.dp))
     Quadrant(link, s, AircraftProfile.E190)
-    if (s.autopilot.athr) Text(loc("A/T włączony — symulator może sam przestawiać dźwignie.", "A/T is on — the simulator may move the thrust levers itself."),
+    if (s.autopilot.athr) Text(loc("common.a_t_is_on_the_simulator"),
         style = MaterialTheme.typography.labelSmall, color = Fm.c.caution, modifier = Modifier.padding(top = 8.dp))
 }
 

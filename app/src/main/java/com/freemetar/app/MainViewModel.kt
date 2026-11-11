@@ -1,5 +1,6 @@
 package com.freemetar.app
 
+import com.freemetar.app.domain.flightCount
 import com.freemetar.app.domain.loc
 
 import android.app.Application
@@ -128,7 +129,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val callouts = com.freemetar.app.data.Callouts(app)
     val calloutsEnabled = settings.map { it.calloutsEnabled }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val enabledCallouts = settings.map { it.enabledCallouts }.stateIn(viewModelScope, SharingStarted.Eagerly, Settings().enabledCallouts)
-    val calloutsLanguage = settings.map { it.calloutsLanguage }.stateIn(viewModelScope, SharingStarted.Eagerly, "en")
     val calloutsSpeechRate = settings.map { it.calloutsSpeechRate }.stateIn(viewModelScope, SharingStarted.Eagerly, 1.0f)
 
     // Checklists
@@ -200,8 +200,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 ctx.contentResolver.openOutputStream(uri, "wt")!!.bufferedWriter().use { w -> w.write(com.freemetar.app.data.link.FlightExport.gpx(f)) }
             }
-        }.onSuccess { _flightMessage.value = loc("Zapisano tor lotu do GPX.", "Flight track saved as GPX.") }
-            .onFailure { _flightMessage.value = loc("Nie zapisano pliku: ${it.message}", "File not saved: ${it.message}") }
+        }.onSuccess { _flightMessage.value = loc("main_view_model.flight_track_saved_as_gpx") }
+            .onFailure { _flightMessage.value = loc("main_view_model.file_not_saved", it.message) }
     }
 
     /** Wszystkie loty w jednym pliku .oab (gzip) — kopia zapasowa albo przeniesienie na inny telefon. */
@@ -210,8 +210,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 ctx.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(com.freemetar.app.data.link.FlightArchive.encode(_flightLogs.value)) }
             }
-        }.onSuccess { _flightMessage.value = loc("Wyeksportowano ${_flightLogs.value.size} lotów.", "Exported ${_flightLogs.value.size} flights.") }
-            .onFailure { _flightMessage.value = loc("Nie zapisano pliku: ${it.message}", "File not saved: ${it.message}") }
+        }.onSuccess { _flightMessage.value = loc("main_view_model.exported", flightCount(_flightLogs.value.size), _flightLogs.value.size) }
+            .onFailure { _flightMessage.value = loc("main_view_model.file_not_saved", it.message) }
     }
 
     /** Import archiwum .oab lub starego flights.json; loty o tym samym id nie są dublowane. */
@@ -225,8 +225,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _flightLogs.value = com.freemetar.app.data.link.FlightArchive.merge(_flightLogs.value, incoming)
             flightLogStore.save(_flightLogs.value)
             val added = _flightLogs.value.size - before
-            _flightMessage.value = loc("Zaimportowano $added lotów (pominięto ${incoming.size - added} już zapisanych).", "Imported $added flights (skipped ${incoming.size - added} already saved).")
-        }.onFailure { _flightMessage.value = loc("To nie jest archiwum lotów OpenTakeoff.", "This isn't an OpenTakeoff flight archive.") }
+            _flightMessage.value = loc("main_view_model.imported_already_saved_skipped", flightCount(added), incoming.size - added, added)
+        }.onFailure { _flightMessage.value = loc("main_view_model.this_isn_t_an_opentakeoff_flight") }
     }
 
     /** Stan zapisu lotu do kokpitu: nagrywa (od kiedy) albo wstrzymany po ręcznym zakończeniu. */
@@ -244,7 +244,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun stopRecording() {
         val log = recorder.stopByUser()
         if (log != null) saveFlight(log)
-        else { _flightMessage.value = loc("Zapis zakończony — lot krótszy niż 2 min nie trafia do dziennika.", "Recording stopped — flights under 2 min are not saved."); viewModelScope.launch { flightLogStore.clearDraft() } }
+        else { _flightMessage.value = loc("main_view_model.recording_stopped_flights_under_2_min"); viewModelScope.launch { flightLogStore.clearDraft() } }
         _track.value = emptyList()
         publishRecording()
     }
@@ -305,9 +305,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Ręczny znacznik w trwającym nagraniu (przycisk w kokpicie) — z czasem od startu w opisie. */
     fun markLive() {
         val started = recorder.startedAt
-        val label = loc("Znacznik", "Marker") + (started?.let { " " + "%d:%02d".format((System.currentTimeMillis() - it) / 60_000, (System.currentTimeMillis() - it) / 1000 % 60) } ?: "")
-        _flightMessage.value = if (recorder.mark(label)) loc("Dodano znacznik — opis zmienisz w dzienniku.", "Marker added — edit its note in the logbook.")
-        else loc("Znaczniki dodaje się w trakcie zapisu lotu.", "Markers can be added while a flight is recording.")
+        val label = loc("common.marker") + (started?.let { " " + "%d:%02d".format((System.currentTimeMillis() - it) / 60_000, (System.currentTimeMillis() - it) / 1000 % 60) } ?: "")
+        _flightMessage.value = if (recorder.mark(label)) loc("main_view_model.marker_added_edit_its_note_in")
+        else loc("main_view_model.markers_can_be_added_while_a")
     }
 
     private fun updateFlight(id: String, change: (FlightLog) -> FlightLog) = viewModelScope.launch {
@@ -332,7 +332,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             flightLogStore.clearDraft()
             flightLogStore.save(_flightLogs.value)
             val route = "${log.from ?: "?"} → ${log.to ?: "?"}"
-            _flightMessage.value = loc("Zapisano lot $route (${log.durationMin} min).", "Flight $route saved (${log.durationMin} min).")
+            _flightMessage.value = loc("main_view_model.flight_saved_min", route, log.durationMin)
         }
     }
 
@@ -387,9 +387,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         viewModelScope.launch {
-            settings.map { listOf(it.calloutsEnabled, it.enabledCallouts, it.calloutsLanguage, it.calloutsSpeechRate) }.distinctUntilChanged().collect {
+            settings.map { listOf(it.calloutsEnabled, it.enabledCallouts, it.calloutsSpeechRate) }.distinctUntilChanged().collect {
                 val st = settings.value
-                callouts.configure(st.calloutsEnabled, st.enabledCallouts, st.calloutsLanguage, st.calloutsSpeechRate)
+                callouts.configure(st.calloutsEnabled, st.enabledCallouts, st.calloutsSpeechRate)
             }
         }
         viewModelScope.launch {
@@ -403,7 +403,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     // Ocena zaraz po przyziemieniu — nie trzeba czekać na koniec lotu
                     recorder.lastLanding?.takeIf { it !== announcedLanding }?.let { l ->
                         announcedLanding = l
-                        _flightMessage.value = loc("Lądowanie: ${l.score}/100, ${l.gradeText.lowercase()} — ${l.vsFpm} ft/min", "Landing: ${l.score}/100, ${l.gradeText.lowercase()} — ${l.vsFpm} ft/min") + (l.runway?.let { ", $it" } ?: "")
+                        _flightMessage.value = loc("main_view_model.landing_100_ft_min", l.score, l.gradeText.lowercase(), l.vsFpm) + (l.runway?.let { ", $it" } ?: "")
                     }
                 }
             }
@@ -484,11 +484,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _nearMe.value = NearMe.Locating
         val pos = runCatching { Locator.locate(getApplication()) }.getOrNull()
         if (pos == null) {
-            _nearMe.value = NearMe.Failed(loc("Nie udało się ustalić pozycji. Włącz lokalizację i spróbuj ponownie.", "Could not determine your position. Turn on location and try again."))
+            _nearMe.value = NearMe.Failed(loc("main_view_model.could_not_determine_your_position_turn"))
             return@launch
         }
         if (!db.isLoaded) {
-            _nearMe.value = NearMe.Failed(loc("Baza lotnisk jeszcze się ładuje.", "The airport database is still loading."))
+            _nearMe.value = NearMe.Failed(loc("main_view_model.the_airport_database_is_still_loading"))
             return@launch
         }
         val list = nearIcao(pos.latitude, pos.longitude)
@@ -504,7 +504,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             Updater.check()?.let { UpdateState.Available(it) } ?: UpdateState.UpToDate
         } catch (e: Exception) {
             // Przy starcie brak sieci nie jest powodem do komunikatu
-            if (silent) UpdateState.Idle else UpdateState.Error(e.message ?: loc("Nie udało się sprawdzić aktualizacji", "Could not check for updates"))
+            if (silent) UpdateState.Idle else UpdateState.Error(e.message ?: loc("main_view_model.could_not_check_for_updates"))
         }
     }
 
@@ -516,7 +516,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             UpdateState.Ready(info, file)
         } catch (e: Exception) {
-            UpdateState.Error(loc("Pobieranie nie powiodło się: ${e.message}", "Download failed: ${e.message}"))
+            UpdateState.Error(loc("main_view_model.download_failed", e.message))
         }
     }
 
@@ -524,14 +524,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun loadDb(force: Boolean) = viewModelScope.launch {
         try {
-            _db.value = DbState.Loading(loc("Przygotowanie bazy lotnisk…", "Preparing the airport database…"))
+            _db.value = DbState.Loading(loc("main_view_model.preparing_the_airport_database"))
             db.ensureDownloaded(force) { _db.value = DbState.Loading(it) }
-            _db.value = DbState.Loading(loc("Indeksowanie…", "Indexing…"))
+            _db.value = DbState.Loading(loc("main_view_model.indexing"))
             db.load()
             _db.value = DbState.Ready(db.airportCount, db.lastUpdated())
             _detail.value?.let { open(it.ident) }
         } catch (e: Exception) {
-            _db.value = DbState.Error(e.message ?: loc("Nie udało się pobrać bazy lotnisk", "Could not download the airport database"))
+            _db.value = DbState.Error(e.message ?: loc("main_view_model.could_not_download_the_airport_database"))
         }
     }
 
@@ -611,7 +611,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             loadHazardsAndAloft(ident)
         } catch (e: Exception) {
-            _detail.update { if (it?.ident == ident) it.copy(loading = false, error = e.message ?: loc("Błąd sieci", "Network error")) else it }
+            _detail.update { if (it?.ident == ident) it.copy(loading = false, error = e.message ?: loc("main_view_model.network_error")) else it }
         }
     }
 
@@ -680,7 +680,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     // Callouts functions
     fun setCalloutsEnabled(enabled: Boolean) = viewModelScope.launch { prefs.setCalloutsEnabled(enabled) }
     fun toggleCallout(id: String, enabled: Boolean) = viewModelScope.launch { prefs.setCallout(id, enabled) }
-    fun setCalloutsLanguage(lang: String) = viewModelScope.launch { prefs.setCalloutsLanguage(lang) }
     fun setCalloutsSpeechRate(rate: Float) = viewModelScope.launch { prefs.setCalloutsSpeechRate(rate) }
 
     // Checklists functions

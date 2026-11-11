@@ -80,7 +80,7 @@ object Geo {
 
 data class WindComponents(val headwind: Double, val crosswind: Double) {
     /** Dodatni = wiatr z prawej. */
-    val crossSide get() = if (crosswind >= 0) loc("z prawej", "from the right") else loc("z lewej", "from the left")
+    val crossSide get() = if (crosswind >= 0) loc("calc.from_the_right") else loc("calc.from_the_left")
 }
 
 data class RunwayWind(val runwayEnd: String, val heading: Double, val steady: WindComponents, val gust: WindComponents?)
@@ -153,9 +153,9 @@ object Atmo {
     fun carbIceRisk(tC: Double, dpC: Double): String {
         val spread = tC - dpC
         return when {
-            tC in -10.0..30.0 && spread <= 5 -> loc("Wysokie", "High")
-            tC in -10.0..30.0 && spread <= 12 -> loc("Umiarkowane", "Moderate")
-            else -> loc("Niskie", "Low")
+            tC in -10.0..30.0 && spread <= 5 -> loc("calc.high")
+            tC in -10.0..30.0 && spread <= 12 -> loc("calc.moderate")
+            else -> loc("calc.low")
         }
     }
 
@@ -195,3 +195,6 @@ object Sun {
 }
 
 fun Double.fmt(d: Int = 0): String = "%.${d}f".format(this)
+
+/** Tysiące oddzielone spacją w każdym języku: 12 000. */
+fun Int.grouped(): String = "%,d".format(java.util.Locale.US, this).replace(',', ' ')

@@ -72,10 +72,10 @@ fun RouteTool(vm: MainViewModel) {
     val a = vm.airport(dep)
     val b = vm.airport(arr)
 
-    SectionCard(loc("Planowanie trasy", "Route planning"), icon = Icons.Outlined.Route) {
+    SectionCard(loc("tools_extra.route_planning"), icon = Icons.Outlined.Route) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IcaoField(loc("Odlot", "Departure"), dep, Icons.Outlined.FlightTakeoff, Modifier.weight(1f)) { dep = it }
-            IcaoField(loc("Przylot", "Arrival"), arr, Icons.Outlined.FlightLand, Modifier.weight(1f)) { arr = it }
+            IcaoField(loc("tools_extra.departure"), dep, Icons.Outlined.FlightTakeoff, Modifier.weight(1f)) { dep = it }
+            IcaoField(loc("common.arrival"), arr, Icons.Outlined.FlightLand, Modifier.weight(1f)) { arr = it }
         }
         Spacer(Modifier.size(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -89,16 +89,16 @@ fun RouteTool(vm: MainViewModel) {
                     }
                 },
                 enabled = a != null && b != null && !loading,
-            ) { Text(if (loading) loc("Pobieranie…", "Loading…") else loc("Pogoda", "Weather")) }
+            ) { Text(if (loading) loc("common.loading") else loc("common.weather")) }
         }
 
         if (a == null || b == null) {
             Spacer(Modifier.size(10.dp))
             Text(
                 when {
-                    a == null && dep.length >= 3 -> loc("Nie znaleziono lotniska $dep", "Airport $dep not found")
-                    b == null && arr.length >= 3 -> loc("Nie znaleziono lotniska $arr", "Airport $arr not found")
-                    else -> loc("Wpisz kody ICAO obu lotnisk.", "Enter the ICAO codes of both airports.")
+                    a == null && dep.length >= 3 -> loc("tools_extra.airport_not_found", dep)
+                    b == null && arr.length >= 3 -> loc("tools_extra.airport_not_found", arr)
+                    else -> loc("tools_extra.enter_the_icao_codes_of_both")
                 },
                 color = Fm.c.ink2, fontSize = 13.sp,
             )
@@ -109,11 +109,11 @@ fun RouteTool(vm: MainViewModel) {
             val speed = gs.num()?.takeIf { it > 0 }
             Spacer(Modifier.size(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile(loc("Dystans", "Distance"), "${dist.roundToInt()} NM", "${(dist * 1.852).roundToInt()} km", Modifier.weight(1f), accent = Fm.c.accent, icon = Icons.Outlined.Straighten)
-                StatTile(loc("Kurs", "Course"), "%03d°".format(crs.roundToInt()), loc("powrót %03d°", "return %03d°").format(back.roundToInt()), Modifier.weight(1f), icon = Icons.Outlined.Explore)
-                StatTile(loc("Czas", "Time"), speed?.let { val h = dist / it; "%d:%02d".format(h.toInt(), ((h - h.toInt()) * 60).roundToInt()) } ?: "—", "ETE", Modifier.weight(1f), icon = Icons.Outlined.Schedule)
+                StatTile(loc("common.distance"), "${dist.roundToInt()} NM", "${(dist * 1.852).roundToInt()} km", Modifier.weight(1f), accent = Fm.c.accent, icon = Icons.Outlined.Straighten)
+                StatTile(loc("tools_extra.course"), "%03d°".format(crs.roundToInt()), loc("tools_extra.return_03d").format(back.roundToInt()), Modifier.weight(1f), icon = Icons.Outlined.Explore)
+                StatTile(loc("common.time"), speed?.let { val h = dist / it; "%d:%02d".format(h.toInt(), ((h - h.toInt()) * 60).roundToInt()) } ?: "—", "ETE", Modifier.weight(1f), icon = Icons.Outlined.Schedule)
             }
-            Text(loc("Kurs rzeczywisty po ortodromie (bez deklinacji i wiatru).", "Great-circle true course (no variation or wind)."), color = Fm.c.ink2, fontSize = 11.sp, modifier = Modifier.padding(top = 6.dp))
+            Text(loc("tools_extra.great_circle_true_course_no_variation"), color = Fm.c.ink2, fontSize = 11.sp, modifier = Modifier.padding(top = 6.dp))
             if (metars.isNotEmpty()) {
                 Spacer(Modifier.size(12.dp))
                 listOf(a, b).forEach { ap -> RouteMetar(ap, metars[ap.ident]) }
@@ -148,7 +148,7 @@ private fun RouteMetar(a: Airport, m: Metar?) {
             Text(a.name, color = Fm.c.ink2, fontSize = 12.sp, maxLines = 1)
         }
         Spacer(Modifier.size(6.dp))
-        Text(m?.raw ?: loc("Brak METAR", "No METAR"), style = RawText.copy(fontSize = 12.sp), color = Fm.c.ink.copy(alpha = 0.85f))
+        Text(m?.raw ?: loc("tools_extra.no_metar"), style = RawText.copy(fontSize = 12.sp), color = Fm.c.ink.copy(alpha = 0.85f))
     }
 }
 
@@ -166,7 +166,7 @@ private val phonetic = listOf(
 @Composable
 fun CheatSheet() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionCard(loc("Alfabet fonetyczny ICAO", "ICAO phonetic alphabet"), icon = Icons.Outlined.RecordVoiceOver) {
+        SectionCard(loc("tools_extra.icao_phonetic_alphabet"), icon = Icons.Outlined.RecordVoiceOver) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 phonetic.forEach { (l, w) ->
                     Row(Modifier.clip(RoundedCornerShape(8.dp)).background(Fm.c.terrain).padding(horizontal = 8.dp, vertical = 5.dp)) {
@@ -177,14 +177,14 @@ fun CheatSheet() {
                 }
             }
         }
-        SectionCard(loc("Kody transpondera", "Transponder codes"), icon = Icons.Outlined.Pin) {
+        SectionCard(loc("tools_extra.transponder_codes"), icon = Icons.Outlined.Pin) {
             listOf(
-                Triple("7700", loc("Niebezpieczeństwo (MAYDAY)", "Emergency (MAYDAY)"), Fm.c.ifr),
-                Triple("7600", loc("Utrata łączności radiowej", "Radio failure"), Fm.c.caution),
-                Triple("7500", loc("Bezprawna ingerencja", "Unlawful interference"), Fm.c.ifr),
-                Triple("7000", loc("VFR — Europa", "VFR — Europe"), Fm.c.ink),
-                Triple("1200", loc("VFR — USA/Kanada", "VFR — USA/Canada"), Fm.c.ink),
-                Triple("2000", loc("IFR bez przydziału kodu", "IFR without an assigned code"), Fm.c.ink),
+                Triple("7700", loc("tools_extra.emergency_mayday"), Fm.c.ifr),
+                Triple("7600", loc("tools_extra.radio_failure"), Fm.c.caution),
+                Triple("7500", loc("tools_extra.unlawful_interference"), Fm.c.ifr),
+                Triple("7000", loc("tools_extra.vfr_europe"), Fm.c.ink),
+                Triple("1200", loc("tools_extra.vfr_usa_canada"), Fm.c.ink),
+                Triple("2000", loc("tools_extra.ifr_without_an_assigned_code"), Fm.c.ink),
             ).forEach { (c, t, col) ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(c, fontFamily = Mono, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = col, modifier = Modifier.width(70.dp))
@@ -192,18 +192,18 @@ fun CheatSheet() {
                 }
             }
         }
-        SectionCard(loc("Sygnały świetlne z wieży", "Light signals from the tower"), icon = Icons.Outlined.Lightbulb) {
+        SectionCard(loc("tools_extra.light_signals_from_the_tower"), icon = Icons.Outlined.Lightbulb) {
             Row(Modifier.padding(bottom = 6.dp)) {
-                Text(loc("Sygnał", "Signal"), color = Fm.c.ink2, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                Text(loc("W locie", "In flight"), color = Fm.c.ink2, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                Text(loc("Na ziemi", "On the ground"), color = Fm.c.ink2, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                Text(loc("tools_extra.signal"), color = Fm.c.ink2, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                Text(loc("tools_extra.in_flight"), color = Fm.c.ink2, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                Text(loc("tools_extra.on_the_ground"), color = Fm.c.ink2, fontSize = 12.sp, modifier = Modifier.weight(1f))
             }
             listOf(
-                Triple(Fm.c.vfr to loc("Zielone ciągłe", "Steady green"), loc("Zezwolenie na lądowanie", "Cleared to land"), loc("Zezwolenie na start", "Cleared for take-off")),
-                Triple(Fm.c.vfr to loc("Zielone przeryw.", "Flashing green"), loc("Wróć do lądowania", "Return for landing"), loc("Zezwolenie na kołowanie", "Cleared to taxi")),
-                Triple(Fm.c.ifr to loc("Czerwone ciągłe", "Steady red"), loc("Ustąp, krąż dalej", "Give way, continue circling"), "Stop"),
-                Triple(Fm.c.ifr to loc("Czerwone przeryw.", "Flashing red"), loc("Nie ląduj, lotnisko niebezp.", "Do not land, airport unsafe"), loc("Opuść drogę startową", "Taxi clear of the runway")),
-                Triple(Fm.c.ink2 to loc("Białe przeryw.", "Flashing white"), loc("Ląduj tutaj, potem płyta", "Land here, then to apron"), loc("Wróć na miejsce startu", "Return to starting point")),
+                Triple(Fm.c.vfr to loc("tools_extra.steady_green"), loc("tools_extra.cleared_to_land"), loc("tools_extra.cleared_for_take_off")),
+                Triple(Fm.c.vfr to loc("tools_extra.flashing_green"), loc("tools_extra.return_for_landing"), loc("tools_extra.cleared_to_taxi")),
+                Triple(Fm.c.ifr to loc("tools_extra.steady_red"), loc("tools_extra.give_way_continue_circling"), "Stop"),
+                Triple(Fm.c.ifr to loc("tools_extra.flashing_red"), loc("tools_extra.do_not_land_airport_unsafe"), loc("tools_extra.taxi_clear_of_the_runway")),
+                Triple(Fm.c.ink2 to loc("tools_extra.flashing_white"), loc("tools_extra.land_here_then_to_apron"), loc("tools_extra.return_to_starting_point")),
             ).forEach { (sig, air, ground) ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {

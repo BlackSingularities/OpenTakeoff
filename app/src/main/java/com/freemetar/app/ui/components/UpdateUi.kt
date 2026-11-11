@@ -60,19 +60,19 @@ fun UpdateDialog(vm: MainViewModel) {
     AlertDialog(
         onDismissRequest = { if (state !is UpdateState.Downloading) vm.dismissUpdatePrompt() },
         icon = { Icon(Icons.Outlined.SystemUpdate, null) },
-        title = { Text(loc("Nowa wersja ${info.versionName}", "New version ${info.versionName}")) },
+        title = { Text(loc("update_ui.new_version", info.versionName)) },
         text = {
             Column {
-                Text(loc("Masz ${BuildConfig.VERSION_NAME}. Dostępna jest nowa wersja${sizeMb(info.sizeBytes)}.", "You have ${BuildConfig.VERSION_NAME}. A new version is available${sizeMb(info.sizeBytes)}."), color = Fm.c.ink2, fontSize = 13.sp)
+                Text(loc("update_ui.you_have_a_new_version_is", BuildConfig.VERSION_NAME, sizeMb(info.sizeBytes)), color = Fm.c.ink2, fontSize = 13.sp)
                 when (val s = state) {
                     is UpdateState.Downloading -> {
                         Spacer(Modifier.size(12.dp))
                         LinearProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth())
-                        Text(loc("Pobieranie… ${(s.progress * 100).toInt()}%", "Downloading… ${(s.progress * 100).toInt()}%"), color = Fm.c.ink2, fontSize = 12.sp)
+                        Text(loc("update_ui.downloading", (s.progress * 100).toInt()), color = Fm.c.ink2, fontSize = 12.sp)
                     }
                     is UpdateState.Ready -> if (!Updater.canInstall(ctx)) {
                         Spacer(Modifier.size(10.dp))
-                        Text(loc("Zezwól OpenTakeoff na instalowanie aplikacji, wróć i naciśnij „Zainstaluj” jeszcze raz.", "Allow OpenTakeoff to install apps, come back and tap Install again."), color = Fm.c.caution, fontSize = 12.sp)
+                        Text(loc("update_ui.allow_opentakeoff_to_install_apps_come"), color = Fm.c.caution, fontSize = 12.sp)
                     }
                     else -> {}
                 }
@@ -80,13 +80,13 @@ fun UpdateDialog(vm: MainViewModel) {
         },
         confirmButton = {
             when (val s = state) {
-                is UpdateState.Available -> Button({ vm.downloadUpdate(s.info) }) { Text(loc("Pobierz", "Download")) }
-                is UpdateState.Ready -> Button({ install(s.file) }) { Text(loc("Zainstaluj", "Install")) }
+                is UpdateState.Available -> Button({ vm.downloadUpdate(s.info) }) { Text(loc("common.download")) }
+                is UpdateState.Ready -> Button({ install(s.file) }) { Text(loc("common.install")) }
                 else -> {}
             }
         },
         dismissButton = {
-            if (state !is UpdateState.Downloading) TextButton({ vm.dismissUpdatePrompt() }) { Text(loc("Później", "Later")) }
+            if (state !is UpdateState.Downloading) TextButton({ vm.dismissUpdatePrompt() }) { Text(loc("update_ui.later")) }
         },
     )
 }

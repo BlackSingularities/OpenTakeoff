@@ -1,5 +1,6 @@
 package com.freemetar.app.ui.flight
 
+import com.freemetar.app.domain.grouped
 import com.freemetar.app.domain.loc
 
 import androidx.compose.foundation.background
@@ -124,8 +125,8 @@ private fun SelectorRow(
     // Poniżej 360 dp szerokości ekranu cztery przyciski i wartość się nie mieszczą
     val roomy = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 360
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (roomy && bigDown != null && big != null) RepeatKey("«", loc("$label w dół o ${big.first}", "$label down by ${big.first}"), action = bigDown)
-        RepeatKey("−", loc("$label w dół o ${small.first}", "$label down by ${small.first}"), action = smallDown)
+        if (roomy && bigDown != null && big != null) RepeatKey("«", loc("control.down_by", label, big.first), action = bigDown)
+        RepeatKey("−", loc("control.down_by", label, small.first), action = smallDown)
         Column(
             Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.35f))
                 .let { if (onEnter != null) it.clickable(onClick = onEnter) else it },
@@ -134,8 +135,8 @@ private fun SelectorRow(
             Text(label, fontSize = 11.sp, color = c.ink2)
             Text(value, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = c.accent)
         }
-        RepeatKey("+", loc("$label w górę o ${small.first}", "$label up by ${small.first}"), action = small.second)
-        if (roomy && big != null) RepeatKey("»", loc("$label w górę o ${big.first}", "$label up by ${big.first}"), action = big.second)
+        RepeatKey("+", loc("control.up_by", label, small.first), action = small.second)
+        if (roomy && big != null) RepeatKey("»", loc("control.up_by", label, big.first), action = big.second)
     }
 }
 
@@ -151,8 +152,8 @@ internal fun EnterDialog(title: String, hint: String, keyboard: KeyboardType, va
                 textStyle = MaterialTheme.typography.headlineSmall.copy(fontFamily = Mono),
                 keyboardOptions = KeyboardOptions(keyboardType = keyboard))
         },
-        confirmButton = { TextButton({ onDone(text); onDismiss() }, enabled = validate(text)) { Text(loc("Ustaw", "Set")) } },
-        dismissButton = { TextButton(onDismiss) { Text(loc("Anuluj", "Cancel")) } },
+        confirmButton = { TextButton({ onDone(text); onDismiss() }, enabled = validate(text)) { Text(loc("control.set")) } },
+        dismissButton = { TextButton(onDismiss) { Text(loc("common.cancel")) } },
     )
 }
 
@@ -192,7 +193,7 @@ fun AutopilotPanel(link: LinkClient, s: FlightState) {
         { cmd("HEADING_BUG_SET", ControlMath.heading(link.state.value?.autopilot?.hdgDeg, -1)) },
         { cmd("HEADING_BUG_SET", ControlMath.heading(link.state.value?.autopilot?.hdgDeg, -10)) },
     ) { enter = "HDG" }
-    SelectorRow("ALT", ap.altFt?.let { "%,d ft".format(it.roundToInt()).replace(',', ' ') } ?: "—",
+    SelectorRow("ALT", ap.altFt?.let { "${it.roundToInt().grouped()} ft" } ?: "—",
         "100 ft" to { cmd("AP_ALT_VAR_SET_ENGLISH", ControlMath.altitude(link.state.value?.autopilot?.altFt, 100)) },
         "1000 ft" to { cmd("AP_ALT_VAR_SET_ENGLISH", ControlMath.altitude(link.state.value?.autopilot?.altFt, 1000)) },
         { cmd("AP_ALT_VAR_SET_ENGLISH", ControlMath.altitude(link.state.value?.autopilot?.altFt, -100)) },
@@ -210,11 +211,11 @@ fun AutopilotPanel(link: LinkClient, s: FlightState) {
     ) { enter = "SPD" }
 
     when (enter) {
-        "HDG" -> EnterDialog(loc("Kurs autopilota", "Autopilot heading"), "np. 270", KeyboardType.Number, { it.toIntOrNull() in 0..359 },
+        "HDG" -> EnterDialog(loc("common.autopilot_heading"), loc("common.e_g_270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 },
             { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
-        "ALT" -> EnterDialog(loc("Wysokość autopilota (ft)", "Autopilot altitude (ft)"), "np. 12000", KeyboardType.Number, { it.toIntOrNull() in 0..50_000 },
+        "ALT" -> EnterDialog(loc("control.autopilot_altitude_ft"), loc("common.e_g_12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 },
             { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
-        "SPD" -> EnterDialog(loc("Prędkość autopilota (kt)", "Autopilot speed (kt)"), "np. 250", KeyboardType.Number, { it.toIntOrNull() in 0..500 },
+        "SPD" -> EnterDialog(loc("control.autopilot_speed_kt"), loc("common.e_g_250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 },
             { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
     }
 }
@@ -257,13 +258,13 @@ fun RadioPanel(link: LinkClient, s: FlightState, profile: AircraftProfile) {
     }
 
     when (enter) {
-        "COM1", "COM2" -> EnterDialog(loc("$enter — częstotliwość zapasowa (MHz)", "$enter — standby frequency (MHz)"), "np. 121.500", KeyboardType.Decimal,
+        "COM1", "COM2" -> EnterDialog(loc("common.standby_frequency_mhz", enter), loc("common.e_g_121_500"), KeyboardType.Decimal,
             { ControlMath.parseMhz(it)?.let(ControlMath::comHz) != null },
             { t -> ControlMath.parseMhz(t)?.let(ControlMath::comHz)?.let { hz -> cmd(if (enter == "COM1") "COM_STBY_RADIO_SET_HZ" else "COM2_STBY_RADIO_SET_HZ", hz) } }) { enter = null }
-        "NAV1", "NAV2" -> EnterDialog(loc("$enter — częstotliwość zapasowa (MHz)", "$enter — standby frequency (MHz)"), "np. 113.45", KeyboardType.Decimal,
+        "NAV1", "NAV2" -> EnterDialog(loc("common.standby_frequency_mhz", enter), loc("control.e_g_113_45"), KeyboardType.Decimal,
             { ControlMath.parseMhz(it)?.let(ControlMath::navHz) != null },
             { t -> ControlMath.parseMhz(t)?.let(ControlMath::navHz)?.let { hz -> cmd(if (enter == "NAV1") "NAV1_STBY_SET_HZ" else "NAV2_STBY_SET_HZ", hz) } }) { enter = null }
-        "XPDR" -> EnterDialog(loc("Kod transpondera", "Transponder code"), loc("4 cyfry 0–7", "4 digits 0–7"), KeyboardType.Number, { ControlMath.squawk(it) != null },
+        "XPDR" -> EnterDialog(loc("control.transponder_code"), loc("control.4_digits_0_7"), KeyboardType.Number, { ControlMath.squawk(it) != null },
             { t -> ControlMath.squawk(t)?.let { cmd("XPNDR_SET", it) } }) { enter = null }
     }
 }
@@ -276,7 +277,7 @@ private fun RadioRow(name: String, r: Radio?, fmt: String, onSwap: () -> Unit, o
         Text(r?.activeMhz?.let { fmt.format(java.util.Locale.US, it) } ?: "—", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = c.green,
             modifier = Modifier.weight(1f), textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
         Box(Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(c.terrain).clickable(role = Role.Button, onClick = onSwap), contentAlignment = Alignment.Center) {
-            Icon(Icons.Outlined.SwapHoriz, loc("Zamień aktywną i zapasową $name", "Swap active and standby $name"), tint = c.accent)
+            Icon(Icons.Outlined.SwapHoriz, loc("common.swap_active_and_standby", name), tint = c.accent)
         }
         Text(r?.standbyMhz?.let { fmt.format(java.util.Locale.US, it) } ?: "—", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = c.accent,
             modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable(onClick = onEdit).padding(vertical = 10.dp), textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
@@ -296,7 +297,7 @@ fun SystemsPanel(link: LinkClient, s: FlightState, profile: AircraftProfile) {
 
     // Podwozie tylko chowane; hamulec postojowy — wszystko poza szybowcem
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (profile.retractableGear) ModeKey(if (gearDown) loc("PODWOZIE ▼", "GEAR ▼") else loc("PODWOZIE ▲", "GEAR ▲"), gearDown, Modifier.weight(1f)) {
+        if (profile.retractableGear) ModeKey(if (gearDown) loc("control.gear_2") else loc("control.gear"), gearDown, Modifier.weight(1f)) {
             // Chowanie podwozia na ziemi wymaga potwierdzenia
             if (gearDown && s.aircraft.onGround == true) confirmGear = true else cmd("GEAR_TOGGLE")
         }
@@ -310,34 +311,34 @@ fun SystemsPanel(link: LinkClient, s: FlightState, profile: AircraftProfile) {
     val flaps = ctl.flapsIndex
     val positions = ctl.flapsPositions
     if (profile.hasFlaps) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        RepeatKey("▲", loc("Klapy w górę", "Flaps up"), action = { cmd("FLAPS_DECR") })
+        RepeatKey("▲", loc("control.flaps_up"), action = { cmd("FLAPS_DECR") })
         Column(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.35f)),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Text(loc("KLAPY", "FLAPS"), fontSize = 11.sp, color = c.ink2)
+            Text(loc("control.flaps"), fontSize = 11.sp, color = c.ink2)
             Text(if (flaps != null && positions != null) "$flaps / ${positions - 1}" else "—", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 19.sp, color = c.accent)
         }
-        RepeatKey("▼", loc("Klapy w dół", "Flaps down"), action = { cmd("FLAPS_INCR") })
+        RepeatKey("▼", loc("control.flaps_down"), action = { cmd("FLAPS_INCR") })
     }
     Spacer(Modifier.size(8.dp))
     // Spoilery tylko w samolotach, które je mają; w szybowcu to hamulce aerodynamiczne (bez uzbrajania)
     // Uzbrojenie (mały klawisz) i obok oś hamulca aerodynamicznego
-    if (profile == AircraftProfile.GLIDER) SpeedBrakeAxis(link, s, label = loc("Hamulce aerodynamiczne", "Airbrakes"))
+    if (profile == AircraftProfile.GLIDER) SpeedBrakeAxis(link, s, label = loc("control.airbrakes"))
     else if (profile.hasSpoilers) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         ModeKey("ARM", ctl.spoilersArmed == true, Modifier.width(92.dp)) { cmd("SPOILERS_ARM_TOGGLE") }
         SpeedBrakeAxis(link, s, Modifier.weight(1f))
     }
     Spacer(Modifier.size(8.dp))
     if (profile.hasTrim) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        RepeatKey("▼", loc("Trym nosem w dół", "Trim nose down"), action = { cmd("ELEV_TRIM_DN") })
+        RepeatKey("▼", loc("common.trim_nose_down"), action = { cmd("ELEV_TRIM_DN") })
         Column(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.35f)),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Text(loc("TRYM", "TRIM"), fontSize = 11.sp, color = c.ink2)
+            Text(loc("control.trim"), fontSize = 11.sp, color = c.ink2)
             Text(ctl.elevatorTrimPct?.let { "%+.1f%%".format(it) } ?: "—", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = c.accent)
         }
-        RepeatKey("▲", loc("Trym nosem w górę", "Trim nose up"), action = { cmd("ELEV_TRIM_UP") })
+        RepeatKey("▲", loc("common.trim_nose_up"), action = { cmd("ELEV_TRIM_UP") })
     }
     Spacer(Modifier.size(10.dp))
-    Text(loc("Światła", "Lights"), style = MaterialTheme.typography.labelMedium, color = c.ink2)
+    Text(loc("control.lights"), style = MaterialTheme.typography.labelMedium, color = c.ink2)
     Spacer(Modifier.size(4.dp))
     val l = s.lights
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), maxItemsInEachRow = 3) {
@@ -361,10 +362,10 @@ fun SystemsPanel(link: LinkClient, s: FlightState, profile: AircraftProfile) {
     if (confirmGear) {
         AlertDialog(
             onDismissRequest = { confirmGear = false },
-            title = { Text(loc("Schować podwozie na ziemi?", "Retract the gear on the ground?")) },
-            text = { Text(loc("Samolot stoi na ziemi. Schowanie podwozia może go uszkodzić w symulatorze.", "The aircraft is on the ground. Retracting the gear may damage it in the simulator.")) },
-            confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("Schowaj", "Retract"), color = c.danger) } },
-            dismissButton = { TextButton({ confirmGear = false }) { Text(loc("Anuluj", "Cancel")) } },
+            title = { Text(loc("common.retract_the_gear_on_the_ground")) },
+            text = { Text(loc("common.the_aircraft_is_on_the_ground")) },
+            confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("common.retract"), color = c.danger) } },
+            dismissButton = { TextButton({ confirmGear = false }) { Text(loc("common.cancel")) } },
         )
     }
 }

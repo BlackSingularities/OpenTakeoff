@@ -513,24 +513,24 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                 .clip(RoundedCornerShape(14.dp)).background(c.card.copy(alpha = 0.94f)).border(1.dp, c.rule, RoundedCornerShape(14.dp)),
         ) {
             Box {
-                MapKey(Icons.Outlined.Layers, loc("Warstwy mapy", "Map layers"), layersMenu) { layersMenu = true }
+                MapKey(Icons.Outlined.Layers, loc("common.map_layers"), layersMenu) { layersMenu = true }
                 androidx.compose.material3.DropdownMenu(layersMenu, { layersMenu = false }) {
                     @Composable fun item(label: String, on: Boolean, toggle: () -> Unit) =
                         androidx.compose.material3.DropdownMenuItem(text = { Text((if (on) "✓  " else "     ") + label) }, onClick = toggle)
-                    item(loc("Pogoda na lotniskach (METAR)", "Airport weather (METAR)"), showMetars) { setTools { it.copy(showMetars = !it.showMetars) } }
+                    item(loc("map.airport_weather_metar"), showMetars) { setTools { it.copy(showMetars = !it.showMetars) } }
                     item("SIGMET", showSigmets) { setTools { it.copy(showSigmets = !it.showSigmets) } }
-                    item(loc("Plan lotu z symulatora (GPS)", "Simulator flight plan (GPS)"), showRoute) { setTools { it.copy(showRoute = !it.showRoute) } }
-                    item(loc("Pomoce nawigacyjne z MSFS", "Navaids from MSFS") + if (nearbyNav.isEmpty()) loc(" (brak danych)", " (no data)") else "", showNav) { setTools { it.copy(showNav = !it.showNav) } }
+                    item(loc("map.simulator_flight_plan_gps"), showRoute) { setTools { it.copy(showRoute = !it.showRoute) } }
+                    item(loc("map.navaids_from_msfs") + if (nearbyNav.isEmpty()) loc("map.no_data") else "", showNav) { setTools { it.copy(showNav = !it.showNav) } }
                 }
             }
-            if (live != null) MapKey(Icons.Outlined.MyLocation, loc("Śledź samolot", "Follow aircraft"), follow) { setTools { it.copy(follow = !it.follow) } }
-            if (live != null) MapKey(Icons.Outlined.Explore, loc("Róża kursów na samolocie", "Heading rose on the aircraft"), showRose) { setTools { it.copy(showRose = !it.showRose) } }
-            MapKey(Icons.Outlined.TrackChanges, loc("Radiale od punktu", "Radials from a point"), radialMode) {
+            if (live != null) MapKey(Icons.Outlined.MyLocation, loc("map.follow_aircraft"), follow) { setTools { it.copy(follow = !it.follow) } }
+            if (live != null) MapKey(Icons.Outlined.Explore, loc("map.heading_rose_on_the_aircraft"), showRose) { setTools { it.copy(showRose = !it.showRose) } }
+            MapKey(Icons.Outlined.TrackChanges, loc("map.radials_from_a_point"), radialMode) {
                 picked = null
                 setTools { if (it.radialMode) it.copy(radialMode = false, ref = null, selRadial = null) else it.copy(radialMode = true) }
             }
-            MapKey(Icons.Outlined.Add, loc("Przybliż", "Zoom in"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomIn(), 250) } }
-            MapKey(Icons.Outlined.Remove, loc("Oddal", "Zoom out"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomOut(), 250) } }
+            MapKey(Icons.Outlined.Add, loc("map.zoom_in"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomIn(), 250) } }
+            MapKey(Icons.Outlined.Remove, loc("map.zoom_out"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomOut(), 250) } }
         }
 
         if (radialMode) RadialCard(
@@ -554,15 +554,15 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                     Spacer(Modifier.width(10.dp))
                     CategoryTag(m.flightCategory)
                     Spacer(Modifier.weight(1f))
-                    Icon(Icons.Outlined.Close, loc("Zamknij", "Close"), tint = c.ink2, modifier = Modifier.size(22.dp).clickable { picked = null })
+                    Icon(Icons.Outlined.Close, loc("common.close"), tint = c.ink2, modifier = Modifier.size(22.dp).clickable { picked = null })
                 }
                 Text(m.name.orEmpty(), style = MaterialTheme.typography.bodySmall, color = c.ink2)
                 Text(m.raw, fontFamily = Mono, fontSize = 12.sp, color = c.accent, modifier = Modifier.padding(top = 6.dp))
                 Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(loc("Dotknij, aby otworzyć briefing", "Tap to open the briefing"), style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.weight(1f))
+                    Text(loc("map.tap_to_open_the_briefing"), style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.weight(1f))
                     // Radiale od tego lotniska
                     Text(
-                        loc("Radiale", "Radials"), style = MaterialTheme.typography.labelMedium, color = c.accent,
+                        loc("common.radials"), style = MaterialTheme.typography.labelMedium, color = c.accent,
                         modifier = Modifier.clip(RoundedCornerShape(50)).border(1.dp, c.accent, RoundedCornerShape(50))
                             .clickable {
                                 val lat = m.lat; val lon = m.lon

@@ -23,7 +23,7 @@ object Http {
         client.newCall(req).execute().use { resp ->
             // aviationweather.gov zwraca 204 gdy brak danych
             if (resp.code == 204) return@withContext ""
-            if (!resp.isSuccessful) throw IOException(loc("HTTP ${resp.code} dla $url", "HTTP ${resp.code} for $url"))
+            if (!resp.isSuccessful) throw IOException(loc("common.http_for", resp.code, url))
             resp.body?.string().orEmpty()
         }
     }
@@ -32,7 +32,7 @@ object Http {
     suspend fun download(url: String, target: File) = withContext(Dispatchers.IO) {
         val req = Request.Builder().url(url).header("User-Agent", UA).build()
         client.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IOException(loc("HTTP ${resp.code} dla $url", "HTTP ${resp.code} for $url"))
+            if (!resp.isSuccessful) throw IOException(loc("common.http_for", resp.code, url))
             val tmp = File(target.parentFile, target.name + ".part")
             resp.body!!.byteStream().use { input -> tmp.outputStream().use { input.copyTo(it) } }
             if (!tmp.renameTo(target)) {

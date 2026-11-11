@@ -1,5 +1,6 @@
 package com.freemetar.app.ui.charts
 
+import com.freemetar.app.domain.pageCount
 import com.freemetar.app.domain.loc
 
 import androidx.compose.foundation.background
@@ -81,53 +82,48 @@ fun ChartsPanel(
         error = null
         runCatching { repo.chartsFor(icao) }
             .onSuccess { charts = it }
-            .onFailure { error = it.message ?: loc("Nie udało się wczytać kart", "Could not load charts") }
+            .onFailure { error = it.message ?: loc("charts.could_not_load_charts") }
     }
 
     fun download(force: Boolean) = scope.launch {
         error = null
         runCatching { repo.update(force) }
             .onSuccess { hasIndex = true; reload++ }
-            .onFailure { error = it.message ?: loc("Brak połączenia z FAA", "Cannot reach FAA") }
+            .onFailure { error = it.message ?: loc("charts.cannot_reach_faa") }
     }
 
     val c = Fm.c
-    Section(loc("Karty FAA", "FAA charts"), Icons.Outlined.Map, modifier, trailing = {
-        (status as? ChartsStatus.Ready)?.let { Text(loc("cykl ", "cycle ") + it.cycle, style = MaterialTheme.typography.labelSmall, color = c.ink2) }
+    Section(loc("charts.faa_charts"), Icons.Outlined.Map, modifier, trailing = {
+        (status as? ChartsStatus.Ready)?.let { Text(loc("charts.cycle") + it.cycle, style = MaterialTheme.typography.labelSmall, color = c.ink2) }
     }) {
         val st = status
         when {
             st is ChartsStatus.Downloading -> {
-                Text(loc("Pobieranie katalogu d-TPP ${st.cycle}…", "Downloading d-TPP catalogue ${st.cycle}…"), style = MaterialTheme.typography.bodySmall, color = c.ink2)
+                Text(loc("charts.downloading_d_tpp_catalogue", st.cycle), style = MaterialTheme.typography.bodySmall, color = c.ink2)
                 Spacer(Modifier.size(8.dp))
                 if (st.total > 0) LinearProgressIndicator(progress = { (st.bytes.toFloat() / st.total).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                 else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
             !hasIndex -> {
                 Text(
-                    loc(
-                        "Oficjalne karty FAA: diagram lotniska, podejścia, SID, STAR, minima. Katalog kart zajmuje ok. 2,5 MB, " +
-                            "pobranie to ok. 16 MB. Karty PDF pobierają się po otwarciu i działają potem offline.",
-                        "Official FAA charts: airport diagram, approaches, SIDs, STARs, minimums. The chart catalogue takes about 2.5 MB " +
-                            "(about 16 MB to download). Chart PDFs download when opened and then work offline.",
-                    ),
+                    loc("charts.official_faa_charts_airport_diagram_approaches"),
                     style = MaterialTheme.typography.bodySmall, color = c.ink2,
                 )
                 Spacer(Modifier.size(10.dp))
-                Pill(loc("Pobierz katalog kart FAA", "Download FAA chart catalogue"), icon = Icons.Outlined.CloudDownload) { download(force = false) }
+                Pill(loc("charts.download_faa_chart_catalogue"), icon = Icons.Outlined.CloudDownload) { download(force = false) }
             }
             else -> {
                 if (repo.isStale() && st !is ChartsStatus.Downloading) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(loc("Nowy cykl ${repo.currentCycle()} — karty mogą być nieaktualne", "New cycle ${repo.currentCycle()} — charts may be outdated"), style = MaterialTheme.typography.bodySmall, color = c.caution, modifier = Modifier.weight(1f))
-                        Pill(loc("Aktualizuj", "Update"), icon = Icons.Outlined.Refresh) { download(force = false) }
+                        Text(loc("charts.new_cycle_charts_may_be_outdated", repo.currentCycle()), style = MaterialTheme.typography.bodySmall, color = c.caution, modifier = Modifier.weight(1f))
+                        Pill(loc("charts.update"), icon = Icons.Outlined.Refresh) { download(force = false) }
                     }
                     Spacer(Modifier.size(10.dp))
                 }
                 val list = charts
                 when {
                     list == null && error == null -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    list.isNullOrEmpty() && error == null -> Text(loc("FAA nie publikuje kart dla tego lotniska.", "FAA publishes no charts for this airport."), style = MaterialTheme.typography.bodySmall, color = c.ink2)
+                    list.isNullOrEmpty() && error == null -> Text(loc("charts.faa_publishes_no_charts_for_this"), style = MaterialTheme.typography.bodySmall, color = c.ink2)
                     !list.isNullOrEmpty() -> ChartList(list, filter, onFilter = { filter = it }, isDownloaded = repo::isDownloaded) { chart ->
                         if (onOpen != null) onOpen(chart) else open = chart
                     }
@@ -155,7 +151,7 @@ private fun ChartList(
     val groups = ChartType.entries.mapNotNull { t -> charts.filter { it.type == t }.takeIf { it.isNotEmpty() }?.let { t to it } }
     // Filtr typów jako pigułki; aktywna to biały blok z czarnym tekstem
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        TypePill(loc("Wszystkie", "All"), filter == null) { onFilter(null) }
+        TypePill(loc("common.all"), filter == null) { onFilter(null) }
         groups.forEach { (t, l) -> TypePill("${short(t)} ${l.size}", filter == t) { onFilter(if (filter == t) null else t) } }
     }
     Spacer(Modifier.size(8.dp))
@@ -170,22 +166,22 @@ private fun ChartList(
                 Column(Modifier.weight(1f)) {
                     Text(chart.name, style = MaterialTheme.typography.bodyMedium, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     val sub = listOfNotNull(
-                        chart.pdfs.size.takeIf { it > 1 }?.let { loc("$it strony", "$it pages") },
+                        chart.pdfs.size.takeIf { it > 1 }?.let { pageCount(it) },
                         chart.amendment,
-                        loc("zmieniona w tym cyklu", "changed this cycle").takeIf { chart.changed },
+                        loc("charts.changed_this_cycle").takeIf { chart.changed },
                     )
                     if (sub.isNotEmpty()) Text(sub.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = c.ink2)
                 }
                 if (isDownloaded(chart)) {
                     Spacer(Modifier.width(8.dp))
-                    Icon(Icons.Outlined.DownloadDone, loc("Dostępna offline", "Available offline"), tint = c.ink2, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Outlined.DownloadDone, loc("charts.available_offline"), tint = c.ink2, modifier = Modifier.size(16.dp))
                 }
             }
             Rule()
         }
     }
     Text(
-        loc("Źródło: FAA d-TPP. Karty rzeczywiste — w symulatorze mogą różnić się od bazy nawigacyjnej MSFS.", "Source: FAA d-TPP. Real-world charts — may differ from the MSFS navigation database."),
+        loc("charts.source_faa_d_tpp_real_world"),
         style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.padding(top = 10.dp),
     )
 }

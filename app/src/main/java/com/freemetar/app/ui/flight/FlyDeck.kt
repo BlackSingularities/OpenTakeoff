@@ -146,25 +146,25 @@ private fun NdWithControls(s: FlightState, nearby: List<FixResult>, modifier: Mo
         val narrow = maxWidth < 230.dp
         NavDisplay(s, s.gpsLeg(), range, rose = rose, nav = nearby, layers = layers, aspect = aspect, profile = displayProfile)
         Row(Modifier.align(Alignment.BottomStart).padding(6.dp)) {
-            EfisKey(if (rose) "ROSE" else "ARC", loc("Tryb mapy: dotknij, aby zmienić", "Map mode: tap to switch")) { rose = !rose }
+            EfisKey(if (rose) "ROSE" else "ARC", loc("fly_deck.map_mode_tap_to_switch")) { rose = !rose }
         }
         Box(Modifier.align(if (narrow) Alignment.BottomStart else Alignment.BottomCenter).padding(start = 6.dp, end = 6.dp, bottom = if (narrow) 42.dp else 6.dp)) {
-            EfisKey(null, loc("Warstwy mapy", "Map layers"), icon = true, on = nearby.isNotEmpty()) { layersMenu = true }
+            EfisKey(null, loc("common.map_layers"), icon = true, on = nearby.isNotEmpty()) { layersMenu = true }
             DropdownMenu(layersMenu, { layersMenu = false }) {
-                listOf("airport" to loc("Lotniska", "Airports"), "vor" to "VOR", "ndb" to "NDB", "waypoint" to loc("Punkty trasy", "Waypoints")).forEach { (k, label) ->
+                listOf("airport" to loc("common.airports"), "vor" to "VOR", "ndb" to "NDB", "waypoint" to loc("fly_deck.waypoints")).forEach { (k, label) ->
                     DropdownMenuItem(
                         text = { Text((if (k in layers) "✓  " else "     ") + label) },
                         onClick = { layersText = (if (k in layers) layers - k else layers + k).joinToString(",") },
                     )
                 }
-                if (nearby.isEmpty()) DropdownMenuItem(text = { Text(loc("Brak danych z MSFS", "No MSFS data yet")) }, onClick = { layersMenu = false }, enabled = false)
+                if (nearby.isEmpty()) DropdownMenuItem(text = { Text(loc("fly_deck.no_msfs_data_yet")) }, onClick = { layersMenu = false }, enabled = false)
             }
         }
         Row(Modifier.align(Alignment.BottomEnd).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            EfisKey("−", loc("Zmniejsz zasięg", "Decrease range"), enabled = rangeIdx > 0) { rangeIdx-- }
+            EfisKey("−", loc("fly_deck.decrease_range"), enabled = rangeIdx > 0) { rangeIdx-- }
             Text("$range", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = CYAN,
-                modifier = Modifier.width(if (narrow) 28.dp else 34.dp).semantics { contentDescription = loc("Zasięg $range mil", "Range $range miles") }, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            EfisKey("+", loc("Zwiększ zasięg", "Increase range"), enabled = rangeIdx < RANGES.lastIndex) { rangeIdx++ }
+                modifier = Modifier.width(if (narrow) 28.dp else 34.dp).semantics { contentDescription = loc("fly_deck.range_miles", range) }, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            EfisKey("+", loc("fly_deck.increase_range"), enabled = rangeIdx < RANGES.lastIndex) { rangeIdx++ }
         }
     }
 }
@@ -251,8 +251,8 @@ private fun CompactLever(label: String, actual: Double?, handle: Color, detents:
             .semantics {
                 contentDescription = "$label ${shown.roundToInt()}%"
                 customActions = listOf(
-                    CustomAccessibilityAction(loc("Więcej", "More")) { set(((actual ?: 0.0) + 10).toFloat().coerceAtMost(100f)); true },
-                    CustomAccessibilityAction(loc("Mniej", "Less")) { set(((actual ?: 0.0) - 10).toFloat().coerceAtLeast(0f)); true },
+                    CustomAccessibilityAction(loc("common.more")) { set(((actual ?: 0.0) + 10).toFloat().coerceAtMost(100f)); true },
+                    CustomAccessibilityAction(loc("common.less")) { set(((actual ?: 0.0) - 10).toFloat().coerceAtLeast(0f)); true },
                 )
             }
             .pointerInput(detents) {

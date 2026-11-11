@@ -33,11 +33,11 @@ import kotlin.math.roundToInt
  * Podczas przeciągania pokazuje pozycję palca, potem stan z symulatora. [labelColor] — opis na płycie panelu.
  */
 @Composable
-internal fun SpeedBrakeAxis(link: LinkClient, s: FlightState, modifier: Modifier = Modifier, label: String = tr("Hamulec aerodynamiczny", "Speed brake"), labelColor: Color = Fm.c.ink2) {
+internal fun SpeedBrakeAxis(link: LinkClient, s: FlightState, modifier: Modifier = Modifier, label: String = tr("brake_controls.speed_brake"), labelColor: Color = Fm.c.ink2) {
     var drag by remember { mutableStateOf<Float?>(null) }
     val sim = ((s.controls.spoilersPct ?: 0.0) / 100).toFloat().coerceIn(0f, 1f)
     val v = drag ?: sim
-    val desc = tr("$label, oś", "$label axis")
+    val desc = tr("brake_controls.axis", label)
     Column(modifier) {
         AxisRow(label, "${(v * 100).roundToInt()}%", Fm.c.ink, labelColor)
         Slider(
@@ -71,11 +71,11 @@ internal fun WheelBrakeAxis(link: LinkClient, s: FlightState, modifier: Modifier
     }
     // W powietrzu hamulce kół nie działają — suwak wraca do zera
     LaunchedEffect(onGround) { if (!onGround) brake = 0f }
-    val desc = tr("Hamulce kół, oś — wraca do zera po puszczeniu", "Wheel brakes axis — springs back on release")
+    val desc = tr("brake_controls.wheel_brakes_axis_springs_back_on")
     Column(modifier) {
         AxisRow(
-            tr("Hamulce kół", "Wheel brakes"),
-            if (onGround) "${(brake * 100).roundToInt()}%" else tr("tylko na ziemi", "ground only"),
+            tr("brake_controls.wheel_brakes"),
+            if (onGround) "${(brake * 100).roundToInt()}%" else tr("brake_controls.ground_only"),
             if (brake > 0f) c.caution else c.ink2, labelColor,
         )
         Slider(brake, { brake = it }, enabled = onGround, onValueChangeFinished = { brake = 0f }, modifier = Modifier.semantics { contentDescription = desc })

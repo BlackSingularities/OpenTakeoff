@@ -64,7 +64,7 @@ fun AboutSection(vm: MainViewModel) {
     val state by vm.update.collectAsStateWithLifecycle()
     val install = rememberInstaller()
     val uri = LocalUriHandler.current
-    SectionCard(loc("O aplikacji", "About"), icon = Icons.Outlined.Info, dense = true) {
+    SectionCard(loc("about_section.about"), icon = Icons.Outlined.Info, dense = true) {
         // Nagłówek: znak, nazwa i wersja
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(46.dp).clip(RoundedCornerShape(12.dp)).background(c.terrain), contentAlignment = Alignment.Center) {
@@ -73,12 +73,11 @@ fun AboutSection(vm: MainViewModel) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("OpenTakeoff", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = c.ink)
-                Text(loc("wersja ", "version ") + BuildConfig.VERSION_NAME, fontFamily = Mono, fontSize = 12.sp, color = c.ink2)
+                Text(loc("about_section.version") + BuildConfig.VERSION_NAME, fontFamily = Mono, fontSize = 12.sp, color = c.ink2)
             }
         }
         Text(
-            loc("Darmowa aplikacja dla wirtualnych pilotów — bez reklam, kont i subskrypcji.",
-                "A free app for flight-sim pilots — no ads, accounts or subscriptions."),
+            loc("about_section.a_free_app_for_flight_sim"),
             style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp),
         )
 
@@ -87,42 +86,41 @@ fun AboutSection(vm: MainViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     when (val s = state) {
-                        UpdateState.Idle -> loc("Aktualizacje sprawdzane przy starcie", "Updates are checked at startup")
-                        UpdateState.Checking -> loc("Sprawdzanie aktualizacji…", "Checking for updates…")
-                        UpdateState.UpToDate -> loc("Masz najnowszą wersję", "You have the latest version")
-                        is UpdateState.Available -> loc("Dostępna wersja ${s.info.versionName}", "Version ${s.info.versionName} is available") + sizeMb(s.info.sizeBytes)
-                        is UpdateState.Downloading -> loc("Pobieranie ${s.info.versionName}…", "Downloading ${s.info.versionName}…")
-                        is UpdateState.Ready -> loc("Wersja ${s.info.versionName} pobrana", "Version ${s.info.versionName} downloaded")
+                        UpdateState.Idle -> loc("about_section.updates_are_checked_at_startup")
+                        UpdateState.Checking -> loc("about_section.checking_for_updates")
+                        UpdateState.UpToDate -> loc("about_section.you_have_the_latest_version")
+                        is UpdateState.Available -> loc("about_section.version_is_available", s.info.versionName) + sizeMb(s.info.sizeBytes)
+                        is UpdateState.Downloading -> loc("common.downloading", s.info.versionName)
+                        is UpdateState.Ready -> loc("about_section.version_downloaded", s.info.versionName)
                         is UpdateState.Error -> s.message
                     },
                     color = if (state is UpdateState.Error) c.ifr else c.ink, fontSize = 14.sp, modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(8.dp))
                 when (val s = state) {
-                    is UpdateState.Available -> Button({ vm.downloadUpdate(s.info) }) { Text(loc("Zainstaluj", "Install")) }
-                    is UpdateState.Ready -> Button({ install(s.file) }) { Text(loc("Zainstaluj", "Install")) }
+                    is UpdateState.Available -> Button({ vm.downloadUpdate(s.info) }) { Text(loc("common.install")) }
+                    is UpdateState.Ready -> Button({ install(s.file) }) { Text(loc("common.install")) }
                     is UpdateState.Downloading, UpdateState.Checking -> {}
-                    else -> OutlinedButton({ vm.checkForUpdate() }) { Text(loc("Sprawdź", "Check")) }
+                    else -> OutlinedButton({ vm.checkForUpdate() }) { Text(loc("about_section.check")) }
                 }
             }
             (state as? UpdateState.Downloading)?.let { s ->
                 LinearProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
             }
             Text(
-                loc("Aplikacja sama sprawdza nowe wersje i instaluje je — nie trzeba pobierać ich ręcznie.",
-                    "The app checks for new versions by itself and installs them — no manual downloads."),
+                loc("about_section.the_app_checks_for_new_versions"),
                 style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 6.dp),
             )
         }
 
         // Odnośniki
         Column(Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            LinkRow(Icons.Outlined.LocalCafe, loc("Postaw kawę", "Buy me a coffee"),
-                loc("Wesprzyj rozwój aplikacji · buycoffee.to", "Support the app's development · buycoffee.to"), highlight = true) { uri.openUri(COFFEE_URL) }
-            LinkRow(Icons.Outlined.Person, loc("Pomysł i wykonanie", "Idea and development"), "Adam Rędzikowski · $AUTHOR_SITE") { uri.openUri(AUTHOR_URL) }
-            LinkRow(Icons.Outlined.Email, loc("Kontakt", "Contact"), "kontakt@redzikowski.com") { uri.openUri("mailto:kontakt@redzikowski.com") }
+            LinkRow(Icons.Outlined.LocalCafe, loc("about_section.buy_me_a_coffee"),
+                loc("about_section.support_the_app_s_development_buycoffee"), highlight = true) { uri.openUri(COFFEE_URL) }
+            LinkRow(Icons.Outlined.Person, loc("about_section.idea_and_development"), "Adam Rędzikowski · $AUTHOR_SITE") { uri.openUri(AUTHOR_URL) }
+            LinkRow(Icons.Outlined.Email, loc("about_section.contact"), "kontakt@redzikowski.com") { uri.openUri("mailto:kontakt@redzikowski.com") }
             com.freemetar.app.feedback.FeedbackEntry { open ->
-                LinkRow(Icons.Outlined.Build, loc("Zgłoś błąd lub sugestię", "Report a bug or suggestion"), loc("Wiadomość trafia prosto do autora", "Goes straight to the developer")) { open() }
+                LinkRow(Icons.Outlined.Build, loc("common.report_a_bug_or_suggestion"), loc("common.goes_straight_to_the_developer")) { open() }
             }
         }
     }

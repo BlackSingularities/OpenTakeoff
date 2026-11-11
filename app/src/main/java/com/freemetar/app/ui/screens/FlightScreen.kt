@@ -79,14 +79,14 @@ fun FlightScreen(vm: MainViewModel, cockpit: Boolean, onCockpit: (Boolean) -> Un
                 .statusBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
         ) {
             if (state != null) ModeSwitch(cockpit, onCockpit)
-            else Text(loc("Lot", "Flight"), style = MaterialTheme.typography.headlineLarge, color = c.ink, modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
+            else Text(loc("common.flight"), style = MaterialTheme.typography.headlineLarge, color = c.ink, modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
 
             ConnectionSection(vm)
 
-            Section(loc("Checklisty", "Checklists"), Icons.Outlined.Checklist) {
+            Section(loc("common.checklists"), Icons.Outlined.Checklist) {
                 OutlinedButton(onOpenChecklists, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Outlined.Checklist, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
-                    Text(state?.aircraft?.title?.let { loc("Checklisty: $it", "Checklists: $it") } ?: loc("Otwórz checklisty", "Open checklists"))
+                    Text(state?.aircraft?.title?.let { loc("flight.checklists", it) } ?: loc("flight.open_checklists"))
                 }
             }
 
@@ -102,7 +102,7 @@ private fun ModeSwitch(cockpit: Boolean, onChange: (Boolean) -> Unit) {
     Row(
         Modifier.padding(horizontal = 10.dp, vertical = 4.dp).clip(RoundedCornerShape(50)).border(1.dp, c.rule, RoundedCornerShape(50)).padding(2.dp),
     ) {
-        listOf(true to loc("Kokpit", "Cockpit"), false to loc("Połączenie i loty", "Connection & flights")).forEach { (v, label) ->
+        listOf(true to loc("common.cockpit"), false to loc("flight.connection_flights")).forEach { (v, label) ->
             val on = v == cockpit
             Text(
                 label, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = if (on) c.paper else c.ink2,

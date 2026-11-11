@@ -164,9 +164,9 @@ fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, 
             Box(
                 Modifier.size(btn)
                     .semantics {
-                        contentDescription = if (dragTrim) loc("Sterowanie żyroskopem: przytrzymaj i przechylaj telefon; przeciągnij w dół lub w górę, aby trymować", "Gyro control: hold and tilt the phone; drag down or up to trim")
-                        else if (tiltMode) loc("Sterowanie żyroskopem: przytrzymaj i przechylaj telefon", "Gyro control: hold and tilt the phone")
-                        else loc("Drążek: przytrzymaj i przesuwaj kciuk", "Stick: hold and move your thumb")
+                        contentDescription = if (dragTrim) loc("floating_control.gyro_control_hold_and_tilt_the_2")
+                        else if (tiltMode) loc("floating_control.gyro_control_hold_and_tilt_the")
+                        else loc("floating_control.stick_hold_and_move_your_thumb")
                     }
                     .pointerInput(tiltMode, dragTrim) {
                         val dead = 16.dp.toPx(); val full = 70.dp.toPx()
@@ -230,7 +230,7 @@ fun FloatingControl(link: LinkClient, modeName: String, s: FlightState? = null, 
             // Uchwyt do przestawiania
             Box(
                 Modifier.width(36.dp).height(16.dp).clip(RoundedCornerShape(50)).background(c.terrain).border(1.dp, c.rule, RoundedCornerShape(50))
-                    .semantics { contentDescription = loc("Uchwyt: przeciągnij, aby przesunąć przycisk", "Handle: drag to move the button") }
+                    .semantics { contentDescription = loc("floating_control.handle_drag_to_move_the_button") }
                     .pointerInput(wPx, hPx, origin, boxW, boxH) {
                         detectDragGestures { ch, d ->
                             ch.consume()
@@ -256,10 +256,10 @@ private fun TrimColumn(link: LinkClient, s: FlightState?, modifier: Modifier = M
         modifier.width(46.dp).clip(RoundedCornerShape(23.dp)).background(Color.Black).border(1.5.dp, Color(0x66FFFFFF), RoundedCornerShape(23.dp)).padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        TrimKey("▲", loc("Trym: nos w dół", "Trim nose down")) { link.command("ELEV_TRIM_DN") }
+        TrimKey("▲", loc("floating_control.trim_nose_down")) { link.command("ELEV_TRIM_DN") }
         Text(s?.controls?.elevatorTrimPct?.let { "%+.0f".format(it) } ?: "TRIM", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = c.ink,
             modifier = Modifier.padding(vertical = 2.dp))
-        TrimKey("▼", loc("Trym: nos w górę", "Trim nose up")) { link.command("ELEV_TRIM_UP") }
+        TrimKey("▼", loc("floating_control.trim_nose_up")) { link.command("ELEV_TRIM_UP") }
     }
 }
 

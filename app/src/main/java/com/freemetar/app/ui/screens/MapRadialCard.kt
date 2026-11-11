@@ -60,32 +60,31 @@ internal fun RadialCard(
             Icon(Icons.Outlined.TrackChanges, null, tint = c.magenta, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
             Text(
-                ref?.let { it.name ?: "%.3f %.3f".format(java.util.Locale.US, it.lat, it.lon) } ?: loc("Radiale", "Radials"),
+                ref?.let { it.name ?: "%.3f %.3f".format(java.util.Locale.US, it.lat, it.lon) } ?: loc("common.radials"),
                 fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = c.ink, maxLines = 1, modifier = Modifier.weight(1f),
             )
-            if (ref != null) SmallKey(loc("Nowy punkt", "New point"), false, onNewPoint)
+            if (ref != null) SmallKey(loc("map_radial_card.new_point"), false, onNewPoint)
             Spacer(Modifier.width(6.dp))
-            Icon(Icons.Outlined.Close, loc("Zamknij", "Close"), tint = c.ink2, modifier = Modifier.size(22.dp).clickable(onClick = onClose))
+            Icon(Icons.Outlined.Close, loc("common.close"), tint = c.ink2, modifier = Modifier.size(22.dp).clickable(onClick = onClose))
         }
         if (ref == null) {
             Text(
-                loc("Dotknij mapy, lotniska albo pomocy nawigacyjnej, aby wybrać punkt odniesienia. Przytrzymanie mapy wybiera punkt w każdej chwili.",
-                    "Tap the map, an airport or a navaid to pick the reference point. A long press picks a point at any time."),
+                loc("map_radial_card.tap_the_map_an_airport_or"),
                 style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 6.dp),
             )
             return@Column
         }
         if (fix == null) {
-            Text(loc("Brak pozycji samolotu — przesuń mapę, pomiar idzie od środka (+).", "No aircraft position — pan the map, measured from the centre (+)."),
+            Text(loc("map_radial_card.no_aircraft_position_pan_the_map"),
                 style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 6.dp))
         } else {
             val ete = gsKt?.takeIf { hasAircraft && it > 30 }?.let { fix.distNm / it * 60 }
             FactGrid(
                 listOf(
-                    Fact(loc("Na radialu", "On radial"), "R-${deg3(fix.radialMag)}", accent = c.magenta, sub = if (magnetic) "QDR" else loc("od punktu", "from point")),
-                    Fact(loc("Do punktu", "To point"), "${deg3(fix.toMag)}$u", sub = if (magnetic) "QDM" else loc("kurs", "course")),
-                    Fact(loc("Odległość", "Distance"), "%.1f NM".format(fix.distNm),
-                        sub = ete?.let { "%d:%02d".format(it.toInt() / 60, it.roundToInt() % 60) } ?: if (!hasAircraft) loc("od środka mapy", "from map centre") else null),
+                    Fact(loc("map_radial_card.on_radial_2"), "R-${deg3(fix.radialMag)}", accent = c.magenta, sub = if (magnetic) "QDR" else loc("map_radial_card.from_point")),
+                    Fact(loc("map_radial_card.to_point"), "${deg3(fix.toMag)}$u", sub = if (magnetic) "QDM" else loc("map_radial_card.course")),
+                    Fact(loc("map_radial_card.distance"), "%.1f NM".format(fix.distNm),
+                        sub = ete?.let { "%d:%02d".format(it.toInt() / 60, it.roundToInt() % 60) } ?: if (!hasAircraft) loc("map_radial_card.from_map_centre") else null),
                 ),
                 columns = 3, modifier = Modifier.padding(top = 6.dp),
             )
@@ -104,28 +103,28 @@ internal fun RadialCard(
             SmallKey("+10", false) { step(10) }
         }
         if (fix != null) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            SmallKey(loc("Bieżący radial", "Current radial"), false) { onRadial(radialOf(fix.radialMag)) }
-            if (selRadial != null) SmallKey(loc("Wyczyść", "Clear"), false) { onRadial(null) }
+            SmallKey(loc("map_radial_card.current_radial"), false) { onRadial(radialOf(fix.radialMag)) }
+            if (selRadial != null) SmallKey(loc("common.clear"), false) { onRadial(null) }
         }
         if (guide != null) {
-            val side = if (guide.xtkNm > 0) loc("P", "R") else loc("L", "L")
-            val turn = if (hasAircraft) loc("HDG", "HDG") else "TRK"
+            val side = if (guide.xtkNm > 0) loc("common.r") else loc("common.l")
+            val turn = if (hasAircraft) "HDG" else "TRK"
             FactGrid(
                 listOf(
-                    Fact(loc("Kurs na radialu", "Radial course"), "${deg3(guide.course)}$u", sub = if (inbound) loc("do punktu (IN)", "inbound") else loc("od punktu (OUT)", "outbound")),
+                    Fact(loc("map_radial_card.radial_course"), "${deg3(guide.course)}$u", sub = if (inbound) loc("map_radial_card.inbound") else loc("map_radial_card.outbound")),
                     Fact(
-                        loc("Odchylenie", "Off course"),
-                        when { guide.behind -> loc("za punktem", "past point"); guide.established -> loc("na radialu", "on radial"); else -> "%.1f NM %s".format(abs(guide.xtkNm), side) },
+                        loc("map_radial_card.off_course"),
+                        when { guide.behind -> loc("map_radial_card.past_point"); guide.established -> loc("map_radial_card.on_radial"); else -> "%.1f NM %s".format(abs(guide.xtkNm), side) },
                         accent = when { guide.established -> c.green; guide.behind || abs(guide.xtkNm) > 5 -> c.caution; else -> null },
-                        sub = if (!guide.behind && !guide.established) loc("radial po ${if (guide.xtkNm > 0) "lewej" else "prawej"}", "radial to the ${if (guide.xtkNm > 0) "left" else "right"}") else null,
+                        sub = if (!guide.behind && !guide.established) "radial ${if (guide.xtkNm > 0) loc("map_radial_card.to_the_left") else loc("map_radial_card.to_the_right")}" else null,
                     ),
                     Fact(
-                        loc("Leć", "Fly"), "$turn ${deg3(guide.heading)}$u", accent = c.magenta,
+                        loc("map_radial_card.fly"), "$turn ${deg3(guide.heading)}$u", accent = c.magenta,
                         sub = when {
-                            guide.behind -> loc("najpierw do punktu", "to the point first")
+                            guide.behind -> loc("map_radial_card.to_the_point_first")
                             else -> listOfNotNull(
-                                guide.interceptDeg.takeIf { it >= 1 }?.let { loc("przechwycenie ${it.roundToInt()}°", "intercept ${it.roundToInt()}°") },
-                                guide.wcaDeg.takeIf { abs(it) >= 1 }?.let { loc("wiatr %+d°", "wind %+d°").format(it.roundToInt()) },
+                                guide.interceptDeg.takeIf { it >= 1 }?.let { loc("map_radial_card.intercept", it.roundToInt()) },
+                                guide.wcaDeg.takeIf { abs(it) >= 1 }?.let { loc("map_radial_card.wind_d").format(it.roundToInt()) },
                             ).joinToString(" · ").ifEmpty { null }
                         },
                     ),
@@ -134,7 +133,7 @@ internal fun RadialCard(
             )
         }
         Text(
-            loc("Dotknij mapy, aby wskazać radial · przytrzymaj, aby zmienić punkt", "Tap the map to set the radial · long-press to move the point"),
+            loc("map_radial_card.tap_the_map_to_set_the"),
             style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.padding(top = 6.dp),
         )
     }

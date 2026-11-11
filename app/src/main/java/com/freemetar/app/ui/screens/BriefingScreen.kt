@@ -134,9 +134,9 @@ private val hhmm = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneOffset.UTC)
 
 /** Rozdziały briefingu w kolejności czytania. */
 private enum class Part(private val labelOf: () -> String) {
-    WEATHER({ loc("Pogoda", "Weather") }), HAZARDS({ loc("Zagrożenia", "Hazards") }), TAF({ loc("Prognoza", "Forecast") }),
-    ALOFT({ loc("Wysokości", "Aloft") }), RUNWAYS({ loc("Pasy", "Runways") }), RADIO({ "Radio" }),
-    CHARTS({ loc("Karty", "Charts") }), AIRPORT({ loc("Lotnisko", "Airport") }), NEARBY({ loc("Okolica", "Nearby") });
+    WEATHER({ loc("common.weather") }), HAZARDS({ loc("common.hazards") }), TAF({ loc("briefing.forecast") }),
+    ALOFT({ loc("briefing.aloft") }), RUNWAYS({ loc("briefing.runways") }), RADIO({ "Radio" }),
+    CHARTS({ loc("briefing.charts") }), AIRPORT({ loc("briefing.airport") }), NEARBY({ loc("briefing.nearby") });
 
     val label: String get() = labelOf()
 }
@@ -222,7 +222,7 @@ private fun TopBar(d: AirportDetail, s: Settings, vm: MainViewModel, onBack: () 
     val ctx = LocalContext.current
     val fav = d.ident in s.favorites
     Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 4.dp, end = 4.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, loc("Wróć", "Back"), tint = c.ink) }
+        IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, loc("common.back"), tint = c.ink) }
         Column(Modifier.weight(1f)) {
             Text(d.ident, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 26.sp, color = c.ink, lineHeight = 28.sp)
             Text(
@@ -230,10 +230,10 @@ private fun TopBar(d: AirportDetail, s: Settings, vm: MainViewModel, onBack: () 
                 style = MaterialTheme.typography.bodySmall, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
-        d.weather?.metar?.let { m -> IconButton({ share(ctx, d, m) }) { Icon(Icons.Outlined.Share, loc("Udostępnij pogodę", "Share weather"), tint = c.ink) } }
-        IconButton({ vm.refreshWeather(d.ident) }) { Icon(Icons.Outlined.Refresh, loc("Odśwież", "Refresh"), tint = c.ink) }
+        d.weather?.metar?.let { m -> IconButton({ share(ctx, d, m) }) { Icon(Icons.Outlined.Share, loc("briefing.share_weather"), tint = c.ink) } }
+        IconButton({ vm.refreshWeather(d.ident) }) { Icon(Icons.Outlined.Refresh, loc("briefing.refresh"), tint = c.ink) }
         IconButton({ vm.toggleFavorite(d.ident) }) {
-            Icon(if (fav) Icons.Outlined.Star else Icons.Outlined.StarBorder, if (fav) loc("Usuń z ulubionych", "Remove from favourites") else loc("Dodaj do ulubionych", "Add to favourites"), tint = if (fav) c.accent else c.ink)
+            Icon(if (fav) Icons.Outlined.Star else Icons.Outlined.StarBorder, if (fav) loc("common.remove_from_favourites") else loc("briefing.add_to_favourites"), tint = if (fav) c.accent else c.ink)
         }
     }
 }
@@ -267,7 +267,7 @@ private fun share(ctx: Context, d: AirportDetail, m: Metar) {
         d.weather?.taf?.let { append("\n${it.raw}\n") }
         append("\nOpenTakeoff")
     }
-    ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), loc("Udostępnij pogodę", "Share weather")))
+    ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), loc("briefing.share_weather")))
 }
 
 // ---------------- POGODA ----------------
@@ -281,16 +281,16 @@ private fun WeatherPart(d: AirportDetail, s: Settings) {
             Row(Modifier.fillMaxWidth().background(c.ifr.copy(alpha = 0.1f)).padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.CloudOff, null, tint = c.ifr)
                 Spacer(Modifier.width(10.dp))
-                Text(loc("Nie pobrano pogody (${d.error}). Pociągnij odśwież lub sprawdź internet.", "Weather not loaded (${d.error}). Pull to refresh or check your connection."), style = MaterialTheme.typography.bodySmall, color = c.ink)
+                Text(loc("briefing.weather_not_loaded_pull_to_refresh", d.error), style = MaterialTheme.typography.bodySmall, color = c.ink)
             }
         }
         if (m == null) {
-            if (!d.loading) EmptyState(Icons.Outlined.CloudOff, loc("Brak METAR dla ${d.ident}", "No METAR for ${d.ident}"), loc("To lotnisko nie nadaje depesz pogodowych. Pogodę z lotnisk w pobliżu znajdziesz w rozdziale Okolica.", "This airport does not issue weather reports. Check nearby airports in the Nearby section."))
-            else Box(Modifier.fillMaxWidth().padding(28.dp)) { Text(loc("Pobieranie pogody…", "Loading weather…"), color = c.ink2) }
+            if (!d.loading) EmptyState(Icons.Outlined.CloudOff, loc("briefing.no_metar_for", d.ident), loc("briefing.this_airport_does_not_issue_weather"))
+            else Box(Modifier.fillMaxWidth().padding(28.dp)) { Text(loc("common.loading_weather"), color = c.ink2) }
             Rule()
             return@Column
         }
-        Section(loc("Pogoda teraz", "Current weather"), weatherIcon(m)) {
+        Section(loc("briefing.current_weather"), weatherIcon(m)) {
             Verdict(m)
             Spacer(Modifier.size(14.dp))
             InteractiveMetar(m.raw)
@@ -300,10 +300,10 @@ private fun WeatherPart(d: AirportDetail, s: Settings) {
             Spacer(Modifier.size(14.dp))
             AtisPlayer(d, m)
         }
-        if (m.clouds.isNotEmpty()) Section(loc("Chmury", "Clouds"), Icons.Outlined.Layers) { Clouds(m, s) }
+        if (m.clouds.isNotEmpty()) Section(loc("briefing.clouds"), Icons.Outlined.Layers) { Clouds(m, s) }
         val hist = d.weather?.history.orEmpty()
-        if (hist.size >= 3) Section(loc("Ostatnie 12 godzin", "Last 12 hours"), Icons.AutoMirrored.Outlined.ShowChart) { Trends(hist.reversed()) }
-        if (hist.size > 1) Section(loc("Wcześniejsze depesze", "Earlier reports"), Icons.Outlined.History) { History(hist.drop(1)) }
+        if (hist.size >= 3) Section(loc("briefing.last_12_hours"), Icons.AutoMirrored.Outlined.ShowChart) { Trends(hist.reversed()) }
+        if (hist.size > 1) Section(loc("briefing.earlier_reports"), Icons.Outlined.History) { History(hist.drop(1)) }
     }
 }
 
@@ -320,7 +320,7 @@ private fun Verdict(m: Metar) {
             Text(categoryText(m.flightCategory), style = MaterialTheme.typography.headlineMedium, color = col)
             val stale = isStale(m.obsTimeEpoch)
             Text(
-                loc("Obserwacja ${hhmm.format(Instant.ofEpochSecond(m.obsTimeEpoch))}Z, ${ageMinutes(m.obsTimeEpoch)} temu", "Observed ${hhmm.format(Instant.ofEpochSecond(m.obsTimeEpoch))}Z, ${ageMinutes(m.obsTimeEpoch)} ago") + if (stale) loc(". Depesza może być nieaktualna.", ". The report may be outdated.") else "",
+                loc("briefing.observed_z_ago", hhmm.format(Instant.ofEpochSecond(m.obsTimeEpoch)), ageMinutes(m.obsTimeEpoch)) + if (stale) loc("briefing.the_report_may_be_outdated") else "",
                 style = MaterialTheme.typography.bodySmall, color = if (stale) c.caution else c.ink2,
             )
         }
@@ -328,20 +328,20 @@ private fun Verdict(m: Metar) {
 }
 
 private fun categoryText(c: String?) = when (c) {
-    "VFR" -> loc("Warunki VFR", "VFR conditions")
-    "MVFR" -> loc("Marginalne VFR", "Marginal VFR")
-    "IFR" -> loc("Warunki IFR", "IFR conditions")
-    "LIFR" -> loc("Niskie IFR", "Low IFR")
-    else -> loc("Kategoria nieznana", "Category unknown")
+    "VFR" -> loc("briefing.vfr_conditions")
+    "MVFR" -> loc("briefing.marginal_vfr")
+    "IFR" -> loc("common.ifr_conditions")
+    "LIFR" -> loc("briefing.low_ifr")
+    else -> loc("briefing.category_unknown")
 }
 
 /** Ostrzeżenia wyciągnięte z obserwacji. */
 private fun warnings(m: Metar): List<String> = buildList {
-    if (m.clouds.any { it.type == "CB" } || m.wx.orEmpty().contains("TS")) add(loc("Burza lub cumulonimbus w rejonie lotniska.", "Thunderstorm or cumulonimbus near the airport."))
-    if (m.wx.orEmpty().contains("FZ")) add(loc("Opad marznący — ryzyko oblodzenia płatowca.", "Freezing precipitation — risk of airframe icing."))
-    else if (m.tempC != null && m.dewpointC != null && Atmo.isFreezingWithMoisture(m.tempC, m.dewpointC)) add(loc("Temperatura bliska 0 °C przy dużej wilgotności — możliwe oblodzenie.", "Temperature near 0 °C with high humidity — icing possible."))
-    if ((m.gustKt ?: 0) >= 25) add(loc("Silne porywy wiatru do ${m.gustKt} kt.", "Strong gusts up to ${m.gustKt} kt."))
-    if (m.tempC != null && m.dewpointC != null && m.tempC - m.dewpointC <= 1 && m.tempC > 0 && !m.wx.orEmpty().contains("FG")) add(loc("Temperatura równa punktowi rosy — możliwa mgła.", "Temperature equals dew point — fog possible."))
+    if (m.clouds.any { it.type == "CB" } || m.wx.orEmpty().contains("TS")) add(loc("briefing.thunderstorm_or_cumulonimbus_near_the_airport"))
+    if (m.wx.orEmpty().contains("FZ")) add(loc("briefing.freezing_precipitation_risk_of_airframe_icing"))
+    else if (m.tempC != null && m.dewpointC != null && Atmo.isFreezingWithMoisture(m.tempC, m.dewpointC)) add(loc("briefing.temperature_near_0_c_with_high"))
+    if ((m.gustKt ?: 0) >= 25) add(loc("briefing.strong_gusts_up_to_kt", m.gustKt))
+    if (m.tempC != null && m.dewpointC != null && m.tempC - m.dewpointC <= 1 && m.tempC > 0 && !m.wx.orEmpty().contains("FG")) add(loc("briefing.temperature_equals_dew_point_fog_possible"))
 }
 
 @Composable
@@ -381,23 +381,23 @@ private fun WeatherFacts(m: Metar, d: AirportDetail, s: Settings) {
     val ceiling = ceilingFt(m)
 
     val facts = buildList {
-        add(Fact(loc("Pas wg wiatru", "Runway for the wind"), best?.let { "RWY ${it.runwayEnd}" } ?: loc("dowolny", "any"), accent = c.accent,
-            sub = best?.let { loc("czołowy ${it.steady.headwind.roundToInt()}, boczny ${abs(it.steady.crosswind).roundToInt()} kt", "headwind ${it.steady.headwind.roundToInt()}, crosswind ${abs(it.steady.crosswind).roundToInt()} kt") } ?: loc("wiatr słaby lub zmienny", "light or variable wind")))
-        add(Fact(loc("Wiatr", "Wind"), windShort(m) + if ((m.windKt ?: 0) > 0) " kt" else "",
+        add(Fact(loc("briefing.runway_for_the_wind"), best?.let { "RWY ${it.runwayEnd}" } ?: loc("briefing.any"), accent = c.accent,
+            sub = best?.let { loc("briefing.headwind_crosswind_kt", it.steady.headwind.roundToInt(), abs(it.steady.crosswind).roundToInt()) } ?: loc("briefing.light_or_variable_wind")))
+        add(Fact(loc("common.wind"), windShort(m) + if ((m.windKt ?: 0) > 0) " kt" else "",
             accent = if ((m.gustKt ?: m.windKt ?: 0) >= 25) c.caution else null,
-            sub = m.windKt?.takeIf { it > 0 }?.let { "${Atmo.ktToKmh(it.toDouble()).roundToInt()} km/h" + (m.windDir?.let { dd -> loc(", z ", ", from ") + Geo.compass(dd.toDouble()) } ?: "") }))
-        add(Fact(loc("Widzialność", "Visibility"), visText(m.visibility)))
-        add(Fact(loc("Pułap", "Ceiling"), ceiling?.let { alt(it.toDouble()) } ?: loc("brak", "none"), accent = if (ceiling != null && ceiling < 1000) c.ifr else null,
-            sub = if (ceiling == null) loc("bez warstw BKN/OVC", "no BKN/OVC layers") else null))
+            sub = m.windKt?.takeIf { it > 0 }?.let { "${Atmo.ktToKmh(it.toDouble()).roundToInt()} km/h" + (m.windDir?.let { dd -> loc("briefing.from") + Geo.compass(dd.toDouble()) } ?: "") }))
+        add(Fact(loc("briefing.visibility"), visText(m.visibility)))
+        add(Fact(loc("briefing.ceiling"), ceiling?.let { alt(it.toDouble()) } ?: loc("briefing.none"), accent = if (ceiling != null && ceiling < 1000) c.ifr else null,
+            sub = if (ceiling == null) loc("briefing.no_bkn_ovc_layers") else null))
         m.altimHpa?.let { add(Fact("QNH", press(it), sub = pressOther(it))) }
-        add(Fact(loc("Temperatura / rosa", "Temperature / dew point"), "${m.tempC?.roundToInt() ?: "—"}° / ${m.dewpointC?.roundToInt() ?: "—"}°",
-            sub = if (m.tempC != null && m.dewpointC != null) loc("wilgotność ${Atmo.relativeHumidity(m.tempC, m.dewpointC).roundToInt()}%", "humidity ${Atmo.relativeHumidity(m.tempC, m.dewpointC).roundToInt()}%") else null))
+        add(Fact(loc("briefing.temperature_dew_point"), "${m.tempC?.roundToInt() ?: "—"}° / ${m.dewpointC?.roundToInt() ?: "—"}°",
+            sub = if (m.tempC != null && m.dewpointC != null) loc("briefing.humidity", Atmo.relativeHumidity(m.tempC, m.dewpointC).roundToInt()) else null))
         if (elevFt != null && m.altimHpa != null && m.tempC != null) {
             val da = Atmo.densityAltitude(elevFt, m.altimHpa, m.tempC)
-            add(Fact(loc("Wys. gęstościowa", "Density altitude"), alt(da), accent = if (da - elevFt > 2000) c.caution else null, sub = loc("ciśnieniowa ${alt(Atmo.pressureAltitude(elevFt, m.altimHpa))}", "pressure alt ${alt(Atmo.pressureAltitude(elevFt, m.altimHpa))}")))
-            add(Fact("QFE", press(Atmo.qfe(m.altimHpa, elevFt)), sub = loc("elewacja ${alt(elevFt)}", "elevation ${alt(elevFt)}")))
+            add(Fact(loc("briefing.density_altitude"), alt(da), accent = if (da - elevFt > 2000) c.caution else null, sub = loc("briefing.pressure_alt", alt(Atmo.pressureAltitude(elevFt, m.altimHpa)))))
+            add(Fact("QFE", press(Atmo.qfe(m.altimHpa, elevFt)), sub = loc("briefing.elevation_2", alt(elevFt))))
         }
-        if (m.tempC != null && m.dewpointC != null) add(Fact(loc("Oblodzenie gaźnika", "Carburettor icing"), Atmo.carbIceRisk(m.tempC, m.dewpointC).lowercase()))
+        if (m.tempC != null && m.dewpointC != null) add(Fact(loc("briefing.carburettor_icing"), Atmo.carbIceRisk(m.tempC, m.dewpointC).lowercase()))
     }
     FactGrid(facts, columns = 2)
 }
@@ -435,14 +435,14 @@ private fun AtisPlayer(d: AirportDetail, m: Metar) {
                     tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "atis")
                 }
             }, contentAlignment = Alignment.Center) {
-                Icon(if (speaking) Icons.Outlined.Stop else Icons.AutoMirrored.Outlined.VolumeUp, if (speaking) loc("Zatrzymaj", "Stop") else loc("Odsłuchaj ATIS", "Play ATIS"), tint = Color.White)
+                Icon(if (speaking) Icons.Outlined.Stop else Icons.AutoMirrored.Outlined.VolumeUp, if (speaking) loc("briefing.stop") else loc("briefing.play_atis"), tint = Color.White)
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(loc("ATIS, informacja ${Atis.letter(m)}", "ATIS, information ${Atis.letter(m)}"), style = MaterialTheme.typography.titleMedium, color = c.ink)
-                Text(if (ready) loc("Komunikat złożony z METAR, czytany po angielsku", "Built from the METAR, read in English") else loc("Syntezator mowy niedostępny", "Text-to-speech unavailable"), style = MaterialTheme.typography.bodySmall, color = c.ink2)
+                Text(loc("briefing.atis_information", Atis.letter(m)), style = MaterialTheme.typography.titleMedium, color = c.ink)
+                Text(if (ready) loc("briefing.built_from_the_metar_read_in") else loc("briefing.text_to_speech_unavailable"), style = MaterialTheme.typography.bodySmall, color = c.ink2)
             }
-            TextButton({ showText = !showText }) { Text(if (showText) loc("Ukryj", "Hide") else loc("Tekst", "Text")) }
+            TextButton({ showText = !showText }) { Text(if (showText) loc("briefing.hide") else loc("briefing.text")) }
         }
         if (showText) {
             Spacer(Modifier.size(8.dp))
@@ -457,7 +457,7 @@ private fun Clouds(m: Metar, s: Settings) {
     // Warstwy od najwyższej, jak na przekroju atmosfery
     m.clouds.sortedByDescending { it.baseFt ?: 0 }.forEach { cl ->
         val frac = when (cl.cover) { "FEW" -> 0.25f; "SCT" -> 0.5f; "BKN" -> 0.8f; else -> 1f }
-        val word = when (cl.cover) { "FEW" -> loc("nieliczne", "few"); "SCT" -> loc("rozproszone", "scattered"); "BKN" -> loc("poprzerywane", "broken"); "OVC" -> loc("całkowite", "overcast"); "VV" -> loc("niebo niewidoczne", "sky obscured"); else -> cl.cover }
+        val word = when (cl.cover) { "FEW" -> loc("briefing.few"); "SCT" -> loc("briefing.scattered"); "BKN" -> loc("briefing.broken"); "OVC" -> loc("briefing.overcast"); "VV" -> loc("briefing.sky_obscured"); else -> cl.cover }
         Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(cl.baseFt?.let { if (s.altUnit == AltUnit.FT) "$it ft" else "${Atmo.ftToM(it.toDouble()).roundToInt()} m" } ?: "—",
                 fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = c.ink, modifier = Modifier.width(78.dp))
@@ -475,8 +475,8 @@ private fun Clouds(m: Metar, s: Settings) {
 private fun Trends(hist: List<Metar>) {
     val c = Fm.c
     val charts = listOf<@Composable (Modifier) -> Unit>(
-        { mod -> TrendChart(loc("Temperatura °C", "Temperature °C"), hist.mapNotNull { it.tempC }, "°", c.ifr, mod) },
-        { mod -> TrendChart(loc("Wiatr kt", "Wind kt"), hist.mapNotNull { it.windKt?.toDouble() }, " kt", c.blue, mod) },
+        { mod -> TrendChart(loc("briefing.temperature_c"), hist.mapNotNull { it.tempC }, "°", c.ifr, mod) },
+        { mod -> TrendChart(loc("briefing.wind_kt"), hist.mapNotNull { it.windKt?.toDouble() }, " kt", c.blue, mod) },
         { mod -> TrendChart("QNH hPa", hist.mapNotNull { it.altimHpa }, "", c.accent, mod) },
     )
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { charts.forEach { it(Modifier.fillMaxWidth()) } }
@@ -502,9 +502,9 @@ private fun History(hist: List<Metar>) {
 private fun TafPart(d: AirportDetail) {
     val c = Fm.c
     val taf = d.weather?.taf
-    Section(loc("Prognoza TAF", "TAF forecast"), Icons.Outlined.Schedule, trailing = { taf?.let { CopyButton(it.raw) } }) {
+    Section(loc("briefing.taf_forecast"), Icons.Outlined.Schedule, trailing = { taf?.let { CopyButton(it.raw) } }) {
         if (taf == null) {
-            Text(if (d.loading) loc("Pobieranie prognozy…", "Loading forecast…") else loc("To lotnisko nie wydaje prognozy TAF.", "This airport does not issue a TAF."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+            Text(if (d.loading) loc("common.loading_forecast") else loc("briefing.this_airport_does_not_issue_a"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
             return@Section
         }
         val periods = remember(taf.raw) { TafAnalyzer.periods(taf.raw) }
@@ -517,9 +517,9 @@ private fun TafPart(d: AirportDetail) {
                     Text(p.title, style = MaterialTheme.typography.titleSmall, color = c.ink, modifier = Modifier.weight(1f))
                 }
                 val details = listOfNotNull(
-                    p.windText?.let { loc("wiatr $it", "wind $it") },
-                    p.visM?.let { if (it >= 9999) loc("widzialność 10 km +", "visibility 10 km +") else if (it >= 5000) loc("widzialność ${it / 1000} km", "visibility ${it / 1000} km") else loc("widzialność $it m", "visibility $it m") },
-                    p.ceilingFt?.let { loc("pułap $it ft", "ceiling $it ft") },
+                    p.windText?.let { loc("briefing.wind", it) },
+                    p.visM?.let { if (it >= 9999) loc("briefing.visibility_10_km") else if (it >= 5000) loc("briefing.visibility_km", it / 1000) else loc("briefing.visibility_m", it) },
+                    p.ceilingFt?.let { loc("briefing.ceiling_ft", it) },
                     p.weather,
                 )
                 if (details.isNotEmpty()) Text(details.joinToString(", ").replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.padding(top = 4.dp))
@@ -532,7 +532,7 @@ private fun TafPart(d: AirportDetail) {
 @Composable
 private fun CopyButton(text: String) {
     val clip = LocalClipboardManager.current
-    IconButton({ clip.setText(AnnotatedString(text)) }) { Icon(Icons.Outlined.ContentCopy, loc("Kopiuj", "Copy"), tint = Fm.c.ink2, modifier = Modifier.size(20.dp)) }
+    IconButton({ clip.setText(AnnotatedString(text)) }) { Icon(Icons.Outlined.ContentCopy, loc("common.copy"), tint = Fm.c.ink2, modifier = Modifier.size(20.dp)) }
 }
 
 // ---------------- PASY ----------------
@@ -541,9 +541,9 @@ private fun CopyButton(text: String) {
 private fun RunwaysPart(d: AirportDetail) {
     val c = Fm.c
     val m = d.weather?.metar
-    Section(loc("Pasy i wiatr", "Runways and wind"), Icons.Outlined.FlightLand) {
+    Section(loc("briefing.runways_and_wind"), Icons.Outlined.FlightLand) {
         if (d.runways.isEmpty()) {
-            Text(loc("Baza OurAirports nie ma danych o pasach tego lotniska.", "OurAirports has no runway data for this airport."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+            Text(loc("briefing.ourairports_has_no_runway_data_for"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
             return@Section
         }
         val analysis = Wind.analyze(d.runways, m?.windDir, m?.windKt, m?.gustKt)
@@ -552,7 +552,7 @@ private fun RunwaysPart(d: AirportDetail) {
             if (analysis.isNotEmpty()) {
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Row { Text(loc("Pas", "Rwy"), style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.weight(1f)); Text(loc("czoł.  bocz.", "head  cross"), style = MaterialTheme.typography.labelSmall, color = c.ink2) }
+                    Row { Text(loc("briefing.rwy"), style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.weight(1f)); Text(loc("briefing.head_cross"), style = MaterialTheme.typography.labelSmall, color = c.ink2) }
                     analysis.forEachIndexed { i, rw ->
                         val head = rw.steady.headwind.roundToInt()
                         val cross = rw.steady.crosswind
@@ -568,7 +568,7 @@ private fun RunwaysPart(d: AirportDetail) {
                 }
             }
         }
-        if (analysis.isNotEmpty()) Text(loc("↓ czołowy, ↑ tylny, → z prawej, ← z lewej (kt). Kierunki rzeczywiste.", "↓ headwind, ↑ tailwind, → from the right, ← from the left (kt). True directions."), style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp))
+        if (analysis.isNotEmpty()) Text(loc("briefing.headwind_tailwind_from_the_right_from"), style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp))
         Spacer(Modifier.size(12.dp))
         d.runways.forEach { rw ->
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -582,12 +582,12 @@ private fun RunwaysPart(d: AirportDetail) {
                         style = MaterialTheme.typography.bodyMedium, color = c.ink,
                     )
                     Text(
-                        listOfNotNull(rw.lengthFt?.let { "$it ft" }, if (rw.lighted) loc("oświetlony", "lighted") else null,
-                            listOf(rw.le, rw.he).firstNotNullOfOrNull { e -> e.displacedFt?.takeIf { it > 0 }?.let { loc("przesunięty próg ${e.ident}: $it ft", "displaced threshold ${e.ident}: $it ft") } }).joinToString(", "),
+                        listOfNotNull(rw.lengthFt?.let { "$it ft" }, if (rw.lighted) loc("briefing.lighted") else null,
+                            listOf(rw.le, rw.he).firstNotNullOfOrNull { e -> e.displacedFt?.takeIf { it > 0 }?.let { loc("briefing.displaced_threshold_ft", e.ident, it) } }).joinToString(", "),
                         style = MaterialTheme.typography.bodySmall, color = c.ink2,
                     )
                     listOf(rw.le.ident, rw.he.ident).mapNotNull { id -> d.nav?.ilsFor(id)?.takeIf { it.freqMhz != null }?.let { id to it } }.forEach { (id, ils) ->
-                        Text("ILS $id: ${ils.ident ?: ""} %.2f".format(Locale.US, ils.freqMhz) + (ils.locCourseDeg?.let { loc(", kurs %03d°", ", course %03d°").format(it.roundToInt()) } ?: ""),
+                        Text("ILS $id: ${ils.ident ?: ""} %.2f".format(Locale.US, ils.freqMhz) + (ils.locCourseDeg?.let { loc("briefing.course_03d").format(it.roundToInt()) } ?: ""),
                             fontFamily = Mono, fontSize = 12.sp, color = c.blue)
                     }
                 }
@@ -614,7 +614,7 @@ private fun RadioPart(d: AirportDetail, vm: MainViewModel) {
     var menuFor by remember { mutableStateOf<Frequency?>(null) }
     Section("Radio", Icons.Outlined.Radio) {
         if (d.frequencies.isEmpty()) {
-            Text(loc("Brak częstotliwości w bazie. W VATSIM i IVAO sprawdź aktywnych kontrolerów na mapie sieci.", "No frequencies in the database. On VATSIM and IVAO check active controllers on the network map."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+            Text(loc("briefing.no_frequencies_in_the_database_on"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
         }
         d.frequencies.forEach { f ->
             Box {
@@ -636,21 +636,21 @@ private fun RadioPart(d: AirportDetail, vm: MainViewModel) {
             DropdownMenu(expanded = menuFor == f, onDismissRequest = { menuFor = null }) {
                 val hz = com.freemetar.app.domain.ControlMath.comHz(f.mhz)
                 listOf(
-                    loc("COM1 zapasowa", "COM1 standby") to "COM_STBY_RADIO_SET_HZ", loc("COM1 aktywna", "COM1 active") to "COM_RADIO_SET_HZ",
-                    loc("COM2 zapasowa", "COM2 standby") to "COM2_STBY_RADIO_SET_HZ", loc("COM2 aktywna", "COM2 active") to "COM2_RADIO_SET_HZ",
+                    loc("briefing.com1_standby") to "COM_STBY_RADIO_SET_HZ", loc("briefing.com1_active") to "COM_RADIO_SET_HZ",
+                    loc("briefing.com2_standby") to "COM2_STBY_RADIO_SET_HZ", loc("briefing.com2_active") to "COM2_RADIO_SET_HZ",
                 ).forEach { (label, event) ->
-                    DropdownMenuItem(text = { Text(loc("Ustaw jako $label", "Set as $label")) }, enabled = hz != null, onClick = {
+                    DropdownMenuItem(text = { Text(loc("briefing.set_as", label)) }, enabled = hz != null, onClick = {
                         hz?.let { vm.link.command(event, it.toDouble()) }
                         menuFor = null
                     })
                 }
-                DropdownMenuItem(text = { Text(loc("Kopiuj", "Copy")) }, onClick = { clip.setText(AnnotatedString("%.3f".format(Locale.US, f.mhz))); menuFor = null })
+                DropdownMenuItem(text = { Text(loc("common.copy")) }, onClick = { clip.setText(AnnotatedString("%.3f".format(Locale.US, f.mhz))); menuFor = null })
             }
             }
             Rule()
         }
         if (d.frequencies.isNotEmpty()) Text(
-            if (connected) loc("Dotknij częstotliwości, aby ustawić ją w radiu samolotu.", "Tap a frequency to set it in the aircraft radio.") else loc("Dotknij częstotliwości, aby ją skopiować.", "Tap a frequency to copy it."),
+            if (connected) loc("briefing.tap_a_frequency_to_set_it") else loc("briefing.tap_a_frequency_to_copy_it"),
             style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp),
         )
         MsfsRadioBlock(
@@ -662,14 +662,14 @@ private fun RadioPart(d: AirportDetail, vm: MainViewModel) {
             onCopy = { mhz -> clip.setText(AnnotatedString("%.2f".format(Locale.US, mhz))) },
         )
         if (d.navaids.isNotEmpty()) {
-            Text(loc("Radiolatarnie do 40 NM", "Navaids within 40 NM"), style = MaterialTheme.typography.titleMedium, color = c.ink, modifier = Modifier.padding(top = 18.dp, bottom = 4.dp))
+            Text(loc("briefing.navaids_within_40_nm"), style = MaterialTheme.typography.titleMedium, color = c.ink, modifier = Modifier.padding(top = 18.dp, bottom = 4.dp))
             d.navaids.forEach { (n, dist) ->
                 val brg = d.airport?.let { Geo.bearing(it.lat, it.lon, n.lat, n.lon) }
                 Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(n.ident, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = c.ink, modifier = Modifier.width(54.dp))
                     Column(Modifier.weight(1f)) {
                         Text("${n.type} ${n.name}", style = MaterialTheme.typography.bodyMedium, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("${dist.fmt(1)} NM" + (brg?.let { loc(", kierunek %03d°", ", bearing %03d°").format(it.roundToInt()) } ?: ""), style = MaterialTheme.typography.bodySmall, color = c.ink2)
+                        Text("${dist.fmt(1)} NM" + (brg?.let { loc("briefing.bearing_03d").format(it.roundToInt()) } ?: ""), style = MaterialTheme.typography.bodySmall, color = c.ink2)
                     }
                     Text(n.frequencyLabel, fontFamily = Mono, fontSize = 14.sp, color = c.blue)
                 }
@@ -687,26 +687,26 @@ private fun AirportPart(d: AirportDetail, s: Settings) {
     val c = Fm.c
     val a = d.airport
     val ctx = LocalContext.current
-    Section(loc("Lotnisko", "Airport"), Icons.Outlined.Info) {
+    Section(loc("briefing.airport"), Icons.Outlined.Info) {
         if (a == null) {
-            Text(loc("Brak ${d.ident} w bazie OurAirports.", "${d.ident} is not in the OurAirports database."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+            Text(loc("briefing.is_not_in_the_ourairports_database", d.ident), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
             return@Section
         }
         Text(a.name, style = MaterialTheme.typography.titleMedium, color = c.ink)
-        Text(listOf(a.municipality, a.region, a.country).filter { it.isNotBlank() }.joinToString(", ") + ". " + a.typeLabel + if (a.scheduled) loc(", ruch rozkładowy.", ", scheduled service.") else ".",
+        Text(listOf(a.municipality, a.region, a.country).filter { it.isNotBlank() }.joinToString(", ") + ". " + a.typeLabel + if (a.scheduled) loc("briefing.scheduled_service") else ".",
             style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(bottom = 10.dp))
         val sun = Sun.times(LocalDate.now(ZoneOffset.UTC), a.lat, a.lon)
         fun t(z: ZonedDateTime?) = z?.format(DateTimeFormatter.ofPattern("HH:mm"))?.plus("Z") ?: "—"
         FactGrid(
             listOf(
                 Fact("ICAO / IATA", a.ident + if (a.iata.isNotBlank()) " / ${a.iata}" else ""),
-                Fact(loc("Elewacja", "Elevation"), a.elevationFt?.let { if (s.altUnit == AltUnit.FT) "$it ft" else "${Atmo.ftToM(it.toDouble()).roundToInt()} m" } ?: "—"),
-                Fact(loc("Szerokość", "Latitude"), Geo.formatLatLon(a.lat, a.lon).substringBefore(" ")),
-                Fact(loc("Długość", "Longitude"), Geo.formatLatLon(a.lat, a.lon).substringAfter(" ")),
-                Fact(loc("Wschód słońca", "Sunrise"), t(sun.sunrise)),
-                Fact(loc("Zachód słońca", "Sunset"), t(sun.sunset)),
-                Fact(loc("Świt cywilny", "Civil dawn"), t(sun.civilDawn)),
-                Fact(loc("Koniec zmierzchu", "End of civil dusk"), t(sun.civilDusk), sub = loc("od tej chwili lot nocny", "night flying from here")),
+                Fact(loc("briefing.elevation"), a.elevationFt?.let { if (s.altUnit == AltUnit.FT) "$it ft" else "${Atmo.ftToM(it.toDouble()).roundToInt()} m" } ?: "—"),
+                Fact(loc("briefing.latitude"), Geo.formatLatLon(a.lat, a.lon).substringBefore(" ")),
+                Fact(loc("briefing.longitude"), Geo.formatLatLon(a.lat, a.lon).substringAfter(" ")),
+                Fact(loc("briefing.sunrise"), t(sun.sunrise)),
+                Fact(loc("briefing.sunset"), t(sun.sunset)),
+                Fact(loc("briefing.civil_dawn"), t(sun.civilDawn)),
+                Fact(loc("briefing.end_of_civil_dusk"), t(sun.civilDusk), sub = loc("briefing.night_flying_from_here")),
             ),
         )
         Spacer(Modifier.size(14.dp))
@@ -716,9 +716,9 @@ private fun AirportPart(d: AirportDetail, s: Settings) {
             add("Windy" to "https://www.windy.com/${a.lat}/${a.lon}?${a.lat},${a.lon},11")
             add("VATSIM Radar" to "https://vatsim-radar.com/airport/${a.ident}")
             add("OurAirports" to "https://ourairports.com/airports/${a.ident}/")
-            add(loc("Mapa", "Map") to "https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lon}#map=14/${a.lat}/${a.lon}")
+            add(loc("common.map") to "https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lon}#map=14/${a.lat}/${a.lon}")
             if (a.wikipedia.isNotBlank()) add("Wikipedia" to a.wikipedia)
-            if (a.homeLink.isNotBlank()) add(loc("Strona lotniska", "Airport website") to a.homeLink)
+            if (a.homeLink.isNotBlank()) add(loc("briefing.airport_website") to a.homeLink)
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             links.forEach { (label, url) -> Pill(label, icon = Icons.AutoMirrored.Outlined.OpenInNew) { open(url) } }
@@ -731,9 +731,9 @@ private fun AirportPart(d: AirportDetail, s: Settings) {
 @Composable
 private fun NearbyPart(d: AirportDetail, onOpen: (String) -> Unit) {
     val c = Fm.c
-    Section(loc("Okolica do 60 NM", "Nearby within 60 NM"), Icons.Outlined.NearMe) {
+    Section(loc("briefing.nearby_within_60_nm"), Icons.Outlined.NearMe) {
         if (d.nearby.isEmpty()) {
-            Text(loc("Brak innych lotnisk w promieniu 60 NM.", "No other airports within 60 NM."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+            Text(loc("briefing.no_other_airports_within_60_nm"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
             return@Section
         }
         d.nearby.forEach { (a, dist) ->
@@ -746,7 +746,7 @@ private fun NearbyPart(d: AirportDetail, onOpen: (String) -> Unit) {
                 }
                 Column(Modifier.weight(1f)) {
                     Text(a.name, style = MaterialTheme.typography.bodyMedium, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(m?.let { "${windShort(it)} kt, ${it.tempC?.roundToInt() ?: "—"}°, QNH ${it.altimHpa?.roundToInt() ?: "—"}" } ?: loc("bez METAR", "no METAR"),
+                    Text(m?.let { "${windShort(it)} kt, ${it.tempC?.roundToInt() ?: "—"}°, QNH ${it.altimHpa?.roundToInt() ?: "—"}" } ?: loc("briefing.no_metar"),
                         fontFamily = if (m != null) Mono else null, fontSize = 12.sp, color = c.ink2)
                 }
                 Column(horizontalAlignment = Alignment.End) {

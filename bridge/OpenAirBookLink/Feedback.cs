@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -106,12 +107,12 @@ internal static class Feedback
             using var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
             using var response = await Http.PostAsync(Endpoint, content);
             if (response.IsSuccessStatusCode) return null;
-            if ((int)response.StatusCode == 429) return "Za dużo zgłoszeń – spróbuj później.";
-            return $"Serwer odrzucił zgłoszenie (HTTP {(int)response.StatusCode}).";
+            if ((int)response.StatusCode == 429) return L.T("feedback.too_many");
+            return L.T("feedback.rejected", (int)response.StatusCode);
         }
         catch
         {
-            return "Brak połączenia z redzikowski.com.";
+            return L.T("feedback.no_connection");
         }
     }
 }
@@ -120,12 +121,12 @@ internal static class Feedback
 internal sealed class FeedbackForm : Form
 {
     private readonly string? _crash;
-    private readonly RadioButton _bug = new() { Text = "Błąd", Checked = true, AutoSize = true };
-    private readonly RadioButton _feature = new() { Text = "Sugestia funkcji", AutoSize = true };
+    private readonly RadioButton _bug = new() { Text = L.T("feedback.bug"), Checked = true, AutoSize = true };
+    private readonly RadioButton _feature = new() { Text = L.T("feedback.feature"), AutoSize = true };
     private readonly Label _prompt = new() { AutoSize = true, Margin = new Padding(0, 10, 0, 4) };
     private readonly TextBox _message = new() { Multiline = true, ScrollBars = ScrollBars.Vertical, Height = 130, Dock = DockStyle.Fill, MaxLength = 8000 };
-    private readonly TextBox _email = new() { Dock = DockStyle.Fill, MaxLength = 200, PlaceholderText = "np. jan@example.com" };
-    private readonly CheckBox _device = new() { Text = "Dołącz wersję programu i systemu", Checked = true, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
+    private readonly TextBox _email = new() { Dock = DockStyle.Fill, MaxLength = 200, PlaceholderText = L.T("feedback.email_example") };
+    private readonly CheckBox _device = new() { Text = L.T("feedback.include_device"), Checked = true, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
     private readonly Label _error = new() { AutoSize = true, ForeColor = Color.Firebrick, Visible = false, MaximumSize = new Size(460, 0) };
     private readonly Button _send = new() { AutoSize = true };
     private readonly Button _cancel = new() { AutoSize = true };
@@ -134,7 +135,7 @@ internal sealed class FeedbackForm : Form
     public FeedbackForm(string? crash)
     {
         _crash = crash;
-        Text = crash is null ? "Zgłoś błąd lub sugestię – OpenTakeoff Link" : "Raport o błędzie – OpenTakeoff Link";
+        Text = crash is null ? L.T("feedback.title") : L.T("feedback.crash_title");
         Font = new Font("Segoe UI", 9.5f);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = MinimizeBox = false;
@@ -152,8 +153,7 @@ internal sealed class FeedbackForm : Form
             root.Controls.Add(new Label
             {
                 AutoSize = true, MaximumSize = new Size(470, 0),
-                Text = "Program napotkał nieoczekiwany błąd. Czy wysłać raport, żeby można go było naprawić? " +
-                       "Raport zawiera opis błędu, wersję programu i systemu – żadnych Twoich danych.",
+                Text = L.T("feedback.crash_body"),
             });
             root.Controls.Add(new TextBox
             {
@@ -161,10 +161,10 @@ internal sealed class FeedbackForm : Form
                 Dock = DockStyle.Fill, Font = new Font("Consolas", 8.5f), Text = crash.Replace("\n", Environment.NewLine),
                 Margin = new Padding(0, 8, 0, 0),
             });
-            _prompt.Text = "Co robiłeś(-aś) przed błędem? (opcjonalnie)";
+            _prompt.Text = L.T("feedback.crash_prompt");
             _message.Height = 70;
-            _send.Text = "Wyślij raport";
-            _cancel.Text = "Nie wysyłaj";
+            _send.Text = L.T("feedback.send_report");
+            _cancel.Text = L.T("feedback.dont_send");
         }
         else
         {
@@ -173,13 +173,13 @@ internal sealed class FeedbackForm : Form
             kinds.Controls.Add(_feature);
             root.Controls.Add(kinds);
             _bug.CheckedChanged += (_, _) => UpdatePrompt();
-            _send.Text = "Wyślij";
-            _cancel.Text = "Anuluj";
+            _send.Text = L.T("feedback.send");
+            _cancel.Text = L.T("feedback.cancel");
             UpdatePrompt();
         }
         root.Controls.Add(_prompt);
         root.Controls.Add(_message);
-        root.Controls.Add(new Label { AutoSize = true, Margin = new Padding(0, 10, 0, 4), Text = "Twój e-mail (opcjonalnie – jeśli chcesz odpowiedź)" });
+        root.Controls.Add(new Label { AutoSize = true, Margin = new Padding(0, 10, 0, 4), Text = L.T("feedback.email") });
         root.Controls.Add(_email);
         if (crash is null) root.Controls.Add(_device);
         root.Controls.Add(_error);
@@ -187,7 +187,7 @@ internal sealed class FeedbackForm : Form
         var buttons = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 12, 0, 0) };
         buttons.Controls.Add(_send);
         buttons.Controls.Add(_cancel);
-        buttons.Controls.Add(new Label { AutoSize = true, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 8, 12, 0), Text = "Trafi do autora przez redzikowski.com" });
+        buttons.Controls.Add(new Label { AutoSize = true, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 8, 12, 0), Text = L.T("feedback.goes_to_author") });
         root.Controls.Add(buttons);
 
         AcceptButton = _send;
@@ -200,7 +200,7 @@ internal sealed class FeedbackForm : Form
     }
 
     private void UpdatePrompt() =>
-        _prompt.Text = _feature.Checked ? "Czego brakuje albo co można zrobić lepiej?" : "Co się stało? Co robiłeś(-aś) tuż przed błędem?";
+        _prompt.Text = _feature.Checked ? L.T("feedback.feature_prompt") : L.T("feedback.bug_prompt");
 
     private void UpdateSend() => _send.Enabled = !_busy && (_crash is not null || _message.Text.Trim().Length >= 3);
 
@@ -208,14 +208,14 @@ internal sealed class FeedbackForm : Form
     {
         if (!Feedback.EmailOk(_email.Text))
         {
-            ShowError("To nie wygląda na adres e-mail.");
+            ShowError(L.T("feedback.bad_email"));
             return;
         }
         _error.Visible = false;
         _busy = true;
         _cancel.Enabled = false;
         var label = _send.Text;
-        _send.Text = "Wysyłanie…";
+        _send.Text = L.T("feedback.sending");
         UpdateSend();
         var kind = _crash is not null ? "crash" : _feature.Checked ? "feature" : "bug";
         var error = await Feedback.SendAsync(kind, _message.Text, _email.Text, _crash is not null || _device.Checked, _crash);
@@ -229,8 +229,8 @@ internal sealed class FeedbackForm : Form
             return;
         }
         MessageBox.Show(this,
-            (_crash is null ? "Dziękuję! Zgłoszenie dotarło." : "Dziękuję! Raport został wysłany.") + "\n" +
-            (_email.Text.Trim().Length > 0 ? "Przeczytam je i odezwę się na podany adres, jeśli będzie trzeba." : "Przeczytam je i wezmę pod uwagę przy kolejnych wersjach."),
+            (_crash is null ? L.T("feedback.thanks") : L.T("feedback.thanks_crash")) + "\n" +
+            (_email.Text.Trim().Length > 0 ? L.T("feedback.will_reply") : L.T("feedback.will_read")),
             "OpenTakeoff Link", MessageBoxButtons.OK, MessageBoxIcon.Information);
         Close();
     }

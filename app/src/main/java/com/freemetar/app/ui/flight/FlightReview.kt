@@ -1,5 +1,6 @@
 package com.freemetar.app.ui.flight
 
+import com.freemetar.app.domain.criteriaWord
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -83,12 +84,12 @@ private fun Notes(notes: List<String>) {
 @Composable
 fun ApproachSection(a: ApproachAnalysis, ordinal: String?) {
     val c = Fm.c
-    Section(loc("Podejście", "Approach") + (ordinal?.let { " $it" } ?: ""), Icons.Outlined.FlightLand) {
+    Section(loc("common.approach") + (ordinal?.let { " $it" } ?: ""), Icons.Outlined.FlightLand) {
         ScoreHeader(a.score, when {
-            a.stableFromFt >= 1000 -> loc("Ustabilizowane", "Stabilised")
-            a.stableFromFt >= 500 -> loc("Stabilizacja późna", "Late stabilisation")
-            else -> loc("Niestabilne", "Unstable")
-        }, loc("stabilne od ${a.stableFromFt} ft", "stable from ${a.stableFromFt} ft"))
+            a.stableFromFt >= 1000 -> loc("flight_review.stabilised")
+            a.stableFromFt >= 500 -> loc("flight_review.late_stabilisation")
+            else -> loc("flight_review.unstable")
+        }, loc("common.stable_from_ft", a.stableFromFt))
         // Bramki stabilizacji: wartości w chwili przejścia przez 1000 i 500 ft nad przyziemieniem
         if (a.gates.isNotEmpty()) {
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -103,10 +104,10 @@ fun ApproachSection(a: ApproachAnalysis, ordinal: String?) {
             }
         }
         FactGrid(listOf(
-            Fact(loc("Kąt ścieżki", "Path angle"), a.pathAngleDeg?.let { "%.1f°".format(it) } ?: "—", accent = a.pathAngleDeg?.takeIf { abs(it - 3) > 0.5 }?.let { c.caution }),
-            Fact(loc("Rozrzut prędkości", "Speed spread"), a.iasSpreadKt?.let { "$it kt" } ?: "—", accent = a.iasSpreadKt?.takeIf { it > 15 }?.let { c.caution }),
-            Fact(loc("Największe opadanie", "Max sink"), a.maxSinkFpm?.let { "$it ft/min" } ?: "—", accent = a.maxSinkFpm?.takeIf { it > 1000 }?.let { c.caution }),
-            Fact(loc("Największe przechylenie", "Max bank"), a.maxBankDeg?.let { "${it.roundToInt()}°" } ?: "—", accent = a.maxBankDeg?.takeIf { it > 7 }?.let { c.caution }),
+            Fact(loc("flight_review.path_angle"), a.pathAngleDeg?.let { "%.1f°".format(it) } ?: "—", accent = a.pathAngleDeg?.takeIf { abs(it - 3) > 0.5 }?.let { c.caution }),
+            Fact(loc("flight_review.speed_spread"), a.iasSpreadKt?.let { "$it kt" } ?: "—", accent = a.iasSpreadKt?.takeIf { it > 15 }?.let { c.caution }),
+            Fact(loc("flight_review.max_sink"), a.maxSinkFpm?.let { "$it ft/min" } ?: "—", accent = a.maxSinkFpm?.takeIf { it > 1000 }?.let { c.caution }),
+            Fact(loc("flight_review.max_bank"), a.maxBankDeg?.let { "${it.roundToInt()}°" } ?: "—", accent = a.maxBankDeg?.takeIf { it > 7 }?.let { c.caution }),
         ))
         Spacer(Modifier.size(8.dp))
         Notes(a.notes)
@@ -116,19 +117,19 @@ fun ApproachSection(a: ApproachAnalysis, ordinal: String?) {
 @Composable
 fun SmoothnessSection(s: Smoothness?) {
     val c = Fm.c
-    Section(loc("Płynność prowadzenia", "Handling smoothness"), Icons.Outlined.Waves) {
+    Section(loc("flight_review.handling_smoothness"), Icons.Outlined.Waves) {
         if (s == null) {
-            Text(loc("Za mało gęsty zapis toru (potrzebny punkt co 1–3 s) albo lot nagrany starszą wersją.", "The track is too sparse (a point every 1–3 s is needed) or was recorded by an older version."),
+            Text(loc("flight_review.the_track_is_too_sparse_a"),
                 style = MaterialTheme.typography.bodyMedium, color = c.ink2)
             return@Section
         }
-        ScoreHeader(s.score, when { s.score >= 85 -> loc("Płynnie", "Smooth"); s.score >= 65 -> loc("Poprawnie", "Fair"); else -> loc("Nerwowo", "Rough") },
-            loc("gwałtowne ruchy: ${s.jerks}", "abrupt inputs: ${s.jerks}"))
+        ScoreHeader(s.score, when { s.score >= 85 -> loc("flight_review.smooth"); s.score >= 65 -> loc("flight_review.fair"); else -> loc("flight_review.rough") },
+            loc("flight_review.abrupt_inputs", s.jerks))
         FactGrid(listOf(
-            Fact(loc("Tempo przechylania", "Roll rate"), s.bankRateRms?.let { "%.1f°/s".format(it) } ?: "—"),
-            Fact(loc("Tempo pochylania", "Pitch rate"), s.pitchRateRms?.let { "%.1f°/s".format(it) } ?: "—"),
-            Fact(loc("Zmiany V/S", "V/S changes"), "${s.vsChangeRms.roundToInt()} ft/min/s"),
-            Fact(loc("Maks. przechylenie / g", "Max bank / g"), (s.maxBankDeg?.let { "${it.roundToInt()}°" } ?: "—") + " / " + (s.maxG?.let { "%.1f".format(it) } ?: "—")),
+            Fact(loc("flight_review.roll_rate"), s.bankRateRms?.let { "%.1f°/s".format(it) } ?: "—"),
+            Fact(loc("flight_review.pitch_rate"), s.pitchRateRms?.let { "%.1f°/s".format(it) } ?: "—"),
+            Fact(loc("flight_review.v_s_changes"), "${s.vsChangeRms.roundToInt()} ft/min/s"),
+            Fact(loc("flight_review.max_bank_g"), (s.maxBankDeg?.let { "${it.roundToInt()}°" } ?: "—") + " / " + (s.maxG?.let { "%.1f".format(it) } ?: "—")),
         ))
         Spacer(Modifier.size(8.dp))
         Notes(s.notes)
@@ -138,18 +139,18 @@ fun SmoothnessSection(s: Smoothness?) {
 @Composable
 fun ScenarioSection(selected: Scenario?, result: ScenarioResult?, onSelect: (Scenario?) -> Unit) {
     val c = Fm.c
-    Section(loc("Realizacja ćwiczenia", "Exercise completion"), Icons.Outlined.Assignment) {
+    Section(loc("flight_review.exercise_completion"), Icons.Outlined.Assignment) {
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterChip(selected == null, { onSelect(null) }, { Text(loc("Brak", "None")) })
+            FilterChip(selected == null, { onSelect(null) }, { Text(loc("flight_review.none")) })
             Scenario.entries.forEach { s -> FilterChip(selected == s, { onSelect(s) }, { Text(s.title) }) }
         }
         if (selected == null || result == null) {
-            Text(loc("Wybierz ćwiczenie, żeby sprawdzić lot z jego kryteriami. Wybór zapisuje się przy locie.", "Pick an exercise to check the flight against its criteria. The choice is saved with the flight."),
+            Text(loc("flight_review.pick_an_exercise_to_check_the"),
                 style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp))
             return@Section
         }
         Text(selected.description, style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(vertical = 8.dp))
-        ScoreHeader(result.percent, loc("${result.passed} z ${result.judged} kryteriów", "${result.passed} of ${result.judged} criteria"), "${result.percent}%")
+        ScoreHeader(result.percent, loc("flight_review.of", result.passed, result.judged, criteriaWord(result.judged)), "${result.percent}%")
         result.criteria.forEach { cr ->
             val col = when (cr.passed) { true -> c.green; false -> c.danger; null -> c.ink2 }
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -164,21 +165,21 @@ fun ScenarioSection(selected: Scenario?, result: ScenarioResult?, onSelect: (Sce
 @Composable
 fun ComparisonSection(cmp: Comparison?) {
     val c = Fm.c
-    Section(loc("Porównanie z poprzednim lotem", "Compared with the previous flight"), Icons.Outlined.CompareArrows) {
+    Section(loc("flight_review.compared_with_the_previous_flight"), Icons.Outlined.CompareArrows) {
         if (cmp == null) {
-            Text(loc("Brak wcześniejszego lotu na tej trasie, do tego lotniska ani tym samolotem.", "No earlier flight on this route, to this airport or in this aircraft."),
+            Text(loc("flight_review.no_earlier_flight_on_this_route"),
                 style = MaterialTheme.typography.bodyMedium, color = c.ink2)
             return@Section
         }
         val p = cmp.previous
-        Text((if (cmp.sameRoute) loc("Ta sama trasa", "Same route") else loc("Podobny lot", "Similar flight")) + ": ${p.from ?: "?"} → ${p.to ?: "?"}, " +
+        Text((if (cmp.sameRoute) loc("flight_review.same_route") else loc("flight_review.similar_flight")) + ": ${p.from ?: "?"} → ${p.to ?: "?"}, " +
             java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM, com.freemetar.app.domain.Lang.locale).format(java.util.Date(p.start)),
             style = MaterialTheme.typography.bodySmall, color = c.ink2)
         Spacer(Modifier.size(8.dp))
         Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
             Spacer(Modifier.weight(1f))
-            Text(loc("teraz", "now"), fontSize = 11.sp, color = c.ink2, modifier = Modifier.width(92.dp))
-            Text(loc("wcześniej", "before"), fontSize = 11.sp, color = c.ink2, modifier = Modifier.width(92.dp))
+            Text(loc("common.now"), fontSize = 11.sp, color = c.ink2, modifier = Modifier.width(92.dp))
+            Text(loc("flight_review.before"), fontSize = 11.sp, color = c.ink2, modifier = Modifier.width(92.dp))
         }
         cmp.rows.forEach { r ->
             val col = when (r.better) { true -> c.green; false -> c.danger; null -> c.ink }
@@ -197,16 +198,16 @@ fun ComparisonSection(cmp: Comparison?) {
 fun InstructorReportSection(report: String, title: String) {
     val c = Fm.c
     val ctx = LocalContext.current
-    Section(loc("Raport instruktorski", "Instructor report"), Icons.Outlined.School) {
+    Section(loc("flight_review.instructor_report"), Icons.Outlined.School) {
         Text(report, fontFamily = Mono, fontSize = 12.sp, color = c.ink, lineHeight = 17.sp,
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(c.paper).padding(10.dp))
         OutlinedButton({
             val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, title).putExtra(Intent.EXTRA_TEXT, report)
-            ctx.startActivity(Intent.createChooser(send, loc("Udostępnij raport", "Share report")))
+            ctx.startActivity(Intent.createChooser(send, loc("flight_review.share_report")))
         }, Modifier.padding(top = 10.dp)) {
             Icon(Icons.Outlined.Share, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text(loc("Udostępnij raport", "Share report"))
+            Text(loc("flight_review.share_report"))
         }
     }
 }

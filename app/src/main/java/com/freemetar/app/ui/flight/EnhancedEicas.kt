@@ -170,7 +170,7 @@ private fun EicasElecView(state: FlightState) {
             topLeft = Offset(center.x - 20, 20f)
         )
         drawText(
-            m.measure(loc("W budowie", "In development"), androidx.compose.ui.text.TextStyle(color = Color.Gray, fontSize = 11.sp)),
+            m.measure(loc("common.in_development"), androidx.compose.ui.text.TextStyle(color = Color.Gray, fontSize = 11.sp)),
             topLeft = Offset(center.x - 50, center.y)
         )
     }
@@ -197,7 +197,7 @@ private fun EicasHydView(state: FlightState) {
             topLeft = Offset(center.x - 15, 20f)
         )
         drawText(
-            m.measure(loc("W budowie", "In development"), androidx.compose.ui.text.TextStyle(color = Color.Gray, fontSize = 11.sp)),
+            m.measure(loc("common.in_development"), androidx.compose.ui.text.TextStyle(color = Color.Gray, fontSize = 11.sp)),
             topLeft = Offset(center.x - 50, center.y)
         )
     }
@@ -225,7 +225,7 @@ private fun EicasFuelView(state: FlightState) {
             topLeft = Offset(center.x - 20, 20f)
         )
         drawText(
-            m.measure(loc("W budowie", "In development"), androidx.compose.ui.text.TextStyle(color = Color.Gray, fontSize = 11.sp)),
+            m.measure(loc("common.in_development"), androidx.compose.ui.text.TextStyle(color = Color.Gray, fontSize = 11.sp)),
             topLeft = Offset(center.x - 50, center.y)
         )
     }
@@ -297,7 +297,7 @@ private fun EicasStatusView(state: FlightState) {
             topLeft = Offset(center.x - 30, 20f)
         )
         drawText(
-            m.measure(loc("W budowie", "In development"), androidx.compose.ui.text.TextStyle(color = Color.Gray, fontSize = 11.sp)),
+            m.measure(loc("common.in_development"), androidx.compose.ui.text.TextStyle(color = Color.Gray, fontSize = 11.sp)),
             topLeft = Offset(center.x - 50, center.y)
         )
     }

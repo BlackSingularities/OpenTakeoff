@@ -96,56 +96,56 @@ object LandingScore {
         val notes = mutableListOf<String>()
         val vs = abs(t.vsFpm)
         when {
-            vs < 60 -> { score -= 5; notes += loc("Bardzo miękko (${vs.roundToInt()} ft/min) — uważaj na przeciąganie wyrównania.", "Very soft (${vs.roundToInt()} ft/min) — watch out for a long float.") }
-            vs <= 240 -> notes += loc("Miękkie przyziemienie: ${vs.roundToInt()} ft/min.", "Soft touchdown: ${vs.roundToInt()} ft/min.")
-            vs <= 400 -> { score -= 10 + (vs - 240) / 160 * 15; notes += loc("Wyczuwalne przyziemienie: ${vs.roundToInt()} ft/min.", "Firm touchdown: ${vs.roundToInt()} ft/min.") }
-            vs <= 600 -> { score -= 25 + (vs - 400) / 200 * 25; notes += loc("Twarde lądowanie: ${vs.roundToInt()} ft/min.", "Hard landing: ${vs.roundToInt()} ft/min.") }
-            else -> { score -= 60; notes += loc("Bardzo twarde lądowanie: ${vs.roundToInt()} ft/min — w realnym lotnictwie przegląd techniczny.", "Very hard landing: ${vs.roundToInt()} ft/min — in real aviation this means a hard-landing inspection.") }
+            vs < 60 -> { score -= 5; notes += loc("landing.very_soft_ft_min_watch_out", vs.roundToInt()) }
+            vs <= 240 -> notes += loc("landing.soft_touchdown_ft_min", vs.roundToInt())
+            vs <= 400 -> { score -= 10 + (vs - 240) / 160 * 15; notes += loc("landing.firm_touchdown_ft_min", vs.roundToInt()) }
+            vs <= 600 -> { score -= 25 + (vs - 400) / 200 * 25; notes += loc("landing.hard_landing_ft_min", vs.roundToInt()) }
+            else -> { score -= 60; notes += loc("landing.very_hard_landing_ft_min_in", vs.roundToInt()) }
         }
         t.gForce?.let { g ->
             when {
-                g >= 2.0 -> { score -= 30; notes += loc("Przeciążenie", "G-force") + " %.2f g.".format(g) }
-                g >= 1.6 -> { score -= 15; notes += loc("Przeciążenie", "G-force") + " %.2f g.".format(g) }
+                g >= 2.0 -> { score -= 30; notes += loc("common.g_force") + " %.2f g.".format(g) }
+                g >= 1.6 -> { score -= 15; notes += loc("common.g_force") + " %.2f g.".format(g) }
                 g >= 1.4 -> score -= 5
             }
         }
         t.bankDeg?.let { b ->
             val a = abs(b)
             when {
-                a > 8 -> { score -= 20; notes += loc("Duże przechylenie przy przyziemieniu: ${a.roundToInt()}°.", "Large bank at touchdown: ${a.roundToInt()}°.") }
-                a > 4 -> { score -= 8; notes += loc("Przechylenie ${a.roundToInt()}° — przyziemienie na jedno koło.", "Bank ${a.roundToInt()}° — touchdown on one main gear.") }
+                a > 8 -> { score -= 20; notes += loc("landing.large_bank_at_touchdown", a.roundToInt()) }
+                a > 4 -> { score -= 8; notes += loc("landing.bank_touchdown_on_one_main_gear", a.roundToInt()) }
             }
         }
         t.pitchDeg?.let { p ->
             when {
-                p < 0 -> { score -= 20; notes += loc("Przyziemienie na przednie koło (pochylenie %.1f°).", "Nose-wheel first touchdown (pitch %.1f°).").format(p) }
-                p > 10 -> { score -= 10; notes += loc("Duże pochylenie ${p.roundToInt()}° — ryzyko uderzenia ogonem.", "High pitch ${p.roundToInt()}° — risk of a tail strike.") }
+                p < 0 -> { score -= 20; notes += loc("landing.nose_wheel_first_touchdown_pitch_1f").format(p) }
+                p > 10 -> { score -= 10; notes += loc("landing.high_pitch_risk_of_a_tail", p.roundToInt()) }
             }
         }
         t.alongFt?.let { a ->
             when {
-                a < 0 -> { score -= 40; notes += loc("Przyziemienie przed progiem pasa (${(-a).roundToInt()} ft).", "Touchdown before the runway threshold (${(-a).roundToInt()} ft).") }
-                a < 500 -> { score -= 5; notes += loc("Przyziemienie tuż za progiem (${a.roundToInt()} ft).", "Touchdown just past the threshold (${a.roundToInt()} ft).") }
-                a <= 3000 -> notes += loc("W strefie przyziemienia: ${a.roundToInt()} ft za progiem.", "In the touchdown zone: ${a.roundToInt()} ft past the threshold.")
+                a < 0 -> { score -= 40; notes += loc("landing.touchdown_before_the_runway_threshold_ft", (-a).roundToInt()) }
+                a < 500 -> { score -= 5; notes += loc("landing.touchdown_just_past_the_threshold_ft", a.roundToInt()) }
+                a <= 3000 -> notes += loc("landing.in_the_touchdown_zone_ft_past", a.roundToInt())
                 else -> {
                     val remaining = t.runwayLengthFt?.let { it - a }
                     score -= if (a > 4500) 25 else 10
-                    notes += loc("Długie lądowanie: ${a.roundToInt()} ft za progiem", "Long landing: ${a.roundToInt()} ft past the threshold") + (remaining?.let { loc(", zostało ${it.roundToInt()} ft pasa.", ", ${it.roundToInt()} ft of runway remaining.") } ?: ".")
+                    notes += loc("landing.long_landing_ft_past_the_threshold", a.roundToInt()) + (remaining?.let { loc("landing.ft_of_runway_remaining", it.roundToInt()) } ?: ".")
                 }
             }
         }
         t.crossFt?.let { x ->
             val a = abs(x)
-            val side = if (x >= 0) loc("w prawo", "right") else loc("w lewo", "left")
+            val side = if (x >= 0) loc("common.right") else loc("common.left")
             when {
-                a > 50 -> { score -= 25; notes += loc("Daleko od osi pasa: ${a.roundToInt()} ft $side.", "Far off the centreline: ${a.roundToInt()} ft $side.") }
-                a > 25 -> { score -= 12; notes += loc("Odchylenie od osi: ${a.roundToInt()} ft $side.", "Off the centreline: ${a.roundToInt()} ft $side.") }
+                a > 50 -> { score -= 25; notes += loc("landing.far_off_the_centreline_ft", a.roundToInt(), side) }
+                a > 25 -> { score -= 12; notes += loc("landing.off_the_centreline_ft", a.roundToInt(), side) }
                 a > 12 -> score -= 4
             }
         }
-        if (t.bounces > 0) { score -= 12.0 * t.bounces; notes += loc("Odbicia: ${t.bounces}.", "Bounces: ${t.bounces}.") }
+        if (t.bounces > 0) { score -= 12.0 * t.bounces; notes += loc("landing.bounces", t.bounces) }
         // Silny wiatr boczny łagodzi ocenę przechylenia i osi
-        t.crosswindKt?.let { if (abs(it) >= 15) { score += 5; notes += loc("Wiatr boczny ${abs(it).roundToInt()} kt — wynik złagodzony.", "Crosswind ${abs(it).roundToInt()} kt — score adjusted.") } }
+        t.crosswindKt?.let { if (abs(it) >= 15) { score += 5; notes += loc("landing.crosswind_kt_score_adjusted", abs(it).roundToInt()) } }
 
         val s = score.roundToInt().coerceIn(0, 100)
         return LandingReport(
@@ -158,10 +158,10 @@ object LandingScore {
 
     /** Ocena słowna z wyniku 0–100 w bieżącym języku. */
     fun gradeOf(s: Int): String = when {
-        s >= 90 -> loc("Doskonałe", "Excellent")
-        s >= 75 -> loc("Dobre", "Good")
-        s >= 55 -> loc("Poprawne", "Fair")
-        s >= 35 -> loc("Twarde", "Hard")
-        else -> loc("Bardzo twarde", "Very hard")
+        s >= 90 -> loc("landing.excellent")
+        s >= 75 -> loc("landing.good")
+        s >= 55 -> loc("landing.fair")
+        s >= 35 -> loc("landing.hard")
+        else -> loc("landing.very_hard")
     }
 }

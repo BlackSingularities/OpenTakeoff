@@ -81,12 +81,12 @@ private enum class CockpitTab(val icon: ImageVector, val short: String) {
 
 @Composable
 private fun CockpitTab.label(): String = when (this) {
-    CockpitTab.AP -> tr("Autopilot", "Autopilot")
-    CockpitTab.RADIO -> tr("Radio", "Radio")
-    CockpitTab.SYSTEMS -> tr("Systemy", "Systems")
-    CockpitTab.STICK -> tr("Sterowanie", "Controls")
-    CockpitTab.ENGINES -> tr("Silniki", "Engines")
-    CockpitTab.PROGRESS -> tr("Postęp", "Progress")
+    CockpitTab.AP -> "Autopilot"
+    CockpitTab.RADIO -> "Radio"
+    CockpitTab.SYSTEMS -> tr("common.systems")
+    CockpitTab.STICK -> tr("cockpit.controls_2")
+    CockpitTab.ENGINES -> tr("common.engines")
+    CockpitTab.PROGRESS -> tr("cockpit.progress")
 }
 
 /**
@@ -216,13 +216,13 @@ private fun CockpitActions(
     var askStop by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     val style = com.freemetar.app.ui.flight.avionics.DisplayStyle.of(s, profile)
-    val checklists = tr("Checklisty", "Checklists")
-    val aircraftMenu = tr("Samolot: ${style.label}. Profil, połączenie i dziennik", "Aircraft: ${style.label}. Profile, connection and logbook")
+    val checklists = tr("common.checklists")
+    val aircraftMenu = tr("cockpit.aircraft_profile_connection_and_logbook", style.label)
     val content: @Composable () -> Unit = {
         RecordChip(rec, onClick = { if (rec.recording) askStop = true else if (rec.held) onResume() })
         // Znacznik na osi czasu lotu — do omówienia przy odtwarzaniu
         if (rec.recording) {
-            val markLabel = tr("Dodaj znacznik w zapisie lotu", "Add a marker to the flight recording")
+            val markLabel = tr("cockpit.add_a_marker_to_the_flight")
             Box(
                 Modifier.size(34.dp).clip(CircleShape).border(1.dp, c.rule, CircleShape)
                     .semantics { contentDescription = markLabel }
@@ -247,18 +247,18 @@ private fun CockpitActions(
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Outlined.Flight, null, tint = c.ink, modifier = Modifier.size(18.dp)) }
             DropdownMenu(menu, { menu = false }) {
-                Text(tr("Profil samolotu (wyświetlacze i panele)", "Aircraft profile (displays and panels)"),
+                Text(tr("cockpit.aircraft_profile_displays_and_panels"),
                     style = MaterialTheme.typography.labelMedium, color = c.ink2, modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp))
                 val detected = s.detectedProfile()
                 DropdownMenuItem(
-                    text = { Text((if (profile == null) "✓  " else "     ") + tr("Automatycznie (${detected.label})", "Automatic (${detected.label})")) },
+                    text = { Text((if (profile == null) "✓  " else "     ") + tr("cockpit.automatic", detected.label)) },
                     onClick = { onProfile(null); menu = false },
                 )
                 AircraftProfile.entries.forEach { p ->
                     DropdownMenuItem(text = { Text((if (profile == p) "✓  " else "     ") + p.label) }, onClick = { onProfile(p); menu = false })
                 }
                 androidx.compose.material3.HorizontalDivider()
-                DropdownMenuItem(text = { Text(tr("Połączenie i dziennik", "Connection and logbook")) }, onClick = { menu = false; onShowPlan() })
+                DropdownMenuItem(text = { Text(tr("cockpit.connection_and_logbook")) }, onClick = { menu = false; onShowPlan() })
             }
         }
     }
@@ -267,11 +267,10 @@ private fun CockpitActions(
 
     if (askStop) androidx.compose.material3.AlertDialog(
         onDismissRequest = { askStop = false },
-        title = { Text(tr("Zakończyć zapis lotu?", "Stop recording this flight?")) },
-        text = { Text(tr("Lot trafi do dziennika. Nowy zapis zacznie się sam po wylądowaniu albo po wznowieniu (dotknij REC).",
-            "The flight goes to the logbook. A new recording starts by itself after landing, or when you resume it (tap REC).")) },
-        confirmButton = { androidx.compose.material3.TextButton({ askStop = false; onStop() }) { Text(tr("Zakończ zapis", "Stop recording"), color = c.danger) } },
-        dismissButton = { androidx.compose.material3.TextButton({ askStop = false }) { Text(tr("Anuluj", "Cancel")) } },
+        title = { Text(tr("cockpit.stop_recording_this_flight")) },
+        text = { Text(tr("cockpit.the_flight_goes_to_the_logbook")) },
+        confirmButton = { androidx.compose.material3.TextButton({ askStop = false; onStop() }) { Text(tr("cockpit.stop_recording"), color = c.danger) } },
+        dismissButton = { androidx.compose.material3.TextButton({ askStop = false }) { Text(tr("common.cancel")) } },
     )
 }
 
@@ -279,11 +278,11 @@ private fun CockpitActions(
 @Composable
 private fun CockpitTab.tabName(): String = when (this) {
     CockpitTab.AP -> "AP"
-    CockpitTab.RADIO -> tr("Radio", "Radio")
-    CockpitTab.SYSTEMS -> tr("Systemy", "Systems")
-    CockpitTab.ENGINES -> tr("Silniki", "Engines")
-    CockpitTab.STICK -> tr("Stery", "Controls")
-    CockpitTab.PROGRESS -> tr("Postęp", "Progress")
+    CockpitTab.RADIO -> "Radio"
+    CockpitTab.SYSTEMS -> tr("common.systems")
+    CockpitTab.ENGINES -> tr("common.engines")
+    CockpitTab.STICK -> tr("cockpit.controls")
+    CockpitTab.PROGRESS -> tr("cockpit.progress")
 }
 
 /**
@@ -364,13 +363,13 @@ private fun ViewToggle(link: LinkClient, s: FlightState, vertical: Boolean) {
     LaunchedEffect(pending, actual) { if (pending != null) { if (actual == pending) pending = null else { delay(2500); pending = null } } }
     val cam = pending ?: actual
     val (icon, name) = when (cam) {
-        2 -> Icons.Outlined.AirlineSeatReclineNormal to tr("Kabina", "Cockpit")
-        3 -> Icons.Outlined.FlightTakeoff to tr("Zewn.", "Outside")
-        else -> Icons.Outlined.Videocam to tr("Kamera", "Camera")
+        2 -> Icons.Outlined.AirlineSeatReclineNormal to tr("cockpit.cockpit")
+        3 -> Icons.Outlined.FlightTakeoff to tr("cockpit.outside")
+        else -> Icons.Outlined.Videocam to tr("cockpit.camera")
     }
     val target = if (cam == 2) 3 else 2
-    val desc = if (target == 3) tr("Widok: kabina. Przełącz na widok zewnętrzny", "View: cockpit. Switch to the outside view")
-    else tr("Przełącz na widok z kabiny", "Switch to the cockpit view")
+    val desc = if (target == 3) tr("cockpit.view_cockpit_switch_to_the_outside")
+    else tr("cockpit.switch_to_the_cockpit_view")
     Row(
         Modifier.clip(RoundedCornerShape(50)).border(1.dp, c.rule, RoundedCornerShape(50))
             .semantics { contentDescription = desc }
@@ -433,7 +432,7 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
         }
     }
 
-    val label = tr("Rozglądanie się — przytrzymaj", "Look around — hold")
+    val label = tr("cockpit.look_around_hold")
     Row(
         modifier.clip(RoundedCornerShape(50)).background(if (looking) c.accent.copy(alpha = 0.18f) else Color.Transparent)
             .border(1.dp, if (looking) c.accent else c.rule, RoundedCornerShape(50))
@@ -470,7 +469,7 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
         if (!vertical) {
             Spacer(Modifier.width(5.dp))
             Text(
-                if (looking) "%+d° / %+d°".format(yaw.roundToInt(), pitch.roundToInt()) else tr("Rozglądaj", "Look"),
+                if (looking) "%+d° / %+d°".format(yaw.roundToInt(), pitch.roundToInt()) else tr("cockpit.look"),
                 fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = if (looking) c.accent else c.ink, maxLines = 1,
             )
         }
@@ -479,33 +478,28 @@ internal fun CameraSwitch(link: LinkClient, s: FlightState, modifier: Modifier =
     if (info) androidx.compose.material3.AlertDialog(
         onDismissRequest = { info = false },
         icon = { Icon(Icons.Outlined.Visibility, null) },
-        title = { Text(tr("Rozglądanie się", "Look around")) },
+        title = { Text(tr("cockpit.look_around")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    if (tiltMode) tr("Przytrzymaj przycisk i przechylaj telefon: na boki — obrót w lewo i w prawo, do siebie i od siebie — w górę i w dół.",
-                        "Hold the button and tilt the phone: sideways to look left and right, towards or away from you to look up and down.")
-                    else tr("Przytrzymaj przycisk i przesuwaj palec: w bok — obrót w lewo i w prawo, w górę i w dół — spojrzenie w górę i w dół.",
-                        "Hold the button and slide your finger: sideways to look left and right, up and down to look up and down."),
+                    if (tiltMode) tr("cockpit.hold_the_button_and_tilt_the")
+                    else tr("cockpit.hold_the_button_and_slide_your"),
                 )
-                Text(tr("Kamera obraca się w widoku, który jest teraz w symulatorze — w kabinie jak głowa pilota, na zewnątrz wokół samolotu. Puść przycisk, a wróci na wprost.",
-                    "The camera turns in whatever view the simulator is in now — like the pilot's head in the cockpit, around the aircraft outside. Let go and it returns to straight ahead."))
-                Text(tr("Kabinę i widok zewnętrzny przełączasz przyciskiem obok.",
-                    "Switch between the cockpit and the outside view with the button next to it."))
-                Text(tr("Na komputerze okno MSFS musi być aktywne (kliknij w nie raz). Tempo obrotu ustawisz w OpenTakeoff Link.",
-                    "On the PC the MSFS window must be active (click it once). Set the turning speed in OpenTakeoff Link."),
+                Text(tr("cockpit.the_camera_turns_in_whatever_view"))
+                Text(tr("cockpit.switch_between_the_cockpit_and_the"))
+                Text(tr("cockpit.on_the_pc_the_msfs_window"),
                     color = c.ink2, style = MaterialTheme.typography.bodySmall)
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton({ info = false }) { Text(tr("Rozumiem", "Got it")) } },
+        confirmButton = { androidx.compose.material3.TextButton({ info = false }) { Text(tr("cockpit.got_it")) } },
     )
     shownProblem?.let { msg ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { shownProblem = null },
             icon = { Icon(Icons.Outlined.Visibility, null) },
-            title = { Text(tr("Nie można się rozglądać", "Cannot look around")) },
+            title = { Text(tr("cockpit.cannot_look_around")) },
             text = { Text(msg) },
-            confirmButton = { androidx.compose.material3.TextButton({ shownProblem = null }) { Text(tr("Rozumiem", "Got it")) } },
+            confirmButton = { androidx.compose.material3.TextButton({ shownProblem = null }) { Text(tr("cockpit.got_it")) } },
         )
     }
 }
@@ -524,7 +518,7 @@ private fun RecordChip(rec: com.freemetar.app.MainViewModel.RecordingInfo, onCli
     val label = if (rec.recording) "%d:%02d".format(min / 60, min % 60) else "REC ‖"
     Row(
         Modifier.clip(RoundedCornerShape(50)).border(1.dp, if (rec.recording) c.danger else c.rule, RoundedCornerShape(50))
-            .clickable(role = Role.Button, onClickLabel = if (rec.recording) tr("Zakończ zapis lotu", "Stop recording the flight") else tr("Wznów zapis lotów", "Resume flight recording"), onClick = onClick)
+            .clickable(role = Role.Button, onClickLabel = if (rec.recording) tr("cockpit.stop_recording_the_flight") else tr("cockpit.resume_flight_recording"), onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

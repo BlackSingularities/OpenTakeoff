@@ -76,17 +76,14 @@ fun WelcomeScreen(
 
             // Tytuł
             Text(
-                loc("Witaj w OpenTakeoff", "Welcome to OpenTakeoff"),
+                loc("welcome.welcome_to_opentakeoff"),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Fm.c.ink
             )
 
             Text(
-                loc(
-                    "Twój kokpit dla symulatorów lotu — pogoda, mapy, plan lotu i dane z MSFS na telefonie",
-                    "Your flight sim companion — weather, maps, flight planning and MSFS data on your phone"
-                ),
+                loc("welcome.your_flight_sim_companion_weather_maps"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Fm.c.ink2,
                 textAlign = TextAlign.Center
@@ -97,38 +94,26 @@ fun WelcomeScreen(
             // Funkcje
             FeatureItem(
                 icon = Icons.Outlined.Public,
-                title = loc("Bez kont i API", "No accounts or APIs"),
-                description = loc(
-                    "Darmowe, otwarte źródła danych. Bez reklam i subskrypcji.",
-                    "Free, open data sources. No ads or subscriptions."
-                )
+                title = loc("welcome.no_accounts_or_apis"),
+                description = loc("welcome.free_open_data_sources_no_ads")
             )
 
             FeatureItem(
                 icon = Icons.Outlined.FlightTakeoff,
-                title = loc("Kokpit na telefonie", "Cockpit on your phone"),
-                description = loc(
-                    "PFD, ND, autopilot i sterowanie przez OpenTakeoff Link (MSFS 2024)",
-                    "PFD, ND, autopilot and controls via OpenTakeoff Link (MSFS 2024)"
-                )
+                title = loc("welcome.cockpit_on_your_phone"),
+                description = loc("welcome.pfd_nd_autopilot_and_controls_via")
             )
 
             FeatureItem(
                 icon = Icons.Outlined.Map,
-                title = loc("Mapa 3D ze śladem lotu", "3D map with flight track"),
-                description = loc(
-                    "Lotniska z METAR, SIGMET, trasa i profil pionowy w czasie rzeczywistym",
-                    "Airports with METAR, SIGMET, route and real-time vertical profile"
-                )
+                title = loc("welcome.3d_map_with_flight_track"),
+                description = loc("welcome.airports_with_metar_sigmet_route_and")
             )
 
             FeatureItem(
                 icon = Icons.Outlined.Speed,
-                title = loc("Dziennik lotów", "Flight logbook"),
-                description = loc(
-                    "Automatyczny zapis każdego lotu z oceną lądowania i eksportem do GPX",
-                    "Automatic recording with landing score and GPX export"
-                )
+                title = loc("welcome.flight_logbook"),
+                description = loc("welcome.automatic_recording_with_landing_score_and")
             )
 
             Spacer(Modifier.height(16.dp))
@@ -142,7 +127,7 @@ fun WelcomeScreen(
                     contentColor = Fm.c.paper
                 )
             ) {
-                Text(loc("Rozpocznij", "Get started"), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(loc("welcome.get_started"), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }

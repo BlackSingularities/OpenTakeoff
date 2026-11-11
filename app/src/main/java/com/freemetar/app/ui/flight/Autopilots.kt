@@ -105,10 +105,10 @@ fun DualKnob(
                 role = Role.Button
                 onClick { push(); true }
                 customActions = listOf(
-                    CustomAccessibilityAction(loc("W górę", "Increase")) { step(1); true },
-                    CustomAccessibilityAction(loc("W dół", "Decrease")) { step(-1); true },
-                    CustomAccessibilityAction(loc("Duży krok w górę", "Big step up")) { big(1); true },
-                    CustomAccessibilityAction(loc("Duży krok w dół", "Big step down")) { big(-1); true },
+                    CustomAccessibilityAction(loc("common.increase")) { step(1); true },
+                    CustomAccessibilityAction(loc("common.decrease")) { step(-1); true },
+                    CustomAccessibilityAction(loc("autopilots.big_step_up")) { big(1); true },
+                    CustomAccessibilityAction(loc("autopilots.big_step_down")) { big(-1); true },
                 )
             }
             .pointerInput(Unit) {
@@ -228,7 +228,7 @@ fun AfdsKey(label: String, on: Boolean, modifier: Modifier = Modifier, skin: Pan
             // Lekki gradient: klawisz wygląda na wypukły
             .background(Brush.verticalGradient(listOf((s?.key ?: c.terrain).lighten(0.08f), (s?.key ?: c.terrain).darken(0.18f))))
             .border(if (style == LampStyle.OUTLINE && on) 1.5.dp else 1.dp, if (style == LampStyle.OUTLINE && on) lampOn else (s?.plateEdge ?: Color(0x1FFFFFFF)), shape)
-            .semantics { contentDescription = label + if (on) loc(", włączony", ", on") else loc(", wyłączony", ", off") }
+            .semantics { contentDescription = label + if (on) loc("autopilots.on") else loc("autopilots.off") }
             .clickable(role = Role.Switch) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
         contentAlignment = Alignment.Center,
     ) {
@@ -274,7 +274,7 @@ private fun SelectorModule(sel: Selector, skin: PanelSkin, onEnter: (String) -> 
         // Okienko wartości: dotknięcie = wpisanie liczby
         Column(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(skin.window).border(1.dp, skin.plateEdge, RoundedCornerShape(6.dp))
-                .clickable(onClickLabel = loc("Wpisz wartość", "Type a value")) { onEnter(sel.enter) }
+                .clickable(onClickLabel = loc("common.type_a_value")) { onEnter(sel.enter) }
                 .padding(horizontal = 10.dp, vertical = 6.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -290,11 +290,11 @@ private fun SelectorModule(sel: Selector, skin: PanelSkin, onEnter: (String) -> 
             val knob = (maxWidth - nudge - 14.dp).coerceIn(if (compact) 48.dp else 64.dp, 96.dp)
             Box(Modifier.fillMaxWidth().height(knob + 14.dp)) {
             DualKnob(
-                knob, loc("Pokrętło ${sel.label}: ${sel.value}", "${sel.label} knob: ${sel.value}"), Modifier.align(Alignment.TopCenter), skin,
+                knob, loc("common.knob", sel.label, sel.value), Modifier.align(Alignment.TopCenter), skin,
                 onStep = sel.step, onBigStep = sel.big, onPush = { onEnter(sel.enter) },
             )
-            NudgeKey("−", loc("${sel.label} w dół", "${sel.label} down"), Modifier.align(Alignment.BottomStart), skin, nudge) { sel.step(-1) }
-            NudgeKey("+", loc("${sel.label} w górę", "${sel.label} up"), Modifier.align(Alignment.BottomEnd), skin, nudge) { sel.step(1) }
+            NudgeKey("−", loc("autopilots.down", sel.label), Modifier.align(Alignment.BottomStart), skin, nudge) { sel.step(-1) }
+            NudgeKey("+", loc("autopilots.up", sel.label), Modifier.align(Alignment.BottomEnd), skin, nudge) { sel.step(1) }
             }
         }
         if (sel.keys.isNotEmpty()) {
@@ -320,7 +320,7 @@ fun AutopilotPanelV2(link: LinkClient, s: FlightState, p: AircraftProfile, compa
     val k = p.autopilot
 
     if (k == AutopilotKind.NONE) {
-        Text(loc("${p.label} nie ma autopilota.", "${p.label} has no autopilot."), style = MaterialTheme.typography.bodyMedium, color = c.ink2,
+        Text(loc("autopilots.has_no_autopilot", p.label), style = MaterialTheme.typography.bodyMedium, color = c.ink2,
             modifier = Modifier.padding(vertical = 12.dp))
         return
     }
@@ -414,15 +414,14 @@ fun AutopilotPanelV2(link: LinkClient, s: FlightState, p: AircraftProfile, compa
         }
     }
     }
-    if (!compact) Text(loc("Kręć palcem wokół pokrętła: pierścień zmienia o duży krok, środek o mały. Dotknij okienka, aby wpisać wartość.",
-        "Turn a knob with your finger: the outer ring moves in big steps, the centre in small ones. Tap the window to type a value."),
+    if (!compact) Text(loc("autopilots.turn_a_knob_with_your_finger"),
         style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp))
 
     when (enter) {
-        "HDG" -> EnterDialog(loc("Kurs autopilota", "Autopilot heading"), loc("np. 270", "e.g. 270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
-        "ALT" -> EnterDialog(loc("Wysokość (ft)", "Altitude (ft)"), loc("np. 12000", "e.g. 12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
-        "SPD" -> EnterDialog(loc("Prędkość (kt)", "Speed (kt)"), loc("np. 250", "e.g. 250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
-        "VS" -> EnterDialog(loc("Prędkość pionowa (ft/min)", "Vertical speed (ft/min)"), loc("np. -1500", "e.g. -1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "HDG" -> EnterDialog(loc("common.autopilot_heading"), loc("common.e_g_270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
+        "ALT" -> EnterDialog(loc("autopilots.altitude_ft"), loc("common.e_g_12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "SPD" -> EnterDialog(loc("autopilots.speed_kt"), loc("common.e_g_250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
+        "VS" -> EnterDialog(loc("autopilots.vertical_speed_ft_min"), loc("common.e_g_1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
     }
 }
 

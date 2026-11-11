@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -74,7 +75,7 @@ public static class Updater
     /// <summary>Pobiera nowy exe obok bieżącego jako .new i sprawdza rozmiar oraz SHA-256 (jeśli GitHub go podał).</summary>
     public static async Task<string> DownloadAsync(LinkUpdate update, IProgress<double>? progress, CancellationToken ct = default)
     {
-        var exe = ExePath ?? throw new InvalidOperationException("Program nie działa z pliku exe — aktualizacja niemożliwa.");
+        var exe = ExePath ?? throw new InvalidOperationException(L.T("update.not_exe_update"));
         var target = exe + ".new";
         try
         {
@@ -97,13 +98,13 @@ public static class Updater
 
             var length = new FileInfo(target).Length;
             if (update.Size > 0 && length != update.Size)
-                throw new IOException($"Niepełne pobranie ({length} z {update.Size} B)");
+                throw new IOException(L.T("update.incomplete", length, update.Size));
             if (update.Sha256 is { } expected)
             {
                 await using var check = File.OpenRead(target);
                 var actual = Convert.ToHexString(await SHA256.HashDataAsync(check, ct));
                 if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
-                    throw new IOException("Suma SHA-256 pobranego pliku się nie zgadza");
+                    throw new IOException(L.T("update.bad_hash"));
             }
             return target;
         }
@@ -117,7 +118,7 @@ public static class Updater
     /// <summary>Podmienia exe na pobrany plik i uruchamia nową wersję. Po sukcesie wywołujący musi zakończyć proces.</summary>
     public static void ApplyAndRestart(string downloaded, IEnumerable<string> args)
     {
-        var exe = ExePath ?? throw new InvalidOperationException("Program nie działa z pliku exe.");
+        var exe = ExePath ?? throw new InvalidOperationException(L.T("update.not_exe"));
         var old = exe + ".old";
         TryDelete(old);
         File.Move(exe, old);

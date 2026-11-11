@@ -120,7 +120,7 @@ private fun BWindow(value: String, color: Color, modifier: Modifier = Modifier, 
     Box(
         modifier.clip(RoundedCornerShape(4.dp)).background(B_WINDOW).border(1.dp, Color(0xFF15191C), RoundedCornerShape(4.dp))
             .semantics { contentDescription = desc }
-            .let { if (onClick != null) it.clickable(onClickLabel = loc("Wpisz wartość", "Type a value"), onClick = onClick) else it }
+            .let { if (onClick != null) it.clickable(onClickLabel = loc("common.type_a_value"), onClick = onClick) else it }
             .padding(horizontal = 8.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center,
     ) { Text(value, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = size.sp, color = color, maxLines = 1, softWrap = false) }
@@ -158,7 +158,7 @@ private fun ToggleSwitch(label: String, on: Boolean, modifier: Modifier = Modifi
         Box(
             Modifier.padding(top = 3.dp).size(width = 30.dp, height = 46.dp).clip(RoundedCornerShape(15.dp)).background(Color(0xFF15181A))
                 .border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(15.dp))
-                .semantics { contentDescription = label + if (on) loc(", włączone", ", on") else loc(", wyłączone", ", off"); role = Role.Switch }
+                .semantics { contentDescription = label + if (on) loc("common.on") else loc("common.off"); role = Role.Switch }
                 .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
         ) {
             // Dźwigienka: na górze = ON, na dole = OFF
@@ -175,7 +175,7 @@ private fun BDetentKey(label: String, on: Boolean, modifier: Modifier = Modifier
     val haptic = LocalHapticFeedback.current
     Box(
         modifier.height(40.dp).clip(RoundedCornerShape(4.dp)).background(if (on) B_LABEL else B_KEY).border(1.dp, Color(0x40FFFFFF), RoundedCornerShape(4.dp))
-            .semantics { contentDescription = desc + if (on) loc(", ustawione", ", set") else ""; role = Role.RadioButton }
+            .semantics { contentDescription = desc + if (on) loc("common.set") else ""; role = Role.RadioButton }
             .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
         contentAlignment = Alignment.Center,
     ) { Text(label, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = if (on) Color.Black else B_LABEL, maxLines = 1) }
@@ -282,7 +282,7 @@ fun BoeingMcp(link: LinkClient, s: FlightState, compact: Boolean = false) {
             AfdsKey("CMD", ap.master, Modifier.width(if (dense) 54.dp else 64.dp), skin) { cmd("AP_MASTER") }
             Box(
                 Modifier.size(width = if (dense) 84.dp else 96.dp, height = 34.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFFE6E0CC))
-                    .semantics { contentDescription = loc("Rozłącz autopilota", "Disengage autopilot"); role = Role.Button }
+                    .semantics { contentDescription = loc("common.disengage_autopilot"); role = Role.Button }
                     .clickable { cmd("AUTOPILOT_OFF") },
                 contentAlignment = Alignment.Center,
             ) { Text("DISENGAGE", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color(0xFF3A3A3A)) }
@@ -315,15 +315,14 @@ fun BoeingMcp(link: LinkClient, s: FlightState, compact: Boolean = false) {
             }
         }
     }
-    if (!compact) Text(loc("Kręć pokrętłem: brzeg — duży krok, środek — mały. Kółko V/S przewijaj palcem w górę (DN) albo w dół (UP). Dotknij cyfr, aby wpisać wartość.",
-        "Turn a knob: the edge for big steps, the centre for small ones. Roll the V/S wheel up (DN) or down (UP). Tap the digits to type a value."),
+    if (!compact) Text(loc("boeing737.turn_a_knob_the_edge_for"),
         style = MaterialTheme.typography.labelSmall, color = Fm.c.ink2, modifier = Modifier.padding(top = 8.dp))
 
     when (enter) {
-        "HDG" -> EnterDialog("HEADING", loc("np. 270", "e.g. 270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
-        "ALT" -> EnterDialog("ALTITUDE (ft)", loc("np. 12000", "e.g. 12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
-        "SPD" -> EnterDialog("IAS (kt)", loc("np. 250", "e.g. 250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
-        "VS" -> EnterDialog("VERT SPEED (ft/min)", loc("np. -1500", "e.g. -1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "HDG" -> EnterDialog("HEADING", loc("common.e_g_270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
+        "ALT" -> EnterDialog("ALTITUDE (ft)", loc("common.e_g_12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "SPD" -> EnterDialog("IAS (kt)", loc("common.e_g_250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
+        "VS" -> EnterDialog("VERT SPEED (ft/min)", loc("common.e_g_1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
     }
 }
 
@@ -335,7 +334,7 @@ private fun McpWindow(title: String, inner: String?, value: String, dense: Boole
         Row(
             Modifier.padding(top = 3.dp).clip(RoundedCornerShape(4.dp)).background(B_WINDOW).border(2.dp, Color(0xFF15191C), RoundedCornerShape(4.dp))
                 .semantics { contentDescription = "$title $value" }
-                .clickable(onClickLabel = loc("Wpisz wartość", "Type a value"), onClick = onClick)
+                .clickable(onClickLabel = loc("common.type_a_value"), onClick = onClick)
                 .padding(horizontal = if (dense) 6.dp else 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -351,7 +350,7 @@ private fun McpWindow(title: String, inner: String?, value: String, dense: Boole
  */
 @Composable
 private fun McpKnobView(kind: McpKnob, size: Dp, desc: String, onStep: (Int) -> Unit, onBig: (Int) -> Unit, onTap: () -> Unit) {
-    RotaryKnob(size, loc("Pokrętło $desc", "$desc knob"), onStep, onBig, onTap) { angle, grip ->
+    RotaryKnob(size, loc("boeing737.knob", desc), onStep, onBig, onTap) { angle, grip ->
         val c = center
         val r = this.size.minDimension / 2f
         val body = when (kind) { McpKnob.IAS -> r * 0.72f; McpKnob.HDG -> r * 0.6f; McpKnob.ALT -> r * 0.86f }
@@ -393,7 +392,7 @@ private fun VsWheel(height: Dp, modifier: Modifier = Modifier, onDelta: (Int) ->
         Canvas(
             Modifier.size(width = 34.dp, height = height)
                 .semantics {
-                    contentDescription = loc("Kółko prędkości pionowej", "Vertical speed wheel")
+                    contentDescription = loc("common.vertical_speed_wheel")
                     customActions = listOf(
                         androidx.compose.ui.semantics.CustomAccessibilityAction("UP") { delta(100); true },
                         androidx.compose.ui.semantics.CustomAccessibilityAction("DN") { delta(-100); true },
@@ -478,7 +477,7 @@ fun BoeingRadioPanel(link: LinkClient, s: FlightState) {
             }
             Box(
                 Modifier.size(width = 46.dp, height = 38.dp).clip(RoundedCornerShape(6.dp)).background(B_KEY)
-                    .semantics { contentDescription = loc("Zamień aktywną i zapasową ${sel.label}", "Swap active and standby ${sel.label}") }
+                    .semantics { contentDescription = loc("common.swap_active_and_standby", sel.label) }
                     .clickable(role = Role.Button) { cmd(swap) },
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Outlined.SwapHoriz, null, tint = B_LABEL, modifier = Modifier.size(26.dp)) }
@@ -496,14 +495,14 @@ fun BoeingRadioPanel(link: LinkClient, s: FlightState) {
                     }
                 }
             }
-            DualKnob(80.dp, loc("Pokrętło częstotliwości ${sel.label}", "${sel.label} frequency knob"),
+            DualKnob(80.dp, loc("common.frequency_knob", sel.label),
                 skin = boeingSkin().copy(knobOuter = Color(0xFFC8CBCD), knobInner = Color(0xFFE2E4E5)),
                 onStep = { setStby(it * if (sel.com) 25 else 50) }, onBigStep = { setStby(it * 1000) }, onPush = { enter = true })
         }
     }
     if (enter) {
         val valid: (String) -> Boolean = { t -> ControlMath.parseMhz(t)?.let { if (sel.com) ControlMath.comHz(it) else ControlMath.navHz(it) } != null }
-        EnterDialog(loc("${sel.label} — częstotliwość zapasowa (MHz)", "${sel.label} — standby frequency (MHz)"), if (sel.com) "np. 121.500" else "np. 110.30", KeyboardType.Decimal, valid,
+        EnterDialog(loc("common.standby_frequency_mhz", sel.label), if (sel.com) loc("common.e_g_121_500") else loc("common.e_g_110_30"), KeyboardType.Decimal, valid,
             { t -> ControlMath.parseMhz(t)?.let { if (sel.com) ControlMath.comHz(it) else ControlMath.navHz(it) }?.let { hz -> cmd(stbyEvent, hz) } }) { enter = false }
     }
 }
@@ -516,7 +515,7 @@ private fun RadioSelectKey(label: String, on: Boolean, modifier: Modifier, onCli
         Box(Modifier.width(34.dp).height(5.dp).clip(RoundedCornerShape(3.dp)).background(if (on) B_AMBER_DIGITS else Color(0xFF4A4F53)))
         Box(
             Modifier.padding(top = 4.dp).fillMaxWidth().height(36.dp).clip(RoundedCornerShape(5.dp)).background(B_KEY)
-                .semantics { contentDescription = label + if (on) loc(", wybrane", ", selected") else ""; role = Role.RadioButton }
+                .semantics { contentDescription = label + if (on) loc("common.selected") else ""; role = Role.RadioButton }
                 .clickable { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() },
             contentAlignment = Alignment.Center,
         ) { Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFFF2D7B0)) }
@@ -538,13 +537,13 @@ fun BoeingAtc(link: LinkClient, s: FlightState) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             code.forEachIndexed { i, ch ->
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    BWindow("$ch", if (emergency) E_RED else B_DIGITS, Modifier.fillMaxWidth(), size = 24, desc = loc("Cyfra ${i + 1}: $ch", "Digit ${i + 1}: $ch"))
+                    BWindow("$ch", if (emergency) E_RED else B_DIGITS, Modifier.fillMaxWidth(), size = 24, desc = loc("boeing737.digit_2", i + 1, ch))
                     Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         // −/+ dla cyfry; zawija w zakresie 0–7 i wysyła cały kod
                         listOf(-1 to "−", 1 to "+").forEach { (d, sign) ->
                             Box(
                                 Modifier.size(30.dp).clip(RoundedCornerShape(15.dp)).background(B_KEY)
-                                    .semantics { contentDescription = loc("Cyfra ${i + 1} $sign", "Digit ${i + 1} $sign") }
+                                    .semantics { contentDescription = loc("boeing737.digit", i + 1, sign) }
                                     .clickable(role = Role.Button) {
                                         val digits = code.map { it - '0' }.toMutableList()
                                         digits[i] = (digits[i] + d + 8) % 8
@@ -560,7 +559,7 @@ fun BoeingAtc(link: LinkClient, s: FlightState) {
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("STBY" to ("standby" to 1), "ALT RPTG OFF" to ("on" to 3), "XPNDR" to ("alt" to 4)).forEach { (label, mv) ->
-                BDetentKey(label, x?.mode == mv.first, Modifier.weight(1f), loc("Tryb transpondera $label", "Transponder mode $label")) { cmd("XPNDR_MODE", mv.second) }
+                BDetentKey(label, x?.mode == mv.first, Modifier.weight(1f), loc("boeing737.transponder_mode", label)) { cmd("XPNDR_MODE", mv.second) }
             }
             Box(
                 Modifier.weight(0.8f).height(40.dp).clip(RoundedCornerShape(4.dp)).background(B_KEY)
@@ -615,7 +614,7 @@ fun BoeingSystems(link: LinkClient, s: FlightState) {
                             .background(if (moving) E_RED else if (gearDown) E_GREEN else Color(0xFF1A1D1F)).padding(vertical = 8.dp))
                 }
             }
-            BDetentKey(if (gearDown) "DN" else "UP", true, Modifier.width(80.dp), loc("Dźwignia podwozia", "Gear lever")) {
+            BDetentKey(if (gearDown) "DN" else "UP", true, Modifier.width(80.dp), loc("common.gear_lever")) {
                 if (gearDown && s.aircraft.onGround == true) confirmGear = true else cmd("GEAR_TOGGLE")
             }
         }
@@ -632,7 +631,7 @@ fun BoeingSystems(link: LinkClient, s: FlightState) {
                 Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     chunk.forEachIndexed { j, name ->
                         val i = row * 5 + j
-                        BDetentKey(name, ctl.flapsIndex == i, Modifier.weight(1f), loc("Klapy $name", "Flaps $name")) { cmd("FLAPS_SET", (16383.0 * i / (positions - 1)).roundToInt()) }
+                        BDetentKey(name, ctl.flapsIndex == i, Modifier.weight(1f), loc("common.flaps", name)) { cmd("FLAPS_SET", (16383.0 * i / (positions - 1)).roundToInt()) }
                     }
                     repeat(5 - chunk.size) { Spacer(Modifier.weight(1f)) }
                 }
@@ -644,7 +643,7 @@ fun BoeingSystems(link: LinkClient, s: FlightState) {
     // Hamulec aerodynamiczny: ARMED (uzbrojenie do lądowania) i obok oś dźwigni
     BoeingPlate("SPEED BRAKE") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            BDetentKey("ARMED", ctl.spoilersArmed == true, Modifier.width(78.dp), loc("Spoilery uzbrojone", "Speed brake armed")) { cmd("SPOILERS_ARM_TOGGLE") }
+            BDetentKey("ARMED", ctl.spoilersArmed == true, Modifier.width(78.dp), loc("common.speed_brake_armed")) { cmd("SPOILERS_ARM_TOGGLE") }
             SpeedBrakeAxis(link, s, Modifier.weight(1f), label = "SPEED BRAKE", labelColor = B_LEGEND)
         }
     }
@@ -654,7 +653,7 @@ fun BoeingSystems(link: LinkClient, s: FlightState) {
     BoeingPlate("PARKING BRAKE / BRAKES") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.size(14.dp).clip(RoundedCornerShape(7.dp)).background(if (ctl.parkingBrake == true) E_RED else Color(0xFF3A1A1A)))
-            BDetentKey(if (ctl.parkingBrake == true) "SET" else "OFF", ctl.parkingBrake == true, Modifier.width(64.dp), loc("Hamulec postojowy", "Parking brake")) { cmd("PARKING_BRAKES") }
+            BDetentKey(if (ctl.parkingBrake == true) "SET" else "OFF", ctl.parkingBrake == true, Modifier.width(64.dp), loc("common.parking_brake")) { cmd("PARKING_BRAKES") }
             WheelBrakeAxis(link, s, Modifier.weight(1f), labelColor = B_LEGEND)
         }
     }
@@ -662,18 +661,18 @@ fun BoeingSystems(link: LinkClient, s: FlightState) {
 
     BoeingPlate("STAB TRIM") {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BHoldKey("NOSE DN", loc("Trym nosem w dół", "Trim nose down"), Modifier.weight(1f)) { cmd("ELEV_TRIM_DN") }
-            BWindow(ctl.elevatorTrimPct?.let { "%+.1f".format(it) } ?: "--", B_DIGITS, Modifier.weight(1f), size = 15, desc = loc("Trym", "Trim"))
-            BHoldKey("NOSE UP", loc("Trym nosem w górę", "Trim nose up"), Modifier.weight(1f)) { cmd("ELEV_TRIM_UP") }
+            BHoldKey("NOSE DN", loc("common.trim_nose_down"), Modifier.weight(1f)) { cmd("ELEV_TRIM_DN") }
+            BWindow(ctl.elevatorTrimPct?.let { "%+.1f".format(it) } ?: "--", B_DIGITS, Modifier.weight(1f), size = 15, desc = loc("common.trim"))
+            BHoldKey("NOSE UP", loc("common.trim_nose_up"), Modifier.weight(1f)) { cmd("ELEV_TRIM_UP") }
         }
     }
 
     if (confirmGear) AlertDialog(
         onDismissRequest = { confirmGear = false },
-        title = { Text(loc("Schować podwozie na ziemi?", "Retract the gear on the ground?")) },
-        text = { Text(loc("Samolot stoi na ziemi. Schowanie podwozia może go uszkodzić w symulatorze.", "The aircraft is on the ground. Retracting the gear may damage it in the simulator.")) },
-        confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("Schowaj", "Retract"), color = Fm.c.danger) } },
-        dismissButton = { TextButton({ confirmGear = false }) { Text(loc("Anuluj", "Cancel")) } },
+        title = { Text(loc("common.retract_the_gear_on_the_ground")) },
+        text = { Text(loc("common.the_aircraft_is_on_the_ground")) },
+        confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("common.retract"), color = Fm.c.danger) } },
+        dismissButton = { TextButton({ confirmGear = false }) { Text(loc("common.cancel")) } },
     )
 }
 
@@ -684,7 +683,7 @@ fun BoeingEngines(link: LinkClient, s: FlightState) {
     EngineDisplayBox { BoeingEicas(s) }
     Spacer(Modifier.height(12.dp))
     Quadrant(link, s, AircraftProfile.B737)
-    if (s.autopilot.athr) Text(loc("A/T włączony — symulator może sam przestawiać dźwignie.", "A/T is on — the simulator may move the thrust levers itself."),
+    if (s.autopilot.athr) Text(loc("common.a_t_is_on_the_simulator"),
         style = MaterialTheme.typography.labelSmall, color = Fm.c.caution, modifier = Modifier.padding(top = 8.dp))
 }
 

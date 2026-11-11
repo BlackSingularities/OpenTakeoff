@@ -4,6 +4,7 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.freemetar.app.data.link.FlightState
+import com.freemetar.app.domain.PositiveRateDetector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.*
@@ -13,8 +14,8 @@ import kotlin.math.abs
  * Callouts audio - automatyczne zapowiedzi głosowe podczas lotu.
  *
  * Typy callouts:
- * - Takeoff: "80 knots", "V1", "Rotate", "Positive rate", "Gear up"
- * - Landing: "1000", "500", "Minimums", "100", "50", "40", "30", "20", "10", "Retard"
+ * - Takeoff: "80 knots", "Positive rate"
+ * - Landing: "1000", "500", "100", "50", "40", "30", "20", "10", "Retard"
  * - Warnings: "Stall", "Overspeed", "Terrain"
  * - Autopilot: "Autopilot", "Autothrottle"
  *
@@ -22,7 +23,8 @@ import kotlin.math.abs
  * - Włącz/wyłącz całość
  * - Wybór poszczególnych callouts
  * - Głośność
- * - Język (PL/EN)
+ *
+ * Zapowiedzi są zawsze czytane po angielsku.
  */
 class Callouts(private val context: Context) {
 
@@ -34,7 +36,6 @@ class Callouts(private val context: Context) {
     // Ostatni stan - do detekcji zmian
     private var lastAltAgl: Double? = null
     private var lastIas: Double? = null
-    private var lastVs: Double? = null
     private var lastApMaster: Boolean? = null
     private var lastAthr: Boolean? = null
 
@@ -45,11 +46,11 @@ class Callouts(private val context: Context) {
     // Konfiguracja - które callouts są włączone
     private val enabledCallouts = mutableSetOf(
         "1000", "500", "100", "50", "40", "30", "20", "10",
-        "V1", "Rotate", "Positive rate",
-        "Retard", "Minimums",
+        "Positive rate",
+        "Retard",
         "Autopilot", "Autothrottle"
     )
-    private var locale: Locale = Locale.US
+    private val positiveRate = PositiveRateDetector()
     private var speechRate = 1.0f
 
     /** Silnik mowy startuje dopiero po włączeniu zapowiedzi — wyłączone nie kosztują nic. */
@@ -57,7 +58,7 @@ class Callouts(private val context: Context) {
         if (tts != null) return
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = locale
+                tts?.language = Locale.US
                 tts?.setSpeechRate(speechRate)
                 tts?.setPitch(1.0f)
                 ttsReady = true
@@ -92,7 +93,10 @@ class Callouts(private val context: Context) {
 
         // Takeoff callouts
         if (onGround == true && ias != null) {
-            checkTakeoffCallout(ias, vs)
+            checkTakeoffCallout(ias)
+        }
+        if (positiveRate.update(onGround, ias, vs)) {
+            call("Positive rate")
         }
 
         // Autopilot/Autothrottle
@@ -106,7 +110,6 @@ class Callouts(private val context: Context) {
         // Zapisz ostatni stan
         lastAltAgl = agl
         lastIas = ias
-        lastVs = vs
         lastApMaster = apMaster
         lastAthr = athr
     }
@@ -134,15 +137,9 @@ class Callouts(private val context: Context) {
     /**
      * Callouts podczas startu.
      */
-    private fun checkTakeoffCallout(ias: Double, vs: Double?) {
+    private fun checkTakeoffCallout(ias: Double) {
         val callout = when {
             ias in 78.0..82.0 && (lastIas == null || lastIas!! < 78.0) -> "80 knots"
-            // V1 - przykładowa prędkość, w rzeczywistości zależy od masy samolotu
-            ias in 135.0..145.0 && (lastIas == null || lastIas!! < 135.0) -> "V1"
-            // Rotate - VR, typowo ~150 kt dla 737
-            ias in 148.0..158.0 && (lastIas == null || lastIas!! < 148.0) -> "Rotate"
-            // Positive rate - gdy VS > 100 fpm po starcie
-            vs != null && vs > 100 && (lastVs == null || lastVs!! <= 0) && ias > 140 -> "Positive rate"
             else -> null
         }
 
@@ -180,9 +177,8 @@ class Callouts(private val context: Context) {
     }
 
     /** Ustawienia zapisane w [Prefs] — wywoływane przy każdej ich zmianie. */
-    fun configure(enabled: Boolean, callouts: Set<String>, language: String, rate: Float) {
+    fun configure(enabled: Boolean, callouts: Set<String>, rate: Float) {
         enabledCallouts.clear(); enabledCallouts.addAll(callouts)
-        setLanguage(if (language == "pl") Locale("pl", "PL") else Locale.US)
         setSpeechRate(rate)
         setEnabled(enabled)
     }
@@ -196,14 +192,6 @@ class Callouts(private val context: Context) {
         } else {
             enabledCallouts.remove(callout)
         }
-    }
-
-    /**
-     * Zmień język TTS.
-     */
-    fun setLanguage(locale: Locale) {
-        this.locale = locale
-        tts?.language = locale
     }
 
     /**
@@ -243,8 +231,6 @@ object CalloutsList {
 
     val TAKEOFF = listOf(
         "80 knots" to "80 knots",
-        "V1" to "V1 - decision speed",
-        "Rotate" to "Rotate",
         "Positive rate" to "Positive rate - gear up"
     )
 

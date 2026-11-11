@@ -123,6 +123,7 @@ data class AircraftChecklists(
 data class Checklist(
     val name_pl: String,
     val name_en: String,
+    val name_es: String = name_en,
     val phase: String,
     val items: List<ChecklistItem>
 )
@@ -131,6 +132,7 @@ data class Checklist(
 data class ChecklistItem(
     val item_pl: String,
     val item_en: String,
+    val item_es: String = item_en,
     val expected: String,
     val checked: Boolean = false
 )

@@ -1,5 +1,6 @@
 package com.freemetar.app.ui.flight
 
+import com.freemetar.app.domain.visitCount
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -55,7 +56,7 @@ fun LogbookStatistics(logs: List<FlightLog>) {
             StatCard(
                 icon = Icons.Outlined.FlightTakeoff,
                 value = logs.size.toString(),
-                label = loc("Lotów", "Flights"),
+                label = loc("logbook_stats.flights"),
                 modifier = Modifier.weight(1f)
             )
 
@@ -63,7 +64,7 @@ fun LogbookStatistics(logs: List<FlightLog>) {
             StatCard(
                 icon = Icons.Outlined.Schedule,
                 value = "%d:%02d".format(minutes / 60, minutes % 60),
-                label = loc("Czas", "Time"),
+                label = loc("common.time"),
                 modifier = Modifier.weight(1f)
             )
 
@@ -85,16 +86,16 @@ fun LogbookStatistics(logs: List<FlightLog>) {
                 StatCard(
                     icon = Icons.Outlined.Star,
                     value = scored.average().roundToInt().toString(),
-                    label = loc("Średnia ocena", "Avg score"),
-                    subtitle = loc("najlepsza", "best") + " ${scored.maxOrNull()}",
+                    label = loc("logbook_stats.avg_score"),
+                    subtitle = loc("logbook_stats.best") + " ${scored.maxOrNull()}",
                     modifier = Modifier.weight(1f)
                 )
 
                 StatCard(
                     icon = Icons.Outlined.TrendingUp,
                     value = scored.size.toString(),
-                    label = loc("Lądowań", "Landings"),
-                    subtitle = loc("lotów z oceną: ", "scored flights: ") + logs.count { it.allLandings.isNotEmpty() },
+                    label = loc("logbook_stats.landings"),
+                    subtitle = loc("logbook_stats.scored_flights") + logs.count { it.allLandings.isNotEmpty() },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -110,7 +111,7 @@ fun LogbookStatistics(logs: List<FlightLog>) {
                     .padding(16.dp)
             ) {
                 Text(
-                    loc("Postępy (ostatnie 10 lądowań)", "Progress (last 10 landings)"),
+                    loc("logbook_stats.progress_last_10_landings"),
                     style = MaterialTheme.typography.titleSmall,
                     color = c.ink
                 )
@@ -138,15 +139,15 @@ fun LogbookStatistics(logs: List<FlightLog>) {
                 StatCard(
                     icon = Icons.Outlined.FlightLand,
                     value = quality.approach?.toString() ?: "—",
-                    label = loc("Śr. podejście", "Avg approach"),
-                    subtitle = quality.stablePct?.let { loc("stabilne od 1000 ft: $it%", "stable by 1000 ft: $it%") },
+                    label = loc("logbook_stats.avg_approach"),
+                    subtitle = quality.stablePct?.let { loc("logbook_stats.stable_by_1000_ft", it) },
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     icon = Icons.Outlined.Waves,
                     value = quality.smooth?.toString() ?: "—",
-                    label = loc("Płynność", "Smoothness"),
-                    subtitle = quality.smoothTrend?.let { (if (it >= 0) "+" else "") + it + loc(" w nowszych lotach", " in recent flights") },
+                    label = loc("common.smoothness"),
+                    subtitle = quality.smoothTrend?.let { (if (it >= 0) "+" else "") + it + loc("logbook_stats.in_recent_flights") },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -161,13 +162,13 @@ fun LogbookStatistics(logs: List<FlightLog>) {
                     .background(c.card, RoundedCornerShape(12.dp))
                     .padding(16.dp)
             ) {
-                Text(loc("Samoloty", "Aircraft"), style = MaterialTheme.typography.titleSmall, color = c.ink)
+                Text(loc("logbook_stats.aircraft"), style = MaterialTheme.typography.titleSmall, color = c.ink)
                 Spacer(Modifier.height(8.dp))
                 val maxMin = fleet.maxOf { it.third }.coerceAtLeast(1)
                 fleet.forEach { (a, n, min) ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(a, color = c.ink, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f))
-                        Text(loc("$n lot. ", "$n fl. ") + "%d:%02d h".format(min / 60, min % 60), fontSize = 12.sp, color = c.ink2)
+                        Text(loc("logbook_stats.fl", n) + "%d:%02d h".format(min / 60, min % 60), fontSize = 12.sp, color = c.ink2)
                     }
                     Box(Modifier.fillMaxWidth(min.toFloat() / maxMin).height(4.dp).background(c.accent, RoundedCornerShape(2.dp)))
                 }
@@ -190,7 +191,7 @@ fun LogbookStatistics(logs: List<FlightLog>) {
                     .padding(16.dp)
             ) {
                 Text(
-                    loc("Najczęstsze lotniska", "Most visited airports"),
+                    loc("logbook_stats.most_visited_airports"),
                     style = MaterialTheme.typography.titleSmall,
                     color = c.ink
                 )
@@ -203,7 +204,7 @@ fun LogbookStatistics(logs: List<FlightLog>) {
                     ) {
                         Text(icao, fontWeight = FontWeight.Bold, color = c.ink)
                         Text(
-                            loc("$count wizyt", "$count visits"),
+                            visitCount(count),
                             fontSize = 13.sp,
                             color = c.ink2
                         )

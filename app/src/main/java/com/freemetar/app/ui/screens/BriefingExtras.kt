@@ -67,10 +67,10 @@ private fun sigmetIcon(s: Sigmet): ImageVector = when (s.hazard.uppercase()) {
 fun HazardsPart(d: AirportDetail) {
     val c = Fm.c
     val any = d.sigmets.isNotEmpty() || d.pireps.any { it.reportsHazard }
-    Section(loc("Zagrożenia", "Hazards"), Icons.Outlined.WarningAmber, frame = if (d.sigmets.any { it.second == 0.0 }) c.caution else null) {
+    Section(loc("common.hazards"), Icons.Outlined.WarningAmber, frame = if (d.sigmets.any { it.second == 0.0 }) c.caution else null) {
         if (!any && d.pireps.isEmpty()) {
             Text(
-                if (d.loading) loc("Sprawdzanie SIGMET i raportów pilotów…", "Checking SIGMETs and pilot reports…") else loc("Brak ważnych SIGMET w promieniu 50 NM i raportów pilotów w okolicy.", "No valid SIGMETs within 50 NM and no pilot reports nearby."),
+                if (d.loading) loc("briefing_extras.checking_sigmets_and_pilot_reports") else loc("briefing_extras.no_valid_sigmets_within_50_nm"),
                 style = MaterialTheme.typography.bodyMedium, color = c.ink2,
             )
             return@Section
@@ -78,7 +78,7 @@ fun HazardsPart(d: AirportDetail) {
         d.sigmets.forEach { (s, dist) -> SigmetRow(s, dist) }
         if (d.pireps.isNotEmpty()) {
             if (d.sigmets.isNotEmpty()) Spacer(Modifier.size(8.dp))
-            Text(loc("Raporty pilotów (3 h, 100 NM)", "Pilot reports (3 h, 100 NM)"), style = MaterialTheme.typography.labelMedium, color = c.ink2, modifier = Modifier.padding(bottom = 4.dp))
+            Text(loc("briefing_extras.pilot_reports_3_h_100_nm"), style = MaterialTheme.typography.labelMedium, color = c.ink2, modifier = Modifier.padding(bottom = 4.dp))
             d.pireps.take(8).forEach { p ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.Top) {
                     Icon(Icons.Outlined.RecordVoiceOver, null, tint = if (p.urgent) c.danger else c.ink2, modifier = Modifier.size(16.dp).padding(top = 2.dp))
@@ -113,8 +113,8 @@ private fun SigmetRow(s: Sigmet, dist: Double) {
             Column(Modifier.weight(1f)) {
                 Text("${s.hazardLabel}, ${s.levels}", style = MaterialTheme.typography.titleSmall, color = if (over) c.caution else c.ink)
                 Text(
-                    (if (over) loc("Nad lotniskiem", "Over the airport") else loc("${dist.fmt(0)} NM od lotniska", "${dist.fmt(0)} NM from the airport")) +
-                        loc(", ważny do ${hhmmZ.format(Instant.ofEpochSecond(s.validTo))}Z, ${s.fir.ifBlank { s.id }}", ", valid until ${hhmmZ.format(Instant.ofEpochSecond(s.validTo))}Z, ${s.fir.ifBlank { s.id }}"),
+                    (if (over) loc("briefing_extras.over_the_airport") else loc("briefing_extras.nm_from_the_airport", dist.fmt(0))) +
+                        loc("briefing_extras.valid_until_z", hhmmZ.format(Instant.ofEpochSecond(s.validTo)), s.fir.ifBlank { s.id }),
                     style = MaterialTheme.typography.bodySmall, color = c.ink2,
                 )
             }
@@ -130,9 +130,9 @@ private fun SigmetRow(s: Sigmet, dist: Double) {
 fun AloftPart(d: AirportDetail, s: Settings) {
     val c = Fm.c
     val a = d.aloft
-    Section(loc("Wiatr na wysokościach", "Winds aloft"), Icons.Outlined.Air) {
+    Section(loc("briefing_extras.winds_aloft"), Icons.Outlined.Air) {
         if (a == null || a.levels.isEmpty()) {
-            Text(if (d.loading) loc("Pobieranie prognozy…", "Loading forecast…") else loc("Prognoza z Open-Meteo jest niedostępna.", "The Open-Meteo forecast is unavailable."), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
+            Text(if (d.loading) loc("common.loading_forecast") else loc("briefing_extras.the_open_meteo_forecast_is_unavailable"), style = MaterialTheme.typography.bodyMedium, color = c.ink2)
             return@Section
         }
         // Co 3 godziny, żeby tabela mieściła się na telefonie
@@ -159,7 +159,7 @@ fun AloftPart(d: AirportDetail, s: Settings) {
         Spacer(Modifier.size(8.dp))
         Rule()
         Text(
-            loc("Kierunek/prędkość w węzłach i temperatura w °C. Poziom lotu wyliczony z wysokości geopotencjalnej (model Open-Meteo), ostatni wiersz to wysokość izotermy zera.", "Direction/speed in knots and temperature in °C. Flight level derived from geopotential height (Open-Meteo model); the last row is the freezing level."),
+            loc("briefing_extras.direction_speed_in_knots_and_temperature"),
             style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp),
         )
     }
@@ -193,18 +193,18 @@ fun MsfsRadioBlock(d: AirportDetail, connected: Boolean, onRefresh: () -> Unit, 
     val nav = d.nav
     Spacer(Modifier.size(16.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(loc("ILS i lokalizery", "ILS and localizers"), style = MaterialTheme.typography.titleMedium, color = c.ink, modifier = Modifier.weight(1f))
+        Text(loc("briefing_extras.ils_and_localizers"), style = MaterialTheme.typography.titleMedium, color = c.ink, modifier = Modifier.weight(1f))
         if (connected) androidx.compose.material3.TextButton(onRefresh, enabled = !d.navLoading) {
-            Text(if (d.navLoading) loc("Pobieranie…", "Loading…") else loc("Pobierz z MSFS", "Load from MSFS"))
+            Text(if (d.navLoading) loc("common.loading") else loc("briefing_extras.load_from_msfs"))
         }
     }
     val ils = nav?.airport?.runways.orEmpty().filter { it.ils?.freqMhz != null }
     when {
         nav?.airport == null -> Text(
-            if (connected) loc("Pobieranie danych lotniska z bazy MSFS…", "Loading airport data from the MSFS database…") else loc("Częstotliwości ILS pochodzą z bazy MSFS 2024. Połącz się z OpenTakeoff Link — dane zostaną zapisane w telefonie i będą dostępne bez symulatora.", "ILS frequencies come from the MSFS 2024 database. Connect to OpenTakeoff Link — the data is saved on the phone and available without the simulator."),
+            if (connected) loc("briefing_extras.loading_airport_data_from_the_msfs") else loc("briefing_extras.ils_frequencies_come_from_the_msfs"),
             style = MaterialTheme.typography.bodySmall, color = c.ink2,
         )
-        ils.isEmpty() -> Text(loc("Baza MSFS nie ma ILS dla tego lotniska (lotniska dodatkowe bywają niekompletne).", "The MSFS database has no ILS for this airport (add-on airports can be incomplete)."), style = MaterialTheme.typography.bodySmall, color = c.ink2)
+        ils.isEmpty() -> Text(loc("briefing_extras.the_msfs_database_has_no_ils"), style = MaterialTheme.typography.bodySmall, color = c.ink2)
     }
     var menuFor by remember { mutableStateOf<Double?>(null) }
     ils.forEach { rw ->
@@ -216,16 +216,16 @@ fun MsfsRadioBlock(d: AirportDetail, connected: Boolean, onRefresh: () -> Unit, 
             ) {
                 Text("RWY ${rw.ident}", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = c.ink, modifier = Modifier.width(78.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(listOfNotNull(i.ident, i.locCourseDeg?.let { loc("kurs %03d°", "course %03d°").format(it.roundToInt()) }).joinToString(" · ").ifBlank { "ILS" },
+                    Text(listOfNotNull(i.ident, i.locCourseDeg?.let { loc("briefing_extras.course_03d").format(it.roundToInt()) }).joinToString(" · ").ifBlank { "ILS" },
                         style = MaterialTheme.typography.bodyMedium, color = c.ink)
-                    i.gsAngleDeg?.let { Text(loc("ścieżka %.1f°", "glide slope %.1f°").format(it), style = MaterialTheme.typography.bodySmall, color = c.ink2) }
+                    i.gsAngleDeg?.let { Text(loc("briefing_extras.glide_slope_1f").format(it), style = MaterialTheme.typography.bodySmall, color = c.ink2) }
                 }
                 Text("%.2f".format(java.util.Locale.US, i.freqMhz), fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 19.sp, color = c.blue)
             }
             androidx.compose.material3.DropdownMenu(expanded = menuFor == i.freqMhz, onDismissRequest = { menuFor = null }) {
-                androidx.compose.material3.DropdownMenuItem(text = { Text(loc("Ustaw w NAV1 jako zapasową", "Set as NAV1 standby")) }, onClick = { onSetNav(i.freqMhz!!, false); menuFor = null })
-                androidx.compose.material3.DropdownMenuItem(text = { Text(loc("Ustaw w NAV1 jako aktywną", "Set as NAV1 active")) }, onClick = { onSetNav(i.freqMhz!!, true); menuFor = null })
-                androidx.compose.material3.DropdownMenuItem(text = { Text(loc("Kopiuj", "Copy")) }, onClick = { onCopy(i.freqMhz!!); menuFor = null })
+                androidx.compose.material3.DropdownMenuItem(text = { Text(loc("briefing_extras.set_as_nav1_standby")) }, onClick = { onSetNav(i.freqMhz!!, false); menuFor = null })
+                androidx.compose.material3.DropdownMenuItem(text = { Text(loc("briefing_extras.set_as_nav1_active")) }, onClick = { onSetNav(i.freqMhz!!, true); menuFor = null })
+                androidx.compose.material3.DropdownMenuItem(text = { Text(loc("common.copy")) }, onClick = { onCopy(i.freqMhz!!); menuFor = null })
             }
         }
         Rule()
@@ -234,7 +234,7 @@ fun MsfsRadioBlock(d: AirportDetail, connected: Boolean, onRefresh: () -> Unit, 
     val known = d.frequencies.map { it.mhz }
     val extra = nav?.airport?.frequencies.orEmpty().filter { f -> known.none { kotlin.math.abs(it - f.mhz) < 0.003 } }
     if (extra.isNotEmpty()) {
-        Text(loc("Dodatkowe częstotliwości z MSFS", "Additional frequencies from MSFS"), style = MaterialTheme.typography.labelMedium, color = c.ink2, modifier = Modifier.padding(top = 12.dp, bottom = 2.dp))
+        Text(loc("briefing_extras.additional_frequencies_from_msfs"), style = MaterialTheme.typography.labelMedium, color = c.ink2, modifier = Modifier.padding(top = 12.dp, bottom = 2.dp))
         extra.forEach { f ->
             Row(Modifier.fillMaxWidth().clickable { onCopy(f.mhz) }.padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(f.type, fontFamily = Mono, fontSize = 12.sp, color = c.ink2, modifier = Modifier.width(64.dp))
@@ -244,7 +244,7 @@ fun MsfsRadioBlock(d: AirportDetail, connected: Boolean, onRefresh: () -> Unit, 
         }
     }
     nav?.let {
-        Text(loc("Baza MSFS, pobrano ${java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT).format(java.util.Date(it.fetchedAt))}", "MSFS database, loaded ${java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT).format(java.util.Date(it.fetchedAt))}"),
+        Text(loc("briefing_extras.msfs_database_loaded", java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT).format(java.util.Date(it.fetchedAt))),
             style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp))
     }
 }

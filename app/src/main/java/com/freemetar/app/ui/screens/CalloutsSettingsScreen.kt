@@ -21,21 +21,19 @@ import com.freemetar.app.domain.loc
 fun CalloutsSettingsScreen(
     enabled: Boolean,
     enabledCallouts: Set<String>,
-    language: String,
     speechRate: Float,
     onEnabledChange: (Boolean) -> Unit,
     onCalloutToggle: (String, Boolean) -> Unit,
-    onLanguageChange: (String) -> Unit,
     onSpeechRateChange: (Float) -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(loc("Callouts", "Callouts")) },
+                title = { Text("Callouts") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = loc("common.back"))
                     }
                 }
             )
@@ -62,11 +60,11 @@ fun CalloutsSettingsScreen(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            loc("Zapowiedzi głosowe", "Voice callouts"),
+                            loc("common.voice_callouts"),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            loc("Automatyczne zapowiedzi podczas lotu", "Automatic announcements during flight"),
+                            loc("callouts_settings.automatic_announcements_during_flight"),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -79,36 +77,11 @@ fun CalloutsSettingsScreen(
             }
 
             if (enabled) {
-                // Ustawienia języka
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            loc("Język", "Language"),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            FilterChip(
-                                selected = language == "en",
-                                onClick = { onLanguageChange("en") },
-                                label = { Text("English") }
-                            )
-                            FilterChip(
-                                selected = language == "pl",
-                                onClick = { onLanguageChange("pl") },
-                                label = { Text("Polski") }
-                            )
-                        }
-                    }
-                }
-
                 // Prędkość mowy
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            loc("Prędkość mowy", "Speech rate"),
+                            loc("callouts_settings.speech_rate"),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Slider(
@@ -127,7 +100,7 @@ fun CalloutsSettingsScreen(
 
                 // Callouts przy lądowaniu
                 CalloutGroupCard(
-                    title = loc("Lądowanie", "Landing"),
+                    title = loc("common.landing"),
                     callouts = CalloutsList.LANDING,
                     enabledCallouts = enabledCallouts,
                     onToggle = onCalloutToggle
@@ -135,7 +108,7 @@ fun CalloutsSettingsScreen(
 
                 // Callouts przy starcie
                 CalloutGroupCard(
-                    title = loc("Start", "Takeoff"),
+                    title = loc("callouts_settings.takeoff"),
                     callouts = CalloutsList.TAKEOFF,
                     enabledCallouts = enabledCallouts,
                     onToggle = onCalloutToggle
@@ -143,7 +116,7 @@ fun CalloutsSettingsScreen(
 
                 // Callouts autopilota
                 CalloutGroupCard(
-                    title = loc("Autopilot", "Autopilot"),
+                    title = "Autopilot",
                     callouts = CalloutsList.AUTOPILOT,
                     enabledCallouts = enabledCallouts,
                     onToggle = onCalloutToggle

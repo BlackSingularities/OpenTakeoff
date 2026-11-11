@@ -39,7 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.content.Context
-import java.util.Locale
+import com.freemetar.app.domain.loc
 
 /** Wysyłka w tle (korutyny) – nakładki na blokujące funkcje z [Feedback]. */
 suspend fun Feedback.send(context: Context, kind: Feedback.Kind, message: String, email: String, includeDiagnostics: Boolean): Result<Unit> =
@@ -51,33 +51,32 @@ suspend fun Feedback.sendCrash(context: Context, crash: Feedback.PendingCrash, c
 suspend fun Feedback.sendCrashText(context: Context, stack: String, comment: String, email: String): Result<Unit> =
     withContext(Dispatchers.IO) { sendCrashTextBlocking(context, stack, comment, email) }
 
-/** Teksty modułu – polski albo angielski, zależnie od języka telefonu. */
+/** Teksty modułu – w języku aplikacji. */
 object FeedbackText {
-    private val pl get() = Locale.getDefault().language == "pl"
-    val entryTitle get() = if (pl) "Zgłoś błąd lub sugestię" else "Report a bug or suggestion"
-    val entrySubtitle get() = if (pl) "Wiadomość trafia prosto do autora" else "Goes straight to the developer"
-    val reportTitle get() = if (pl) "Zgłoś błąd lub sugestię" else "Report a bug or suggest a feature"
-    val bug get() = if (pl) "Błąd" else "Bug"
-    val feature get() = if (pl) "Sugestia" else "Suggestion"
-    val bugHint get() = if (pl) "Co się stało? Co robiłeś tuż przed błędem?" else "What happened? What were you doing right before?"
-    val featureHint get() = if (pl) "Czego brakuje albo co można zrobić lepiej?" else "What is missing or could work better?"
-    val email get() = if (pl) "E-mail (opcjonalnie)" else "Email (optional)"
-    val emailHint get() = if (pl) "Tylko jeśli chcesz dostać odpowiedź" else "Only if you'd like a reply"
-    val diagnostics get() = if (pl) "Dołącz wersję aplikacji i model urządzenia" else "Include app version and device model"
-    val send get() = if (pl) "Wyślij" else "Send"
-    val cancel get() = if (pl) "Anuluj" else "Cancel"
-    val close get() = if (pl) "Zamknij" else "Close"
-    val thanks get() = if (pl) "Dziękuję! Zgłoszenie dotarło." else "Thank you! Your report was sent."
-    val failed get() = if (pl) "Nie udało się wysłać. Sprawdź połączenie i spróbuj ponownie." else "Couldn't send. Check your connection and try again."
-    val tooShort get() = if (pl) "Opisz problem w kilku słowach." else "Please describe it in a few words."
-    val crashTitle get() = if (pl) "Aplikacja zamknęła się z błędem" else "The app closed unexpectedly"
-    val crashBody get() = if (pl) "Ostatnio aplikacja zakończyła działanie przez błąd. Wysłać autorowi raport? Zawiera opis błędu, wersję aplikacji i model urządzenia – bez Twoich danych." else "The app recently stopped because of an error. Send a report to the developer? It contains the error details, app version and device model – none of your data."
-    val crashComment get() = if (pl) "Co robiłeś przed awarią? (opcjonalnie)" else "What were you doing? (optional)"
-    val showDetails get() = if (pl) "Pokaż szczegóły" else "Show details"
-    val hideDetails get() = if (pl) "Ukryj szczegóły" else "Hide details"
-    val sendReport get() = if (pl) "Wyślij raport" else "Send report"
-    val dontSend get() = if (pl) "Nie wysyłaj" else "Don't send"
-    val copy get() = if (pl) "Kopiuj" else "Copy"
+    val entryTitle get() = loc("common.report_a_bug_or_suggestion")
+    val entrySubtitle get() = loc("common.goes_straight_to_the_developer")
+    val reportTitle get() = loc("feedback_ui.report_a_bug_or_suggest_a")
+    val bug get() = loc("feedback_ui.bug")
+    val feature get() = loc("feedback_ui.suggestion")
+    val bugHint get() = loc("feedback_ui.what_happened_what_were_you_doing")
+    val featureHint get() = loc("feedback_ui.what_is_missing_or_could_work")
+    val email get() = loc("feedback_ui.email_optional")
+    val emailHint get() = loc("feedback_ui.only_if_you_d_like_a")
+    val diagnostics get() = loc("feedback_ui.include_app_version_and_device_model")
+    val send get() = loc("feedback_ui.send")
+    val cancel get() = loc("common.cancel")
+    val close get() = loc("common.close")
+    val thanks get() = loc("feedback_ui.thank_you_your_report_was_sent")
+    val failed get() = loc("feedback_ui.couldn_t_send_check_your_connection")
+    val tooShort get() = loc("feedback_ui.please_describe_it_in_a_few")
+    val crashTitle get() = loc("feedback_ui.the_app_closed_unexpectedly")
+    val crashBody get() = loc("feedback_ui.the_app_recently_stopped_because_of")
+    val crashComment get() = loc("feedback_ui.what_were_you_doing_optional")
+    val showDetails get() = loc("feedback_ui.show_details")
+    val hideDetails get() = loc("feedback_ui.hide_details")
+    val sendReport get() = loc("feedback_ui.send_report")
+    val dontSend get() = loc("feedback_ui.don_t_send")
+    val copy get() = loc("common.copy")
 }
 
 /**

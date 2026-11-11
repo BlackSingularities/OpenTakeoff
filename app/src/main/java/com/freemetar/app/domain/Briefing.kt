@@ -40,16 +40,16 @@ data class TafPeriod(
         get() {
             val span = when {
                 fromHour != null && toHour != null -> "%02d–%02dZ".format(fromHour, toHour)
-                fromHour != null -> loc("od %02dZ", "from %02dZ").format(fromHour)
+                fromHour != null -> loc("briefing.from_02dz").format(fromHour)
                 else -> ""
             }
             return when (kind) {
-                PeriodKind.BASE -> loc("Prognoza główna $span", "Main forecast $span")
+                PeriodKind.BASE -> loc("briefing.main_forecast", span)
                 // span zaczyna się już od „od …” / „from …”, więc tylko wielka litera
                 PeriodKind.FROM -> span.replaceFirstChar { it.uppercase() }
-                PeriodKind.BECOMING -> loc("Zmiana $span", "Becoming $span")
-                PeriodKind.TEMPO -> loc("Okresowo $span", "Temporarily $span")
-                PeriodKind.PROB -> loc("Szansa", "Chance") + " ${probability ?: ""}% $span"
+                PeriodKind.BECOMING -> loc("briefing.becoming", span)
+                PeriodKind.TEMPO -> loc("briefing.temporarily", span)
+                PeriodKind.PROB -> loc("briefing.chance") + " ${probability ?: ""}% $span"
             }.trim()
         }
 }
@@ -84,7 +84,7 @@ object TafAnalyzer {
 
             val wind = t.firstOrNull { reWind.matches(it) }?.let { w ->
                 val (d, s, _, g) = reWind.find(w)!!.destructured
-                (if (d == "VRB") loc("zmienny", "variable") else "$d°") + " $s kt" + if (g.isNotEmpty()) loc(" (porywy $g)", " (gusts $g)") else ""
+                (if (d == "VRB") loc("common.variable") else "$d°") + " $s kt" + if (g.isNotEmpty()) loc("briefing.gusts", g) else ""
             }
             val vis = when {
                 t.contains("CAVOK") -> 10000

@@ -59,7 +59,7 @@ class FlightLinkService : Service() {
         private fun notification(ctx: Context, recording: Boolean): Notification {
             val nm = ctx.getSystemService(NotificationManager::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm.getNotificationChannel(CHANNEL) == null) {
-                nm.createNotificationChannel(NotificationChannel(CHANNEL, loc("Połączenie z symulatorem", "Simulator connection"), NotificationManager.IMPORTANCE_LOW))
+                nm.createNotificationChannel(NotificationChannel(CHANNEL, loc("flight_link_service.simulator_connection"), NotificationManager.IMPORTANCE_LOW))
             }
             val open = PendingIntent.getActivity(
                 ctx, 0, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
@@ -67,9 +67,9 @@ class FlightLinkService : Service() {
             )
             return NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.opentakeoff_mark_mono)
-                .setContentTitle(if (recording) loc("Zapis lotu trwa", "Recording the flight") else loc("Połączono z symulatorem", "Connected to the simulator"))
-                .setContentText(if (recording) loc("Tor jest zapisywany także w tle", "The track keeps recording in the background")
-                    else loc("Zapis zacznie się po starcie", "Recording starts after takeoff"))
+                .setContentTitle(if (recording) loc("flight_link_service.recording_the_flight") else loc("flight_link_service.connected_to_the_simulator"))
+                .setContentText(if (recording) loc("flight_link_service.the_track_keeps_recording_in_the")
+                    else loc("flight_link_service.recording_starts_after_takeoff"))
                 .setOngoing(true).setOnlyAlertOnce(true).setSilent(true)
                 .setContentIntent(open)
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)

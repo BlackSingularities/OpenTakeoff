@@ -227,7 +227,7 @@ private fun PlanView(
         // - Dystanse między punktami
 
         label(m, "PLAN VIEW", center, c.ink2, 14.sp)
-        label(m, loc("W budowie", "In development"), Offset(center.x, center.y + 30), c.ink2, 11.sp)
+        label(m, loc("common.in_development"), Offset(center.x, center.y + 30), c.ink2, 11.sp)
     }
 }
 

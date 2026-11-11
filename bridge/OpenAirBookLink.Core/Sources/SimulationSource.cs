@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Diagnostics;
 using OpenAirBookLink.Core.Control;
 using OpenAirBookLink.Core.NavData;
@@ -25,7 +26,7 @@ public sealed class SimulationSource : IFlightSource
 
     public string Kind => "simulation";
     public bool IsConnected => _timer != null;
-    public string StatusText => $"Symulacja: {PhaseName(_sim.Phase)}, {Math.Round(_sim.DistanceToArrivalNm)} NM do EPGD";
+    public string StatusText => L.T("sim.status", PhaseName(_sim.Phase), Math.Round(_sim.DistanceToArrivalNm));
     public AxisController Axes { get; }
     public INavDataProvider NavData { get; } = new SimulationNavData();
     INavDataProvider? IFlightSource.NavData => NavData;
@@ -69,14 +70,14 @@ public sealed class SimulationSource : IFlightSource
 
     private static string PhaseName(SimPhase p) => p switch
     {
-        SimPhase.Parked => "przed startem w EPWA",
-        SimPhase.TakeoffRoll => "rozbieg EPWA 33",
-        SimPhase.Climb => "wznoszenie",
-        SimPhase.Cruise => "przelot",
-        SimPhase.Descent => "zniżanie",
-        SimPhase.Approach => "podejście EPGD 29",
-        SimPhase.Rollout => "dobieg EPGD",
-        _ => "postój w EPGD",
+        SimPhase.Parked => L.T("sim.parked"),
+        SimPhase.TakeoffRoll => L.T("sim.takeoff"),
+        SimPhase.Climb => L.T("sim.climb"),
+        SimPhase.Cruise => L.T("sim.cruise"),
+        SimPhase.Descent => L.T("sim.descent"),
+        SimPhase.Approach => L.T("sim.approach"),
+        SimPhase.Rollout => L.T("sim.rollout"),
+        _ => L.T("sim.arrived"),
     };
 
     public void Dispose()

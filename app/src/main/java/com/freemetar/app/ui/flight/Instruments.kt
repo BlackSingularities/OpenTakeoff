@@ -89,8 +89,7 @@ fun Pfd(s: FlightState, modifier: Modifier = Modifier, profile: AircraftProfile?
     val lat = s.position.lat; val lon = s.position.lon
     if (style == DisplayStyle.GARMIN && lat != null && lon != null) TerrainProvider.onLocation(lat, lon)
     val alt = s.position.altIndFt ?: s.position.altMslFt ?: 0.0
-    val desc = loc("PFD ${style.label}: prędkość ${ias.roundToInt()} węzłów, wysokość ${alt.roundToInt()} stóp, kurs ${(s.attitude.hdgMagDeg ?: 0.0).roundToInt()}",
-        "PFD ${style.label}: speed ${ias.roundToInt()} knots, altitude ${alt.roundToInt()} feet, heading ${(s.attitude.hdgMagDeg ?: 0.0).roundToInt()}")
+    val desc = loc("instruments.pfd_speed_knots_altitude_feet_heading", style.label, ias.roundToInt(), alt.roundToInt(), (s.attitude.hdgMagDeg ?: 0.0).roundToInt())
     Canvas(modifier.fillMaxWidth().aspectRatio(1.12f).semantics { contentDescription = desc }) {
         drawRect(Color.Black)
         val d = s.toFlightData((trend * 10).toFloat(), if (style == DisplayStyle.GARMIN) TerrainProvider.grid else null)
@@ -155,7 +154,7 @@ fun NavDisplay(
 ) {
     val style = remember(s.aircraft.title, s.aircraft.atcModel, s.aircraft.category, s.aircraft.engineType, profile) { DisplayStyle.of(s, profile) }
     val renderer = remember(style) { MfdRenderer(style) }
-    val desc = loc("Mapa nawigacyjna ${style.label}, zasięg $rangeNm mil", "Navigation display ${style.label}, range $rangeNm miles")
+    val desc = loc("instruments.navigation_display_range_miles", style.label, rangeNm)
     Canvas(modifier.fillMaxWidth().aspectRatio(aspect).semantics { contentDescription = desc }) {
         val d = s.toFlightData(0f, null)
         drawIntoCanvas { cv -> renderer.draw(cv.nativeCanvas, s, d, size.width, size.height, rangeNm, rose, route, nav, layers) }
@@ -186,7 +185,7 @@ fun VerticalProfile(s: FlightState, route: List<RoutePoint>, rangeNm: Int, modif
     val values = listOfNotNull(alt, sel) + pts.map { it.third.toDouble() }
     val top = ((values.max() + 2000) / 1000).let { kotlin.math.ceil(it) * 1000 }
     val bottom = (((values.min() - 2000) / 1000).let { kotlin.math.floor(it) * 1000 }).coerceAtLeast(0.0)
-    Canvas(modifier.fillMaxWidth().aspectRatio(3.2f).semantics { contentDescription = loc("Profil pionowy na $rangeNm mil", "Vertical profile over $rangeNm miles") }) {
+    Canvas(modifier.fillMaxWidth().aspectRatio(3.2f).semantics { contentDescription = loc("instruments.vertical_profile_over_miles", rangeNm) }) {
         val w = size.width; val h = size.height
         val left = w * 0.12f; val right = w * 0.98f; val tp = h * 0.1f; val bt = h * 0.86f
         fun x(d: Double) = left + ((d / rangeNm) * (right - left)).toFloat()

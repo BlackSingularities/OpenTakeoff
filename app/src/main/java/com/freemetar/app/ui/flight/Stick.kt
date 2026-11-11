@@ -80,14 +80,14 @@ fun FlightControlPanel(
     // Domyślnie żyroskop: telefon trzymany jak wolant jest naturalniejszy niż drążek pod kciukiem
     val mode = StickMode.entries.firstOrNull { it.name == modeName } ?: StickMode.TILT
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 6.dp)) {
-        FilterChip(mode == StickMode.TILT, { onMode(StickMode.TILT.name) }, { Text(tr("Żyroskop", "Gyro")) })
-        FilterChip(mode == StickMode.TOUCH, { onMode(StickMode.TOUCH.name) }, { Text(tr("Drążek", "Stick")) })
-        FilterChip(mode == StickMode.GAMEPAD, { onMode(StickMode.GAMEPAD.name) }, { Text(tr("Kontroler", "Controller")) })
+        FilterChip(mode == StickMode.TILT, { onMode(StickMode.TILT.name) }, { Text(tr("common.gyro")) })
+        FilterChip(mode == StickMode.TOUCH, { onMode(StickMode.TOUCH.name) }, { Text(tr("common.stick")) })
+        FilterChip(mode == StickMode.GAMEPAD, { onMode(StickMode.GAMEPAD.name) }, { Text(tr("common.controller")) })
     }
     if (mode != StickMode.GAMEPAD) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 6.dp)) {
         Column(Modifier.weight(1f)) {
-            Text(tr("Pływający przycisk sterowania", "Floating control button"), style = MaterialTheme.typography.bodyMedium, color = c.ink)
-            Text(tr("Stery pod ręką na każdej zakładce. Przesuwasz go za uchwyt pod spodem.", "Controls on every tab. Move it by the handle underneath."),
+            Text(tr("common.floating_control_button"), style = MaterialTheme.typography.bodyMedium, color = c.ink)
+            Text(tr("stick.controls_on_every_tab_move_it"),
                 style = MaterialTheme.typography.labelSmall, color = c.ink2)
         }
         Switch(floating, onFloating)
@@ -99,8 +99,7 @@ fun FlightControlPanel(
     }
     // Osie hamulca aerodynamicznego i hamulców kół są w zakładce Systemy
     Text(
-        tr("Link ogranicza wychylenie do ±${(link.limits.maxDeflection * 100).toInt()}% i oddaje stery po 0,5 s bez sygnału.",
-            "Link limits deflection to ±${(link.limits.maxDeflection * 100).toInt()}% and releases the controls after 0.5 s without input."),
+        tr("stick.link_limits_deflection_to_and_releases", (link.limits.maxDeflection * 100).toInt()),
         style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp),
     )
 }
@@ -115,7 +114,7 @@ private fun TouchStick(link: LinkClient, s: FlightState) {
     var active by remember { mutableStateOf(false) }
     var expoAmt by rememberSaveable { mutableFloatStateOf(0.4f) }
     val max = link.limits.maxDeflection
-    val stickDesc = tr("Drążek sterowy — przeciągnij, aby sterować lotkami i sterem wysokości", "Control stick — drag to move ailerons and elevator")
+    val stickDesc = tr("stick.control_stick_drag_to_move_ailerons")
 
     LaunchedEffect(active) {
         if (!active) { link.releaseAxes(); return@LaunchedEffect }
@@ -174,17 +173,17 @@ private fun TouchStick(link: LinkClient, s: FlightState) {
         }
         // Wskaźniki osi: lotki, ster wysokości, ster kierunku
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            AxisReadout(tr("Lotki", "Ail"), x.toDouble())
-            AxisReadout(tr("Ster wys.", "Elev"), y.toDouble())
-            AxisReadout(tr("Ster kier.", "Rud"), rudder.toDouble())
-            Text(if (s.axes.active) tr("Link: sterujesz", "Link: in control") else tr("Link: wolne", "Link: idle"),
+            AxisReadout(tr("stick.ail"), x.toDouble())
+            AxisReadout(tr("stick.elev"), y.toDouble())
+            AxisReadout(tr("stick.rud"), rudder.toDouble())
+            Text(if (s.axes.active) tr("stick.link_in_control") else tr("stick.link_idle"),
                 fontSize = 11.sp, color = if (s.axes.active) c.accent else c.ink2)
         }
     }
     Spacer(Modifier.size(10.dp))
-    Text(tr("Ster kierunku (wraca do środka)", "Rudder (springs back)"), style = MaterialTheme.typography.labelMedium, color = c.ink2)
+    Text(tr("stick.rudder_springs_back"), style = MaterialTheme.typography.labelMedium, color = c.ink2)
     Slider(rudder, { rudder = it; active = true }, valueRange = -1f..1f, onValueChangeFinished = { rudder = 0f; if (x == 0f && y == 0f) active = false })
-    Text(tr("Krzywa (expo) %.1f".format(expoAmt), "Curve (expo) %.1f".format(expoAmt)), style = MaterialTheme.typography.labelMedium, color = c.ink2)
+    Text(tr("stick.curve_expo_1f").format(expoAmt), style = MaterialTheme.typography.labelMedium, color = c.ink2)
     Slider(expoAmt, { expoAmt = it }, valueRange = 0f..1f, steps = 9)
 }
 
@@ -225,25 +224,24 @@ private fun GamepadPanel(link: LinkClient) {
     DisposableEffect(Unit) { onDispose { link.releaseAxes() } }
 
     Text(
-        names.firstOrNull()?.let { tr("Kontroler: $it", "Controller: $it") }
-            ?: tr("Nie wykryto kontrolera. Podłącz gamepad lub joystick przez Bluetooth albo USB-C.", "No controller detected. Connect a gamepad or joystick via Bluetooth or USB-C."),
+        names.firstOrNull()?.let { tr("stick.controller", it) }
+            ?: tr("stick.no_controller_detected_connect_a_gamepad"),
         style = MaterialTheme.typography.titleSmall, color = if (names.isEmpty()) c.caution else c.ink,
     )
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(52.dp)) {
-        Text(tr("Steruj kontrolerem", "Fly with the controller"), style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
+        Text(tr("stick.fly_with_the_controller"), style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
         Switch(enabled, { enabled = it })
     }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(48.dp)) {
-        Text(tr("Przyciski → komendy samolotu", "Buttons → aircraft commands"), style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
+        Text(tr("stick.buttons_aircraft_commands"), style = MaterialTheme.typography.bodyMedium, color = c.ink, modifier = Modifier.weight(1f))
         Switch(buttons, { buttons = it })
     }
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        AxisReadout(tr("Lotki", "Ail"), g.roll); AxisReadout(tr("Ster wys.", "Elev"), g.pitch); AxisReadout(tr("Ster kier.", "Rud"), g.yaw)
-        AxisReadout(tr("Hamulce", "Brakes"), g.brake)
+        AxisReadout(tr("stick.ail"), g.roll); AxisReadout(tr("stick.elev"), g.pitch); AxisReadout(tr("stick.rud"), g.yaw)
+        AxisReadout(tr("stick.brakes"), g.brake)
     }
     Text(
-        tr("Y podwozie · L1/R1 klapy · L2/R2 hamulce kół · X autopilot · B hamulec postojowy · Select spoilery · krzyżak ↑↓ trym",
-            "Y gear · L1/R1 flaps · L2/R2 wheel brakes · X autopilot · B parking brake · Select spoilers · D-pad ↑↓ trim"),
+        tr("stick.y_gear_l1_r1_flaps_l2"),
         style = MaterialTheme.typography.labelSmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
     )
 }

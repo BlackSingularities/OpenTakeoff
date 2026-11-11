@@ -7,21 +7,25 @@
     "preflight": {
       "name_pl": "Kontrola przed lotem",
       "name_en": "Preflight Inspection",
+      "name_es": "Inspección prevuelo",
       "phase": "preflight",
       "items": [
         {
           "item_pl": "Dokumenty",
           "item_en": "Documents",
+          "item_es": "Documentación",
           "expected": "ABOARD"
         },
         {
           "item_pl": "Zewnętrzna kontrola",
           "item_en": "External inspection",
+          "item_es": "Inspección exterior",
           "expected": "COMPLETE"
         },
         {
           "item_pl": "Paliwo",
           "item_en": "Fuel",
+          "item_es": "Combustible",
           "expected": "CHECKED"
         }
       ]
@@ -29,26 +33,31 @@
     "before_start": {
       "name_pl": "Przed startem silnika",
       "name_en": "Before Starting Engine",
+      "name_es": "Antes de arrancar el motor",
       "phase": "preflight",
       "items": [
         {
           "item_pl": "Hamulec parkingowy",
           "item_en": "Parking brake",
+          "item_es": "Freno de estacionamiento",
           "expected": "SET"
         },
         {
           "item_pl": "Przepustnica",
           "item_en": "Throttle",
+          "item_es": "Gases",
           "expected": "CLOSED"
         },
         {
           "item_pl": "Mixture",
           "item_en": "Mixture",
+          "item_es": "Mixture",
           "expected": "RICH"
         },
         {
           "item_pl": "Magneto",
           "item_en": "Magnetos",
+          "item_es": "Magnetos",
           "expected": "OFF"
         }
       ]
@@ -56,21 +65,25 @@
     "before_takeoff": {
       "name_pl": "Przed startem",
       "name_en": "Before Takeoff",
+      "name_es": "Antes del despegue",
       "phase": "takeoff",
       "items": [
         {
           "item_pl": "Klapa",
           "item_en": "Flaps",
+          "item_es": "Flaps",
           "expected": "10°"
         },
         {
           "item_pl": "Mixture",
           "item_en": "Mixture",
+          "item_es": "Mixture",
           "expected": "RICH"
         },
         {
           "item_pl": "Pasy",
           "item_en": "Seat belts",
+          "item_es": "Cinturones",
           "expected": "SECURED"
         }
       ]
@@ -78,16 +91,19 @@
     "cruise": {
       "name_pl": "Lot przelotowy",
       "name_en": "Cruise",
+      "name_es": "Crucero",
       "phase": "cruise",
       "items": [
         {
           "item_pl": "Wysokość",
           "item_en": "Altitude",
+          "item_es": "Altitud",
           "expected": "SET"
         },
         {
           "item_pl": "Mixture",
           "item_en": "Mixture",
+          "item_es": "Mixture",
           "expected": "LEANED"
         }
       ]
@@ -95,21 +111,25 @@
     "before_landing": {
       "name_pl": "Przed lądowaniem",
       "name_en": "Before Landing",
+      "name_es": "Antes de aterrizar",
       "phase": "approach",
       "items": [
         {
           "item_pl": "Pasy",
           "item_en": "Seat belts",
+          "item_es": "Cinturones",
           "expected": "SECURED"
         },
         {
           "item_pl": "Mixture",
           "item_en": "Mixture",
+          "item_es": "Mixture",
           "expected": "RICH"
         },
         {
           "item_pl": "Klapa",
           "item_en": "Flaps",
+          "item_es": "Flaps",
           "expected": "AS REQUIRED"
         }
       ]
@@ -117,16 +137,19 @@
     "after_landing": {
       "name_pl": "Po lądowaniu",
       "name_en": "After Landing",
+      "name_es": "Tras el aterrizaje",
       "phase": "taxi",
       "items": [
         {
           "item_pl": "Klapa",
           "item_en": "Flaps",
+          "item_es": "Flaps",
           "expected": "UP"
         },
         {
           "item_pl": "Transponder",
           "item_en": "Transponder",
+          "item_es": "Transponder",
           "expected": "STBY"
         }
       ]
@@ -134,26 +157,31 @@
     "shutdown": {
       "name_pl": "Wyłączenie silnika",
       "name_en": "Shutdown",
+      "name_es": "Parada de motores",
       "phase": "shutdown",
       "items": [
         {
           "item_pl": "Hamulec parkingowy",
           "item_en": "Parking brake",
+          "item_es": "Freno de estacionamiento",
           "expected": "SET"
         },
         {
           "item_pl": "Przepustnica",
           "item_en": "Throttle",
+          "item_es": "Gases",
           "expected": "IDLE"
         },
         {
           "item_pl": "Magneto",
           "item_en": "Magnetos",
+          "item_es": "Magnetos",
           "expected": "OFF"
         },
         {
           "item_pl": "Master switch",
           "item_en": "Master switch",
+          "item_es": "Master switch",
           "expected": "OFF"
         }
       ]

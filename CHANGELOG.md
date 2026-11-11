@@ -1,3 +1,11 @@
+## 2.8.0
+
+- Nowy język: hiszpański, w aplikacji i w OpenTakeoff Link (Windows). Teksty są teraz w osobnych plikach językowych.
+- OpenTakeoff Link: wybór języka w oknie (polski, angielski, hiszpański); domyślnie język Windows. Naprawiona zwinięta lista połączonych telefonów.
+- Most dla X-Plane 11/12 napisany od nowa: łączy się z aplikacją, przesyła dane lotu i przyjmuje komendy.
+- Zapowiedzi głosowe: naprawione „Positive rate”, usunięte V1, Rotate i Minimums, zapowiedzi zawsze po angielsku.
+- Poprawna liczba mnoga i format liczb zgodny z językiem aplikacji.
+
 ## 2.7.0
 
 - OpenTakeoff Link (Windows): zgłoszenia z okna programu i z menu w zasobniku.

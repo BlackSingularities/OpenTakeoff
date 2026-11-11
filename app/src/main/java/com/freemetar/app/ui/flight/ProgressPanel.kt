@@ -1,5 +1,6 @@
 package com.freemetar.app.ui.flight
 
+import com.freemetar.app.domain.grouped
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -44,7 +45,7 @@ private fun hm(min: Double): String = min.roundToInt().coerceAtLeast(0).let { "%
 private fun utc(epochMs: Long): String = Instant.ofEpochMilli(epochMs).atZone(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("HH:mm")) + "Z"
 private fun d360(a: Double) = ((a % 360) + 360) % 360
 private fun deg(a: Double) = Math.round(d360(a)).toInt().let { if (it == 0) 360 else it }.let { "%03d°".format(it) }
-private fun ft(v: Double) = "%,d ft".format(v.roundToInt()).replace(',', ' ')
+private fun ft(v: Double) = "${v.roundToInt().grouped()} ft"
 
 private data class TrackStats(val distNm: Double, val maxAlt: Int?, val maxGs: Int?, val maxVs: Int?, val minVs: Int?)
 
@@ -54,18 +55,18 @@ private fun phase(s: FlightState): String {
     val vs = s.speed.vsFpm ?: 0.0
     val agl = s.avionics?.radioAltFt ?: s.position.altAglFt ?: 99_999.0
     return when {
-        s.aircraft.paused == true -> loc("Pauza", "Paused")
+        s.aircraft.paused == true -> loc("progress.paused")
         s.aircraft.onGround == true -> when {
-            gs < 2 -> loc("Postój", "Parked")
-            gs < 35 -> loc("Kołowanie", "Taxi")
-            else -> loc("Rozbieg / dobieg", "Takeoff / landing roll")
+            gs < 2 -> loc("progress.parked")
+            gs < 35 -> loc("progress.taxi")
+            else -> loc("progress.takeoff_landing_roll")
         }
-        agl < 1_500 && vs > 300 -> loc("Wznoszenie początkowe", "Initial climb")
-        vs > 300 -> loc("Wznoszenie", "Climb")
-        vs < -300 && agl < 3_000 && s.controls.gearDown == true -> loc("Podejście", "Approach")
-        vs < -300 -> loc("Zniżanie", "Descent")
-        agl < 3_000 -> loc("Lot poziomy nisko", "Level, low")
-        else -> loc("Przelot", "Cruise")
+        agl < 1_500 && vs > 300 -> loc("progress.initial_climb")
+        vs > 300 -> loc("progress.climb")
+        vs < -300 && agl < 3_000 && s.controls.gearDown == true -> loc("common.approach")
+        vs < -300 -> loc("common.descent")
+        agl < 3_000 -> loc("progress.level_low")
+        else -> loc("progress.cruise")
     }
 }
 
@@ -148,7 +149,7 @@ internal fun Progress(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 6.dp)) {
                 Text(phase(s), fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = c.accent)
                 Spacer(Modifier.weight(1f))
-                share?.let { Text(loc("trasa %d%%", "route %d%%").format((it * 100).roundToInt().coerceIn(0, 100)), fontFamily = Mono, fontSize = 13.sp, color = c.ink2) }
+                share?.let { Text(loc("progress.route_d").format((it * 100).roundToInt().coerceIn(0, 100)), fontFamily = Mono, fontSize = 13.sp, color = c.ink2) }
             }
             share?.let { p ->
                 Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.terrain)) {
@@ -156,118 +157,118 @@ internal fun Progress(
                 }
             }
 
-            Group(loc("Trasa", "Route"))
+            Group(loc("common.route"))
             FactGrid(cols = cols, facts = if (g == null) listOf(
-                Fact(loc("Plan lotu", "Flight plan"), "—", sub = loc("brak planu w symulatorze", "no flight plan in the simulator")),
+                Fact(loc("progress.flight_plan"), "—", sub = loc("progress.no_flight_plan_in_the_simulator")),
             ) else listOfNotNull(
-                Fact(g.nextId?.takeIf { it.isNotBlank() } ?: loc("Następny punkt", "Next waypoint"), g.nextDistNm?.let { "%.1f NM".format(it) } ?: "—", accent = c.magenta,
+                Fact(g.nextId?.takeIf { it.isNotBlank() } ?: loc("progress.next_waypoint"), g.nextDistNm?.let { "%.1f NM".format(it) } ?: "—", accent = c.magenta,
                     sub = listOfNotNull(nextEte?.let { hm(it / 60) }, nextEte?.let { utc(now + (it * 1000).toLong()) }).joinToString("  ").ifEmpty { null }),
-                Fact(loc("Namiar / DTK", "Bearing / DTK"), g.nextBearingMagDeg?.let { deg(it) } ?: "—", sub = g.desiredTrackMagDeg?.let { "DTK ${deg(it)}" }),
+                Fact(loc("progress.bearing_dtk"), g.nextBearingMagDeg?.let { deg(it) } ?: "—", sub = g.desiredTrackMagDeg?.let { "DTK ${deg(it)}" }),
                 g.crossTrackNm?.let { x ->
-                    Fact(loc("Odchylenie XTK", "Cross-track"), if (abs(x) < 0.05) loc("na kursie", "on course") else "%.2f NM %s".format(abs(x), if (x > 0) loc("P", "R") else "L"),
-                        accent = if (abs(x) > (if (g.approachActive) 0.3 else 1.0)) c.caution else null, sub = if (g.approachActive) loc("podejście aktywne", "approach active") else null)
+                    Fact(loc("progress.cross_track"), if (abs(x) < 0.05) loc("progress.on_course") else "%.2f NM %s".format(abs(x), if (x > 0) loc("common.r") else loc("common.l")),
+                        accent = if (abs(x) > (if (g.approachActive) 0.3 else 1.0)) c.caution else null, sub = if (g.approachActive) loc("progress.approach_active") else null)
                 },
-                g.wpCount?.takeIf { it > 0 }?.let { n -> Fact(loc("Punkt planu", "Waypoint"), "${g.wpIndex ?: 0}/$n", sub = loc("zostało ${(n - (g.wpIndex ?: 0)).coerceAtLeast(0)}", "${(n - (g.wpIndex ?: 0)).coerceAtLeast(0)} to go") + (g.prevId?.takeIf { it.isNotBlank() }?.let { " · $it →" } ?: "")) },
-                Fact(loc("Przylot", "Arrival"), destEteMin?.let { utc(now + (it * 60_000).toLong()) } ?: "—",
-                    sub = listOfNotNull(destEteMin?.let { loc("za ${hm(it)}", "in ${hm(it)}") }, toDest?.let { "~${it.roundToInt()} NM" }).joinToString(" · ").ifEmpty { null }),
-                Fact(loc("Początek zniżania", "Top of descent"),
-                    if (toDest == null || !airborne) "—" else if (toDest <= todNm) loc("teraz", "now") else loc("za ${(toDest - todNm).roundToInt()} NM", "in ${(toDest - todNm).roundToInt()} NM"),
+                g.wpCount?.takeIf { it > 0 }?.let { n -> Fact(loc("progress.waypoint"), "${g.wpIndex ?: 0}/$n", sub = loc("progress.to_go", (n - (g.wpIndex ?: 0)).coerceAtLeast(0)) + (g.prevId?.takeIf { it.isNotBlank() }?.let { " · $it →" } ?: "")) },
+                Fact(loc("common.arrival"), destEteMin?.let { utc(now + (it * 60_000).toLong()) } ?: "—",
+                    sub = listOfNotNull(destEteMin?.let { loc("progress.in", hm(it)) }, toDest?.let { "~${it.roundToInt()} NM" }).joinToString(" · ").ifEmpty { null }),
+                Fact(loc("common.top_of_descent"),
+                    if (toDest == null || !airborne) "—" else if (toDest <= todNm) loc("common.now") else loc("progress.in_nm", (toDest - todNm).roundToInt()),
                     accent = if (toDest != null && toDest - todNm < 10 && airborne) c.caution else null,
                     sub = listOfNotNull(
                         toDest?.takeIf { gs > 50 && it > todNm }?.let { hm((it - todNm) / gs * 60) },
-                        loc("${todNm.roundToInt()} NM przed celem", "${todNm.roundToInt()} NM out"),
+                        loc("progress.nm_out", todNm.roundToInt()),
                     ).joinToString(" · ")),
-                Fact(loc("Zniżanie 3°", "3° descent"), "${descentFpm.roundToInt()} ft/min", sub = loc("przy GS ${gs.roundToInt()} kt", "at GS ${gs.roundToInt()} kt")),
+                Fact(loc("progress.3_descent"), "${descentFpm.roundToInt()} ft/min", sub = loc("progress.at_gs_kt", gs.roundToInt())),
             ))
 
-            Group(loc("Lot", "Flight"))
+            Group(loc("common.flight"))
             FactGrid(cols = cols, facts = listOfNotNull(
-                Fact(loc("Czas lotu", "Flight time"), flownMin?.let { hm(it) } ?: "—", sub = startedAt?.let { loc("start ${utc(it)}", "off ${utc(it)}") } ?: loc("zapis od startu", "recorded from takeoff")),
-                Fact(loc("Przebyto", "Flown"), if (stats.distNm > 0) "%.0f NM".format(stats.distNm) else "—",
-                    sub = flownMin?.takeIf { it > 1 && stats.distNm > 0 }?.let { loc("średnio %d kt", "avg %d kt").format((stats.distNm / it * 60).roundToInt()) }),
-                stats.maxAlt?.let { Fact(loc("Maks. wysokość", "Max altitude"), ft(it.toDouble()), sub = stats.maxGs?.let { m -> loc("maks. GS $m kt", "max GS $m kt") }) },
-                if (stats.maxVs != null || stats.minVs != null) Fact(loc("Maks. V/S", "Max V/S"), "+${stats.maxVs ?: 0}", sub = "${stats.minVs ?: 0} ft/min") else null,
-                s.simTimeUtc?.let { t -> Fact(loc("Czas symulatora", "Sim time"), t.substringAfter('T').take(5).ifEmpty { t } + "Z", sub = loc("teraz ${utc(now)}", "now ${utc(now)}")) },
-                Fact(loc("Na ziemi / w locie", "Ground / air"), if (airborne) loc("w powietrzu", "airborne") else loc("na ziemi", "on ground"),
-                    sub = s.touchdown?.vsFpm?.let { loc("ost. przyziemienie ${it.roundToInt()} ft/min", "last touchdown ${it.roundToInt()} ft/min") }),
+                Fact(loc("common.flight_time"), flownMin?.let { hm(it) } ?: "—", sub = startedAt?.let { loc("progress.off", utc(it)) } ?: loc("progress.recorded_from_takeoff")),
+                Fact(loc("progress.flown"), if (stats.distNm > 0) "%.0f NM".format(stats.distNm) else "—",
+                    sub = flownMin?.takeIf { it > 1 && stats.distNm > 0 }?.let { loc("progress.avg_d_kt").format((stats.distNm / it * 60).roundToInt()) }),
+                stats.maxAlt?.let { Fact(loc("progress.max_altitude"), ft(it.toDouble()), sub = stats.maxGs?.let { m -> loc("progress.max_gs_kt", m) }) },
+                if (stats.maxVs != null || stats.minVs != null) Fact(loc("progress.max_v_s"), "+${stats.maxVs ?: 0}", sub = "${stats.minVs ?: 0} ft/min") else null,
+                s.simTimeUtc?.let { t -> Fact(loc("progress.sim_time"), t.substringAfter('T').take(5).ifEmpty { t } + "Z", sub = loc("progress.now", utc(now))) },
+                Fact(loc("progress.ground_air"), if (airborne) loc("progress.airborne") else loc("progress.on_ground"),
+                    sub = s.touchdown?.vsFpm?.let { loc("progress.last_touchdown_ft_min", it.roundToInt()) }),
             ))
 
-            Group(loc("Prędkość", "Speed"))
+            Group(loc("common.speed"))
             FactGrid(cols = cols, facts = listOfNotNull(
                 Fact("IAS", s.speed.iasKt?.let { "${it.roundToInt()} kt" } ?: "—", sub = s.speed.mach?.takeIf { it > 0.3 }?.let { "M %.3f".format(it) }),
                 Fact("TAS", s.speed.tasKt?.let { "${it.roundToInt()} kt" } ?: "—", sub = "GS ${gs.roundToInt()} kt"),
                 head?.let { h ->
-                    Fact(if (h >= 0) loc("Wiatr czołowy", "Headwind") else loc("Wiatr tylny", "Tailwind"), "${abs(h).roundToInt()} kt",
+                    Fact(if (h >= 0) loc("progress.headwind") else loc("progress.tailwind"), "${abs(h).roundToInt()} kt",
                         accent = if (h < -10) c.green else null,
-                        sub = cross?.let { x -> loc("boczny ${abs(x).roundToInt()} kt ${if (x >= 0) "z prawej" else "z lewej"}", "cross ${abs(x).roundToInt()} kt ${if (x >= 0) "from right" else "from left"}") })
+                        sub = cross?.let { x -> loc("progress.cross_kt", abs(x).roundToInt(), if (x >= 0) loc("progress.from_right") else loc("progress.from_left")) })
                 },
                 Fact("V/S", "${vs.roundToInt()} ft/min",
                     sub = if (gs > 30) "FPA %.1f°".format(Math.toDegrees(atan(vs / (gs * 101.27)))) else null),
                 av?.speeds?.vmoKt?.takeIf { it > 0 }?.let { vmo -> s.speed.iasKt?.let { ias ->
-                    Fact(loc("Do VMO", "To VMO"), "${(vmo - ias).roundToInt()} kt", accent = if (vmo - ias < 10) c.caution else null, sub = "VMO ${vmo.roundToInt()} kt")
+                    Fact(loc("progress.to_vmo"), "${(vmo - ias).roundToInt()} kt", accent = if (vmo - ias < 10) c.caution else null, sub = "VMO ${vmo.roundToInt()} kt")
                 } },
                 av?.speeds?.vs1Kt?.takeIf { it > 0 }?.let { vs1 -> s.speed.iasKt?.takeIf { airborne }?.let { ias ->
-                    Fact(loc("Nad VS1", "Above VS1"), "${(ias - vs1).roundToInt()} kt", accent = if (ias - vs1 < 15) c.caution else null, sub = "VS1 ${vs1.roundToInt()} kt")
+                    Fact(loc("progress.above_vs1"), "${(ias - vs1).roundToInt()} kt", accent = if (ias - vs1 < 15) c.caution else null, sub = "VS1 ${vs1.roundToInt()} kt")
                 } },
             ))
 
-            Group(loc("Wysokość", "Altitude"))
+            Group(loc("common.altitude"))
             FactGrid(cols = cols, facts = listOfNotNull(
-                Fact(loc("Wysokość", "Altitude"), ft(alt), sub = s.position.altMslFt?.let { "MSL ${ft(it)}" }),
-                agl?.let { Fact(if (av?.radioAltFt != null) "RA" else "AGL", ft(it), sub = s.position.altMslFt?.let { m -> loc("teren ${ft(m - (s.position.altAglFt ?: it))}", "terrain ${ft(m - (s.position.altAglFt ?: it))}") }) },
+                Fact(loc("common.altitude"), ft(alt), sub = s.position.altMslFt?.let { "MSL ${ft(it)}" }),
+                agl?.let { Fact(if (av?.radioAltFt != null) "RA" else "AGL", ft(it), sub = s.position.altMslFt?.let { m -> loc("progress.terrain", ft(m - (s.position.altAglFt ?: it))) }) },
                 apAlt?.let { a ->
-                    Fact(loc("Cel autopilota", "AP altitude"), ft(a), accent = c.accent,
-                        sub = when { toApAlt == 0.0 -> loc("osiągnięta", "reached"); toApAlt != null -> loc("za ${hm(toApAlt)}", "in ${hm(toApAlt)}"); else -> "%+d ft".format((a - alt).roundToInt()) })
+                    Fact(loc("progress.ap_altitude"), ft(a), accent = c.accent,
+                        sub = when { toApAlt == 0.0 -> loc("progress.reached"); toApAlt != null -> loc("progress.in", hm(toApAlt)); else -> "%+d ft".format((a - alt).roundToInt()) })
                 },
-                pressAlt?.let { Fact(loc("Wys. ciśnieniowa", "Pressure alt"), ft(it), sub = if (av?.baroStd == true) "STD" else av?.baroHpa?.let { b -> "QNH ${b.roundToInt()}" }) },
-                s.environment.qnhHpa?.let { q -> s.environment.oatC?.let { t -> Fact(loc("Wys. gęstościowa", "Density alt"), ft(Atmo.densityAltitude(alt, q, t))) } },
-                av?.decisionHeightFt?.takeIf { it > 0 }?.let { Fact(loc("Minima", "Minimums"), ft(it), sub = agl?.let { a -> "%+d ft".format((a - it).roundToInt()) }) },
+                pressAlt?.let { Fact(loc("progress.pressure_alt"), ft(it), sub = if (av?.baroStd == true) "STD" else av?.baroHpa?.let { b -> "QNH ${b.roundToInt()}" }) },
+                s.environment.qnhHpa?.let { q -> s.environment.oatC?.let { t -> Fact(loc("progress.density_alt"), ft(Atmo.densityAltitude(alt, q, t))) } },
+                av?.decisionHeightFt?.takeIf { it > 0 }?.let { Fact(loc("progress.minimums"), ft(it), sub = agl?.let { a -> "%+d ft".format((a - it).roundToInt()) }) },
             ))
 
-            Group(loc("Kierunek", "Direction"))
+            Group(loc("progress.direction"))
             FactGrid(cols = cols, facts = listOfNotNull(
                 Fact("HDG", hdgMag?.let { deg(it) } ?: "—", sub = trkMag?.takeIf { gs > 30 }?.let { "TRK ${deg(it)}" }),
-                Fact(loc("Znoszenie", "Drift"), drift?.let { "%+.0f°".format(it) } ?: "—", sub = loc("deklinacja %.0f°%s", "variation %.0f°%s").format(abs(magVar), if (magVar >= 0) "E" else "W")),
+                Fact(loc("progress.drift"), drift?.let { "%+.0f°".format(it) } ?: "—", sub = loc("progress.variation_0f_s").format(abs(magVar), if (magVar >= 0) "E" else "W")),
                 s.autopilot.hdgDeg?.let { b ->
                     val turn = hdgMag?.let { ((b - it + 540) % 360) - 180 }
-                    Fact(loc("Nastawa HDG", "HDG bug"), deg(b), accent = c.accent,
-                        sub = turn?.let { t -> if (abs(t) < 1) loc("na kursie", "on heading") else loc("${abs(t).roundToInt()}° w ${if (t > 0) "prawo" else "lewo"}", "${abs(t).roundToInt()}° ${if (t > 0) "right" else "left"}") })
+                    Fact(loc("progress.hdg_bug"), deg(b), accent = c.accent,
+                        sub = turn?.let { t -> if (abs(t) < 1) loc("progress.on_heading") else "${abs(t).roundToInt()}° ${if (t > 0) loc("common.right") else loc("common.left")}" })
                 },
-                Fact(loc("Pochylenie / przechylenie", "Pitch / bank"), "%.1f° / %.0f°".format(s.attitude.pitchDeg ?: 0.0, s.attitude.bankDeg ?: 0.0),
-                    sub = av?.turnRateDps?.let { loc("zakręt %.1f°/s", "turn %.1f°/s").format(abs(it)) }),
-                av?.let { a -> a.gForce?.let { Fact(loc("Przeciążenie", "Load"), "%.2f g".format(it), sub = a.aoaDeg?.let { d -> "AoA %.1f°".format(d) }) } },
+                Fact(loc("progress.pitch_bank"), "%.1f° / %.0f°".format(s.attitude.pitchDeg ?: 0.0, s.attitude.bankDeg ?: 0.0),
+                    sub = av?.turnRateDps?.let { loc("progress.turn_1f_s").format(abs(it)) }),
+                av?.let { a -> a.gForce?.let { Fact(loc("progress.load"), "%.2f g".format(it), sub = a.aoaDeg?.let { d -> "AoA %.1f°".format(d) }) } },
             ))
 
-            Group(loc("Atmosfera", "Atmosphere"))
+            Group(loc("progress.atmosphere"))
             FactGrid(cols = cols, facts = listOfNotNull(
-                Fact(loc("Wiatr", "Wind"), wDir?.let { d -> "${deg(d - magVar).dropLast(1)}/${(wKt ?: 0.0).roundToInt()} kt" } ?: "—", sub = wDir?.let { loc("z ${Geo.compass(it)}", "from ${Geo.compass(it)}") }),
+                Fact(loc("common.wind"), wDir?.let { d -> "${deg(d - magVar).dropLast(1)}/${(wKt ?: 0.0).roundToInt()} kt" } ?: "—", sub = wDir?.let { loc("progress.from", Geo.compass(it)) }),
                 Fact("OAT", s.environment.oatC?.let { "${it.roundToInt()} °C" } ?: "—", sub = isaDev?.let { "ISA %+d".format(it.roundToInt()) }),
                 av?.tatC?.let { Fact("TAT", "${it.roundToInt()} °C", sub = null) },
                 s.environment.qnhHpa?.let { q -> Fact("QNH", "${q.roundToInt()} hPa", sub = "%.2f inHg".format(Atmo.hpaToInHg(q))) },
             ))
 
-            Group(loc("Paliwo", "Fuel"))
+            Group(loc("common.fuel"))
             FactGrid(cols = cols, facts = listOfNotNull(
-                Fact(loc("Na pokładzie", "On board"), fuel?.let { "${it.roundToInt()} kg" } ?: "—", sub = used?.let { loc("zużyto ${it.roundToInt()} kg", "used ${it.roundToInt()} kg") }),
-                Fact(loc("Przepływ", "Fuel flow"), if (ff > 0) "${ff.roundToInt()} kg/h" else "—",
+                Fact(loc("progress.on_board"), fuel?.let { "${it.roundToInt()} kg" } ?: "—", sub = used?.let { loc("progress.used_kg", it.roundToInt()) }),
+                Fact(loc("progress.fuel_flow"), if (ff > 0) "${ff.roundToInt()} kg/h" else "—",
                     sub = if (s.engines.size > 1 && ff > 0) s.engines.mapNotNull { it.fuelFlowKgH?.roundToInt() }.joinToString(" / ") else null),
-                Fact(loc("Starczalność", "Endurance"), endurance?.let { hm(it) } ?: "—",
+                Fact(loc("progress.endurance"), endurance?.let { hm(it) } ?: "—",
                     accent = endurance?.takeIf { it < 45 }?.let { c.caution },
-                    sub = endurance?.takeIf { gs > 30 }?.let { loc("zasięg ~${(it / 60 * gs).roundToInt()} NM", "range ~${(it / 60 * gs).roundToInt()} NM") }),
+                    sub = endurance?.takeIf { gs > 30 }?.let { loc("progress.range_nm", (it / 60 * gs).roundToInt()) }),
                 atDest?.let { f ->
-                    Fact(loc("Na celu", "At destination"), "${f.roundToInt()} kg", accent = if ((reserveMin ?: 99.0) < 30) c.danger else if ((reserveMin ?: 99.0) < 45) c.caution else c.green,
-                        sub = reserveMin?.let { loc("zapas ${hm(it)}", "reserve ${hm(it)}") })
+                    Fact(loc("progress.at_destination"), "${f.roundToInt()} kg", accent = if ((reserveMin ?: 99.0) < 30) c.danger else if ((reserveMin ?: 99.0) < 45) c.caution else c.green,
+                        sub = reserveMin?.let { loc("progress.reserve", hm(it)) })
                 },
-                if (ff > 1 && gs > 30) Fact(loc("Zużycie", "Consumption"), "%.1f kg/NM".format(ff / gs), sub = loc("%.0f NM na tonę", "%.0f NM per tonne").format(gs / ff * 1000)) else null,
-                used?.takeIf { flownMin != null && flownMin > 5 }?.let { u -> Fact(loc("Średnio", "Average"), "${(u / flownMin!! * 60).roundToInt()} kg/h", sub = loc("od startu", "since takeoff")) },
+                if (ff > 1 && gs > 30) Fact(loc("progress.consumption"), "%.1f kg/NM".format(ff / gs), sub = loc("progress.0f_nm_per_tonne").format(gs / ff * 1000)) else null,
+                used?.takeIf { flownMin != null && flownMin > 5 }?.let { u -> Fact(loc("progress.average"), "${(u / flownMin!! * 60).roundToInt()} kg/h", sub = loc("progress.since_takeoff")) },
             ))
 
-            Group(loc("Nawigacja", "Navigation"))
+            Group(loc("progress.navigation"))
             FactGrid(cols = cols, facts = listOfNotNull(
-                if (lat != null && lon != null) Fact(loc("Pozycja", "Position"), "%.4f".format(lat), sub = "%.4f".format(lon)) else null,
+                if (lat != null && lon != null) Fact(loc("progress.position"), "%.4f".format(lat), sub = "%.4f".format(lon)) else null,
                 nearestApt?.let { a ->
                     val d = Geo.distanceNm(lat!!, lon!!, a.lat, a.lon)
-                    Fact(loc("Najbliższe lotnisko", "Nearest airport"), a.ident, accent = c.accent,
+                    Fact(loc("progress.nearest_airport"), a.ident, accent = c.accent,
                         sub = "%.0f NM · %s".format(d, deg(Geo.bearing(lat, lon, a.lat, a.lon) - magVar)) + (if (gs > 30) " · ${hm(d / gs * 60)}" else ""))
                 },
                 av?.nav1?.takeIf { it.hasNav }?.let { n -> Fact("NAV1 ${n.ident.orEmpty()}".trim(), if (n.hasLoc) "LOC ${n.locCourseDeg?.let { deg(it) } ?: ""}" else n.radialDeg?.let { "R-${deg(it).dropLast(1)}" } ?: "—",

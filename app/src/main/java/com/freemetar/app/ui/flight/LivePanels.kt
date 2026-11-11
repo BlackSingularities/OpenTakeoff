@@ -75,19 +75,20 @@ fun ConnectionSection(vm: MainViewModel) {
     // Nasłuch w sieci tylko, gdy ten panel jest na ekranie
     DisposableEffect(Unit) { vm.startLinkDiscovery(); onDispose { vm.stopLinkDiscovery() } }
 
-    Section(loc("Symulator", "Simulator"), Icons.Outlined.Computer, trailing = {
-        if (status is LinkStatus.Connected || status is LinkStatus.Lost) IconButton({ vm.linkDisconnect() }) { Icon(Icons.Outlined.LinkOff, loc("Rozłącz", "Disconnect"), tint = c.ink2) }
+    Section(loc("live.simulator"), Icons.Outlined.Computer, trailing = {
+        if (status is LinkStatus.Connected || status is LinkStatus.Lost) IconButton({ vm.linkDisconnect() }) { Icon(Icons.Outlined.LinkOff, loc("live.disconnect"), tint = c.ink2) }
     }) {
         val (dot, text) = when (val s = status) {
-            LinkStatus.Idle -> c.ink2 to loc("Nie połączono", "Not connected")
-            is LinkStatus.Connecting -> c.caution to loc("Łączenie z ${s.ip}…", "Connecting to ${s.ip}…")
-            is LinkStatus.NeedsCode -> c.caution to loc("Wpisz kod parowania z programu", "Enter the pairing code from the PC app")
+            LinkStatus.Idle -> c.ink2 to loc("live.not_connected")
+            is LinkStatus.Connecting -> c.caution to loc("live.connecting_to", s.ip)
+            is LinkStatus.NeedsCode -> c.caution to loc("live.enter_the_pairing_code_from_the")
             is LinkStatus.Connected -> (if (s.source == "none") c.caution else c.green) to when (s.source) {
-                "msfs" -> loc("Połączono z MSFS", "Connected to MSFS")
-                "simulation" -> loc("Połączono — tryb symulacji", "Connected — simulation mode")
-                else -> s.message ?: loc("Połączono, czekam na MSFS", "Connected, waiting for MSFS")
+                "msfs" -> loc("live.connected_to_msfs")
+                "xplane" -> loc("live.connected_to_x_plane")
+                "simulation" -> loc("live.connected_simulation_mode")
+                else -> loc("live.connected_waiting_for_the_simulator")
             }
-            is LinkStatus.Lost -> c.danger to loc("Utracono połączenie, ponawiam… (${s.reason})", "Connection lost, retrying… (${s.reason})")
+            is LinkStatus.Lost -> c.danger to loc("live.connection_lost_retrying", s.reason)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(10.dp).clip(CircleShape).background(dot))
@@ -101,7 +102,7 @@ fun ConnectionSection(vm: MainViewModel) {
             Spacer(Modifier.size(10.dp))
             if (servers.isEmpty()) {
                 Text(
-                    loc("Szukam OpenTakeoff Link w sieci… Uruchom program na komputerze z MSFS 2024; telefon musi być w tej samej sieci Wi-Fi.", "Looking for OpenTakeoff Link on the network… Run it on the PC with MSFS 2024; the phone must be on the same Wi-Fi network."),
+                    loc("live.looking_for_opentakeoff_link_on_the"),
                     style = MaterialTheme.typography.bodyMedium, color = c.ink2,
                 )
             }
@@ -109,17 +110,17 @@ fun ConnectionSection(vm: MainViewModel) {
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(sv.host, style = MaterialTheme.typography.titleSmall, color = c.ink)
-                        Text("${sv.ip} · ${when (sv.source) { "msfs" -> loc("MSFS połączony", "MSFS connected"); "simulation" -> loc("symulacja", "simulation"); else -> loc("czeka na MSFS", "waiting for MSFS") }}",
+                        Text("${sv.ip} · ${when (sv.source) { "msfs" -> loc("live.msfs_connected"); "xplane" -> loc("live.x_plane_connected"); "simulation" -> loc("live.simulation"); else -> loc("live.waiting_for_the_simulator") }}",
                             style = MaterialTheme.typography.bodySmall, color = c.ink2)
                     }
-                    Button({ vm.linkConnect(sv.ip, sv.port) }) { Text(loc("Połącz", "Connect")) }
+                    Button({ vm.linkConnect(sv.ip, sv.port) }) { Text(loc("live.connect")) }
                 }
             }
             var manual by rememberSaveable { mutableStateOf("") }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
-                OutlinedTextField(manual, { manual = it.trim() }, Modifier.weight(1f), label = { Text(loc("Adres IP komputera", "PC IP address")) }, singleLine = true,
+                OutlinedTextField(manual, { manual = it.trim() }, Modifier.weight(1f), label = { Text(loc("live.pc_ip_address")) }, singleLine = true,
                     shape = RoundedCornerShape(8.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
-                OutlinedButton({ vm.linkConnect(manual) }, enabled = manual.count { it == '.' } == 3) { Text(loc("Połącz", "Connect")) }
+                OutlinedButton({ vm.linkConnect(manual) }, enabled = manual.count { it == '.' } == 3) { Text(loc("live.connect")) }
             }
         }
     }
@@ -128,24 +129,24 @@ fun ConnectionSection(vm: MainViewModel) {
         var code by remember(s) { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { vm.linkDisconnect() },
-            title = { Text(loc("Parowanie z ${s.ip}", "Pairing with ${s.ip}")) },
+            title = { Text(loc("live.pairing_with", s.ip)) },
             text = {
                 Column {
-                    Text(loc("Wpisz 6-cyfrowy kod widoczny w oknie OpenTakeoff Link. Telefon zapamięta parowanie.", "Enter the 6-digit code shown in the OpenTakeoff Link window. The phone will remember the pairing."), style = MaterialTheme.typography.bodyMedium)
+                    Text(loc("live.enter_the_6_digit_code_shown"), style = MaterialTheme.typography.bodyMedium)
                     s.error?.let { Text(it, color = c.danger, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp)) }
                     OutlinedTextField(code, { code = it.filter(Char::isDigit).take(6) }, Modifier.padding(top = 10.dp), singleLine = true,
                         textStyle = MaterialTheme.typography.headlineSmall.copy(fontFamily = Mono), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
                 }
             },
-            confirmButton = { TextButton({ vm.linkConnect(s.ip, s.port, code) }, enabled = code.length == 6) { Text(loc("Sparuj", "Pair")) } },
-            dismissButton = { TextButton({ vm.linkDisconnect() }) { Text(loc("Anuluj", "Cancel")) } },
+            confirmButton = { TextButton({ vm.linkConnect(s.ip, s.port, code) }, enabled = code.length == 6) { Text(loc("live.pair")) } },
+            dismissButton = { TextButton({ vm.linkDisconnect() }) { Text(loc("common.cancel")) } },
         )
     }
 }
 
 private enum class LiveView(private val labelOf: () -> String, val instrument: Boolean) {
-    PFD({ "PFD" }, true), ND({ loc("Mapa", "Map") }, true), AP({ "Autopilot" }, false), RADIO({ "Radio" }, false),
-    CONTROLS({ loc("Systemy", "Systems") }, false), YOKE({ loc("Wolant", "Yoke") }, false), ENGINES({ loc("Silniki", "Engines") }, false),
+    PFD({ "PFD" }, true), ND({ loc("common.map") }, true), AP({ "Autopilot" }, false), RADIO({ "Radio" }, false),
+    CONTROLS({ loc("common.systems") }, false), YOKE({ loc("live.yoke") }, false), ENGINES({ loc("common.engines") }, false),
     ;
 
     val label: String get() = labelOf()
@@ -159,8 +160,8 @@ fun LiveSection(s: FlightState, link: LinkClient, profile: com.freemetar.app.dom
     var panel by rememberSaveable { mutableStateOf(LiveView.AP) }
     var range by rememberSaveable { mutableStateOf(40) }
     val wide = isWide()
-    Section(s.aircraft.title ?: loc("Lot na żywo", "Live flight"), Icons.Outlined.Speed) {
-        if (s.aircraft.paused == true) Text(loc("Symulator wstrzymany", "Simulator paused"), style = MaterialTheme.typography.labelMedium, color = c.caution, modifier = Modifier.padding(bottom = 6.dp))
+    Section(s.aircraft.title ?: loc("live.live_flight"), Icons.Outlined.Speed) {
+        if (s.aircraft.paused == true) Text(loc("live.simulator_paused"), style = MaterialTheme.typography.labelMedium, color = c.caution, modifier = Modifier.padding(bottom = 6.dp))
         if (wide) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.weight(1.1f).clip(RoundedCornerShape(8.dp))) { Pfd(s, profile = profile) }
@@ -219,7 +220,7 @@ internal fun Systems(s: FlightState) {
     s.engines.forEachIndexed { i, e ->
         val turbine = (e.n1Pct ?: 0.0) > 0.1
         Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(loc("SIL ${i + 1}", "ENG ${i + 1}"), fontFamily = Mono, fontSize = 12.sp, color = c.ink2, modifier = Modifier.width(52.dp))
+            Text(loc("live.eng", i + 1), fontFamily = Mono, fontSize = 12.sp, color = c.ink2, modifier = Modifier.width(52.dp))
             val pct = if (turbine) (e.n1Pct ?: 0.0) / 100 else ((e.rpm ?: 0.0) / 2700).coerceIn(0.0, 1.0)
             Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(c.terrain)) {
                 Box(Modifier.fillMaxWidth(pct.toFloat().coerceIn(0f, 1f)).height(10.dp).clip(RoundedCornerShape(5.dp)).background(c.green))
@@ -248,9 +249,9 @@ internal fun Systems(s: FlightState) {
     val ctl = s.controls
     Text(
         listOfNotNull(
-            ctl.gearDown?.let { if (it) loc("Podwozie wypuszczone", "Gear down") else loc("Podwozie schowane", "Gear up") },
-            ctl.flapsIndex?.let { loc("klapy $it/${(ctl.flapsPositions ?: 1) - 1}", "flaps $it/${(ctl.flapsPositions ?: 1) - 1}") },
-            ctl.parkingBrake?.takeIf { it }?.let { loc("hamulec postojowy", "parking brake") },
+            ctl.gearDown?.let { if (it) loc("live.gear_down") else loc("live.gear_up") },
+            ctl.flapsIndex?.let { loc("live.flaps", it, (ctl.flapsPositions ?: 1) - 1) },
+            ctl.parkingBrake?.takeIf { it }?.let { loc("live.parking_brake") },
             s.radios.transponder?.code?.let { "squawk $it" },
         ).joinToString(", "),
         style = MaterialTheme.typography.bodySmall, color = c.ink2, modifier = Modifier.padding(top = 8.dp),

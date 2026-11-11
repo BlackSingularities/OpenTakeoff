@@ -67,7 +67,7 @@ object Updater {
         val req = Request.Builder().url(info.apkUrl).build()
         Http.client.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) throw IOException("HTTP ${resp.code}")
-            val body = resp.body ?: throw IOException(loc("Pusta odpowiedź", "Empty response"))
+            val body = resp.body ?: throw IOException(loc("updater.empty_response"))
             val total = body.contentLength().takeIf { it > 0 } ?: info.sizeBytes
             body.byteStream().use { input ->
                 target.outputStream().use { out ->

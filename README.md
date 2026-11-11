@@ -8,7 +8,7 @@
 
 ## Polski
 
-Aplikacja na Androida dla wirtualnych pilotów (MSFS, X-Plane, VATSIM, IVAO). Pogoda, dane lotnisk, plan lotu i kokpit na telefonie. Korzysta wyłącznie z darmowych, otwartych źródeł danych: nie wymaga kont ani kluczy API i nie ma reklam. Interfejs jest po polsku i angielsku (zgodnie z językiem systemu albo do wyboru w ustawieniach).
+Aplikacja na Androida dla wirtualnych pilotów (MSFS, X-Plane, VATSIM, IVAO). Pogoda, dane lotnisk, plan lotu i kokpit na telefonie. Korzysta wyłącznie z darmowych, otwartych źródeł danych: nie wymaga kont ani kluczy API i nie ma reklam. Interfejs jest po polsku, angielsku i hiszpańsku (zgodnie z językiem systemu albo do wyboru w ustawieniach).
 
 Do sterowania samolotem i danych z symulatora służy **OpenTakeoff Link**, mały program na Windows, który łączy telefon z MSFS 2024 w sieci lokalnej. Instrukcja: [docs/link-setup.md](docs/link-setup.md).
 
@@ -99,7 +99,7 @@ Bez sekretów APK jest podpisane kluczem debug. Żeby aktualizacje instalowały 
 
 ## English
 
-An Android app for flight-sim pilots (MSFS, X-Plane, VATSIM, IVAO): weather, airport data, flight planning and a cockpit on your phone. It uses free and open data sources only, with no accounts, API keys or ads. The interface is in English and Polish (follows the system language or can be set in Settings).
+An Android app for flight-sim pilots (MSFS, X-Plane, VATSIM, IVAO): weather, airport data, flight planning and a cockpit on your phone. It uses free and open data sources only, with no accounts, API keys or ads. The interface is in English, Polish and Spanish (follows the system language or can be set in Settings).
 
 To fly the aircraft and read live data from the simulator, run **OpenTakeoff Link**, a small Windows program that connects the phone to MSFS 2024 over your local network. Setup: [docs/link-setup.md](docs/link-setup.md) (in Polish).
 

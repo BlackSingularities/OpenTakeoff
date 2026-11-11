@@ -1,3 +1,4 @@
+using OpenAirBookLink.Core.Localization;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
@@ -78,7 +79,7 @@ public sealed class LinkServer : IDisposable
     {
         _listener = new TcpListener(IPAddress.Any, _port);
         _listener.Start();
-        Log?.Invoke($"Serwer WebSocket nasłuchuje na porcie {Port}");
+        Log?.Invoke(L.T("server.listening", Port));
         _ = AcceptLoopAsync(_cts.Token);
     }
 
@@ -96,7 +97,7 @@ public sealed class LinkServer : IDisposable
         {
             Source = SourceName,
             SimConnected = s is { Kind: "msfs", IsConnected: true },
-            Message = s?.StatusText ?? "Brak źródła danych",
+            Message = s?.StatusText ?? L.T("server.no_source"),
         };
     }
 
@@ -115,7 +116,7 @@ public sealed class LinkServer : IDisposable
             }
             catch (SocketException e)
             {
-                Log?.Invoke($"Błąd przyjmowania połączenia: {e.Message}");
+                Log?.Invoke(L.T("server.accept_error", e.Message));
                 continue;
             }
             _ = HandleClientAsync(tcp, ct);
@@ -149,7 +150,7 @@ public sealed class LinkServer : IDisposable
         var session = new Session(ws, remoteIp);
         lock (_sessions) _sessions.Add(session);
         ClientsChanged?.Invoke();
-        Log?.Invoke($"Połączenie z {remoteIp} — czekam na parowanie");
+        Log?.Invoke(L.T("server.connection", remoteIp));
 
         using var sessionCts = CancellationTokenSource.CreateLinkedTokenSource(serverCt);
         var sender = StateLoopAsync(session, sessionCts.Token);
@@ -167,7 +168,7 @@ public sealed class LinkServer : IDisposable
             Axes.Release(session.Id);
             lock (_sessions) _sessions.Remove(session);
             ClientsChanged?.Invoke();
-            Log?.Invoke($"Rozłączono: {session.Name} ({remoteIp})");
+            Log?.Invoke(L.T("server.disconnected", session.Name, remoteIp));
             if (ws.State == WebSocketState.Open)
             {
                 try
@@ -212,7 +213,7 @@ public sealed class LinkServer : IDisposable
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
-                Log?.Invoke($"{session.Name} ({session.RemoteIp}): brak wiadomości — rozłączam");
+                Log?.Invoke(L.T("server.silent", session.Name, session.RemoteIp));
                 return;
             }
 
@@ -278,8 +279,8 @@ public sealed class LinkServer : IDisposable
         if (!result.Ok)
         {
             Log?.Invoke(result.RateLimited
-                ? $"{session.RemoteIp}: za dużo nieudanych prób parowania — blokada {PairingManager.BlockTime.TotalSeconds:0} s"
-                : $"{session.RemoteIp}: nieudane parowanie (zły kod lub token)");
+                ? L.T("server.blocked", session.RemoteIp, PairingManager.BlockTime.TotalSeconds.ToString("0"))
+                : L.T("server.pair_failed", session.RemoteIp));
             await SendError(session, msg.Id,
                 result.RateLimited ? ErrorCodes.RateLimited : ErrorCodes.PairingFailed,
                 result.RateLimited ? "Za dużo prób — odczekaj minutę" : "Zły kod parowania lub nieważny token");
@@ -296,7 +297,7 @@ public sealed class LinkServer : IDisposable
         session.RateHz = Math.Clamp(msg.GetInt("rateHz") ?? LinkProtocol.DefaultRateHz, LinkProtocol.MinRateHz, LinkProtocol.MaxRateHz);
         session.Paired = true;
         ClientsChanged?.Invoke();
-        Log?.Invoke($"Sparowano: {session.Name} ({session.RemoteIp}), {session.RateHz} Hz");
+        Log?.Invoke(L.T("server.paired", session.Name, session.RemoteIp, session.RateHz));
 
         await SendAsync(session, new HelloOkMessage
         {
@@ -324,7 +325,7 @@ public sealed class LinkServer : IDisposable
         }
         if (!validation.Ok)
         {
-            Log?.Invoke($"{session.Name}: odrzucono {name ?? "(brak nazwy)"} — {validation.ErrorMessage}");
+            Log?.Invoke(L.T("server.rejected", session.Name, name ?? "—", validation.ErrorMessage));
             await SendError(session, msg.Id, validation.ErrorCode!, validation.ErrorMessage!);
             return;
         }
@@ -356,7 +357,7 @@ public sealed class LinkServer : IDisposable
         }
         else
         {
-            Log?.Invoke($"{session.Name}: {cmd.Spec.Name} nie powiodło się — {result.ErrorMessage}");
+            Log?.Invoke(L.T("server.command_failed", session.Name, cmd.Spec.Name, result.ErrorMessage));
             await SendError(session, msg.Id, result.ErrorCode ?? ErrorCodes.SimError, result.ErrorMessage ?? "Błąd symulatora");
         }
     }
@@ -455,7 +456,7 @@ public sealed class LinkServer : IDisposable
                 await SendError(session, msg.Id, ErrorCodes.InvalidValue, "Osie muszą być liczbami −1…1");
                 break;
             case AxisUpdateResult.Ok when !wasActive:
-                Log?.Invoke($"{session.Name}: przejmuje sterowanie osiami");
+                Log?.Invoke(L.T("server.takes_axes", session.Name));
                 break;
         }
     }

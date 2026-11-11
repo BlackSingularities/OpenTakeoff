@@ -125,7 +125,7 @@ private fun D7Window(title: String, tag: String?, value: String, dense: Boolean,
         Row(
             Modifier.padding(top = 3.dp).clip(RoundedCornerShape(3.dp)).background(D7_WINDOW).border(2.dp, Color(0xFF14181B), RoundedCornerShape(3.dp))
                 .semantics { contentDescription = "$title $value" }
-                .clickable(onClickLabel = loc("Wpisz wartość", "Type a value"), onClick = onClick)
+                .clickable(onClickLabel = loc("common.type_a_value"), onClick = onClick)
                 .padding(horizontal = if (dense) 6.dp else 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -175,7 +175,7 @@ private fun D7VsWheel(height: Dp, onDelta: (Int) -> Unit) {
         Canvas(
             Modifier.size(width = 30.dp, height = height)
                 .semantics {
-                    contentDescription = loc("Kółko prędkości pionowej", "Vertical speed wheel")
+                    contentDescription = loc("common.vertical_speed_wheel")
                     customActions = listOf(CustomAccessibilityAction("UP") { delta(100); true }, CustomAccessibilityAction("DOWN") { delta(-100); true })
                 }
                 .pointerInput(Unit) {
@@ -223,7 +223,7 @@ private fun D7Toggle(label: String, on: Boolean, modifier: Modifier = Modifier, 
         Box(
             Modifier.padding(top = 3.dp).size(width = 28.dp, height = 44.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xFF14181B))
                 .border(1.dp, Color(0x44FFFFFF), RoundedCornerShape(14.dp))
-                .semantics { contentDescription = label + if (on) loc(", włączone", ", on") else loc(", wyłączone", ", off"); role = Role.Switch }
+                .semantics { contentDescription = label + if (on) loc("common.on") else loc("common.off"); role = Role.Switch }
                 .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
         ) {
             Box(Modifier.align(if (on) Alignment.TopCenter else Alignment.BottomCenter).padding(4.dp).size(20.dp).clip(RoundedCornerShape(10.dp))
@@ -239,7 +239,7 @@ private fun D7Detent(label: String, on: Boolean, modifier: Modifier = Modifier, 
     val haptic = LocalHapticFeedback.current
     Box(
         modifier.height(40.dp).clip(RoundedCornerShape(4.dp)).background(if (on) D7_LEGEND else D7_KEY).border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(4.dp))
-            .semantics { contentDescription = desc + if (on) loc(", ustawione", ", set") else ""; role = Role.RadioButton }
+            .semantics { contentDescription = desc + if (on) loc("common.set") else ""; role = Role.RadioButton }
             .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onClick() },
         contentAlignment = Alignment.Center,
     ) { Text(label, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = if (on) Color.Black else D7_LEGEND, maxLines = 1) }
@@ -312,7 +312,7 @@ fun B787Mcp(link: LinkClient, s: FlightState, compact: Boolean = false) {
         Column(mod, horizontalAlignment = Alignment.CenterHorizontally) {
             D7Window("IAS ( ) MACH", if (mach) "M" else null, spdV, sz.dense) { enter = "SPD" }
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                D7Knob(sz.knob, loc("Pokrętło IAS/MACH $spdV", "IAS/MACH knob $spdV"),
+                D7Knob(sz.knob, loc("b787.ias_mach_knob", spdV),
                     onStep = { d -> cmd("AP_SPD_VAR_SET", ControlMath.speed(live()?.spdKt, d)) }, onBig = { d -> cmd("AP_SPD_VAR_SET", ControlMath.speed(live()?.spdKt, d * 10)) }) { enter = "SPD" }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     AfdsKey("LNAV", m.nav, Modifier.width(sz.key(62.dp, 54.dp)), skin) { cmd("AP_NAV1_HOLD") }
@@ -326,7 +326,7 @@ fun B787Mcp(link: LinkClient, s: FlightState, compact: Boolean = false) {
         Column(mod, horizontalAlignment = Alignment.CenterHorizontally) {
             D7Window("HDG ( ) TRK", "HDG", hdgV, sz.dense) { enter = "HDG" }
             Box(Modifier.padding(top = 8.dp)) {
-                D7Knob(sz.knob * 1.1f, loc("Pokrętło kursu $hdgV — dotknięcie: HDG SEL", "Heading knob $hdgV — tap: HDG SEL"), ring = true,
+                D7Knob(sz.knob * 1.1f, loc("b787.heading_knob_tap_hdg_sel", hdgV), ring = true,
                     onStep = { d -> cmd("HEADING_BUG_SET", ControlMath.heading(live()?.hdgDeg, d)) }, onBig = { d -> cmd("HEADING_BUG_SET", ControlMath.heading(live()?.hdgDeg, d * 10)) }) { cmd("AP_HDG_HOLD") }
             }
             Text("BANK LIMIT · SEL", fontSize = 8.sp, color = D7_LEGEND.copy(alpha = 0.75f), modifier = Modifier.padding(top = 3.dp))
@@ -344,7 +344,7 @@ fun B787Mcp(link: LinkClient, s: FlightState, compact: Boolean = false) {
         Column(mod, horizontalAlignment = Alignment.CenterHorizontally) {
             D7Window("ALTITUDE", null, altV, sz.dense) { enter = "ALT" }
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                D7Knob(sz.knob, loc("Pokrętło wysokości $altV", "Altitude knob $altV"),
+                D7Knob(sz.knob, loc("common.altitude_knob", altV),
                     onStep = { d -> cmd("AP_ALT_VAR_SET_ENGLISH", ControlMath.altitude(live()?.altFt, d * 100)) }, onBig = { d -> cmd("AP_ALT_VAR_SET_ENGLISH", ControlMath.altitude(live()?.altFt, d * 1000)) }) { enter = "ALT" }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     AfdsKey("LOC", m.loc, Modifier.width(sz.key(62.dp, 54.dp)), skin) { cmd("AP_LOC_HOLD") }
@@ -359,7 +359,7 @@ fun B787Mcp(link: LinkClient, s: FlightState, compact: Boolean = false) {
             Text("A/P DISENGAGE", fontWeight = FontWeight.Bold, fontSize = 9.sp, color = D7_LEGEND)
             Box(
                 Modifier.padding(top = 3.dp).size(width = 110.dp, height = 30.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFFC9CDD0))
-                    .semantics { contentDescription = loc("Rozłącz autopilota", "Disengage autopilot"); role = Role.Button }
+                    .semantics { contentDescription = loc("common.disengage_autopilot"); role = Role.Button }
                     .clickable { cmd("AUTOPILOT_OFF") },
             )
         }
@@ -385,15 +385,14 @@ fun B787Mcp(link: LinkClient, s: FlightState, compact: Boolean = false) {
             }
         }
     }
-    if (!compact) Text(loc("Kręć pokrętłem: brzeg — duży krok, środek — mały. HDG: dotknięcie pokrętła = HDG SEL. Kółko V/S przewijaj palcem. Dotknij cyfr, aby wpisać wartość.",
-        "Turn a knob: the edge for big steps, the centre for small ones. HDG: tap the knob for HDG SEL. Roll the V/S wheel with a finger. Tap the digits to type a value."),
+    if (!compact) Text(loc("b787.turn_a_knob_the_edge_for"),
         style = MaterialTheme.typography.labelSmall, color = Fm.c.ink2, modifier = Modifier.padding(top = 8.dp))
 
     when (enter) {
-        "HDG" -> EnterDialog("HDG", loc("np. 270", "e.g. 270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
-        "ALT" -> EnterDialog("ALTITUDE (ft)", loc("np. 12000", "e.g. 12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
-        "SPD" -> EnterDialog("IAS (kt)", loc("np. 250", "e.g. 250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
-        "VS" -> EnterDialog("V/S (ft/min)", loc("np. -1500", "e.g. -1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "HDG" -> EnterDialog("HDG", loc("common.e_g_270"), KeyboardType.Number, { it.toIntOrNull() in 0..359 }, { cmd("HEADING_BUG_SET", it.toInt()) }) { enter = null }
+        "ALT" -> EnterDialog("ALTITUDE (ft)", loc("common.e_g_12000"), KeyboardType.Number, { it.toIntOrNull() in 0..50_000 }, { cmd("AP_ALT_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
+        "SPD" -> EnterDialog("IAS (kt)", loc("common.e_g_250"), KeyboardType.Number, { it.toIntOrNull() in 0..500 }, { cmd("AP_SPD_VAR_SET", it.toInt()) }) { enter = null }
+        "VS" -> EnterDialog("V/S (ft/min)", loc("common.e_g_1500"), KeyboardType.Number, { it.toIntOrNull() in -8000..8000 }, { cmd("AP_VS_VAR_SET_ENGLISH", it.toInt()) }) { enter = null }
     }
 }
 
@@ -438,7 +437,7 @@ fun B787Tcp(link: LinkClient, s: FlightState) {
                         val stbyEv = if (nav) (if (side == "L") "NAV1_STBY_SET_HZ" else "NAV2_STBY_SET_HZ") else (if (side == "L") "COM_STBY_RADIO_SET_HZ" else "COM2_STBY_RADIO_SET_HZ")
                         val name = (if (nav) "NAV " else "VHF ") + side
                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            TcpLsk(loc("Zamień $name", "Transfer $name")) { cmd(swap) }
+                            TcpLsk(loc("b787.transfer", name)) { cmd(swap) }
                             Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                                 Text(name, fontFamily = Mono, fontSize = 10.sp, color = X_WHITE.copy(alpha = 0.7f))
                                 Row(verticalAlignment = Alignment.Bottom) {
@@ -446,7 +445,7 @@ fun B787Tcp(link: LinkClient, s: FlightState) {
                                     Text(f(radio, nav, true), fontFamily = Mono, fontSize = 16.sp, color = X_CYAN)
                                 }
                             }
-                            TcpLsk(loc("Wstaw notatnik do zapasowej $name", "Insert scratchpad into $name standby")) { insert(nav, stbyEv) }
+                            TcpLsk(loc("b787.insert_scratchpad_into_standby", name)) { insert(nav, stbyEv) }
                         }
                     }
                 }
@@ -460,7 +459,7 @@ fun B787Tcp(link: LinkClient, s: FlightState) {
                             Text(code, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = if (emergency) X_RED else X_WHITE)
                             Text(if (x?.ident == true) "IDENT" else "<IDENT", fontFamily = Mono, fontSize = 11.sp, color = if (x?.ident == true) X_GREEN else X_CYAN)
                         }
-                        TcpLsk(loc("Wstaw kod z notatnika", "Insert code from scratchpad")) {
+                        TcpLsk(loc("b787.insert_code_from_scratchpad")) {
                             ControlMath.squawk(scratch)?.let { cmd("XPNDR_SET", it); scratch = ""; msg = null } ?: run { msg = "INVALID ENTRY" }
                         }
                     }
@@ -469,7 +468,7 @@ fun B787Tcp(link: LinkClient, s: FlightState) {
                             val on = x?.mode == mv.first
                             Text(label, fontFamily = Mono, fontSize = 13.sp, color = if (on) X_GREEN else X_CYAN, textAlign = TextAlign.Center,
                                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(3.dp)).border(1.dp, if (on) X_GREEN else Color(0x55FFFFFF), RoundedCornerShape(3.dp))
-                                    .clickable(onClickLabel = loc("Tryb $label", "Mode $label")) { cmd("XPNDR_MODE", mv.second) }.padding(vertical = 6.dp))
+                                    .clickable(onClickLabel = loc("common.mode", label)) { cmd("XPNDR_MODE", mv.second) }.padding(vertical = 6.dp))
                         }
                     }
                 }
@@ -484,7 +483,7 @@ fun B787Tcp(link: LinkClient, s: FlightState) {
         // Klawisze stron pod ekranem, jak rząd VHF / HF / SAT … XPDR na TCP
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             TcpPage.entries.forEach { p ->
-                D7Detent(p.name, page == p, Modifier.weight(1f), loc("Strona ${p.name}", "${p.name} page")) { pageName = p.name; msg = null }
+                D7Detent(p.name, page == p, Modifier.weight(1f), loc("b787.page", p.name)) { pageName = p.name; msg = null }
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -494,7 +493,7 @@ fun B787Tcp(link: LinkClient, s: FlightState) {
                     if (k.isEmpty()) Spacer(Modifier.weight(1f))
                     else Box(
                         Modifier.weight(1f).height(38.dp).clip(RoundedCornerShape(5.dp)).background(D7_KEY).border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(5.dp))
-                            .clickable(role = Role.Button, onClickLabel = when (k) { "CLR" -> loc("Wyczyść notatnik", "Clear scratchpad"); "DEL" -> loc("Usuń znak", "Delete character"); else -> k }) {
+                            .clickable(role = Role.Button, onClickLabel = when (k) { "CLR" -> loc("b787.clear_scratchpad"); "DEL" -> loc("b787.delete_character"); else -> k }) {
                                 msg = null
                                 scratch = when (k) { "CLR" -> ""; "DEL" -> scratch.dropLast(1); else -> (scratch + k).take(7) }
                             },
@@ -560,7 +559,7 @@ fun B787Systems(link: LinkClient, s: FlightState) {
                 Text(if (moving) "/ / / / /" else if (gearDown) "DOWN" else "UP", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 15.sp,
                     color = if (moving) X_WHITE else if (gearDown) X_GREEN else X_WHITE.copy(alpha = 0.7f))
             }
-            D7Detent(if (gearDown) "DN" else "UP", true, Modifier.width(80.dp), loc("Dźwignia podwozia", "Gear lever")) {
+            D7Detent(if (gearDown) "DN" else "UP", true, Modifier.width(80.dp), loc("common.gear_lever")) {
                 if (gearDown && s.aircraft.onGround == true) confirmGear = true else cmd("GEAR_TOGGLE")
             }
         }
@@ -577,7 +576,7 @@ fun B787Systems(link: LinkClient, s: FlightState) {
                 Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     chunk.forEachIndexed { j, name ->
                         val i = row * 5 + j
-                        D7Detent(name, ctl.flapsIndex == i, Modifier.weight(1f), loc("Klapy $name", "Flaps $name")) { cmd("FLAPS_SET", (16383.0 * i / (positions - 1)).roundToInt()) }
+                        D7Detent(name, ctl.flapsIndex == i, Modifier.weight(1f), loc("common.flaps", name)) { cmd("FLAPS_SET", (16383.0 * i / (positions - 1)).roundToInt()) }
                     }
                     repeat(5 - chunk.size) { Spacer(Modifier.weight(1f)) }
                 }
@@ -588,7 +587,7 @@ fun B787Systems(link: LinkClient, s: FlightState) {
 
     D7Plate("SPEED BRAKE") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            D7Detent("ARMED", ctl.spoilersArmed == true, Modifier.width(78.dp), loc("Spoilery uzbrojone", "Speed brake armed")) { cmd("SPOILERS_ARM_TOGGLE") }
+            D7Detent("ARMED", ctl.spoilersArmed == true, Modifier.width(78.dp), loc("common.speed_brake_armed")) { cmd("SPOILERS_ARM_TOGGLE") }
             SpeedBrakeAxis(link, s, Modifier.weight(1f), label = "DOWN — UP", labelColor = D7_LEGEND)
         }
     }
@@ -596,7 +595,7 @@ fun B787Systems(link: LinkClient, s: FlightState) {
 
     D7Plate("PARKING BRAKE / BRAKES") {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            D7Detent(if (ctl.parkingBrake == true) "SET" else "OFF", ctl.parkingBrake == true, Modifier.width(64.dp), loc("Hamulec postojowy", "Parking brake")) { cmd("PARKING_BRAKES") }
+            D7Detent(if (ctl.parkingBrake == true) "SET" else "OFF", ctl.parkingBrake == true, Modifier.width(64.dp), loc("common.parking_brake")) { cmd("PARKING_BRAKES") }
             WheelBrakeAxis(link, s, Modifier.weight(1f), labelColor = D7_LEGEND)
         }
     }
@@ -604,19 +603,19 @@ fun B787Systems(link: LinkClient, s: FlightState) {
 
     D7Plate("STAB TRIM") {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            D7HoldKey("NOSE DN", loc("Trym nosem w dół", "Trim nose down"), Modifier.weight(1f)) { cmd("ELEV_TRIM_DN") }
+            D7HoldKey("NOSE DN", loc("common.trim_nose_down"), Modifier.weight(1f)) { cmd("ELEV_TRIM_DN") }
             Text(ctl.elevatorTrimPct?.let { "%+.1f".format(it) } ?: "--", fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = X_WHITE,
                 textAlign = TextAlign.Center, modifier = Modifier.weight(1f).clip(RoundedCornerShape(4.dp)).background(D7_WINDOW).padding(vertical = 8.dp))
-            D7HoldKey("NOSE UP", loc("Trym nosem w górę", "Trim nose up"), Modifier.weight(1f)) { cmd("ELEV_TRIM_UP") }
+            D7HoldKey("NOSE UP", loc("common.trim_nose_up"), Modifier.weight(1f)) { cmd("ELEV_TRIM_UP") }
         }
     }
 
     if (confirmGear) AlertDialog(
         onDismissRequest = { confirmGear = false },
-        title = { Text(loc("Schować podwozie na ziemi?", "Retract the gear on the ground?")) },
-        text = { Text(loc("Samolot stoi na ziemi. Schowanie podwozia może go uszkodzić w symulatorze.", "The aircraft is on the ground. Retracting the gear may damage it in the simulator.")) },
-        confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("Schowaj", "Retract"), color = Fm.c.danger) } },
-        dismissButton = { TextButton({ confirmGear = false }) { Text(loc("Anuluj", "Cancel")) } },
+        title = { Text(loc("common.retract_the_gear_on_the_ground")) },
+        text = { Text(loc("common.the_aircraft_is_on_the_ground")) },
+        confirmButton = { TextButton({ cmd("GEAR_UP"); confirmGear = false }) { Text(loc("common.retract"), color = Fm.c.danger) } },
+        dismissButton = { TextButton({ confirmGear = false }) { Text(loc("common.cancel")) } },
     )
 }
 
@@ -627,7 +626,7 @@ fun B787Engines(link: LinkClient, s: FlightState) {
     EngineDisplayBox { B787Eicas(s) }
     Spacer(Modifier.height(12.dp))
     Quadrant(link, s, AircraftProfile.B787)
-    if (s.autopilot.athr) Text(loc("A/T włączony — symulator może sam przestawiać dźwignie.", "A/T is on — the simulator may move the thrust levers itself."),
+    if (s.autopilot.athr) Text(loc("common.a_t_is_on_the_simulator"),
         style = MaterialTheme.typography.labelSmall, color = Fm.c.caution, modifier = Modifier.padding(top = 8.dp))
 }
 

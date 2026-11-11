@@ -1,5 +1,6 @@
 package com.freemetar.app.ui.flight
 
+import com.freemetar.app.domain.flightCount
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -77,23 +78,23 @@ private enum class LogFilter { ALL, SCORED, RECENT }
 fun LogbookEntry(vm: MainViewModel, onOpen: () -> Unit) {
     val c = Fm.c
     val logs by vm.flightLogs.collectAsStateWithLifecycle()
-    Section(loc("Dziennik lotów", "Logbook"), Icons.AutoMirrored.Outlined.MenuBook) {
+    Section(loc("logbook.logbook"), Icons.AutoMirrored.Outlined.MenuBook) {
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(onClick = onOpen).padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 if (logs.isEmpty()) {
-                    Text(loc("Jeszcze nie ma zapisanych lotów.", "No saved flights yet."), style = MaterialTheme.typography.titleSmall, color = c.ink)
-                    Text(loc("Lot zapisuje się sam po połączeniu z symulatorem: od startu do postoju po lądowaniu.", "Flights are recorded automatically once the simulator is connected: from take-off until you stop after landing."),
+                    Text(loc("logbook.no_saved_flights_yet"), style = MaterialTheme.typography.titleSmall, color = c.ink)
+                    Text(loc("logbook.flights_are_recorded_automatically_once_the"),
                         style = MaterialTheme.typography.bodySmall, color = c.ink2)
                 } else {
                     val last = logs.first()
                     val minutes = logs.sumOf { it.durationMin }
-                    Text(loc("${logs.size} lotów, %d:%02d h".format(minutes / 60, minutes % 60), "${logs.size} flights, %d:%02d h".format(minutes / 60, minutes % 60)),
+                    Text("${flightCount(logs.size)}, %d:%02d h".format(minutes / 60, minutes % 60),
                         style = MaterialTheme.typography.titleMedium, color = c.ink)
-                    Text(loc("Ostatni: ", "Last: ") + "${last.from ?: "?"} → ${last.to ?: "?"}, " + DateFormat.getDateInstance(DateFormat.MEDIUM, Lang.locale).format(Date(last.start)),
+                    Text(loc("logbook.last") + "${last.from ?: "?"} → ${last.to ?: "?"}, " + DateFormat.getDateInstance(DateFormat.MEDIUM, Lang.locale).format(Date(last.start)),
                         style = MaterialTheme.typography.bodySmall, color = c.ink2, maxLines = 1)
                 }
             }
-            Icon(Icons.Outlined.ChevronRight, loc("Otwórz dziennik", "Open logbook"), tint = c.ink2)
+            Icon(Icons.Outlined.ChevronRight, loc("logbook.open_logbook"), tint = c.ink2)
         }
     }
 }
@@ -127,10 +128,10 @@ fun LogbookScreen(vm: MainViewModel, onBack: () -> Unit, onOpenFlight: (String) 
 
     Column(Modifier.fillMaxSize().background(c.paper)) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, loc("Wróć", "Back"), tint = c.ink) }
-            Text(loc("Dziennik lotów", "Logbook"), style = MaterialTheme.typography.headlineSmall, color = c.ink, modifier = Modifier.weight(1f))
-            IconButton({ importer.launch(arrayOf("*/*")) }) { Icon(Icons.Outlined.Download, loc("Importuj loty", "Import flights"), tint = c.ink) }
-            IconButton({ exporter.launch("OpenTakeoff-loty.oab") }, enabled = logs.isNotEmpty()) { Icon(Icons.Outlined.Upload, loc("Eksportuj loty", "Export flights"), tint = if (logs.isEmpty()) c.ink2 else c.ink) }
+            IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, loc("common.back"), tint = c.ink) }
+            Text(loc("logbook.logbook"), style = MaterialTheme.typography.headlineSmall, color = c.ink, modifier = Modifier.weight(1f))
+            IconButton({ importer.launch(arrayOf("*/*")) }) { Icon(Icons.Outlined.Download, loc("logbook.import_flights"), tint = c.ink) }
+            IconButton({ exporter.launch("OpenTakeoff-loty.oab") }, enabled = logs.isNotEmpty()) { Icon(Icons.Outlined.Upload, loc("logbook.export_flights"), tint = if (logs.isEmpty()) c.ink2 else c.ink) }
         }
         Rule()
         LazyColumn(Modifier.fillMaxSize().widthIn(max = 900.dp).align(Alignment.CenterHorizontally), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp)) {
@@ -139,10 +140,9 @@ fun LogbookScreen(vm: MainViewModel, onBack: () -> Unit, onOpenFlight: (String) 
                     Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.AutoMirrored.Outlined.MenuBook, null, tint = c.ink2, modifier = Modifier.size(40.dp))
                         Spacer(Modifier.height(12.dp))
-                        Text(loc("Dziennik jest pusty", "The logbook is empty"), style = MaterialTheme.typography.titleMedium, color = c.ink)
+                        Text(loc("logbook.the_logbook_is_empty"), style = MaterialTheme.typography.titleMedium, color = c.ink)
                         Text(
-                            loc("Połącz telefon z OpenTakeoff Link i wystartuj. Lot zapisze się sam, z torem, wysokością i oceną lądowania. Restart lotu w symulatorze zaczyna nowy wpis. Możesz też zaimportować plik .oab z innego telefonu.",
-                                "Connect the phone to OpenTakeoff Link and take off. The flight is saved automatically with its track, altitude and landing score. Restarting the flight in the simulator starts a new entry. You can also import an .oab file from another phone."),
+                            loc("logbook.connect_the_phone_to_opentakeoff_link"),
                             style = MaterialTheme.typography.bodyMedium, color = c.ink2, modifier = Modifier.padding(top = 6.dp),
                         )
                     }
@@ -154,13 +154,13 @@ fun LogbookScreen(vm: MainViewModel, onBack: () -> Unit, onOpenFlight: (String) 
             }
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(filter == LogFilter.ALL, { filter = LogFilter.ALL }, { Text(loc("Wszystkie", "All")) })
-                    FilterChip(filter == LogFilter.SCORED, { filter = LogFilter.SCORED }, { Text(loc("Z oceną lądowania", "With landing score")) })
-                    FilterChip(filter == LogFilter.RECENT, { filter = LogFilter.RECENT }, { Text(loc("Ostatnie 30 dni", "Last 30 days")) })
+                    FilterChip(filter == LogFilter.ALL, { filter = LogFilter.ALL }, { Text(loc("common.all")) })
+                    FilterChip(filter == LogFilter.SCORED, { filter = LogFilter.SCORED }, { Text(loc("logbook.with_landing_score")) })
+                    FilterChip(filter == LogFilter.RECENT, { filter = LogFilter.RECENT }, { Text(loc("logbook.last_30_days")) })
                 }
             }
             if (shown.isEmpty()) item {
-                Text(loc("Żaden lot nie pasuje do filtra.", "No flights match this filter."), style = MaterialTheme.typography.bodyMedium, color = c.ink2, modifier = Modifier.padding(16.dp))
+                Text(loc("logbook.no_flights_match_this_filter"), style = MaterialTheme.typography.bodyMedium, color = c.ink2, modifier = Modifier.padding(16.dp))
             }
             groups.forEach { (month, list) ->
                 item(key = "m$month") {
@@ -194,7 +194,7 @@ private fun LogRow(f: FlightLog, onClick: () -> Unit) {
                     "${f.distanceNm} NM",
                     if (f.maxAltFt >= 18_000) "FL%03d".format(f.maxAltFt / 100) else "${f.maxAltFt} ft",
                     f.landing?.let { "${it.vsFpm} ft/min" },
-                    f.allLandings.size.takeIf { it > 1 }?.let { loc("lądowania: $it", "landings: $it") },
+                    f.allLandings.size.takeIf { it > 1 }?.let { loc("logbook.landings", it) },
                 ).joinToString("   "),
                 fontFamily = Mono, fontSize = 12.sp, color = c.ink, modifier = Modifier.padding(top = 2.dp),
             )

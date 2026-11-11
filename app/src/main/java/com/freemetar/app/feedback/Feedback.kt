@@ -119,7 +119,7 @@ object Feedback {
             .put("appName", appName(context))
             .put("appVersion", appVersion(context))
             .put("platform", if (context.packageManager.hasSystemFeature("android.hardware.type.watch")) "wearos" else "android")
-            .put("locale", Locale.getDefault().toLanguageTag())
+            .put("locale", android.content.res.Resources.getSystem().configuration.locales[0].toLanguageTag())
         if (includeDevice) {
             json.put("os", "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
             json.put("device", "${Build.MANUFACTURER} ${Build.MODEL}".trim())
