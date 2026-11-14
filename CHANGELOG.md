@@ -1,3 +1,7 @@
+## 2.8.1
+
+- Ikona aplikacji bez tła: na ekranie głównym widać sam kolorowy emblemat, spójnie z trybem „Bez tła” w OpenDesktop.
+
 ## 2.8.0
 
 - Nowy język: hiszpański, w aplikacji i w OpenTakeoff Link (Windows). Teksty są teraz w osobnych plikach językowych.
