@@ -1,0 +1,50 @@
+// Kolory i miary interfejsu. Trzy motywy: AMOLED (głęboka czerń jak w OpenPDF), grafitowy
+// i jasny; kolor akcentu ustawia się w Ustawieniach.
+
+export global Theme {
+    // 0 – AMOLED, 1 – grafitowy, 2 – jasny, 3 – granatowy, 4 – nocny kokpit (zielony, mało niebieskiego), 5 – sepia.
+    in-out property <int> mode: 0;
+    in-out property <color> accent: #5b8cff;
+    in-out property <float> scale: 1.0;
+    // 0 – ostre, 1 – zwykłe, 2 – mocne zaokrąglenia.
+    in-out property <int> corners: 1;
+    in-out property <bool> dense: false;
+    in-out property <string> font: "Segoe UI Variable Text";
+    // Wspólna przezroczystość pasków, paneli, menu i okien (0 – pełne krycie, 0.6 – najmocniejsza).
+    in-out property <float> clear: 0;
+
+    out property <bool> dark: mode != 2 && mode != 5;
+    out property <color> bg: mode == 0 ? #000000 : mode == 1 ? #1b1c1f : mode == 3 ? #0b1220 : mode == 4 ? #070b09 : mode == 5 ? #efe8dc : #f2f2f5;
+    out property <color> desk: mode == 0 ? #050505 : mode == 1 ? #141517 : mode == 3 ? #080e1a : mode == 4 ? #040705 : mode == 5 ? #e4dccd : #e3e3e8;
+    // Jedno tło dla wszystkich powierzchni interfejsu: paski, wstążka, panele, menu, okna.
+    out property <color> surface: mode == 0 ? #0b0b0b : mode == 1 ? #232428 : mode == 3 ? #121b2e : mode == 4 ? #0d1410 : mode == 5 ? #faf5ec : #ffffff;
+    out property <color> panel: surface.with-alpha(1 - clear);
+    out property <color> raised: mode == 0 ? #141414 : mode == 1 ? #2d2e33 : mode == 3 ? #1a2540 : mode == 4 ? #131c17 : mode == 5 ? #fffaf2 : #ffffff;
+    out property <color> higher: mode == 0 ? #1c1c1c : mode == 1 ? #36373d : mode == 3 ? #22304f : mode == 4 ? #1a251f : mode == 5 ? #f4ede1 : #f7f7fa;
+    out property <color> popup: surface.with-alpha(1 - clear);
+    out property <color> line: mode == 2 || mode == 5 ? #00000014 : mode == 0 ? #ffffff1a : #ffffff17;
+    out property <color> line-strong: mode == 2 || mode == 5 ? #00000026 : mode == 0 ? #ffffff33 : #ffffff2b;
+    out property <color> text: mode == 2 ? #18181c : mode == 5 ? #2b2418 : mode == 4 ? #d8f0dc : #ffffff;
+    out property <color> text-dim: mode == 2 ? #18181cb3 : mode == 5 ? #2b2418b3 : mode == 4 ? #d8f0dcb3 : #ffffffb3;
+    out property <color> text-faint: mode == 2 ? #18181c73 : mode == 5 ? #2b241873 : mode == 4 ? #d8f0dc66 : #ffffff66;
+    out property <color> hover: mode == 2 || mode == 5 ? #0000000d : #ffffff12;
+    out property <color> press: mode == 2 || mode == 5 ? #0000001a : #ffffff21;
+    out property <color> glass: surface.with-alpha(1 - clear);
+    out property <color> accent-soft: accent.with-alpha(0.18);
+    out property <color> accent-text: (accent.red * 0.299 + accent.green * 0.587 + accent.blue * 0.114) > 165 ? #000000 : #ffffff;
+    out property <color> danger: #ff4d5a;
+    out property <color> ok: #3ccf7a;
+    out property <color> selection: accent.with-alpha(0.28);
+
+    out property <length> r-small: corners == 0 ? 2px : corners == 1 ? 6px : 10px;
+    out property <length> r: corners == 0 ? 3px : corners == 1 ? 8px : 14px;
+    out property <length> r-big: corners == 0 ? 4px : corners == 1 ? 12px : 20px;
+    out property <length> fs: 12.5px * scale;
+    out property <length> fs-small: 11px * scale;
+    out property <length> fs-big: 15px * scale;
+    out property <length> row: (dense ? 26px : 30px) * scale;
+    out property <length> ribbon-h: (dense ? 96px : 104px) * scale;
+    // Zwężanie wstążki na wąskim oknie (jak w Wordzie): 0 – pełna, 1 – małe przyciski bez podpisów,
+    // 2 – także duże bez podpisów i węższa galeria stylów, 3 – ukryte grupy mniej ważne.
+    in-out property <int> ribbon-level;
+}

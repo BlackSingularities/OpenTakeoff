@@ -1,7 +1,7 @@
 name: Build & Release
 
 # Push na main = sam build (sprawdzenie, że się kompiluje).
-# Tag vX.Y.Z = release z podpisanym APK i OpenTakeoff-Link.exe w wersji X.Y.Z.
+# Tag vX.Y.Z = release z APK i instalatorem OpenTakeoff dla Windows w wersji X.Y.Z.
 # Budowanie i wydanie wyłącznie po wypchnięciu tagu wersji (np. v1.2.3).
 on:
   push:
@@ -77,11 +77,15 @@ jobs:
             --notes "$NOTES" \
             --verify-tag
 
-  # OpenTakeoff Link (most MSFS ↔ telefon) — dołączany do tego samego release co APK.
-  # Osobny job po APK: jego błąd nie blokuje wydania aplikacji.
-  link:
+  # OpenTakeoff dla Windows (Rust): dziennik lotów, briefing i most MSFS ↔ telefon – dawny OpenTakeoff Link.
+  # Osobny job po APK: jego błąd nie blokuje wydania aplikacji. Instalator trafia do tego samego wydania,
+  # a redzikowski.com pokazuje go jako wersję na Windows.
+  windows:
     needs: release
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
     steps:
       - uses: actions/checkout@v7
 
@@ -90,23 +94,56 @@ jobs:
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then VERSION="${GITHUB_REF_NAME#v}"; else VERSION="0.0.0"; fi
           echo "APP_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "OPENTAKEOFF_VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-dotnet@v6
+      - name: Rust
+        shell: bash
+        run: rustup toolchain install stable-x86_64-pc-windows-msvc --profile minimal
+
+      - uses: Swatinem/rust-cache@v2
         with:
-          dotnet-version: "8.0.x"
+          workspaces: desktop
 
       - name: Testy
-        run: dotnet test bridge/OpenAirBookLink.Tests/OpenAirBookLink.Tests.csproj -c Release
+        run: cargo test --release -p opentakeoff-core -p opentakeoff-msfs
 
-      - name: Publikuj OpenTakeoff-Link.exe
-        shell: bash
+      - name: Budowanie
+        run: cargo build --release -p opentakeoff
+
+      - name: Podpis cyfrowy
+        shell: pwsh
+        env:
+          WIN_CERT: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WIN_CERT_PASS: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: |
-          dotnet publish bridge/OpenAirBookLink/OpenAirBookLink.csproj -c Release -o publish -p:Version=$APP_VERSION
-          cp publish/OpenTakeoff-Link.exe OpenTakeoff-Link.exe
+          New-Item -ItemType Directory ../dist, ../out -Force | Out-Null
+          Copy-Item target/release/OpenTakeoff.exe ../dist/
+          # Tylko gdy w sekretach jest certyfikat (.pfx w base64) i hasło.
+          if (-not $env:WIN_CERT) { exit 0 }
+          $pfx = Join-Path $env:RUNNER_TEMP "cert.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WIN_CERT))
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName | Select-Object -Last 1
+          & $signtool.FullName sign /f $pfx /p $env:WIN_CERT_PASS /fd sha256 /tr http://timestamp.digicert.com /td sha256 /d "OpenTakeoff" ../dist/OpenTakeoff.exe
+          if ($LASTEXITCODE -ne 0) { throw "Podpisywanie nie powiodło się" }
+          Remove-Item $pfx
+
+      - name: Instalator
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          & $iscc "/DAppVersion=$env:APP_VERSION" installer/OpenTakeoff.iss
+          if ($LASTEXITCODE -ne 0) { throw "Instalator nie powstał" }
+          Get-FileHash ../out/* -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } | Set-Content ../out/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OpenTakeoff-Windows-${{ env.APP_VERSION }}
+          path: out/*
 
       - name: Dołącz do release
         if: github.ref_type == 'tag'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" OpenTakeoff-Link.exe --clobber
+        run: gh release upload "$GITHUB_REF_NAME" ../out/* --clobber

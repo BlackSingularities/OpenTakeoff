@@ -1,0 +1,352 @@
+// Karta Mapa: rozbudowana mapa nawigacyjna (radiale, róże VOR, róża kursowa, pomiar, wektor toru)
+// i widok 3D. Obraz rysuje Rust; tu są tylko zdarzenia myszy i panel boczny.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, KV, RowV } from "state.slint";
+import { IconButton, Button, Field, Segmented } from "widgets.slint";
+import { Panel, Heading, Pair, Bar, Colors } from "parts.slint";
+
+component NavMapView inherits Rectangle {
+    property <length> last-x;
+    property <length> last-y;
+    property <length> moved-by;
+    clip: true;
+    border-radius: Theme.r;
+    background: Theme.dark ? #0e1116 : #e8ebef;
+    border-width: 1px;
+    border-color: Theme.line;
+    changed width => {
+        App.map-event(4, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    changed height => {
+        App.map-event(4, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    init => {
+        App.map-event(4, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    Image {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
+        source: App.map-nav;
+        image-fit: fill;
+    }
+    if !App.nav.view3d: Rectangle {
+        for l in App.map-nav-labels: Text {
+            x: l.x * 1px + 6px;
+            y: l.y * 1px - 8px;
+            text: l.text;
+            font-family: Theme.font;
+            font-size: l.kind == 0 ? 11px : 10px;
+            font-weight: l.kind == 0 ? 600 : 400;
+            color: l.kind == 1 ? (Theme.dark ? #7fe3ee : #0b6a7a) : l.kind == 2 ? Colors.warn : Theme.dark ? #ffffffd9 : #18181cd9;
+            stroke: Theme.dark ? #000000b3 : #ffffffcc;
+            stroke-width: 2.5px;
+            stroke-style: outside;
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: App.nav.view3d ? (self.pressed ? MouseCursor.grabbing : MouseCursor.move) : App.nav.tool != 0 ? MouseCursor.crosshair : self.pressed ? MouseCursor.grabbing : MouseCursor.default;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                root.last-x = self.mouse-x;
+                root.last-y = self.mouse-y;
+                root.moved-by = 0;
+            } else if (e.kind == PointerEventKind.up && e.button == PointerEventButton.left) {
+                if (root.moved-by < 5px) {
+                    App.map-event(4, "click", self.mouse-x / 1px, self.mouse-y / 1px, 0, 0);
+                }
+            } else if (e.kind == PointerEventKind.move && !self.pressed) {
+                App.map-event(4, "hover", self.mouse-x / 1px, self.mouse-y / 1px, 0, 0);
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                root.moved-by += abs(self.mouse-x - root.last-x) + abs(self.mouse-y - root.last-y);
+                if (root.moved-by >= 5px) {
+                    App.map-event(4, "pan", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
+                }
+                root.last-x = self.mouse-x;
+                root.last-y = self.mouse-y;
+            }
+        }
+        changed has-hover => {
+            if (!self.has-hover) {
+                App.map-event(4, "leave", 0, 0, 0, 0);
+            }
+        }
+        scroll-event(e) => {
+            App.map-event(4, "zoom", self.mouse-x / 1px, self.mouse-y / 1px, 0, e.delta-y / 1px);
+            accept
+        }
+        double-clicked => {
+            App.map-event(4, "zoom", self.mouse-x / 1px, self.mouse-y / 1px, 0, 120);
+        }
+    }
+    Rectangle {
+        x: parent.width - self.width - 8px;
+        y: 8px;
+        width: 32px * Theme.scale;
+        height: vl.preferred-height;
+        border-radius: Theme.r-small + 2px;
+        background: Theme.popup;
+        border-width: 1px;
+        border-color: Theme.line;
+        vl := VerticalLayout {
+            padding: 2px;
+            spacing: 2px;
+            IconButton {
+                icon: Icons.plus;
+                tip: @tr("Przybliż");
+                clicked => {
+                    App.map-event(4, "zoom", root.width / 2px, root.height / 2px, 0, 120);
+                }
+            }
+            IconButton {
+                icon: Icons.minus;
+                tip: @tr("Oddal");
+                clicked => {
+                    App.map-event(4, "zoom", root.width / 2px, root.height / 2px, 0, -120);
+                }
+            }
+            IconButton {
+                icon: Icons.scan;
+                tip: App.nav.view3d ? @tr("Kamera domyślnie") : @tr("Pokaż cały ślad");
+                clicked => {
+                    App.map-event(4, "fit", 0, 0, 0, 0);
+                }
+            }
+            IconButton {
+                icon: Icons.locate-fixed;
+                active: App.follow;
+                tip: @tr("Śledź samolot");
+                clicked => {
+                    App.follow = !App.follow;
+                    App.map-event(4, "follow", App.follow ? 1 : 0, 0, 0, 0);
+                }
+            }
+        }
+    }
+    if !App.nav.view3d && App.map-nav-scale != "": Rectangle {
+        x: 8px;
+        y: parent.height - self.height - 8px;
+        width: st.preferred-width + 12px;
+        height: 18px;
+        border-radius: 4px;
+        background: Theme.popup;
+        st := Text {
+            text: App.map-nav-scale;
+            font-family: Theme.font;
+            font-size: 10px;
+            color: Theme.text-dim;
+        }
+    }
+    if App.nav.view3d: Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: parent.height - self.height - 10px;
+        width: ht.preferred-width + 16px;
+        height: 20px;
+        border-radius: 10px;
+        background: #000000a0;
+        ht := Text {
+            text: @tr("Przeciągnij – obrót kamery · kółko – odległość");
+            font-family: Theme.font;
+            font-size: 10px;
+            color: #ffffffc0;
+        }
+    }
+    Text {
+        x: parent.width - self.width - 6px;
+        y: parent.height - self.height - 3px;
+        text: App.map-attribution;
+        font-family: Theme.font;
+        font-size: 9px;
+        color: Theme.dark ? #ffffff80 : #00000080;
+    }
+}
+
+component Box inherits Panel {
+    in property <string> title;
+    in property <image> icon;
+    VerticalLayout {
+        padding: 10px;
+        spacing: 3px;
+        Heading {
+            text: root.title;
+            icon: root.icon;
+        }
+        @children
+    }
+}
+
+component RowItem inherits Rectangle {
+    in property <RowV> item;
+    callback clicked();
+    height: vl.preferred-height + 6px;
+    border-radius: Theme.r-small;
+    background: ta.has-hover ? Theme.hover : transparent;
+    vl := VerticalLayout {
+        y: 3px;
+        height: parent.height - 6px;
+        padding-left: 4px;
+        padding-right: 4px;
+        spacing: 1px;
+        HorizontalLayout {
+            spacing: 8px;
+            Text {
+                text: root.item.name;
+                font-family: Theme.font;
+                font-size: Theme.fs;
+                color: Theme.text;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
+            Text {
+                text: root.item.a;
+                font-family: "Consolas";
+                font-size: Theme.fs-small;
+                color: Theme.accent;
+            }
+        }
+        if root.item.b != "": Text {
+            text: root.item.b;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            overflow: elide;
+        }
+    }
+    ta := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component NavMap inherits Rectangle {
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        NavMapView {
+            horizontal-stretch: 1;
+        }
+        sv := ScrollView {
+            width: 310px * Theme.scale;
+            VerticalLayout {
+                width: sv.visible-width - 4px;
+                spacing: 10px;
+                Panel {
+                    height: sl.preferred-height;
+                    sl := HorizontalLayout {
+                        padding: 8px;
+                        spacing: 6px;
+                        Field {
+                            w: 180px * Theme.scale;
+                            text <=> App.nav-query;
+                            placeholder: @tr("VOR, NDB, lotnisko (np. WAR, EPWA)");
+                            accepted(t) => {
+                                App.cmd("nav-find", t);
+                            }
+                        }
+                        Button {
+                            label: @tr("Radiale");
+                            icon: Icons.search;
+                            clicked => {
+                                App.cmd("nav-find", App.nav-query);
+                            }
+                        }
+                    }
+                }
+                if App.nav-tool-title != "": Box {
+                    title: App.nav-tool-title;
+                    icon: App.nav.tool == 1 ? Icons.radius : App.nav.tool == 2 ? Icons.ruler : Icons.info;
+                    for kv in App.nav-tool: Pair {
+                        k: kv.k;
+                        v: kv.v;
+                    }
+                    if App.nav.tool == 1 && App.nav.has-ref: HorizontalLayout {
+                        spacing: 6px;
+                        padding-top: 4px;
+                        Segmented {
+                            items: ["IN", "OUT"];
+                            current: App.nav.inbound ? 0 : 1;
+                            tip: @tr("Lot do punktu (IN) albo od punktu (OUT) po wybranym radialu");
+                            picked(i) => {
+                                App.cmd("nav-inbound", i == 0 ? "1" : "0");
+                            }
+                        }
+                        IconButton {
+                            icon: Icons.minus;
+                            tip: @tr("Radial −1°");
+                            clicked => {
+                                App.cmd("nav-radial-step", "-1");
+                            }
+                        }
+                        IconButton {
+                            icon: Icons.plus;
+                            tip: @tr("Radial +1°");
+                            clicked => {
+                                App.cmd("nav-radial-step", "1");
+                            }
+                        }
+                        Button {
+                            label: @tr("Nowy punkt");
+                            clicked => {
+                                App.cmd("nav-clear", "");
+                            }
+                        }
+                    }
+                }
+                if App.nav-info.length > 0: Box {
+                    title: @tr("SAMOLOT");
+                    icon: Icons.plane;
+                    for kv in App.nav-info: Pair {
+                        k: kv.k;
+                        v: kv.v;
+                    }
+                }
+                if App.nav-hover != "": Box {
+                    title: @tr("KURSOR");
+                    icon: Icons.crosshair;
+                    Text {
+                        text: App.nav-hover;
+                        font-family: "Consolas";
+                        font-size: Theme.fs-small;
+                        color: Theme.text;
+                        wrap: word-wrap;
+                    }
+                }
+                Box {
+                    title: @tr("NAJBLIŻSZE VOR / NDB");
+                    icon: Icons.radio-tower;
+                    if App.nav-vors.length == 0: Text {
+                        text: @tr("Baza pomocy nawigacyjnych wczytuje się razem z bazą lotnisk.");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
+                    }
+                    for r in App.nav-vors: RowItem {
+                        item: r;
+                        clicked => {
+                            App.cmd("nav-find", r.id);
+                        }
+                    }
+                }
+                Box {
+                    title: @tr("NAJBLIŻSZE LOTNISKA");
+                    icon: Icons.map-pin;
+                    for r in App.nav-airports: RowItem {
+                        item: r;
+                        clicked => {
+                            App.cmd("nav-find", r.id);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

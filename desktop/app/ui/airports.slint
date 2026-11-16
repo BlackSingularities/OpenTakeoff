@@ -1,0 +1,619 @@
+// Karta Lotniska: wyszukiwarka OurAirports, briefing lotniska (pogoda z dekodowaniem, pasy ze składowymi
+// wiatru, częstotliwości, okolica, mapa) i procedury SID / STAR / podejścia z bazy MSFS.
+
+import { ScrollView, ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, GroupV } from "state.slint";
+import { Button, IconButton, Field, Segmented, TipArea } from "widgets.slint";
+import { Panel, Heading, Metric, Pair, CatBadge, MapView, ListRow, Empty, Colors, Bar } from "parts.slint";
+
+component Decoded inherits VerticalLayout {
+    in property <string> raw;
+    in property <[GroupV]> groups;
+    spacing: 6px;
+    Rectangle {
+        border-radius: Theme.r-small;
+        background: Theme.raised;
+        height: rt.preferred-height + 14px;
+        rt := Text {
+            x: 8px;
+            width: parent.width - 16px;
+            text: root.raw == "" ? "—" : root.raw;
+            font-family: "Consolas";
+            font-size: Theme.fs;
+            color: Theme.text;
+            wrap: word-wrap;
+        }
+    }
+    for g in root.groups: HorizontalLayout {
+        spacing: 10px;
+        visible: g.meaning != "";
+        height: g.meaning != "" ? max(gt.preferred-height, 18px) : 0;
+        Text {
+            width: 110px * Theme.scale;
+            text: g.token;
+            font-family: "Consolas";
+            font-size: Theme.fs-small;
+            color: Theme.accent;
+            overflow: elide;
+        }
+        gt := Text {
+            horizontal-stretch: 1;
+            text: g.meaning;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-dim;
+            wrap: word-wrap;
+        }
+    }
+}
+
+component Briefing inherits ScrollView {
+    VerticalLayout {
+        width: root.visible-width;
+        padding-right: 8px;
+        spacing: 10px;
+        HorizontalLayout {
+            spacing: 10px;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 2px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        text: App.airport.ident;
+                        font-family: Theme.font;
+                        font-size: 26px * Theme.scale;
+                        font-weight: 700;
+                        color: Theme.text;
+                    }
+                    CatBadge {
+                        cat: App.airport.cat;
+                        y: (parent.height - self.height) / 2;
+                    }
+                }
+                Text {
+                    text: App.airport.name;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-big;
+                    color: Theme.text;
+                    overflow: elide;
+                }
+                Text {
+                    text: App.airport.place + " · " + App.airport.kind;
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.text-dim;
+                    overflow: elide;
+                }
+            }
+            IconButton {
+                icon: Icons.star;
+                active: App.airport-watched;
+                tip: App.airport-watched ? @tr("Usuń z obserwowanych") : @tr("Obserwuj (pogoda na Pulpicie)");
+                clicked => {
+                    App.cmd("airport-watch", App.airport.ident);
+                }
+            }
+            IconButton {
+                icon: Icons.refresh-cw;
+                tip: @tr("Odśwież pogodę");
+                clicked => {
+                    App.cmd("airport-refresh", App.airport.ident);
+                }
+            }
+        }
+        Segmented {
+            items: [@tr("Briefing"), @tr("Pasy i częstotliwości"), @tr("Procedury MSFS"), @tr("Okolica")];
+            current: App.airport-view;
+            picked(i) => {
+                App.airport-view = i;
+                if (i == 2) {
+                    App.cmd("procedures-load", App.airport.ident);
+                }
+            }
+        }
+        if App.airport-view == 0: VerticalLayout {
+            spacing: 10px;
+            HorizontalLayout {
+                spacing: 8px;
+                for kv in App.metar-summary: Metric {
+                    horizontal-stretch: 1;
+                    label: kv.k;
+                    value: kv.v;
+                    big: 16px * Theme.scale;
+                }
+            }
+            Panel {
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 6px;
+                    HorizontalLayout {
+                        Heading {
+                            text: "METAR";
+                            icon: Icons.cloud-sun;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: App.weather-status;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            vertical-alignment: center;
+                        }
+                    }
+                    Decoded {
+                        raw: App.metar-raw;
+                        groups: App.metar-groups;
+                    }
+                    if App.metar-history.length > 0: VerticalLayout {
+                        spacing: 2px;
+                        padding-top: 4px;
+                        Text {
+                            text: @tr("Wcześniejsze depesze");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            font-weight: 600;
+                            color: Theme.text-dim;
+                        }
+                        for m in App.metar-history: Text {
+                            text: m;
+                            font-family: "Consolas";
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+            Panel {
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 6px;
+                    Heading {
+                        text: "TAF";
+                        icon: Icons.calendar;
+                    }
+                    Decoded {
+                        raw: App.taf-raw;
+                        groups: App.taf-groups;
+                    }
+                }
+            }
+            Panel {
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 2px;
+                    Heading {
+                        text: @tr("INFORMACJE");
+                        icon: Icons.info;
+                    }
+                    for kv in App.airport-info: Pair {
+                        k: kv.k;
+                        v: kv.v;
+                    }
+                }
+            }
+        }
+        if App.airport-view == 1: VerticalLayout {
+            spacing: 10px;
+            Panel {
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 4px;
+                    Heading {
+                        text: @tr("PASY STARTOWE");
+                        icon: Icons.plane-takeoff;
+                    }
+                    for r in App.airport-runways: Rectangle {
+                        height: rl.preferred-height;
+                        border-radius: Theme.r-small;
+                        background: r.best ? Theme.accent-soft : transparent;
+                        rl := HorizontalLayout {
+                            padding: 6px;
+                            spacing: 12px;
+                            Text {
+                                width: 70px * Theme.scale;
+                                text: r.ident;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-big;
+                                font-weight: 700;
+                                color: Theme.text;
+                                vertical-alignment: center;
+                            }
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                spacing: 2px;
+                                Text {
+                                    text: r.length + " · " + r.surface + " · " + r.heading;
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs;
+                                    color: Theme.text;
+                                    overflow: elide;
+                                }
+                                Text {
+                                    text: r.ils;
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs-small;
+                                    color: Theme.text-dim;
+                                    overflow: elide;
+                                }
+                            }
+                            Text {
+                                text: r.wind;
+                                font-family: Theme.font;
+                                font-size: Theme.fs;
+                                color: r.head < 0 ? Colors.warn : r.best ? Theme.accent : Theme.text-dim;
+                                vertical-alignment: center;
+                                horizontal-alignment: right;
+                                width: 220px * Theme.scale;
+                                wrap: word-wrap;
+                            }
+                        }
+                    }
+                    Text {
+                        text: @tr("Składowe wiatru z bieżącego METAR-u: czołowy (+) / tylny (−) i boczny. Wyróżniony pas ma najkorzystniejszy wiatr.");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+            Panel {
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 2px;
+                    Heading {
+                        text: @tr("CZĘSTOTLIWOŚCI");
+                        icon: Icons.radio;
+                    }
+                    if App.airport-freqs.length == 0: Text {
+                        text: "—";
+                        color: Theme.text-faint;
+                    }
+                    for f in App.airport-freqs: HorizontalLayout {
+                        height: 22px * Theme.scale;
+                        spacing: 10px;
+                        Text {
+                            width: 80px * Theme.scale;
+                            text: f.kind;
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            font-weight: 600;
+                            color: Theme.accent;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            horizontal-stretch: 1;
+                            text: f.name;
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: f.mhz;
+                            font-family: "Consolas";
+                            font-size: Theme.fs;
+                            color: Theme.text;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+        if App.airport-view == 2: HorizontalLayout {
+            spacing: 10px;
+            Panel {
+                width: 280px * Theme.scale;
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 4px;
+                    Heading {
+                        text: @tr("PROCEDURY Z BAZY MSFS");
+                        icon: Icons.route;
+                    }
+                    Text {
+                        text: App.procedures-status;
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
+                    }
+                    for p in App.procedures: ListRow {
+                        height: p.kind < 0 ? 26px * Theme.scale : 30px * Theme.scale;
+                        clicked => {
+                            if (p.kind >= 0) {
+                                App.cmd("procedure-open", p.name);
+                            }
+                        }
+                        HorizontalLayout {
+                            padding-left: p.kind < 0 ? 2px : 10px;
+                            spacing: 8px;
+                            Text {
+                                text: p.name;
+                                font-family: Theme.font;
+                                font-size: p.kind < 0 ? Theme.fs-small : Theme.fs;
+                                font-weight: p.kind < 0 ? 700 : 400;
+                                color: p.kind < 0 ? Theme.text-dim : Theme.text;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: p.info;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-faint;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                        }
+                    }
+                }
+            }
+            Panel {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 4px;
+                    Heading {
+                        text: App.procedure-title != "" ? App.procedure-title : @tr("ODCINKI PROCEDURY");
+                        icon: Icons.list-ordered;
+                    }
+                    if App.procedure-legs.length == 0: Text {
+                        text: @tr("Wybierz procedurę z listy. Dane pochodzą z bazy nawigacyjnej MSFS, więc procedury są dostępne, gdy symulator działa (albo w trybie symulacji dla EPWA i EPGD).");
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
+                    }
+                    for l[i] in App.procedure-legs: Rectangle {
+                        height: 24px * Theme.scale;
+                        background: mod(i, 2) == 0 ? Theme.hover : transparent;
+                        border-radius: 3px;
+                        HorizontalLayout {
+                            padding-left: 6px;
+                            spacing: 8px;
+                            Text {
+                                width: 70px * Theme.scale;
+                                text: l.fix;
+                                font-family: "Consolas";
+                                font-size: Theme.fs;
+                                font-weight: 600;
+                                color: Theme.text;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                width: 34px * Theme.scale;
+                                text: l.kind;
+                                font-family: "Consolas";
+                                font-size: Theme.fs-small;
+                                color: Theme.accent;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                horizontal-stretch: 1;
+                                text: l.alt;
+                                font-family: Theme.font;
+                                font-size: Theme.fs;
+                                color: Theme.text;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                width: 70px * Theme.scale;
+                                text: l.speed;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-dim;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                width: 60px * Theme.scale;
+                                text: l.course;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-dim;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                width: 60px * Theme.scale;
+                                text: l.dist;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-dim;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if App.airport-view == 3: Panel {
+            VerticalLayout {
+                padding: 10px;
+                spacing: 2px;
+                Heading {
+                    text: @tr("LOTNISKA W POBLIŻU");
+                    icon: Icons.map-pin;
+                }
+                for a in App.airport-nearby: ListRow {
+                    height: 30px * Theme.scale;
+                    clicked => {
+                        App.cmd("airport-open", a.ident);
+                    }
+                    HorizontalLayout {
+                        padding-left: 6px;
+                        padding-right: 6px;
+                        spacing: 10px;
+                        Text {
+                            width: 60px * Theme.scale;
+                            text: a.ident;
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            font-weight: 600;
+                            color: Theme.text;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            horizontal-stretch: 1;
+                            text: a.name;
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: a.extra;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component Airports inherits Rectangle {
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        Panel {
+            width: 330px * Theme.scale;
+            VerticalLayout {
+                padding: 8px;
+                spacing: 8px;
+                Field {
+                    w: parent.width - 16px;
+                    height: 30px * Theme.scale;
+                    text <=> App.airport-query;
+                    placeholder: @tr("ICAO, IATA, nazwa lub miasto…");
+                    edited(t) => {
+                        App.cmd("airport-search", t);
+                    }
+                    accepted(t) => {
+                        App.cmd("airport-search-open", t);
+                    }
+                }
+                Text {
+                    text: App.db-status;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                    wrap: word-wrap;
+                }
+                if App.airport-results.length == 0 && App.watchlist.length > 0: VerticalLayout {
+                    spacing: 2px;
+                    Text {
+                        text: @tr("Obserwowane");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        font-weight: 700;
+                        color: Theme.text-dim;
+                    }
+                    for w in App.watchlist: ListRow {
+                        height: 32px * Theme.scale;
+                        clicked => {
+                            App.cmd("airport-open", w.icao);
+                        }
+                        HorizontalLayout {
+                            padding-left: 6px;
+                            spacing: 8px;
+                            Text {
+                                text: w.icao;
+                                font-family: Theme.font;
+                                font-size: Theme.fs;
+                                font-weight: 600;
+                                color: Theme.text;
+                                vertical-alignment: center;
+                            }
+                            CatBadge {
+                                cat: w.cat;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            Text {
+                                text: w.name;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-dim;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                                overflow: elide;
+                            }
+                        }
+                    }
+                }
+                ListView {
+                    vertical-stretch: 1;
+                    for a in App.airport-results: ListRow {
+                        height: 44px * Theme.scale;
+                        selected: App.has-airport && App.airport.ident == a.ident;
+                        clicked => {
+                            App.cmd("airport-open", a.ident);
+                        }
+                        VerticalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            alignment: center;
+                            HorizontalLayout {
+                                spacing: 8px;
+                                Text {
+                                    text: a.ident;
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs;
+                                    font-weight: 700;
+                                    color: Theme.text;
+                                }
+                                Text {
+                                    text: a.name;
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs;
+                                    color: Theme.text;
+                                    overflow: elide;
+                                    horizontal-stretch: 1;
+                                }
+                            }
+                            Text {
+                                text: a.place + " · " + a.kind;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-dim;
+                                overflow: elide;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 10px;
+            if !App.has-airport: Empty {
+                vertical-stretch: 1;
+                icon: Icons.map-pin;
+                title: @tr("Wyszukaj lotnisko");
+                text: @tr("Baza OurAirports: ponad 60 tysięcy lotnisk z pasami i częstotliwościami. Pogoda z aviationweather.gov.");
+            }
+            if App.has-airport: HorizontalLayout {
+                vertical-stretch: 1;
+                spacing: 12px;
+                Briefing {
+                    horizontal-stretch: 3;
+                }
+                MapView {
+                    id: 2;
+                    width: 400px * Theme.scale;
+                    source: App.map-airport;
+                    labels: App.map-airport-labels;
+                }
+            }
+        }
+    }
+}

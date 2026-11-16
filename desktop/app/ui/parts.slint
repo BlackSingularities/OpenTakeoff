@@ -1,0 +1,598 @@
+// Wspólne elementy kart: kafelki z wartościami, sekcje, odznaki kategorii lotu i ocen, mapa, wykres.
+
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, LabelV, ChartV, MarkerV } from "state.slint";
+import { TipArea, IconButton } from "widgets.slint";
+
+export global Colors {
+    out property <color> vfr: #3ccf7a;
+    out property <color> mvfr: #4f9dff;
+    out property <color> ifr: #ff5a5f;
+    out property <color> lifr: #d55cff;
+    out property <color> warn: #ffb547;
+    out property <color> alt: #5b8cff;
+    out property <color> spd: #3ccf7a;
+    out property <color> vs: #ffb547;
+    out property <color> gs: #c084fc;
+    pure public function cat(c: string) -> color {
+        return c == "VFR" ? vfr : c == "MVFR" ? mvfr : c == "IFR" ? ifr : c == "LIFR" ? lifr : Theme.text-faint;
+    }
+    pure public function score(s: int) -> color {
+        return s < 0 ? Theme.text-faint : s >= 90 ? #3ccf7a : s >= 75 ? #8bd450 : s >= 55 ? #ffb547 : s >= 35 ? #ff8a4c : #ff5a5f;
+    }
+}
+
+/// Powierzchnia sekcji: zaokrąglona, z delikatną obwódką.
+export component Panel inherits Rectangle {
+    border-radius: Theme.r;
+    background: Theme.panel;
+    border-width: 1px;
+    border-color: Theme.line;
+}
+
+/// Nagłówek sekcji kapitalikami z opcjonalną ikoną.
+export component Heading inherits HorizontalLayout {
+    in property <string> text;
+    in property <image> icon;
+    spacing: 7px;
+    height: 22px * Theme.scale;
+    if root.icon.width > 0: Image {
+        source: root.icon;
+        width: 15px * Theme.scale;
+        height: 15px * Theme.scale;
+        y: (parent.height - self.height) / 2;
+        colorize: Theme.accent;
+    }
+    Text {
+        text: root.text;
+        font-family: Theme.font;
+        font-size: Theme.fs-small;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        color: Theme.text-dim;
+        vertical-alignment: center;
+        overflow: elide;
+        horizontal-stretch: 1;
+    }
+}
+
+/// Kafelek z dużą wartością (Pulpit, Na żywo, Statystyki).
+export component Metric inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <string> unit;
+    in property <string> sub;
+    in property <color> tone: Theme.text;
+    in property <length> big: 26px * Theme.scale;
+    min-width: 92px * Theme.scale;
+    min-height: vl.preferred-height;
+    border-radius: Theme.r;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    vl := VerticalLayout {
+        padding: 10px * Theme.scale;
+        padding-left: 12px * Theme.scale;
+        spacing: 2px;
+        Text {
+            text: root.label;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-dim;
+            overflow: elide;
+        }
+        HorizontalLayout {
+            spacing: 4px;
+            alignment: start;
+            Text {
+                text: root.value == "" ? "—" : root.value;
+                font-family: Theme.font;
+                font-size: root.big;
+                font-weight: 600;
+                color: root.tone;
+                overflow: elide;
+            }
+            if root.unit != "": Text {
+                text: root.unit;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: bottom;
+                height: root.big * 1.15;
+            }
+        }
+        if root.sub != "": Text {
+            text: root.sub;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            overflow: elide;
+        }
+    }
+}
+
+/// Wiersz „etykieta – wartość”.
+export component Pair inherits HorizontalLayout {
+    in property <string> k;
+    in property <string> v;
+    in property <bool> mono;
+    spacing: 10px;
+    height: 22px * Theme.scale;
+    Text {
+        text: root.k;
+        font-family: Theme.font;
+        font-size: Theme.fs;
+        color: Theme.text-dim;
+        vertical-alignment: center;
+        width: 42%;
+        overflow: elide;
+    }
+    Text {
+        text: root.v == "" ? "—" : root.v;
+        font-family: root.mono ? "Consolas" : Theme.font;
+        font-size: Theme.fs;
+        color: Theme.text;
+        vertical-alignment: center;
+        horizontal-stretch: 1;
+        overflow: elide;
+    }
+}
+
+/// Odznaka kategorii lotu (VFR, MVFR, IFR, LIFR).
+export component CatBadge inherits Rectangle {
+    in property <string> cat;
+    width: cat == "" ? 0 : ct.preferred-width + 12px;
+    height: 18px * Theme.scale;
+    border-radius: 9px * Theme.scale;
+    background: Colors.cat(root.cat).with-alpha(0.18);
+    border-width: 1px;
+    border-color: Colors.cat(root.cat).with-alpha(0.6);
+    ct := Text {
+        text: root.cat;
+        font-family: Theme.font;
+        font-size: 10.5px * Theme.scale;
+        font-weight: 700;
+        color: Colors.cat(root.cat);
+    }
+}
+
+/// Ocena lądowania w kółku.
+export component Score inherits Rectangle {
+    in property <int> score;
+    in property <length> size: 30px * Theme.scale;
+    width: size;
+    height: size;
+    border-radius: size / 2;
+    background: Colors.score(root.score).with-alpha(0.16);
+    border-width: 1.5px;
+    border-color: Colors.score(root.score);
+    Text {
+        text: root.score < 0 ? "–" : root.score;
+        font-family: Theme.font;
+        font-size: root.size * 0.4;
+        font-weight: 700;
+        color: Colors.score(root.score);
+    }
+}
+
+/// Kropka stanu (zielona – działa, szara – nieaktywne, bursztynowa – oczekuje).
+export component Dot inherits Rectangle {
+    in property <int> state;
+    width: 9px;
+    height: 9px;
+    border-radius: 4.5px;
+    background: state == 2 ? Theme.ok : state == 1 ? Colors.warn : Theme.text-faint;
+    drop-shadow-blur: state == 2 ? 6px : 0;
+    drop-shadow-color: Theme.ok;
+}
+
+/// Pasek postępu poziomy.
+export component Bar inherits Rectangle {
+    in property <float> value;
+    in property <color> tone: Theme.accent;
+    height: 6px;
+    border-radius: 3px;
+    background: Theme.hover;
+    Rectangle {
+        x: 0;
+        width: parent.width * max(0, min(1, root.value));
+        height: parent.height;
+        border-radius: 3px;
+        background: root.tone;
+    }
+}
+
+/// Mapa rysowana w Rust (kafelki + tor) z etykietami w Slint; przeciąganie przesuwa, kółko przybliża.
+export component MapView inherits Rectangle {
+    in property <int> id;
+    in property <image> source;
+    in property <[LabelV]> labels;
+    in property <string> scale-text;
+    in property <bool> show-follow;
+    property <length> last-x;
+    property <length> last-y;
+    clip: true;
+    border-radius: Theme.r;
+    background: Theme.dark ? #0e1116 : #e8ebef;
+    border-width: 1px;
+    border-color: Theme.line;
+    changed width => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    changed height => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    init => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    Image {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
+        source: root.source;
+        image-fit: fill;
+    }
+    for l in root.labels: Text {
+        x: l.x * 1px + 6px;
+        y: l.y * 1px - 8px;
+        text: l.text;
+        font-family: Theme.font;
+        font-size: l.kind == 0 ? 11px : 10px;
+        font-weight: l.kind == 0 ? 600 : 400;
+        color: l.kind == 2 ? Colors.warn : Theme.dark ? #ffffffd9 : #18181cd9;
+        stroke: Theme.dark ? #000000b3 : #ffffffcc;
+        stroke-width: 2.5px;
+        stroke-style: outside;
+    }
+    ta := TouchArea {
+        mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                root.last-x = self.mouse-x;
+                root.last-y = self.mouse-y;
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                App.map-event(root.id, "pan", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
+                root.last-x = self.mouse-x;
+                root.last-y = self.mouse-y;
+            }
+        }
+        scroll-event(e) => {
+            App.map-event(root.id, "zoom", self.mouse-x / 1px, self.mouse-y / 1px, 0, e.delta-y / 1px);
+            accept
+        }
+        double-clicked => {
+            App.map-event(root.id, "zoom", self.mouse-x / 1px, self.mouse-y / 1px, 0, 120);
+        }
+    }
+    // Przyciski mapy w jednej grupie przy prawej krawędzi
+    Rectangle {
+        x: parent.width - self.width - 8px;
+        y: 8px;
+        width: 32px * Theme.scale;
+        height: vl.preferred-height;
+        border-radius: Theme.r-small + 2px;
+        background: Theme.popup;
+        border-width: 1px;
+        border-color: Theme.line;
+        vl := VerticalLayout {
+            padding: 2px;
+            spacing: 2px;
+            IconButton {
+                icon: Icons.plus;
+                tip: @tr("Przybliż");
+                clicked => {
+                    App.map-event(root.id, "zoom", root.width / 2px, root.height / 2px, 0, 120);
+                }
+            }
+            IconButton {
+                icon: Icons.minus;
+                tip: @tr("Oddal");
+                clicked => {
+                    App.map-event(root.id, "zoom", root.width / 2px, root.height / 2px, 0, -120);
+                }
+            }
+            IconButton {
+                icon: Icons.scan;
+                tip: @tr("Pokaż całość");
+                clicked => {
+                    App.map-event(root.id, "fit", 0, 0, 0, 0);
+                }
+            }
+            if root.show-follow: IconButton {
+                icon: Icons.locate-fixed;
+                active: App.follow;
+                tip: @tr("Śledź samolot");
+                clicked => {
+                    App.follow = !App.follow;
+                    App.map-event(root.id, "follow", App.follow ? 1 : 0, 0, 0, 0);
+                }
+            }
+        }
+    }
+    if root.scale-text != "": Rectangle {
+        x: 8px;
+        y: parent.height - self.height - 8px;
+        width: st.preferred-width + 12px;
+        height: 18px;
+        border-radius: 4px;
+        background: Theme.popup;
+        st := Text {
+            text: root.scale-text;
+            font-family: Theme.font;
+            font-size: 10px;
+            color: Theme.text-dim;
+        }
+    }
+    Text {
+        x: parent.width - self.width - 6px;
+        y: parent.height - self.height - 3px;
+        text: App.map-attribution;
+        font-family: Theme.font;
+        font-size: 9px;
+        color: Theme.dark ? #ffffff80 : #00000080;
+    }
+}
+
+/// Wykres profilu lotu: wysokość (pole), prędkości i prędkość pionowa (linie), kursor odtwarzania.
+export component ChartView inherits Rectangle {
+    in property <ChartV> chart;
+    in property <[MarkerV]> markers;
+    in property <float> cursor;
+    in property <int> mode;
+    callback seek(float);
+    property <length> pad-l: 46px;
+    property <length> pad-r: 46px;
+    property <length> pad-t: 10px;
+    property <length> pad-b: 22px;
+    property <length> pw: self.width - pad-l - pad-r;
+    property <length> ph: self.height - pad-t - pad-b;
+    border-radius: Theme.r;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    clip: true;
+    // Siatka
+    Path {
+        x: root.pad-l;
+        y: root.pad-t;
+        width: root.pw;
+        height: root.ph;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.chart.grid;
+        stroke: Theme.line;
+        stroke-width: 1px;
+    }
+    // Teren pod samolotem (wysokość nad ziemią)
+    if root.mode == 0: Path {
+        x: root.pad-l;
+        y: root.pad-t;
+        width: root.pw;
+        height: root.ph;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.chart.ground;
+        fill: Theme.dark ? #8b6f4740 : #8b6f4730;
+        stroke: transparent;
+    }
+    if root.mode == 0: Path {
+        x: root.pad-l;
+        y: root.pad-t;
+        width: root.pw;
+        height: root.ph;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.chart.alt;
+        fill: @linear-gradient(180deg, Colors.alt.with-alpha(0.35) 0%, Colors.alt.with-alpha(0.02) 100%);
+        stroke: Colors.alt;
+        stroke-width: 1.6px;
+    }
+    if root.mode == 1: Path {
+        x: root.pad-l;
+        y: root.pad-t;
+        width: root.pw;
+        height: root.ph;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.chart.gs;
+        stroke: Colors.gs;
+        stroke-width: 1.4px;
+        fill: transparent;
+    }
+    if root.mode == 1: Path {
+        x: root.pad-l;
+        y: root.pad-t;
+        width: root.pw;
+        height: root.ph;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.chart.spd;
+        stroke: Colors.spd;
+        stroke-width: 1.6px;
+        fill: transparent;
+    }
+    if root.mode == 2: Path {
+        x: root.pad-l;
+        y: root.pad-t;
+        width: root.pw;
+        height: root.ph;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.chart.vs;
+        stroke: Colors.vs;
+        stroke-width: 1.4px;
+        fill: transparent;
+    }
+    for l in root.chart.y-labels: Text {
+        x: 4px;
+        y: root.pad-t + root.ph * l.y - 7px;
+        width: root.pad-l - 8px;
+        text: l.text;
+        font-family: Theme.font;
+        font-size: 10px;
+        color: Theme.text-faint;
+        horizontal-alignment: right;
+    }
+    for l in root.chart.y2-labels: Text {
+        x: root.pad-l + root.pw + 6px;
+        y: root.pad-t + root.ph * l.y - 7px;
+        text: l.text;
+        font-family: Theme.font;
+        font-size: 10px;
+        color: Theme.text-faint;
+    }
+    for l in root.chart.x-labels: Text {
+        x: root.pad-l + root.pw * l.x - 20px;
+        y: root.pad-t + root.ph + 4px;
+        width: 40px;
+        text: l.text;
+        font-family: Theme.font;
+        font-size: 10px;
+        color: Theme.text-faint;
+        horizontal-alignment: center;
+    }
+    for m in root.markers: Rectangle {
+        x: root.pad-l + root.pw * m.pos - 1px;
+        y: root.pad-t;
+        width: 2px;
+        height: root.ph;
+        background: Colors.warn.with-alpha(0.55);
+    }
+    for l in root.chart.markers: Rectangle {
+        x: root.pad-l + root.pw * l.x - 5px;
+        y: root.pad-t + 2px;
+        width: 10px;
+        height: 10px;
+        border-radius: 5px;
+        background: Colors.score(l.kind);
+        TipArea {
+            tip: l.text;
+        }
+    }
+    // Kursor odtwarzania / wskazania
+    Rectangle {
+        x: root.pad-l + root.pw * max(0, min(1, root.cursor)) - 0.5px;
+        y: root.pad-t;
+        width: 1px;
+        height: root.ph;
+        background: Theme.text;
+    }
+    TouchArea {
+        x: root.pad-l;
+        y: root.pad-t;
+        width: root.pw;
+        height: root.ph;
+        mouse-cursor: MouseCursor.crosshair;
+        moved => {
+            if (self.pressed) {
+                root.seek(max(0, min(1, self.mouse-x / self.width)));
+            }
+        }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                root.seek(max(0, min(1, self.mouse-x / self.width)));
+            }
+        }
+    }
+}
+
+/// Komunikat u dołu okna (znika sam).
+export component Toast inherits Rectangle {
+    in property <string> text;
+    in property <int> serial;
+    property <bool> shown;
+    changed serial => {
+        root.shown = root.text != "";
+        t.running = root.shown;
+    }
+    t := Timer {
+        interval: 4s;
+        running: false;
+        triggered => {
+            root.shown = false;
+            self.running = false;
+        }
+    }
+    visible: root.shown || root.opacity > 0;
+    opacity: root.shown ? 1 : 0;
+    animate opacity { duration: 180ms; }
+    width: min(tt.preferred-width + 36px, 640px);
+    height: tt.preferred-height + 18px;
+    border-radius: Theme.r;
+    background: Theme.popup;
+    border-width: 1px;
+    border-color: Theme.line-strong;
+    drop-shadow-blur: 18px;
+    drop-shadow-color: #00000080;
+    tt := Text {
+        text: root.text;
+        width: min(self.preferred-width, 604px);
+        font-family: Theme.font;
+        font-size: Theme.fs;
+        color: Theme.text;
+        wrap: word-wrap;
+        horizontal-alignment: center;
+    }
+    TouchArea {
+        clicked => {
+            root.shown = false;
+        }
+    }
+}
+
+/// Wiersz listy z zaznaczeniem tłem (bez paska z boku).
+export component ListRow inherits Rectangle {
+    in property <bool> selected;
+    callback clicked();
+    callback double-clicked();
+    border-radius: Theme.r-small;
+    background: root.selected ? Theme.accent-soft : rta.has-hover ? Theme.hover : transparent;
+    rta := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+        double-clicked => {
+            root.double-clicked();
+        }
+    }
+    @children
+}
+
+/// Pusta lista / brak danych.
+export component Empty inherits VerticalLayout {
+    in property <image> icon;
+    in property <string> title;
+    in property <string> text;
+    alignment: center;
+    spacing: 8px;
+    HorizontalLayout {
+        alignment: center;
+        Image {
+            source: root.icon;
+            width: 40px;
+            height: 40px;
+            colorize: Theme.text-faint;
+        }
+    }
+    Text {
+        text: root.title;
+        font-family: Theme.font;
+        font-size: Theme.fs-big;
+        font-weight: 600;
+        color: Theme.text-dim;
+        horizontal-alignment: center;
+    }
+    Text {
+        text: root.text;
+        font-family: Theme.font;
+        font-size: Theme.fs;
+        color: Theme.text-faint;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+}

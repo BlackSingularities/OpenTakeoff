@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -130,6 +131,11 @@ fun LogbookScreen(vm: MainViewModel, onBack: () -> Unit, onOpenFlight: (String) 
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, loc("common.back"), tint = c.ink) }
             Text(loc("logbook.logbook"), style = MaterialTheme.typography.headlineSmall, color = c.ink, modifier = Modifier.weight(1f))
+            val syncing by vm.syncing.collectAsStateWithLifecycle()
+            val linkState by vm.linkStatus.collectAsStateWithLifecycle()
+            if (linkState is com.freemetar.app.data.link.LinkStatus.Connected) {
+                IconButton({ vm.syncLogbook() }, enabled = !syncing) { Icon(Icons.Outlined.Sync, loc("logbook_sync.sync_with_computer"), tint = if (syncing) c.ink2 else c.ink) }
+            }
             IconButton({ importer.launch(arrayOf("*/*")) }) { Icon(Icons.Outlined.Download, loc("logbook.import_flights"), tint = c.ink) }
             IconButton({ exporter.launch("OpenTakeoff-loty.oab") }, enabled = logs.isNotEmpty()) { Icon(Icons.Outlined.Upload, loc("logbook.export_flights"), tint = if (logs.isEmpty()) c.ink2 else c.ink) }
         }

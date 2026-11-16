@@ -1,0 +1,36 @@
+[package]
+name = "opentakeoff"
+version.workspace = true
+description = "OpenTakeoff dla Windows – dziennik lotów, briefing i most do telefonu"
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "OpenTakeoff"
+path = "src/main.rs"
+
+[dependencies]
+opentakeoff-core.workspace = true
+opentakeoff-msfs.workspace = true
+slint = { version = "1.18", default-features = false, features = ["std", "compat-1-2", "accessibility", "backend-winit", "renderer-skia", "unstable-winit-030"] }
+raw-window-handle = "0.6"
+rfd = "0.15"
+open = "5"
+arboard = "3.6"
+serde.workspace = true
+serde_json.workspace = true
+ureq.workspace = true
+parking_lot.workspace = true
+crossbeam-channel.workspace = true
+chrono.workspace = true
+tiny-skia = "0.11"
+ab_glyph = "0.2"
+regex = "1"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+tray-icon = "0.21"
+windows.workspace = true
+
+[build-dependencies]
+slint-build = "1.18"
+winresource = "0.1"

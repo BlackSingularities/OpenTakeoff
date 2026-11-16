@@ -1,0 +1,526 @@
+// Karta Dziennik: lista lotów pogrupowana po miesiącach (szukanie, filtry, sortowanie, zaznaczanie z Ctrl)
+// i szczegóły wybranego lotu: mapa toru, profil lotu z odtwarzaniem, lądowania, znaczniki, notatki i tagi.
+
+import { ScrollView, ListView, TextEdit } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, FlightV } from "state.slint";
+import { Button, IconButton, Field, Segmented, TipArea } from "widgets.slint";
+import { Panel, Heading, Metric, Pair, Score, MapView, ChartView, ListRow, Empty, Colors } from "parts.slint";
+
+component FlightRow inherits Rectangle {
+    in property <FlightV> f;
+    height: f.header ? 30px * Theme.scale : 54px * Theme.scale;
+    border-radius: Theme.r-small;
+    background: f.header ? transparent : (App.detail.id == f.id || f.selected) ? Theme.accent-soft : ta.has-hover ? Theme.hover : transparent;
+    border-width: f.selected ? 1px : 0;
+    border-color: Theme.accent.with-alpha(0.6);
+    if f.header: Text {
+        x: 8px;
+        text: f.month;
+        font-family: Theme.font;
+        font-size: Theme.fs-small;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        color: Theme.text-dim;
+        vertical-alignment: bottom;
+        height: parent.height - 4px;
+    }
+    if !f.header: HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 10px;
+        spacing: 10px;
+        Score {
+            score: f.score;
+            size: 34px * Theme.scale;
+            y: (parent.height - self.height) / 2;
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: 1px;
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: f.from + "  →  " + f.to;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-big;
+                    font-weight: 600;
+                    color: Theme.text;
+                    overflow: elide;
+                }
+                if f.favorite: Image {
+                    source: Icons.star;
+                    width: 13px;
+                    height: 13px;
+                    y: (parent.height - self.height) / 2;
+                    colorize: Colors.warn;
+                }
+                if f.notes: Image {
+                    source: Icons.sticky-note;
+                    width: 13px;
+                    height: 13px;
+                    y: (parent.height - self.height) / 2;
+                    colorize: Theme.text-dim;
+                }
+                if f.source != "": Image {
+                    source: Icons.smartphone;
+                    width: 13px;
+                    height: 13px;
+                    y: (parent.height - self.height) / 2;
+                    colorize: Theme.text-faint;
+                }
+            }
+            Text {
+                text: f.date + " " + f.time + " · " + f.aircraft + (f.tags != "" ? " · " + f.tags : "");
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                overflow: elide;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Text {
+                text: f.duration;
+                font-family: Theme.font;
+                font-size: Theme.fs;
+                color: Theme.text;
+                horizontal-alignment: right;
+            }
+            Text {
+                text: f.distance;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-faint;
+                horizontal-alignment: right;
+            }
+        }
+    }
+    ta := TouchArea {
+        enabled: !f.header;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left) {
+                if (e.modifiers.control) {
+                    App.cmd("flight-toggle", f.id);
+                } else if (e.modifiers.shift) {
+                    App.cmd("flight-range", f.id);
+                } else {
+                    App.cmd("flight-open", f.id);
+                }
+            }
+        }
+    }
+}
+
+component Detail inherits ScrollView {
+    VerticalLayout {
+        width: root.visible-width;
+        padding-right: 8px;
+        spacing: 10px;
+        // Nagłówek
+        HorizontalLayout {
+            spacing: 12px;
+            Score {
+                score: App.detail.score;
+                size: 52px * Theme.scale;
+                y: 0;
+            }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 2px;
+                Text {
+                    text: App.detail.route;
+                    font-family: Theme.font;
+                    font-size: 22px * Theme.scale;
+                    font-weight: 700;
+                    color: Theme.text;
+                    overflow: elide;
+                }
+                Text {
+                    text: App.detail.subtitle;
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.text-dim;
+                    overflow: elide;
+                }
+                Text {
+                    text: App.detail.in-trash ? @tr("Lot w koszu – przywróć go, żeby wrócił do dziennika i synchronizacji.") : App.detail.source;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: App.detail.in-trash ? Colors.warn : Theme.text-faint;
+                    overflow: elide;
+                }
+            }
+            IconButton {
+                icon: Icons.star;
+                active: App.detail.favorite;
+                tip: @tr("Ulubiony");
+                clicked => {
+                    App.cmd("flight-favorite", "");
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Metric {
+                horizontal-stretch: 1;
+                label: @tr("Czas lotu");
+                value: App.detail.duration;
+                big: 18px * Theme.scale;
+            }
+            Metric {
+                horizontal-stretch: 1;
+                label: @tr("Dystans");
+                value: App.detail.distance;
+                big: 18px * Theme.scale;
+            }
+            Metric {
+                horizontal-stretch: 1;
+                label: @tr("Najwyżej");
+                value: App.detail.max-alt;
+                big: 18px * Theme.scale;
+            }
+            Metric {
+                horizontal-stretch: 1;
+                label: @tr("Średnia GS");
+                value: App.detail.avg-gs;
+                sub: @tr("maks. ") + App.detail.max-gs;
+                big: 18px * Theme.scale;
+            }
+            Metric {
+                horizontal-stretch: 1;
+                label: @tr("Prędkość pionowa");
+                value: App.detail.max-vs;
+                sub: App.detail.min-vs;
+                big: 18px * Theme.scale;
+            }
+        }
+        MapView {
+            id: 1;
+            height: 330px * Theme.scale;
+            source: App.map-flight;
+            labels: App.map-flight-labels;
+        }
+        // Profil lotu z odtwarzaniem
+        HorizontalLayout {
+            spacing: 8px;
+            Segmented {
+                items: [@tr("Wysokość"), @tr("Prędkość"), @tr("Prędkość pionowa")];
+                current: App.chart-mode;
+                picked(i) => {
+                    App.chart-mode = i;
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+            Text {
+                text: App.detail.cursor-info;
+                font-family: "Consolas";
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            IconButton {
+                icon: App.replay-playing ? Icons.pause : Icons.play;
+                tip: App.replay-playing ? @tr("Zatrzymaj odtwarzanie") : @tr("Odtwórz lot na mapie (×60)");
+                clicked => {
+                    App.cmd("replay-toggle", "");
+                }
+            }
+        }
+        ChartView {
+            height: 190px * Theme.scale;
+            chart: App.chart;
+            markers: App.detail-markers;
+            cursor: App.detail.cursor-pos;
+            mode: App.chart-mode;
+            seek(p) => {
+                App.cmd("replay-seek", p);
+            }
+        }
+        // Lądowania
+        if App.detail-landings.length > 0: Panel {
+            VerticalLayout {
+                padding: 10px;
+                spacing: 6px;
+                Heading {
+                    text: @tr("LĄDOWANIA");
+                    icon: Icons.plane-landing;
+                }
+                for l in App.detail-landings: HorizontalLayout {
+                    spacing: 12px;
+                    padding-top: 4px;
+                    padding-bottom: 4px;
+                    Score {
+                        score: l.score;
+                        size: 40px * Theme.scale;
+                    }
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 2px;
+                        Text {
+                            text: l.title + " · " + l.grade;
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            font-weight: 600;
+                            color: Theme.text;
+                        }
+                        Text {
+                            text: l.vs + "   " + l.g + "   " + l.runway + "   " + l.along;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            wrap: word-wrap;
+                        }
+                        Text {
+                            text: l.notes;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                    Text {
+                        text: l.at;
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                    }
+                }
+            }
+        }
+        // Znaczniki
+        if App.detail-markers.length > 0: Panel {
+            VerticalLayout {
+                padding: 10px;
+                spacing: 2px;
+                Heading {
+                    text: @tr("ZNACZNIKI");
+                    icon: Icons.bookmark;
+                }
+                for m in App.detail-markers: ListRow {
+                    height: 26px * Theme.scale;
+                    clicked => {
+                        App.cmd("replay-seek", m.pos);
+                    }
+                    HorizontalLayout {
+                        padding-left: 6px;
+                        spacing: 10px;
+                        Text {
+                            text: m.time;
+                            font-family: "Consolas";
+                            font-size: Theme.fs;
+                            color: Colors.warn;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: m.label;
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                        }
+                        IconButton {
+                            icon: Icons.x;
+                            tip: @tr("Usuń znacznik");
+                            clicked => {
+                                App.cmd("marker-delete", m.t);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Dane lotu i notatki
+        Panel {
+            VerticalLayout {
+                padding: 10px;
+                spacing: 8px;
+                Heading {
+                    text: @tr("OPIS LOTU");
+                    icon: Icons.notebook-pen;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    VerticalLayout {
+                        spacing: 3px;
+                        Text {
+                            text: @tr("Z lotniska");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                        }
+                        Field {
+                            w: 90px * Theme.scale;
+                            text: App.detail.from;
+                            placeholder: "ICAO";
+                            accepted(t) => {
+                                App.cmd("flight-from", t);
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: 3px;
+                        Text {
+                            text: @tr("Do lotniska");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                        }
+                        Field {
+                            w: 90px * Theme.scale;
+                            text: App.detail.to;
+                            placeholder: "ICAO";
+                            accepted(t) => {
+                                App.cmd("flight-to", t);
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: 3px;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: @tr("Samolot");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                        }
+                        Field {
+                            w: 240px * Theme.scale;
+                            text: App.detail.aircraft;
+                            accepted(t) => {
+                                App.cmd("flight-aircraft", t);
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: 3px;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: @tr("Tagi (po przecinku)");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                        }
+                        Field {
+                            w: 220px * Theme.scale;
+                            text: App.detail.tags;
+                            placeholder: @tr("np. VATSIM, szkolenie");
+                            accepted(t) => {
+                                App.cmd("flight-tags", t);
+                            }
+                        }
+                    }
+                }
+                Text {
+                    text: @tr("Zmiany zatwierdza Enter. Poprawione lotniska i samolot widać tylko na komputerze – lot w telefonie zostaje bez zmian.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                    wrap: word-wrap;
+                }
+                notes := TextEdit {
+                    height: 110px * Theme.scale;
+                    text: App.detail.notes;
+                    placeholder-text: @tr("Notatki do lotu…");
+                    font-size: Theme.fs;
+                    edited(t) => {
+                        App.cmd("flight-notes", t);
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component Logbook inherits Rectangle {
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        Panel {
+            width: 390px * Theme.scale;
+            VerticalLayout {
+                padding: 8px;
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 6px;
+                    Field {
+                        w: 230px * Theme.scale;
+                        height: 28px * Theme.scale;
+                        text <=> App.filter-text;
+                        placeholder: @tr("Szukaj: lotnisko, samolot, tag…");
+                        edited(t) => {
+                            App.cmd("filter", t);
+                        }
+                    }
+                    Segmented {
+                        items: [@tr("Data"), @tr("Czas"), @tr("Ocena")];
+                        current: App.sort-by;
+                        tip: @tr("Sortowanie");
+                        picked(i) => {
+                            App.sort-by = i;
+                            App.cmd("filter", App.filter-text);
+                        }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    Segmented {
+                        items: [@tr("Wszystkie"), @tr("30 dni"), @tr("Ten rok"), @tr("Ulubione")];
+                        current: App.filter-period;
+                        picked(i) => {
+                            App.filter-period = i;
+                            App.cmd("filter", App.filter-text);
+                        }
+                    }
+                    Rectangle {
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: App.show-trash ? @tr("Kosz") : "";
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Colors.warn;
+                        vertical-alignment: center;
+                    }
+                }
+                Text {
+                    text: App.flights-summary;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                }
+                if App.flights.length == 0: Empty {
+                    vertical-stretch: 1;
+                    icon: App.show-trash ? Icons.trash-2 : Icons.book-open;
+                    title: App.show-trash ? @tr("Kosz jest pusty") : @tr("Brak lotów");
+                    text: App.show-trash ? "" : @tr("Loty zapisują się same podczas lotu w MSFS. Możesz też zaimportować archiwum .oab z telefonu albo ślad GPX.");
+                }
+                if App.flights.length > 0: ListView {
+                    vertical-stretch: 1;
+                    for f in App.flights: FlightRow {
+                        f: f;
+                    }
+                }
+            }
+        }
+        Rectangle {
+            horizontal-stretch: 1;
+            if !App.has-detail: Empty {
+                width: parent.width;
+                height: parent.height;
+                icon: Icons.route;
+                title: @tr("Wybierz lot z listy");
+                text: @tr("Ctrl+klik zaznacza kilka lotów (do eksportu albo usunięcia), Shift+klik – zakres.");
+            }
+            if App.has-detail: Detail {
+                width: parent.width;
+                height: parent.height;
+            }
+        }
+    }
+}

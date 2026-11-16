@@ -74,7 +74,7 @@ A dedicated **Progress** panel with the flight phase, a route progress bar and a
 ### 🧰 And more
 - Voice callouts, cockpit checklists (A320, 737-800, C172) and flight-sim tools: wind calculator, density altitude, descent planner, fuel, unit converter, METAR/TAF decoder and radio phraseology.
 - AMOLED (true black), graphite and bright themes.
-- **English and Polish** interface.
+- **English, Polish and Spanish** interface, in the app and in the companion program.
 
 ---
 

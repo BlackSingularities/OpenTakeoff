@@ -1,0 +1,1139 @@
+// Okno główne OpenTakeoff dla Windows: pasek tytułu, karty i wstążka z poleceniami (jak w OpenDTP),
+// strona karty, pasek stanu oraz nakładki (potwierdzenie, komunikat, praca w tle).
+
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, KV, LogV, EngineV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV } from "state.slint";
+import { Tip, TipArea, IconButton, BigButton, Group, Button, Card, Segmented } from "widgets.slint";
+import { Toast, Dot, Colors } from "parts.slint";
+import { Dashboard } from "dashboard.slint";
+import { Live } from "live.slint";
+import { Instruments } from "instruments.slint";
+import { NavMap } from "navmap.slint";
+import { Logbook } from "logbook.slint";
+import { Stats } from "stats.slint";
+import { Airports } from "airports.slint";
+import { Tools } from "tools.slint";
+import { Devices } from "devices.slint";
+import { Settings } from "settings.slint";
+import { FeedbackWindow } from "feedback.slint";
+
+export { App, Theme, Icons, Tip, FeedbackWindow, KV, LogV, EngineV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV }
+
+component WinButton inherits Rectangle {
+    in property <int> kind;
+    in property <string> tip;
+    width: 46px;
+    background: ta.pressed ? (kind == 3 ? #c42b1c : Theme.press) : ta.has-hover ? (kind == 3 ? #e81123 : Theme.hover) : transparent;
+    Path {
+        width: 10px;
+        height: 10px;
+        viewbox-width: 10;
+        viewbox-height: 10;
+        stroke: ta.has-hover && root.kind == 3 ? #ffffff : Theme.text;
+        stroke-width: 1px;
+        fill: transparent;
+        commands: root.kind == 1 ? "M 0 5 L 10 5" : root.kind == 3 ? "M 0 0 L 10 10 M 10 0 L 0 10" : App.maximized ? "M 2 0 L 10 0 L 10 8 M 0 2 L 8 2 L 8 10 L 0 10 Z" : "M 0 0 L 10 0 L 10 10 L 0 10 Z";
+    }
+    ta := TipArea {
+        tip: root.tip;
+        clicked => {
+            App.win(root.kind);
+        }
+    }
+}
+
+component TabButton inherits Rectangle {
+    in property <string> label;
+    in property <int> index;
+    in property <image> icon;
+    in property <string> tip;
+    width: hl.preferred-width + 20px;
+    hl := HorizontalLayout {
+        x: 10px;
+        spacing: 6px;
+        Image {
+            source: root.icon;
+            width: 15px * Theme.scale;
+            height: 15px * Theme.scale;
+            y: (parent.height - self.height) / 2;
+            colorize: App.tab == root.index ? Theme.accent : Theme.text-dim;
+        }
+        if Theme.ribbon-level < 2: Text {
+            text: root.label;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            font-weight: App.tab == root.index ? 600 : 400;
+            color: App.tab == root.index ? Theme.text : tta.has-hover ? Theme.text : Theme.text-dim;
+            vertical-alignment: center;
+        }
+    }
+    Rectangle {
+        y: parent.height - 3px;
+        height: 2px;
+        width: App.tab == root.index ? parent.width - 14px : 0;
+        border-radius: 1px;
+        background: Theme.accent;
+        animate width { duration: 140ms; easing: ease-out; }
+    }
+    tta := TipArea {
+        tip: root.tip;
+        clicked => {
+            App.tab = root.index;
+            App.cmd("tab", root.index);
+        }
+    }
+}
+
+component Tabs inherits Rectangle {
+    background: transparent;
+    min-width: tl.preferred-width;
+    tl := HorizontalLayout {
+        padding-left: 8px;
+        spacing: 2px;
+        alignment: start;
+        TabButton {
+            index: 0;
+            label: @tr("Pulpit");
+            icon: Icons.layout-dashboard;
+            tip: @tr("Stan symulatora i telefonów, pogoda, ostatnie loty");
+        }
+        TabButton {
+            index: 1;
+            label: @tr("Na żywo");
+            icon: Icons.gauge;
+            tip: @tr("Podgląd bieżącego lotu: przyrządy, mapa, systemy");
+        }
+        TabButton {
+            index: 8;
+            label: @tr("Przyrządy");
+            icon: Icons.compass;
+            tip: @tr("PFD, ND, zegary i silniki w stylu kabiny samolotu");
+        }
+        TabButton {
+            index: 9;
+            label: @tr("Mapa");
+            icon: Icons.map;
+            tip: @tr("Mapa nawigacyjna z radialami i różami VOR oraz widok 3D");
+        }
+        TabButton {
+            index: 2;
+            label: @tr("Dziennik");
+            icon: Icons.book-open;
+            tip: @tr("Wszystkie loty z komputera i telefonu");
+        }
+        TabButton {
+            index: 3;
+            label: @tr("Statystyki");
+            icon: Icons.chart-column;
+            tip: @tr("Sumy, miesiące, samoloty, lotniska, rekordy");
+        }
+        TabButton {
+            index: 4;
+            label: @tr("Lotniska");
+            icon: Icons.map-pin;
+            tip: @tr("Briefing lotniska: pogoda, pasy, częstotliwości, procedury");
+        }
+        TabButton {
+            index: 5;
+            label: @tr("Narzędzia");
+            icon: Icons.calculator;
+            tip: @tr("Kalkulatory lotnicze i dekoder METAR");
+        }
+        TabButton {
+            index: 6;
+            label: @tr("Telefony");
+            icon: Icons.smartphone;
+            tip: @tr("Parowanie, urządzenia, źródło danych, aktywność");
+        }
+        TabButton {
+            index: 7;
+            label: @tr("Ustawienia");
+            icon: Icons.settings;
+            tip: @tr("Wygląd, język, zapis lotów, Windows, dane");
+        }
+    }
+}
+
+component TopBar inherits Rectangle {
+    height: 40px * Theme.scale;
+    background: Theme.panel;
+    HorizontalLayout {
+        padding-left: 12px;
+        spacing: 8px;
+        Image {
+            source: @image-url("../icon.png");
+            width: 20px;
+            height: 20px;
+            y: (parent.height - self.height) / 2;
+        }
+        if Theme.ribbon-level < 1: Text {
+            text: "OpenTakeoff";
+            font-family: Theme.font;
+            font-size: Theme.fs-big;
+            font-weight: 600;
+            color: Theme.text;
+            vertical-alignment: center;
+        }
+        Tabs { }
+        Rectangle {
+            horizontal-stretch: 1;
+            min-width: 60px;
+            TouchArea {
+                pointer-event(e) => {
+                    if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left) {
+                        App.win(0);
+                    }
+                }
+                double-clicked => {
+                    App.win(2);
+                }
+            }
+            HorizontalLayout {
+                alignment: end;
+                padding-right: 10px;
+                spacing: 8px;
+                Dot {
+                    state: App.sim-connected ? 2 : 1;
+                    y: (parent.height - self.height) / 2;
+                }
+                Text {
+                    text: App.sim-connected ? App.sim-name : App.sim-status;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+                if App.recording: Rectangle {
+                    width: rt.preferred-width + 22px;
+                    height: 20px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 10px;
+                    background: #ff4d5a26;
+                    Rectangle {
+                        x: 7px;
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 4px;
+                        background: #ff4d5a;
+                    }
+                    rt := Text {
+                        x: 18px;
+                        text: @tr("Zapis lotu");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: #ff7a84;
+                        vertical-alignment: center;
+                        height: parent.height;
+                    }
+                }
+            }
+        }
+        WinButton {
+            kind: 1;
+            tip: @tr("Minimalizuj");
+        }
+        WinButton {
+            kind: 2;
+            tip: App.maximized ? @tr("Przywróć") : @tr("Maksymalizuj");
+        }
+        WinButton {
+            kind: 3;
+            tip: @tr("Zamknij");
+        }
+    }
+}
+
+component Ribbon inherits Rectangle {
+    height: Theme.ribbon-h + 6px;
+    background: Theme.panel;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-top: 2px;
+        padding-bottom: 4px;
+        spacing: 0;
+        alignment: start;
+        if App.tab == 0 || App.tab == 1 || App.tab == 6: Group {
+            title: @tr("Źródło danych");
+            BigButton {
+                icon: Icons.monitor;
+                label: "MSFS";
+                active: !App.simulation;
+                tip: @tr("Dane z MSFS przez SimConnect");
+                clicked => {
+                    App.cmd("simulation", "0");
+                }
+            }
+            BigButton {
+                icon: Icons.plane;
+                label: @tr("Symulacja");
+                active: App.simulation;
+                tip: @tr("Lot testowy EPWA → EPGD bez MSFS");
+                clicked => {
+                    App.cmd("simulation", "1");
+                }
+            }
+        }
+        if App.tab == 0 || App.tab == 6: Group {
+            title: @tr("Telefon");
+            BigButton {
+                icon: Icons.refresh-cw;
+                label: @tr("Nowy kod");
+                tip: @tr("Nowy kod parowania (sparowane telefony zostają)");
+                clicked => {
+                    App.cmd("pair-new-code", "");
+                }
+            }
+            BigButton {
+                icon: Icons.copy;
+                label: @tr("Kopiuj adres");
+                tip: @tr("Adres komputera do ręcznego wpisania w telefonie");
+                clicked => {
+                    App.cmd("copy-address", "");
+                }
+            }
+        }
+        if App.tab == 0 || App.tab == 1: Group {
+            title: @tr("Zapis lotu");
+            BigButton {
+                icon: Icons.bookmark;
+                label: @tr("Znacznik");
+                enabled: App.recording;
+                tip: @tr("Znacznik w bieżącym nagraniu");
+                clicked => {
+                    App.cmd("record-mark", "");
+                }
+            }
+            BigButton {
+                icon: App.recording ? Icons.circle-stop : Icons.play;
+                label: App.recording ? @tr("Zakończ") : @tr("Wznów");
+                tip: App.recording ? @tr("Zakończ zapis teraz (następny zacznie się po wylądowaniu)") : @tr("Wznów automatyczny zapis");
+                clicked => {
+                    App.cmd(App.recording ? "record-stop" : "record-resume", "");
+                }
+            }
+        }
+        if App.tab == 0: Group {
+            title: @tr("Pogoda");
+            last: true;
+            BigButton {
+                icon: Icons.cloud-sun;
+                label: @tr("Odśwież");
+                tip: @tr("Odśwież pogodę obserwowanych lotnisk");
+                clicked => {
+                    App.cmd("watch-refresh", "");
+                }
+            }
+        }
+        if App.tab == 1: Group {
+            title: @tr("Mapa");
+            last: true;
+            BigButton {
+                icon: Icons.locate-fixed;
+                label: @tr("Śledź");
+                active: App.follow;
+                clicked => {
+                    App.follow = !App.follow;
+                    App.map-event(0, "follow", App.follow ? 1 : 0, 0, 0, 0);
+                }
+            }
+            BigButton {
+                icon: Icons.eraser;
+                label: @tr("Wyczyść ślad");
+                tip: @tr("Usuń ślad z mapy (nagranie lotu zostaje)");
+                clicked => {
+                    App.cmd("live-clear", "");
+                }
+            }
+        }
+        if App.tab == 8: Group {
+            title: @tr("Styl kabiny");
+            VerticalLayout {
+                alignment: center;
+                padding-left: 4px;
+                padding-right: 4px;
+                spacing: 6px;
+                Segmented {
+                    items: ["Auto", "A320", "737", "787", "ATR", "E190", "G1000"];
+                    current: App.instr.style <= 6 ? App.instr.style : -1;
+                    tip: @tr("Styl PFD i ND; Auto – rozpoznany z samolotu w symulatorze");
+                    picked(i) => {
+                        App.cmd("instr-style", i);
+                    }
+                }
+                Segmented {
+                    items: ["C172", "R44", @tr("Szybowiec")];
+                    current: App.instr.style - 7;
+                    tip: @tr("Zegary analogowe: Cessna 172, śmigłowiec, szybowiec");
+                    picked(i) => {
+                        App.cmd("instr-style", i + 7);
+                    }
+                }
+            }
+        }
+        if App.tab == 8: Group {
+            title: "ND";
+            BigButton {
+                icon: Icons.zoom-out;
+                label: @tr("Zasięg −");
+                tip: App.instr.range;
+                clicked => {
+                    App.cmd("nd-range", "-1");
+                }
+            }
+            BigButton {
+                icon: Icons.zoom-in;
+                label: @tr("Zasięg +");
+                tip: App.instr.range;
+                clicked => {
+                    App.cmd("nd-range", "1");
+                }
+            }
+            BigButton {
+                icon: App.instr.rose ? Icons.compass : Icons.navigation;
+                label: App.instr.rose ? "ROSE" : "ARC";
+                tip: @tr("Pełna róża albo łuk przed samolotem");
+                clicked => {
+                    App.cmd("nd-rose", "");
+                }
+            }
+            BigButton {
+                icon: Icons.map-pin;
+                label: "APT";
+                active: App.instr.apt;
+                tip: @tr("Lotniska na ND");
+                clicked => {
+                    App.cmd("nd-layer", "apt");
+                }
+            }
+            BigButton {
+                icon: Icons.hexagon;
+                label: "VOR";
+                active: App.instr.vor;
+                tip: @tr("VOR na ND");
+                clicked => {
+                    App.cmd("nd-layer", "vor");
+                }
+            }
+            BigButton {
+                icon: Icons.circle-dot;
+                label: "NDB";
+                active: App.instr.ndb;
+                tip: @tr("NDB na ND");
+                clicked => {
+                    App.cmd("nd-layer", "ndb");
+                }
+            }
+        }
+        if App.tab == 8: Group {
+            title: @tr("Układ");
+            last: true;
+            BigButton {
+                icon: Icons.columns-2;
+                label: @tr("Kokpit");
+                active: App.instr.layout == 0;
+                tip: @tr("PFD i ND, pod nimi silniki");
+                clicked => {
+                    App.cmd("instr-layout", "0");
+                }
+            }
+            BigButton {
+                icon: Icons.gauge;
+                label: @tr("Zegary");
+                active: App.instr.layout == 1;
+                tip: @tr("Zegary analogowe i silniki");
+                clicked => {
+                    App.cmd("instr-layout", "1");
+                }
+            }
+            BigButton {
+                icon: Icons.grid-3x3;
+                label: @tr("Wszystko");
+                active: App.instr.layout == 2;
+                tip: @tr("PFD, ND, zegary i silniki naraz");
+                clicked => {
+                    App.cmd("instr-layout", "2");
+                }
+            }
+        }
+        if App.tab == 9: Group {
+            title: @tr("Widok");
+            BigButton {
+                icon: Icons.map;
+                label: "2D";
+                active: !App.nav.view3d;
+                tip: @tr("Mapa nawigacyjna");
+                clicked => {
+                    App.cmd("nav-3d", "0");
+                }
+            }
+            BigButton {
+                icon: Icons.mountain;
+                label: "3D";
+                active: App.nav.view3d;
+                tip: @tr("Widok 3D z podkładem mapy, śladem i samolotem");
+                clicked => {
+                    App.cmd("nav-3d", "1");
+                }
+            }
+            BigButton {
+                icon: Icons.locate-fixed;
+                label: @tr("Śledź");
+                active: App.follow;
+                clicked => {
+                    App.follow = !App.follow;
+                    App.map-event(4, "follow", App.follow ? 1 : 0, 0, 0, 0);
+                }
+            }
+        }
+        if App.tab == 9 && App.nav.view3d: Group {
+            title: @tr("Kamera");
+            BigButton {
+                icon: Icons.plane;
+                label: @tr("Za samolotem");
+                active: App.nav.cam == 0;
+                clicked => {
+                    App.cmd("nav-cam", "0");
+                }
+            }
+            BigButton {
+                icon: Icons.rotate-cw;
+                label: @tr("Swobodna");
+                active: App.nav.cam == 1;
+                clicked => {
+                    App.cmd("nav-cam", "1");
+                }
+            }
+            BigButton {
+                icon: Icons.scan;
+                label: @tr("Z góry");
+                active: App.nav.cam == 2;
+                clicked => {
+                    App.cmd("nav-cam", "2");
+                }
+            }
+            BigButton {
+                icon: Icons.chart-area;
+                label: @tr("Kurtyna");
+                active: App.nav.curtain;
+                tip: @tr("Pionowa kurtyna pod śladem do ziemi");
+                clicked => {
+                    App.cmd("nav-layer", "curtain");
+                }
+            }
+        }
+        if App.tab == 9: Group {
+            title: @tr("Warstwy");
+            BigButton {
+                icon: Icons.map-pin;
+                label: @tr("Lotniska");
+                active: App.nav.apt;
+                clicked => {
+                    App.cmd("nav-layer", "apt");
+                }
+            }
+            BigButton {
+                icon: Icons.hexagon;
+                label: "VOR";
+                active: App.nav.vor;
+                clicked => {
+                    App.cmd("nav-layer", "vor");
+                }
+            }
+            BigButton {
+                icon: Icons.circle-dot;
+                label: "NDB";
+                active: App.nav.ndb;
+                clicked => {
+                    App.cmd("nav-layer", "ndb");
+                }
+            }
+            if !App.nav.view3d: BigButton {
+                icon: Icons.radius;
+                label: @tr("Róże VOR");
+                active: App.nav.vor-rose;
+                tip: @tr("Róże z radialami wokół VOR (względem deklinacji stacji)");
+                clicked => {
+                    App.cmd("nav-layer", "vor-rose");
+                }
+            }
+            BigButton {
+                icon: Icons.compass;
+                label: @tr("Róża kursu");
+                active: App.nav.rose;
+                tip: @tr("Róża kursowa na samolocie: kurs, tor, nastawa AP, namiar na punkt");
+                clicked => {
+                    App.cmd("nav-layer", "rose");
+                }
+            }
+            if !App.nav.view3d: BigButton {
+                icon: Icons.circle;
+                label: @tr("Pierścienie");
+                active: App.nav.rings;
+                tip: @tr("Pierścienie odległości wokół samolotu");
+                clicked => {
+                    App.cmd("nav-layer", "rings");
+                }
+            }
+            if !App.nav.view3d: BigButton {
+                icon: Icons.spline;
+                label: @tr("Wektor");
+                active: App.nav.vector;
+                tip: @tr("Przewidywana ścieżka na 1, 2 i 5 minut (z bieżącym zakrętem)");
+                clicked => {
+                    App.cmd("nav-layer", "vector");
+                }
+            }
+            BigButton {
+                icon: Icons.activity;
+                label: @tr("Ślad");
+                active: App.nav.track;
+                clicked => {
+                    App.cmd("nav-layer", "track");
+                }
+            }
+            BigButton {
+                icon: Icons.route;
+                label: @tr("Trasa");
+                active: App.nav.route;
+                tip: @tr("Bieżący odcinek planu lotu z GPS symulatora");
+                clicked => {
+                    App.cmd("nav-layer", "route");
+                }
+            }
+            BigButton {
+                icon: Icons.minus;
+                label: @tr("Pasy");
+                active: App.nav.rwy;
+                clicked => {
+                    App.cmd("nav-layer", "rwy");
+                }
+            }
+        }
+        if App.tab == 9 && !App.nav.view3d: Group {
+            title: @tr("Narzędzia");
+            last: true;
+            BigButton {
+                icon: Icons.radio-tower;
+                label: @tr("Radiale");
+                active: App.nav.tool == 1;
+                tip: @tr("Kliknij VOR albo punkt: radial i odległość samolotu, przechwycenie wybranego radialu");
+                clicked => {
+                    App.cmd("nav-tool", "1");
+                }
+            }
+            BigButton {
+                icon: Icons.ruler;
+                label: @tr("Pomiar");
+                active: App.nav.tool == 2;
+                tip: @tr("Odległość i namiar między dwoma punktami");
+                clicked => {
+                    App.cmd("nav-tool", "2");
+                }
+            }
+            BigButton {
+                icon: Icons.eraser;
+                label: @tr("Wyczyść");
+                clicked => {
+                    App.cmd("nav-clear", "");
+                }
+            }
+        }
+        if App.tab == 2: Group {
+            title: @tr("Plik");
+            BigButton {
+                icon: Icons.import;
+                label: @tr("Importuj");
+                tip: @tr("Archiwum .oab z telefonu albo ślad GPX");
+                clicked => {
+                    App.cmd("import", "");
+                }
+            }
+            BigButton {
+                icon: Icons.map;
+                label: "GPX";
+                enabled: App.has-detail || App.selected-count > 0;
+                tip: @tr("Eksport ścieżki do GPX (wybrany lot albo zaznaczone)");
+                clicked => {
+                    App.cmd("export", "gpx");
+                }
+            }
+            BigButton {
+                icon: Icons.globe;
+                label: "KML";
+                enabled: App.has-detail || App.selected-count > 0;
+                tip: @tr("Ślad 3D do Google Earth");
+                clicked => {
+                    App.cmd("export", "kml");
+                }
+            }
+            BigButton {
+                icon: Icons.table;
+                label: "CSV";
+                enabled: App.has-detail || App.selected-count > 0;
+                tip: @tr("Ścieżka z parametrami do arkusza");
+                clicked => {
+                    App.cmd("export", "csv");
+                }
+            }
+            BigButton {
+                icon: Icons.archive;
+                label: ".oab";
+                tip: @tr("Archiwum lotów (zaznaczone albo wszystkie) – do telefonu lub kopii zapasowej");
+                clicked => {
+                    App.cmd("export", "oab");
+                }
+            }
+            BigButton {
+                icon: Icons.list;
+                label: @tr("Lista");
+                tip: @tr("Lista lotów (bez torów) do arkusza CSV");
+                clicked => {
+                    App.cmd("export", "list");
+                }
+            }
+        }
+        if App.tab == 2: Group {
+            title: @tr("Lot");
+            BigButton {
+                icon: Icons.star;
+                label: @tr("Ulubiony");
+                enabled: App.has-detail;
+                active: App.detail.favorite;
+                clicked => {
+                    App.cmd("flight-favorite", "");
+                }
+            }
+            BigButton {
+                icon: App.show-trash ? Icons.rotate-ccw : Icons.trash-2;
+                label: App.show-trash ? @tr("Przywróć") : @tr("Usuń");
+                enabled: App.has-detail || App.selected-count > 0;
+                tip: App.show-trash ? @tr("Przywróć z kosza") : @tr("Przenieś do kosza");
+                clicked => {
+                    App.cmd(App.show-trash ? "restore" : "delete", "");
+                }
+            }
+            if App.show-trash: BigButton {
+                icon: Icons.x;
+                label: @tr("Opróżnij");
+                tip: @tr("Usuń trwale wszystkie loty z kosza");
+                clicked => {
+                    App.cmd("empty-trash", "");
+                }
+            }
+        }
+        if App.tab == 2: Group {
+            title: @tr("Widok");
+            last: true;
+            BigButton {
+                icon: Icons.list-checks;
+                label: @tr("Zaznacz");
+                tip: @tr("Zaznacz wszystkie widoczne loty");
+                clicked => {
+                    App.cmd("select-all", "");
+                }
+            }
+            BigButton {
+                icon: Icons.square;
+                label: @tr("Odznacz");
+                enabled: App.selected-count > 0;
+                clicked => {
+                    App.cmd("select-none", "");
+                }
+            }
+            BigButton {
+                icon: Icons.trash-2;
+                label: @tr("Kosz") + (App.trash-count > 0 ? " (" + App.trash-count + ")" : "");
+                active: App.show-trash;
+                clicked => {
+                    App.show-trash = !App.show-trash;
+                    App.cmd("filter", App.filter-text);
+                }
+            }
+        }
+        if App.tab == 3: Group {
+            title: @tr("Eksport");
+            last: true;
+            BigButton {
+                icon: Icons.table;
+                label: @tr("Lista CSV");
+                clicked => {
+                    App.cmd("export", "list");
+                }
+            }
+        }
+        if App.tab == 4: Group {
+            title: @tr("Lotnisko");
+            BigButton {
+                icon: Icons.star;
+                label: App.airport-watched ? @tr("Obserwowane") : @tr("Obserwuj");
+                enabled: App.has-airport;
+                active: App.airport-watched;
+                clicked => {
+                    App.cmd("airport-watch", App.airport.ident);
+                }
+            }
+            BigButton {
+                icon: Icons.refresh-cw;
+                label: @tr("Pogoda");
+                enabled: App.has-airport;
+                tip: @tr("Odśwież METAR i TAF");
+                clicked => {
+                    App.cmd("airport-refresh", App.airport.ident);
+                }
+            }
+            BigButton {
+                icon: Icons.plane;
+                label: @tr("Przy samolocie");
+                enabled: App.live.has-data;
+                tip: @tr("Najbliższe lotnisko od samolotu");
+                clicked => {
+                    App.cmd("airport-near-aircraft", "");
+                }
+            }
+            BigButton {
+                icon: Icons.external-link;
+                label: "OurAirports";
+                enabled: App.has-airport;
+                clicked => {
+                    App.cmd("open-url", "https://ourairports.com/airports/" + App.airport.ident + "/");
+                }
+            }
+        }
+        if App.tab == 4: Group {
+            title: @tr("Baza");
+            last: true;
+            BigButton {
+                icon: Icons.cloud-download;
+                label: @tr("Odśwież bazę");
+                tip: @tr("Pobierz bazę OurAirports od nowa");
+                clicked => {
+                    App.cmd("db-refresh", "");
+                }
+            }
+        }
+        if App.tab == 5 || App.tab == 7: Group {
+            title: @tr("Pomoc");
+            last: true;
+            BigButton {
+                icon: Icons.bug;
+                label: @tr("Zgłoś");
+                tip: @tr("Zgłoś błąd lub sugestię");
+                clicked => {
+                    App.cmd("feedback", "");
+                }
+            }
+            BigButton {
+                icon: Icons.external-link;
+                label: "redzikowski.com";
+                clicked => {
+                    App.cmd("open-url", "https://redzikowski.com/portfolio/opentakeoff");
+                }
+            }
+        }
+    }
+}
+
+component StatusBar inherits Rectangle {
+    height: 26px * Theme.scale;
+    background: Theme.panel;
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 16px;
+        HorizontalLayout {
+            spacing: 6px;
+            Dot {
+                state: App.sim-connected ? 2 : 1;
+                y: (parent.height - self.height) / 2;
+            }
+            Text {
+                text: App.sim-status;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+        }
+        HorizontalLayout {
+            spacing: 6px;
+            Image {
+                source: Icons.smartphone;
+                width: 13px;
+                height: 13px;
+                y: (parent.height - self.height) / 2;
+                colorize: App.phones > 0 ? Theme.ok : Theme.text-faint;
+            }
+            Text {
+                text: App.phones-text;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+            }
+        }
+        if !App.link-ok: Text {
+            text: @tr("Port 47810 zajęty – telefony nie połączą się (czy działa stary OpenTakeoff Link?)");
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.danger;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        Rectangle {
+            horizontal-stretch: 1;
+        }
+        if App.busy: Text {
+            text: App.busy-text;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.accent;
+            vertical-alignment: center;
+        }
+        Text {
+            text: App.db-status;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        Text {
+            text: "v" + App.version;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            vertical-alignment: center;
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "OpenTakeoff";
+    icon: @image-url("../icon.png");
+    preferred-width: 1440px;
+    preferred-height: 900px;
+    min-width: 1000px;
+    min-height: 640px;
+    no-frame: true;
+    background: Theme.bg;
+    default-font-family: Theme.font;
+    callback key(string, bool, bool) -> bool;
+    forward-focus: fs;
+    // Zwężanie paska kart i wstążki na wąskim oknie
+    function fit-ribbon() {
+        Theme.ribbon-level = self.width / Theme.scale < 1180px ? 2 : self.width / Theme.scale < 1360px ? 1 : 0;
+    }
+    changed width => {
+        root.fit-ribbon();
+    }
+    init => {
+        root.fit-ribbon();
+    }
+    fs := FocusScope {
+        key-pressed(e) => {
+            if (root.key(e.text, e.modifiers.control, e.modifiers.shift)) {
+                return accept;
+            }
+            reject
+        }
+        VerticalLayout {
+            TopBar { }
+            Rectangle {
+                height: 1px;
+                background: Theme.line;
+            }
+            Ribbon { }
+            Rectangle {
+                height: 1px;
+                background: Theme.line;
+            }
+            Rectangle {
+                vertical-stretch: 1;
+                background: Theme.desk;
+                if App.tab == 0: Dashboard {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 1: Live {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 2: Logbook {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 3: Stats {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 4: Airports {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 5: Tools {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 6: Devices {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 7: Settings {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 8: Instruments {
+                    width: parent.width;
+                    height: parent.height;
+                }
+                if App.tab == 9: NavMap {
+                    width: parent.width;
+                    height: parent.height;
+                }
+            }
+            Rectangle {
+                height: 1px;
+                background: Theme.line;
+            }
+            StatusBar { }
+        }
+    }
+    // Uchwyty zmiany rozmiaru okna bez ramki
+    if !App.maximized: TouchArea {
+        x: 0;
+        y: parent.height - 5px;
+        width: parent.width;
+        height: 5px;
+        mouse-cursor: MouseCursor.ns-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                App.win(12);
+            }
+        }
+    }
+    if !App.maximized: TouchArea {
+        x: parent.width - 5px;
+        y: 0;
+        width: 5px;
+        height: parent.height;
+        mouse-cursor: MouseCursor.ew-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                App.win(14);
+            }
+        }
+    }
+    if !App.maximized: TouchArea {
+        x: 0;
+        y: 0;
+        width: 5px;
+        height: parent.height;
+        mouse-cursor: MouseCursor.ew-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                App.win(13);
+            }
+        }
+    }
+    if !App.maximized: TouchArea {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: 4px;
+        mouse-cursor: MouseCursor.ns-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                App.win(11);
+            }
+        }
+    }
+    if !App.maximized: TouchArea {
+        x: parent.width - 12px;
+        y: parent.height - 12px;
+        width: 12px;
+        height: 12px;
+        mouse-cursor: MouseCursor.nwse-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                App.win(18);
+            }
+        }
+    }
+    Toast {
+        x: (parent.width - self.width) / 2;
+        y: parent.height - self.height - 40px;
+        text: App.toast;
+        serial: App.toast-serial;
+    }
+    // Potwierdzenie
+    if App.confirm-text != "": Rectangle {
+        background: #00000088;
+        TouchArea { }
+        Card {
+            width: min(480px, parent.width - 40px);
+            height: cl.preferred-height;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            cl := VerticalLayout {
+                padding: 18px;
+                spacing: 14px;
+                Text {
+                    text: App.confirm-text;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-big;
+                    color: Theme.text;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: end;
+                    Button {
+                        label: @tr("Anuluj");
+                        clicked => {
+                            App.cmd("confirm-no", "");
+                        }
+                    }
+                    Button {
+                        label: App.confirm-label;
+                        primary: true;
+                        clicked => {
+                            App.cmd("confirm-yes", "");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Dymek podpowiedzi (wspólny dla wszystkich kontrolek)
+    if Tip.text != "" && Tip.shown == Tip.serial: Rectangle {
+        x: min(Tip.x + 12px, root.width - self.width - 6px);
+        y: Tip.y + 22px > root.height - self.height ? Tip.y - self.height - 6px : Tip.y + 22px;
+        width: min(tt.preferred-width + 16px, 360px);
+        height: tt.preferred-height + 10px;
+        border-radius: Theme.r-small;
+        background: Theme.popup;
+        border-width: 1px;
+        border-color: Theme.line-strong;
+        drop-shadow-blur: 10px;
+        drop-shadow-color: #00000066;
+        tt := Text {
+            width: min(self.preferred-width, 344px);
+            text: Tip.text;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text;
+            wrap: word-wrap;
+        }
+    }
+    tip-timer := Timer {
+        interval: 600ms;
+        running: Tip.text != "" && Tip.shown != Tip.serial;
+        triggered => {
+            Tip.shown = Tip.serial;
+        }
+    }
+}

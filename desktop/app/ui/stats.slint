@@ -1,0 +1,305 @@
+// Karta Statystyki: sumy, loty w miesiącach, rozkład ocen lądowań, samoloty, lotniska, trasy, rekordy
+// i mapa wszystkich tras.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, BarV, RowV } from "state.slint";
+import { Segmented, TipArea } from "widgets.slint";
+import { Panel, Heading, Metric, Bar, MapView, ListRow, Colors } from "parts.slint";
+
+component Bars inherits Rectangle {
+    in property <[BarV]> bars;
+    in property <bool> scores;
+    min-height: 170px * Theme.scale;
+    HorizontalLayout {
+        spacing: 3px;
+        alignment: stretch;
+        for b[i] in root.bars: VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 3px;
+            Text {
+                text: b.text;
+                font-family: Theme.font;
+                font-size: 10px;
+                color: Theme.text-faint;
+                horizontal-alignment: center;
+                overflow: elide;
+            }
+            Rectangle {
+                vertical-stretch: 1;
+                Rectangle {
+                    y: parent.height * (1 - max(0.0, min(1, b.value)));
+                    height: parent.height * max(0.0, min(1, b.value));
+                    border-radius: 3px;
+                    background: root.scores ? Colors.score(i * 10 + 5) : b.accent ? Theme.accent : Theme.accent.with-alpha(0.55);
+                }
+                TipArea {
+                    tip: b.label + ": " + b.text;
+                }
+            }
+            Text {
+                text: b.label;
+                font-family: Theme.font;
+                font-size: 10px;
+                color: Theme.text-dim;
+                horizontal-alignment: center;
+                overflow: elide;
+            }
+        }
+    }
+}
+
+component RankList inherits Panel {
+    in property <string> title;
+    in property <image> icon;
+    in property <[RowV]> rows;
+    in property <string> open;
+    VerticalLayout {
+        padding: 10px;
+        spacing: 4px;
+        Heading {
+            text: root.title;
+            icon: root.icon;
+        }
+        if root.rows.length == 0: Text {
+            text: "—";
+            color: Theme.text-faint;
+        }
+        for r in root.rows: ListRow {
+            height: 34px * Theme.scale;
+            clicked => {
+                if (root.open != "") {
+                    App.cmd(root.open, r.name);
+                }
+            }
+            VerticalLayout {
+                padding-left: 6px;
+                padding-right: 6px;
+                alignment: center;
+                spacing: 3px;
+                HorizontalLayout {
+                    Text {
+                        text: r.name;
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: r.a;
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text;
+                    }
+                    Text {
+                        text: "  " + r.b;
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                        vertical-alignment: center;
+                    }
+                }
+                Bar {
+                    height: 4px;
+                    value: r.level;
+                }
+            }
+        }
+    }
+}
+
+component Record inherits ListRow {
+    in property <string> label;
+    in property <string> value;
+    in property <string> id;
+    height: 30px * Theme.scale;
+    clicked => {
+        if (root.id != "") {
+            App.tab = 2;
+            App.cmd("flight-open", root.id);
+        }
+    }
+    HorizontalLayout {
+        padding-left: 6px;
+        padding-right: 6px;
+        Text {
+            text: root.label;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            color: Theme.text-dim;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: root.value == "" ? "—" : root.value;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            font-weight: 600;
+            color: Theme.text;
+            vertical-alignment: center;
+        }
+    }
+}
+
+export component Stats inherits Rectangle {
+    sv := ScrollView {
+        VerticalLayout {
+            width: sv.visible-width;
+            padding: 14px;
+            spacing: 12px;
+            HorizontalLayout {
+                spacing: 10px;
+                Metric {
+                    horizontal-stretch: 1;
+                    label: @tr("Loty");
+                    value: App.stats.flights;
+                    sub: App.stats.since;
+                }
+                Metric {
+                    horizontal-stretch: 1;
+                    label: @tr("Czas w powietrzu");
+                    value: App.stats.hours;
+                }
+                Metric {
+                    horizontal-stretch: 1;
+                    label: @tr("Dystans");
+                    value: App.stats.distance;
+                }
+                Metric {
+                    horizontal-stretch: 1;
+                    label: @tr("Lądowania");
+                    value: App.stats.landings;
+                    sub: App.stats.avg-vs;
+                }
+                Metric {
+                    horizontal-stretch: 1;
+                    label: @tr("Średnia ocena");
+                    value: App.stats.avg-score;
+                }
+                Metric {
+                    horizontal-stretch: 1;
+                    label: @tr("Lotniska / samoloty");
+                    value: App.stats.airports + " / " + App.stats.aircraft;
+                }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                Panel {
+                    horizontal-stretch: 3;
+                    VerticalLayout {
+                        padding: 12px;
+                        spacing: 8px;
+                        HorizontalLayout {
+                            Heading {
+                                text: @tr("W MIESIĄCACH");
+                                icon: Icons.chart-column;
+                                horizontal-stretch: 1;
+                            }
+                            Segmented {
+                                items: [@tr("Loty"), @tr("Godziny"), @tr("Dystans")];
+                                current: App.stats-metric;
+                                picked(i) => {
+                                    App.stats-metric = i;
+                                    App.cmd("stats-refresh", "");
+                                }
+                            }
+                        }
+                        Bars {
+                            bars: App.stats-months;
+                        }
+                    }
+                }
+                Panel {
+                    horizontal-stretch: 2;
+                    VerticalLayout {
+                        padding: 12px;
+                        spacing: 8px;
+                        Heading {
+                            text: @tr("OCENY LĄDOWAŃ");
+                            icon: Icons.plane-landing;
+                        }
+                        Bars {
+                            bars: App.stats-scores;
+                            scores: true;
+                        }
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                RankList {
+                    horizontal-stretch: 1;
+                    title: @tr("SAMOLOTY");
+                    icon: Icons.plane;
+                    rows: App.stats-aircraft;
+                }
+                RankList {
+                    horizontal-stretch: 1;
+                    title: @tr("LOTNISKA");
+                    icon: Icons.map-pin;
+                    rows: App.stats-airports;
+                    open: "airport-open";
+                }
+                RankList {
+                    horizontal-stretch: 1;
+                    title: @tr("TRASY");
+                    icon: Icons.route;
+                    rows: App.stats-routes;
+                }
+                Panel {
+                    horizontal-stretch: 1;
+                    VerticalLayout {
+                        padding: 10px;
+                        spacing: 2px;
+                        Heading {
+                            text: @tr("REKORDY");
+                            icon: Icons.trophy;
+                        }
+                        Record {
+                            label: @tr("Najdłuższy lot");
+                            value: App.stats.longest;
+                            id: App.stats.longest-id;
+                        }
+                        Record {
+                            label: @tr("Najdalszy lot");
+                            value: App.stats.farthest;
+                            id: App.stats.farthest-id;
+                        }
+                        Record {
+                            label: @tr("Najwyżej");
+                            value: App.stats.highest;
+                            id: App.stats.highest-id;
+                        }
+                        Record {
+                            label: @tr("Najmiększe lądowanie");
+                            value: App.stats.softest;
+                            id: App.stats.softest-id;
+                        }
+                        Record {
+                            label: @tr("Najlepsza ocena");
+                            value: App.stats.best;
+                            id: App.stats.best-id;
+                        }
+                    }
+                }
+            }
+            Panel {
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 8px;
+                    Heading {
+                        text: @tr("MAPA WSZYSTKICH LOTÓW");
+                        icon: Icons.globe;
+                    }
+                    MapView {
+                        id: 3;
+                        height: 420px * Theme.scale;
+                        source: App.map-stats;
+                    }
+                }
+            }
+        }
+    }
+}

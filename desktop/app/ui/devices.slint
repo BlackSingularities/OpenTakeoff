@@ -1,0 +1,250 @@
+// Karta Telefony: parowanie, sparowane urządzenia (połączone, steruje, ostatnia synchronizacja), źródło
+// danych (MSFS albo tryb symulacji), czułość rozglądania i dziennik aktywności połączeń.
+
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { Button, IconButton, Switch, Slider } from "widgets.slint";
+import { Panel, Heading, Pair, Dot, ListRow, Empty, Colors } from "parts.slint";
+
+export component Devices inherits Rectangle {
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        VerticalLayout {
+            width: 420px * Theme.scale;
+            spacing: 12px;
+            alignment: start;
+            Panel {
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 8px;
+                    Heading {
+                        text: @tr("PAROWANIE");
+                        icon: Icons.qr-code;
+                    }
+                    Text {
+                        text: App.pairing-code;
+                        font-family: "Consolas";
+                        font-size: 44px * Theme.scale;
+                        font-weight: 700;
+                        letter-spacing: 6px;
+                        color: Theme.accent;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Pierwsze połączenie telefonu wymaga tego kodu. Kolejne – już nie: telefon zapamiętuje dostęp, dopóki go nie unieważnisz.");
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text-dim;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                    }
+                    Pair {
+                        k: @tr("Adresy komputera");
+                        v: App.addresses;
+                    }
+                    Pair {
+                        k: @tr("Port");
+                        v: App.port;
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: center;
+                        Button {
+                            label: @tr("Nowy kod");
+                            icon: Icons.refresh-cw;
+                            clicked => {
+                                App.cmd("pair-new-code", "");
+                            }
+                        }
+                        Button {
+                            label: @tr("Unieważnij wszystkie");
+                            icon: Icons.shield-check;
+                            clicked => {
+                                App.cmd("pair-revoke-all", "");
+                            }
+                        }
+                    }
+                }
+            }
+            Panel {
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 8px;
+                    Heading {
+                        text: @tr("ŹRÓDŁO DANYCH");
+                        icon: Icons.monitor;
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Switch {
+                            label: "MSFS (SimConnect)";
+                            on: !App.simulation;
+                            toggled => {
+                                App.cmd("simulation", "0");
+                            }
+                        }
+                        Switch {
+                            label: @tr("Tryb symulacji");
+                            on: App.simulation;
+                            toggled => {
+                                App.cmd("simulation", "1");
+                            }
+                        }
+                    }
+                    Text {
+                        text: App.simulation ? @tr("Tryb symulacji: lot testowy EPWA → EPGD bez MSFS – do sprawdzenia telefonu i dziennika.") : App.sim-status;
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text-dim;
+                        wrap: word-wrap;
+                    }
+                    Text {
+                        text: @tr("Czułość rozglądania z telefonu: ") + App.look-sensitivity + " %";
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text;
+                    }
+                    Slider {
+                        value: (App.look-sensitivity - 20) / 380;
+                        tip: @tr("Jak szybko obraca się kamera MSFS przy rozglądaniu z telefonu");
+                        moved(v) => {
+                            App.cmd("look-sensitivity", round(20 + v * 380));
+                        }
+                    }
+                    Text {
+                        text: @tr("Program nie steruje samolotem sam – przekazuje do symulatora tylko polecenia ze sparowanego telefonu (autopilot, radia, osie).");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 12px;
+            Panel {
+                vertical-stretch: 2;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 6px;
+                    Heading {
+                        text: @tr("SPAROWANE TELEFONY");
+                        icon: Icons.smartphone;
+                    }
+                    if App.devices.length == 0: Empty {
+                        vertical-stretch: 1;
+                        icon: Icons.smartphone;
+                        title: @tr("Brak sparowanych telefonów");
+                        text: @tr("Połącz telefon z aplikacji OpenTakeoff i wpisz kod parowania.");
+                    }
+                    for d in App.devices: Rectangle {
+                        height: dl.preferred-height;
+                        border-radius: Theme.r-small;
+                        background: d.connected ? Theme.accent-soft : Theme.hover;
+                        dl := HorizontalLayout {
+                            padding: 10px;
+                            spacing: 12px;
+                            Dot {
+                                state: d.connected ? 2 : 0;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                spacing: 2px;
+                                Text {
+                                    text: d.name;
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs-big;
+                                    font-weight: 600;
+                                    color: Theme.text;
+                                    overflow: elide;
+                                }
+                                Text {
+                                    text: d.status;
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs-small;
+                                    color: d.controlling ? Colors.warn : Theme.text-dim;
+                                    overflow: elide;
+                                }
+                                Text {
+                                    text: d.last-seen + "   " + d.last-sync;
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs-small;
+                                    color: Theme.text-faint;
+                                    overflow: elide;
+                                }
+                            }
+                            if d.connected: Button {
+                                label: @tr("Rozłącz");
+                                icon: Icons.unplug;
+                                y: (parent.height - self.height) / 2;
+                                clicked => {
+                                    App.cmd("device-disconnect", d.session);
+                                }
+                            }
+                            Button {
+                                label: @tr("Unieważnij");
+                                icon: Icons.trash-2;
+                                y: (parent.height - self.height) / 2;
+                                clicked => {
+                                    App.cmd("device-revoke", d.token);
+                                }
+                            }
+                        }
+                    }
+                    Rectangle {
+                        vertical-stretch: 1;
+                    }
+                }
+            }
+            Panel {
+                vertical-stretch: 3;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 6px;
+                    HorizontalLayout {
+                        Heading {
+                            text: @tr("AKTYWNOŚĆ");
+                            icon: Icons.activity;
+                            horizontal-stretch: 1;
+                        }
+                        IconButton {
+                            icon: Icons.folder-open;
+                            tip: @tr("Otwórz folder z dziennikiem programu");
+                            clicked => {
+                                App.cmd("open-logs", "");
+                            }
+                        }
+                    }
+                    ListView {
+                        vertical-stretch: 1;
+                        for l in App.activity: HorizontalLayout {
+                            height: lt.preferred-height + 4px;
+                            spacing: 10px;
+                            Text {
+                                width: 64px;
+                                text: l.time;
+                                font-family: "Consolas";
+                                font-size: Theme.fs-small;
+                                color: Theme.text-faint;
+                            }
+                            lt := Text {
+                                horizontal-stretch: 1;
+                                text: l.text;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-dim;
+                                wrap: word-wrap;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

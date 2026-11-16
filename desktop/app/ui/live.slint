@@ -1,0 +1,370 @@
+// Karta Na żywo: podgląd lotu z symulatora tylko do odczytu – przyrządy, mapa z torem, autopilot, radia,
+// systemy, silniki, paliwo i postęp trasy z GPS. Sterowanie samolotem zostaje w telefonie.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { Button, IconButton } from "widgets.slint";
+import { Panel, Heading, Metric, Pair, Bar, MapView, Empty, Colors, Dot } from "parts.slint";
+import { Screen } from "instruments.slint";
+
+component Box inherits Panel {
+    in property <string> title;
+    in property <image> icon;
+    VerticalLayout {
+        padding: 10px;
+        spacing: 2px;
+        Heading {
+            text: root.title;
+            icon: root.icon;
+        }
+        @children
+    }
+}
+
+export component Live inherits Rectangle {
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        // Lewa kolumna: przyrządy
+        VerticalLayout {
+            width: 340px * Theme.scale;
+            spacing: 10px;
+            Screen {
+                id: 14;
+                height: 300px * Theme.scale;
+                source: App.pfd;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                Metric {
+                    horizontal-stretch: 1;
+                    label: "TAS";
+                    value: App.live.tas;
+                    unit: "kt";
+                    big: 18px * Theme.scale;
+                }
+                Metric {
+                    horizontal-stretch: 1;
+                    label: @tr("Ścieżka");
+                    value: App.live.trk;
+                    unit: "°";
+                    big: 18px * Theme.scale;
+                }
+                Metric {
+                    horizontal-stretch: 1;
+                    label: "AGL";
+                    value: App.live.agl;
+                    big: 18px * Theme.scale;
+                }
+            }
+            Box {
+                title: @tr("OTOCZENIE");
+                icon: Icons.wind;
+                Pair {
+                    k: @tr("Wiatr");
+                    v: App.live.wind;
+                }
+                Pair {
+                    k: @tr("Temperatura");
+                    v: App.live.oat;
+                }
+                Pair {
+                    k: "QNH";
+                    v: App.live.qnh;
+                }
+                Pair {
+                    k: @tr("Pozycja");
+                    v: App.live.position;
+                }
+                Pair {
+                    k: @tr("W pobliżu");
+                    v: App.live.nearest;
+                }
+                Pair {
+                    k: @tr("Czas symulatora");
+                    v: App.live.sim-time;
+                }
+            }
+            Box {
+                vertical-stretch: 1;
+                title: @tr("PRZYZIEMIENIE");
+                icon: Icons.plane-landing;
+                Text {
+                    text: App.live.touchdown != "" ? App.live.touchdown : @tr("Ocena pojawi się po wylądowaniu.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: App.live.touchdown != "" ? Theme.text : Theme.text-faint;
+                    wrap: word-wrap;
+                }
+            }
+        }
+        // Środek: mapa z torem
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 10px;
+            HorizontalLayout {
+                spacing: 10px;
+                height: 36px * Theme.scale;
+                Dot {
+                    state: App.live.has-data ? 2 : 0;
+                    y: (parent.height - self.height) / 2;
+                }
+                Text {
+                    text: App.live.has-data ? App.live.title : @tr("Czekam na dane z symulatora");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-big;
+                    font-weight: 600;
+                    color: Theme.text;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+                Text {
+                    text: App.live.phase;
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.accent;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: App.live.paused ? @tr("PAUZA") : "";
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    font-weight: 700;
+                    color: Colors.warn;
+                    vertical-alignment: center;
+                }
+            }
+            MapView {
+                id: 0;
+                vertical-stretch: 1;
+                source: App.map-live;
+                labels: App.map-live-labels;
+                scale-text: App.map-live-scale;
+                show-follow: true;
+            }
+            Panel {
+                height: nav.preferred-height;
+                nav := VerticalLayout {
+                    padding: 10px;
+                    spacing: 6px;
+                    HorizontalLayout {
+                        spacing: 14px;
+                        Image {
+                            source: Icons.route;
+                            width: 18px;
+                            height: 18px;
+                            colorize: Theme.accent;
+                            y: (parent.height - self.height) / 2;
+                        }
+                        Pair {
+                            horizontal-stretch: 1;
+                            k: @tr("Następny punkt");
+                            v: App.live.next-wp;
+                        }
+                        Pair {
+                            horizontal-stretch: 1;
+                            k: @tr("Odległość");
+                            v: App.live.next-dist;
+                        }
+                        Pair {
+                            horizontal-stretch: 1;
+                            k: @tr("Czas do punktu");
+                            v: App.live.next-ete;
+                        }
+                        Pair {
+                            horizontal-stretch: 1;
+                            k: @tr("Do celu");
+                            v: App.live.dest-ete;
+                        }
+                    }
+                    Bar {
+                        value: App.live.wp-progress;
+                    }
+                }
+            }
+        }
+        // Prawa kolumna: systemy (tylko podgląd)
+        rsv := ScrollView {
+            width: 300px * Theme.scale;
+            VerticalLayout {
+                width: rsv.visible-width - 4px;
+                spacing: 10px;
+                Box {
+                    title: @tr("AUTOPILOT");
+                    icon: Icons.navigation;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Dot {
+                            state: App.live.ap-master ? 2 : 0;
+                            y: (parent.height - self.height) / 2;
+                        }
+                        Text {
+                            text: App.live.ap-master ? "AP ON" : "AP OFF";
+                            font-family: "Consolas";
+                            font-size: Theme.fs-big;
+                            font-weight: 700;
+                            color: App.live.ap-master ? Theme.ok : Theme.text-dim;
+                        }
+                    }
+                    Pair {
+                        k: "HDG";
+                        v: App.live.ap-hdg;
+                        mono: true;
+                    }
+                    Pair {
+                        k: "ALT";
+                        v: App.live.ap-alt;
+                        mono: true;
+                    }
+                    Pair {
+                        k: "SPD";
+                        v: App.live.ap-spd;
+                        mono: true;
+                    }
+                    Pair {
+                        k: "V/S";
+                        v: App.live.ap-vs;
+                        mono: true;
+                    }
+                }
+                Box {
+                    title: @tr("RADIA");
+                    icon: Icons.radio;
+                    Pair {
+                        k: "COM 1";
+                        v: App.live.com1;
+                        mono: true;
+                    }
+                    Pair {
+                        k: "COM 2";
+                        v: App.live.com2;
+                        mono: true;
+                    }
+                    Pair {
+                        k: "NAV 1";
+                        v: App.live.nav1;
+                        mono: true;
+                    }
+                    Pair {
+                        k: "NAV 2";
+                        v: App.live.nav2;
+                        mono: true;
+                    }
+                    Pair {
+                        k: "XPDR";
+                        v: App.live.xpdr;
+                        mono: true;
+                    }
+                }
+                Box {
+                    title: @tr("SYSTEMY");
+                    icon: Icons.sliders-horizontal;
+                    Pair {
+                        k: @tr("Podwozie");
+                        v: App.live.gear;
+                    }
+                    Pair {
+                        k: @tr("Klapy");
+                        v: App.live.flaps;
+                    }
+                    Pair {
+                        k: @tr("Spoilery");
+                        v: App.live.spoilers;
+                    }
+                    Pair {
+                        k: @tr("Hamulec postojowy");
+                        v: App.live.brake ? @tr("zaciągnięty") : @tr("zwolniony");
+                    }
+                    Pair {
+                        k: @tr("Światła");
+                        v: App.live.lights;
+                    }
+                }
+                Box {
+                    title: @tr("SILNIKI I PALIWO");
+                    icon: Icons.fuel;
+                    for e in App.engines: VerticalLayout {
+                        spacing: 2px;
+                        HorizontalLayout {
+                            Text {
+                                text: e.label;
+                                font-family: Theme.font;
+                                font-size: Theme.fs;
+                                color: Theme.text-dim;
+                                horizontal-stretch: 1;
+                            }
+                            Text {
+                                text: e.main;
+                                font-family: "Consolas";
+                                font-size: Theme.fs;
+                                color: Theme.text;
+                            }
+                        }
+                        Bar {
+                            value: e.level;
+                            tone: Colors.spd;
+                        }
+                        Text {
+                            text: e.sub;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                        }
+                    }
+                    Pair {
+                        k: @tr("Paliwo");
+                        v: App.live.fuel;
+                    }
+                    Bar {
+                        value: App.live.fuel-level;
+                        tone: Colors.vs;
+                    }
+                }
+                Box {
+                    title: @tr("ZAPIS LOTU");
+                    icon: Icons.circle-dot;
+                    Text {
+                        text: App.recording ? App.recording-text : @tr("Zapis zacznie się sam po starcie (w powietrzu, prędkość nad ziemią > 40 kt).");
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text-dim;
+                        wrap: word-wrap;
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        padding-top: 4px;
+                        Button {
+                            label: @tr("Znacznik");
+                            icon: Icons.bookmark;
+                            enabled: App.recording;
+                            clicked => {
+                                App.cmd("record-mark", "");
+                            }
+                        }
+                        Button {
+                            label: App.recording ? @tr("Zakończ") : @tr("Wznów");
+                            icon: App.recording ? Icons.circle-stop : Icons.play;
+                            clicked => {
+                                App.cmd(App.recording ? "record-stop" : "record-resume", "");
+                            }
+                        }
+                    }
+                }
+                if App.live.controlled-by != "": Box {
+                    title: @tr("STERUJE");
+                    icon: Icons.smartphone;
+                    Text {
+                        text: App.live.controlled-by;
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+    }
+}

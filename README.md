@@ -18,7 +18,7 @@
 
 Aplikacja na Androida dla wirtualnych pilotów (MSFS, X-Plane, VATSIM, IVAO). Pogoda, dane lotnisk, plan lotu i kokpit na telefonie. Korzysta wyłącznie z darmowych, otwartych źródeł danych: nie wymaga kont ani kluczy API i nie ma reklam. Interfejs jest po polsku, angielsku i hiszpańsku (zgodnie z językiem systemu albo do wyboru w ustawieniach).
 
-Do sterowania samolotem i danych z symulatora służy **OpenTakeoff Link**, mały program na Windows, który łączy telefon z MSFS 2024 w sieci lokalnej. Instrukcja: [docs/link-setup.md](docs/link-setup.md).
+Do sterowania samolotem i danych z symulatora służy **OpenTakeoff na Windows** (dawniej OpenTakeoff Link), który łączy telefon z MSFS 2024 w sieci lokalnej. Na komputerze ma też własne funkcje: przyrządy w stylu kabiny (PFD, ND, zegary, ECAM/EICAS), mapę nawigacyjną z radialami i różami VOR, widok 3D, dziennik lotów synchronizowany z telefonem, statystyki i briefing lotnisk. Instrukcja: [docs/link-setup.md](docs/link-setup.md).
 
 ### Funkcje
 
@@ -89,7 +89,7 @@ Baza OurAirports pobiera się raz przy pierwszym uruchomieniu i odświeża co 30
 
 ### Budowanie
 
-Kotlin, Jetpack Compose i Material 3, minSdk 26. OpenTakeoff Link: C# i .NET 8 (folder `bridge/`).
+Kotlin, Jetpack Compose i Material 3, minSdk 26. OpenTakeoff na Windows: Rust i Slint (folder `desktop/`).
 
 Lokalnie skrypt `tools/build-local.ps1` buduje APK i Link oraz uruchamia testy:
 
@@ -99,7 +99,7 @@ powershell -ExecutionPolicy Bypass -File tools/build-local.ps1
 
 ### Wydania
 
-Każdy wypchnięty tag `vX.Y.Z` uruchamia [workflow](.github/workflows/release.yml), który tylko buduje APK i `OpenTakeoff-Link.exe`. Wydanie powstaje po wypchnięciu tagu `vX.Y.Z` (np. `git tag v2.0.1 && git push origin v2.0.1`): workflow buduje obie aplikacje w wersji `X.Y.Z` i publikuje je w wydaniu o tej nazwie. Człony `Y` i `Z` muszą być mniejsze niż 100.
+Każdy wypchnięty tag `vX.Y.Z` uruchamia [workflow](.github/workflows/release.yml), który buduje APK i instalator `OpenTakeoff-Setup-X.Y.Z.exe`. Wydanie powstaje po wypchnięciu tagu `vX.Y.Z` (np. `git tag v2.0.1 && git push origin v2.0.1`): workflow buduje obie aplikacje w wersji `X.Y.Z` i publikuje je w wydaniu o tej nazwie. Człony `Y` i `Z` muszą być mniejsze niż 100.
 
 Bez sekretów APK jest podpisane kluczem debug. Żeby aktualizacje instalowały się na stałym kluczu, dodaj sekrety repozytorium: `SIGNING_KEYSTORE_BASE64`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`.
 
@@ -109,7 +109,7 @@ Bez sekretów APK jest podpisane kluczem debug. Żeby aktualizacje instalowały 
 
 An Android app for flight-sim pilots (MSFS, X-Plane, VATSIM, IVAO): weather, airport data, flight planning and a cockpit on your phone. It uses free and open data sources only, with no accounts, API keys or ads. The interface is in English, Polish and Spanish (follows the system language or can be set in Settings).
 
-To fly the aircraft and read live data from the simulator, run **OpenTakeoff Link**, a small Windows program that connects the phone to MSFS 2024 over your local network. Setup: [docs/link-setup.md](docs/link-setup.md) (in Polish).
+To fly the aircraft and read live data from the simulator, run **OpenTakeoff for Windows** (formerly OpenTakeoff Link), which connects the phone to MSFS 2024 over your local network. On the PC it also offers cockpit-style instruments (PFD, ND, gauges, ECAM/EICAS), a navigation map with VOR radials and compass roses, a 3D view, a logbook synced with the phone, statistics and airport briefings. Setup: [docs/link-setup.md](docs/link-setup.md) (in Polish).
 
 ### Features
 
@@ -180,7 +180,7 @@ The OurAirports database downloads once on first launch and refreshes every 30 d
 
 ### Building
 
-Kotlin, Jetpack Compose and Material 3, minSdk 26. OpenTakeoff Link: C# and .NET 8 (in `bridge/`).
+Kotlin, Jetpack Compose and Material 3, minSdk 26. OpenTakeoff for Windows: Rust and Slint (in `desktop/`).
 
 Locally, `tools/build-local.ps1` builds the APK and Link and runs the tests:
 
@@ -190,7 +190,7 @@ powershell -ExecutionPolicy Bypass -File tools/build-local.ps1
 
 ### Releases
 
-Every push to `main` runs the [workflow](.github/workflows/release.yml), which only builds the APK and `OpenTakeoff-Link.exe`. A release is created by pushing a `vX.Y.Z` tag (e.g. `git tag v2.0.1 && git push origin v2.0.1`): the workflow builds both apps as version `X.Y.Z` and publishes them under that release. `Y` and `Z` must be below 100.
+Every push to `main` runs the [workflow](.github/workflows/release.yml), which builds the APK and the `OpenTakeoff-Setup-X.Y.Z.exe` installer. A release is created by pushing a `vX.Y.Z` tag (e.g. `git tag v2.0.1 && git push origin v2.0.1`): the workflow builds both apps as version `X.Y.Z` and publishes them under that release. `Y` and `Z` must be below 100.
 
 Without secrets the APK is signed with the debug key. To keep updates on a fixed key, add these repository secrets: `SIGNING_KEYSTORE_BASE64`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`.
 

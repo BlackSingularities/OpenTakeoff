@@ -154,6 +154,8 @@ data class Incoming(
     val code: String? = null,
     val name: String? = null,
     val limits: Limits? = null,
+    /** Funkcje serwera dodane po pierwszym wydaniu protokołu (np. `logbook_sync`). */
+    val features: List<String>? = null,
 )
 
 @Serializable data class Limits(val maxDeflection: Double = 0.8, val axisTimeoutMs: Int = 500)

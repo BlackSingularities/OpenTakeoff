@@ -1,0 +1,450 @@
+// Karta Narzędzia: kalkulatory lotnicze (wiatr, trójkąt wiatru, wysokość gęstościowa, zniżanie, paliwo),
+// przelicznik jednostek i dekoder METAR/TAF. Wyniki liczy Rust (App.calc) na bieżąco.
+
+import { ScrollView, TextEdit } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, GroupV } from "state.slint";
+import { Field, Segmented } from "widgets.slint";
+import { Panel, Heading, Pair } from "parts.slint";
+
+component In inherits VerticalLayout {
+    alignment: start;
+    in property <string> label;
+    in-out property <string> text;
+    in property <string> unit;
+    spacing: 3px;
+    Text {
+        text: root.label;
+        font-family: Theme.font;
+        font-size: Theme.fs-small;
+        color: Theme.text-dim;
+        overflow: elide;
+    }
+    HorizontalLayout {
+        spacing: 4px;
+        Field {
+            w: 86px * Theme.scale;
+            text <=> root.text;
+        }
+        Text {
+            text: root.unit;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            vertical-alignment: center;
+        }
+    }
+}
+
+component Result inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    spacing: 8px;
+    height: 26px * Theme.scale;
+    Text {
+        text: root.label;
+        font-family: Theme.font;
+        font-size: Theme.fs;
+        color: Theme.text-dim;
+        vertical-alignment: center;
+        horizontal-stretch: 1;
+    }
+    Text {
+        text: root.value == "" ? "—" : root.value;
+        font-family: Theme.font;
+        font-size: Theme.fs-big;
+        font-weight: 700;
+        color: Theme.accent;
+        vertical-alignment: center;
+    }
+}
+
+component Tool inherits Panel {
+    in property <string> title;
+    in property <image> icon;
+    in property <string> hint;
+    min-width: 300px * Theme.scale;
+    VerticalLayout {
+        alignment: start;
+        padding: 12px;
+        spacing: 8px;
+        Heading {
+            text: root.title;
+            icon: root.icon;
+        }
+        @children
+        if root.hint != "": Text {
+            text: root.hint;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            wrap: word-wrap;
+        }
+    }
+}
+
+export component Tools inherits Rectangle {
+    // Wiatr na pasie
+    property <string> rw-dir: "270";
+    property <string> rw-spd: "15";
+    property <string> rw-hdg: "290";
+    property <[string]> rw: App.calc("runway-wind", [rw-dir, rw-spd, rw-hdg]);
+    // Trójkąt wiatru
+    property <string> wt-crs: "90";
+    property <string> wt-tas: "120";
+    property <string> wt-dir: "360";
+    property <string> wt-spd: "20";
+    property <[string]> wt: App.calc("wind-triangle", [wt-crs, wt-tas, wt-dir, wt-spd]);
+    // Wysokość gęstościowa
+    property <string> da-elev: "489";
+    property <string> da-qnh: "1013";
+    property <string> da-oat: "25";
+    property <string> da-ias: "120";
+    property <[string]> da: App.calc("density", [da-elev, da-qnh, da-oat, da-ias]);
+    // Zniżanie
+    property <string> de-from: "35000";
+    property <string> de-to: "3000";
+    property <string> de-gs: "420";
+    property <string> de-angle: "3";
+    property <[string]> de: App.calc("descent", [de-from, de-to, de-gs, de-angle]);
+    // Paliwo
+    property <string> fu-dist: "250";
+    property <string> fu-gs: "420";
+    property <string> fu-burn: "2400";
+    property <string> fu-res: "45";
+    property <[string]> fu: App.calc("fuel", [fu-dist, fu-gs, fu-burn, fu-res]);
+    // Jednostki
+    property <int> un-group: 0;
+    property <int> un-from: 0;
+    property <int> un-to: 1;
+    property <string> un-value: "1000";
+    property <[string]> un-names: App.calc("unit-names", ["" + un-group]);
+    property <[string]> un: App.calc("convert", [un-value, "" + un-group, "" + un-from, "" + un-to]);
+    // Dekoder
+    property <string> metar: "METAR EPGD 151230Z 29012G22KT 250V320 9999 -SHRA FEW014CB BKN030 12/08 Q1009 NOSIG";
+    property <[string]> decoded: App.calc("decode", [metar]);
+    // Chmury i wilgotność
+    property <string> cb-t: "18";
+    property <string> cb-td: "11";
+    property <[string]> cb: App.calc("cloudbase", [cb-t, cb-td]);
+
+    sv := ScrollView {
+        VerticalLayout {
+            width: sv.visible-width;
+            padding: 14px;
+            spacing: 12px;
+            HorizontalLayout {
+                spacing: 12px;
+                Tool {
+                    horizontal-stretch: 1;
+                    title: @tr("WIATR NA PASIE");
+                    icon: Icons.wind;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Kierunek wiatru");
+                            text <=> root.rw-dir;
+                            unit: "°";
+                        }
+                        In {
+                            label: @tr("Prędkość");
+                            text <=> root.rw-spd;
+                            unit: "kt";
+                        }
+                        In {
+                            label: @tr("Kurs pasa");
+                            text <=> root.rw-hdg;
+                            unit: "°";
+                        }
+                    }
+                    Result {
+                        label: @tr("Wiatr czołowy / tylny");
+                        value: root.rw[0];
+                    }
+                    Result {
+                        label: @tr("Wiatr boczny");
+                        value: root.rw[1];
+                    }
+                }
+                Tool {
+                    horizontal-stretch: 1;
+                    title: @tr("TRÓJKĄT WIATRU");
+                    icon: Icons.compass;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Kurs drogi");
+                            text <=> root.wt-crs;
+                            unit: "°";
+                        }
+                        In {
+                            label: "TAS";
+                            text <=> root.wt-tas;
+                            unit: "kt";
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Wiatr z");
+                            text <=> root.wt-dir;
+                            unit: "°";
+                        }
+                        In {
+                            label: @tr("Prędkość wiatru");
+                            text <=> root.wt-spd;
+                            unit: "kt";
+                        }
+                    }
+                    Result {
+                        label: @tr("Kurs do utrzymania");
+                        value: root.wt[0];
+                    }
+                    Result {
+                        label: @tr("Poprawka na wiatr");
+                        value: root.wt[1];
+                    }
+                    Result {
+                        label: @tr("Prędkość nad ziemią");
+                        value: root.wt[2];
+                    }
+                }
+                Tool {
+                    horizontal-stretch: 1;
+                    title: @tr("WYSOKOŚĆ GĘSTOŚCIOWA");
+                    icon: Icons.thermometer;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Elewacja");
+                            text <=> root.da-elev;
+                            unit: "ft";
+                        }
+                        In {
+                            label: "QNH";
+                            text <=> root.da-qnh;
+                            unit: "hPa";
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Temperatura");
+                            text <=> root.da-oat;
+                            unit: "°C";
+                        }
+                        In {
+                            label: "IAS";
+                            text <=> root.da-ias;
+                            unit: "kt";
+                        }
+                    }
+                    Result {
+                        label: @tr("Wysokość ciśnieniowa");
+                        value: root.da[0];
+                    }
+                    Result {
+                        label: @tr("Wysokość gęstościowa");
+                        value: root.da[1];
+                    }
+                    Result {
+                        label: "TAS";
+                        value: root.da[2];
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                Tool {
+                    horizontal-stretch: 1;
+                    title: @tr("PLAN ZNIŻANIA");
+                    icon: Icons.plane-landing;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Z wysokości");
+                            text <=> root.de-from;
+                            unit: "ft";
+                        }
+                        In {
+                            label: @tr("Do wysokości");
+                            text <=> root.de-to;
+                            unit: "ft";
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: "GS";
+                            text <=> root.de-gs;
+                            unit: "kt";
+                        }
+                        In {
+                            label: @tr("Kąt ścieżki");
+                            text <=> root.de-angle;
+                            unit: "°";
+                        }
+                    }
+                    Result {
+                        label: @tr("Początek zniżania (TOD)");
+                        value: root.de[0];
+                    }
+                    Result {
+                        label: @tr("Prędkość pionowa");
+                        value: root.de[1];
+                    }
+                    Result {
+                        label: @tr("Czas zniżania");
+                        value: root.de[2];
+                    }
+                }
+                Tool {
+                    horizontal-stretch: 1;
+                    title: @tr("PALIWO");
+                    icon: Icons.fuel;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Dystans");
+                            text <=> root.fu-dist;
+                            unit: "NM";
+                        }
+                        In {
+                            label: "GS";
+                            text <=> root.fu-gs;
+                            unit: "kt";
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Spalanie");
+                            text <=> root.fu-burn;
+                            unit: "kg/h";
+                        }
+                        In {
+                            label: @tr("Rezerwa");
+                            text <=> root.fu-res;
+                            unit: "min";
+                        }
+                    }
+                    Result {
+                        label: @tr("Czas lotu");
+                        value: root.fu[0];
+                    }
+                    Result {
+                        label: @tr("Paliwo na przelot");
+                        value: root.fu[1];
+                    }
+                    Result {
+                        label: @tr("Z rezerwą");
+                        value: root.fu[2];
+                    }
+                }
+                Tool {
+                    horizontal-stretch: 1;
+                    title: @tr("CHMURY I WILGOTNOŚĆ");
+                    icon: Icons.cloud-sun;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Temperatura");
+                            text <=> root.cb-t;
+                            unit: "°C";
+                        }
+                        In {
+                            label: @tr("Punkt rosy");
+                            text <=> root.cb-td;
+                            unit: "°C";
+                        }
+                    }
+                    Result {
+                        label: @tr("Podstawa chmur (szacunkowo)");
+                        value: root.cb[0];
+                    }
+                    Result {
+                        label: @tr("Wilgotność względna");
+                        value: root.cb[1];
+                    }
+                    Result {
+                        label: @tr("Ryzyko mgły");
+                        value: root.cb[2];
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                Tool {
+                    horizontal-stretch: 1;
+                    title: @tr("PRZELICZNIK JEDNOSTEK");
+                    icon: Icons.calculator;
+                    Segmented {
+                        items: [@tr("Długość"), @tr("Prędkość"), @tr("Masa"), @tr("Objętość"), @tr("Ciśnienie")];
+                        current: root.un-group;
+                        picked(i) => {
+                            root.un-group = i;
+                            root.un-from = 0;
+                            root.un-to = 1;
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        In {
+                            label: @tr("Wartość");
+                            text <=> root.un-value;
+                        }
+                    }
+                    Text {
+                        text: @tr("Z jednostki");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-dim;
+                    }
+                    Segmented {
+                        items: root.un-names;
+                        current: root.un-from;
+                        picked(i) => {
+                            root.un-from = i;
+                        }
+                    }
+                    Text {
+                        text: @tr("Na jednostkę");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-dim;
+                    }
+                    Segmented {
+                        items: root.un-names;
+                        current: root.un-to;
+                        picked(i) => {
+                            root.un-to = i;
+                        }
+                    }
+                    Result {
+                        label: @tr("Wynik");
+                        value: root.un[0];
+                    }
+                }
+                Tool {
+                    horizontal-stretch: 2;
+                    title: @tr("DEKODER METAR / TAF");
+                    icon: Icons.text-quote;
+                    hint: @tr("Wklej depeszę – każda grupa dostanie opis. Prawdziwe depesze znajdziesz na karcie Lotniska.");
+                    TextEdit {
+                        height: 64px * Theme.scale;
+                        text <=> root.metar;
+                        font-size: Theme.fs;
+                    }
+                    for d[i] in root.decoded: Text {
+                        text: d;
+                        font-family: mod(i, 2) == 0 ? "Consolas" : Theme.font;
+                        font-size: Theme.fs-small;
+                        color: mod(i, 2) == 0 ? Theme.accent : Theme.text-dim;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+    }
+}

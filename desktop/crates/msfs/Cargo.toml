@@ -1,0 +1,18 @@
+[package]
+name = "opentakeoff-msfs"
+description = "OpenTakeoff dla Windows – połączenie z MSFS przez SimConnect"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "opentakeoff_msfs"
+
+[dependencies]
+opentakeoff-core.workspace = true
+libloading.workspace = true
+parking_lot.workspace = true
+sha2.workspace = true
+windows.workspace = true

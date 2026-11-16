@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.serializer
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -99,9 +100,19 @@ object FlightArchive {
         }
     }
 
-    /** Łączy listy po id (import nie dubluje lotów); najnowsze na górze. */
+    /**
+     * Łączy listy po id (import nie dubluje lotów); najnowsze na górze. Lot nagrany drugi raz na innym
+     * urządzeniu (czas pokrywa się w ponad połowie krótszego lotu, ten sam samolot) też nie jest dodawany.
+     */
     fun merge(current: List<FlightLog>, incoming: List<FlightLog>): List<FlightLog> =
-        (current + incoming.filter { n -> current.none { it.id == n.id } }).sortedByDescending { it.start }
+        (current + incoming.filter { n -> current.none { it.id == n.id || sameFlight(it, n) } }).sortedByDescending { it.start }
+
+    fun sameFlight(a: FlightLog, b: FlightLog): Boolean {
+        val overlap = minOf(a.end, b.end) - maxOf(a.start, b.start)
+        val shorter = minOf(a.end - a.start, b.end - b.start).coerceAtLeast(1)
+        val aircraftOk = a.aircraft == null || b.aircraft == null || a.aircraft.equals(b.aircraft, ignoreCase = true)
+        return overlap > 0 && overlap * 2 > shorter && aircraftOk
+    }
 
     /** Przybliżona liczba punktów na sekundę dla odstępu w ms — do opisu w ustawieniach. */
     fun rateLabel(ms: Int): String = if (ms < 1000) "${(1000.0 / ms).roundToInt()}/s" else "1/${ms / 1000}s"
@@ -140,6 +151,20 @@ class FlightLogStore(private val context: Context) {
     }
 
     suspend fun clearDraft() = withContext(Dispatchers.IO) { draft.delete(); Unit }
+
+    private val deletedFile = File(context.filesDir, "flights-deleted.json")
+
+    /** Loty usunięte w telefonie – synchronizacja z komputerem ich nie przywraca i usuwa je tam. */
+    suspend fun deletedIds(): Set<String> = withContext(Dispatchers.IO) {
+        if (!deletedFile.exists()) emptySet() else runCatching {
+            LinkJson.decodeFromString(kotlinx.serialization.builtins.ListSerializer(String.serializer()), deletedFile.readText()).toSet()
+        }.getOrDefault(emptySet())
+    }
+
+    suspend fun addDeleted(ids: Collection<String>) = withContext(Dispatchers.IO) {
+        val all = (deletedIds() + ids).toList().takeLast(5000)
+        deletedFile.writeText(LinkJson.encodeToString(kotlinx.serialization.builtins.ListSerializer(String.serializer()), all))
+    }
 
     /** Rozmiar archiwum na dysku (bajty). */
     fun sizeBytes(): Long = if (file.exists()) file.length() else if (legacy.exists()) legacy.length() else 0

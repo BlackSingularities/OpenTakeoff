@@ -77,6 +77,17 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
     val errors = _errors.asSharedFlow()
     var limits = Limits()
         private set
+    /** Funkcje połączonego serwera z `hello_ok` (puste dla starego OpenTakeoff Link). */
+    @Volatile var features: List<String> = emptyList()
+        private set
+    val device: String get() = deviceName
+
+    /** Adres, port i token bieżącego serwera – do synchronizacji dziennika przez HTTP. */
+    suspend fun syncTarget(): Triple<String, Int, String>? {
+        val (ip, port) = target ?: return null
+        val token = tokens.token(ip) ?: return null
+        return Triple(ip, port, token)
+    }
 
     private var socket: WebSocket? = null
     private var discoveryJob: Job? = null
@@ -191,6 +202,7 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
                 "hello_ok" -> {
                     m.token?.let { t -> scope.launch { tokens.saveToken(ip, t) } }
                     m.limits?.let { limits = it }
+                    features = m.features.orEmpty()
                     _status.value = LinkStatus.Connected(ip, m.server ?: "OpenTakeoff Link", m.source, null)
                     startPing(webSocket)
                 }

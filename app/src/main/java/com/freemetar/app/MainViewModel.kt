@@ -300,6 +300,40 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteFlightLog(id: String) = viewModelScope.launch {
         _flightLogs.value = _flightLogs.value.filterNot { it.id == id }
         flightLogStore.save(_flightLogs.value)
+        flightLogStore.addDeleted(listOf(id))
+    }
+
+    private val _syncing = MutableStateFlow(false)
+    /** Trwa synchronizacja dziennika z komputerem. */
+    val syncing = _syncing.asStateFlow()
+    private var syncedThisConnection = false
+    private var legacyHintShown = false
+
+    /** Czy połączony komputer obsługuje synchronizację dziennika (OpenTakeoff na Windows). */
+    fun canSyncLogbook(): Boolean = link.status.value is LinkStatus.Connected && "logbook_sync" in link.features
+
+    /** Wymiana lotów z programem OpenTakeoff na komputerze (w obie strony, bez dubli). */
+    fun syncLogbook(manual: Boolean = true) = viewModelScope.launch {
+        if (_syncing.value) return@launch
+        if (!canSyncLogbook()) {
+            if (manual) _flightMessage.value = loc("logbook_sync.needs_windows_app")
+            return@launch
+        }
+        val target = link.syncTarget() ?: return@launch
+        _syncing.value = true
+        val before = _flightLogs.value
+        runCatching {
+            com.freemetar.app.data.link.LogbookSync.run(target.first, target.second, target.third, link.device, before, flightLogStore.deletedIds())
+        }.onSuccess { r ->
+            if (r.sent + r.received + r.removed > 0 || manual) {
+                // Lot zapisany w trakcie synchronizacji nie może przepaść
+                val addedMeanwhile = _flightLogs.value.filter { n -> before.none { it.id == n.id } }
+                _flightLogs.value = com.freemetar.app.data.link.FlightArchive.merge(r.flights, addedMeanwhile)
+                flightLogStore.save(_flightLogs.value)
+                _flightMessage.value = loc("logbook_sync.done", r.sent, r.received) + (if (r.removed > 0) " " + loc("logbook_sync.removed", r.removed) else "")
+            }
+        }.onFailure { if (manual) _flightMessage.value = loc("logbook_sync.failed", it.message) }
+        _syncing.value = false
     }
 
     /** Ręczny znacznik w trwającym nagraniu (przycisk w kokpicie) — z czasem od startu w opisie. */
@@ -414,6 +448,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     saveFlight(recorder.finish())
                     com.freemetar.app.data.link.FlightLinkService.stop(getApplication())
                 } else com.freemetar.app.data.link.FlightLinkService.update(getApplication(), recorder.recording)
+            }
+        }
+        // Po połączeniu z komputerem: synchronizacja dziennika (OpenTakeoff na Windows) albo podpowiedź o nowym programie
+        viewModelScope.launch {
+            link.status.collect { s ->
+                if (s is LinkStatus.Connected) {
+                    if ("logbook_sync" in link.features) {
+                        if (!syncedThisConnection) { syncedThisConnection = true; syncLogbook(manual = false) }
+                    } else if (!legacyHintShown) {
+                        legacyHintShown = true
+                        _flightMessage.value = loc("logbook_sync.legacy_link")
+                    }
+                } else if (s is LinkStatus.Idle) syncedThisConnection = false
             }
         }
         // Po połączeniu z MSFS: dane nawigacyjne lotnisk trasy, ulubionych i otwartego briefingu

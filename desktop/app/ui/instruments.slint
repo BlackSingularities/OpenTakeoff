@@ -1,0 +1,159 @@
+// Karta Przyrządy: PFD w stylu kabiny, ND/MFD, zegary analogowe i zegary silnika (obrazy z Rusta,
+// przeniesione z aplikacji na telefon). Tylko podgląd – sterowanie zostaje w telefonie.
+
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { Dot } from "parts.slint";
+
+/// Ekran przyrządu: czarne tło, obraz z Rusta, rozmiar zgłaszany do Rusta.
+export component Screen inherits Rectangle {
+    in property <int> id;
+    in property <image> source;
+    in property <string> caption;
+    border-radius: Theme.r;
+    background: #000;
+    border-width: 1px;
+    border-color: Theme.line;
+    clip: true;
+    changed width => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    changed height => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    init => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    Image {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
+        source: root.source;
+        image-fit: fill;
+    }
+    if root.caption != "": Rectangle {
+        x: 6px;
+        y: 6px;
+        width: ct.preferred-width + 12px;
+        height: 18px;
+        border-radius: 4px;
+        background: #000000a0;
+        ct := Text {
+            text: root.caption;
+            font-family: Theme.font;
+            font-size: 10px;
+            color: #ffffffb0;
+        }
+    }
+}
+
+export component Instruments inherits Rectangle {
+    VerticalLayout {
+        padding: 10px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 10px;
+            height: 26px * Theme.scale;
+            Dot {
+                state: App.instr.has-data ? 2 : 0;
+                y: (parent.height - self.height) / 2;
+            }
+            Text {
+                text: App.instr.has-data ? App.instr.title : @tr("Czekam na dane z symulatora – przyrządy pokazują flagi awarii");
+                font-family: Theme.font;
+                font-size: Theme.fs-big;
+                font-weight: 600;
+                color: Theme.text;
+                vertical-alignment: center;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
+            Text {
+                text: @tr("Styl: ") + App.instr.style-name + "   ·   ND " + App.instr.range + (App.instr.rose ? " ROSE" : " ARC");
+                font-family: Theme.font;
+                font-size: Theme.fs;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+            }
+        }
+        // Kokpit: PFD | ND, pod spodem silniki
+        if App.instr.layout == 0: VerticalLayout {
+            spacing: 8px;
+            vertical-stretch: 1;
+            HorizontalLayout {
+                spacing: 8px;
+                vertical-stretch: 3;
+                Screen {
+                    id: 10;
+                    horizontal-stretch: 1;
+                    source: App.instr-pfd;
+                    caption: "PFD";
+                }
+                Screen {
+                    id: 11;
+                    horizontal-stretch: 1;
+                    source: App.instr-nd;
+                    caption: "ND";
+                }
+            }
+            Screen {
+                id: 13;
+                vertical-stretch: 1;
+                source: App.instr-engines;
+            }
+        }
+        // Zegary analogowe + silniki
+        if App.instr.layout == 1: HorizontalLayout {
+            spacing: 8px;
+            vertical-stretch: 1;
+            Screen {
+                id: 12;
+                horizontal-stretch: 3;
+                source: App.instr-panel;
+            }
+            Screen {
+                id: 13;
+                horizontal-stretch: 1;
+                source: App.instr-engines;
+            }
+        }
+        // Wszystko: 2 × 2
+        if App.instr.layout == 2: VerticalLayout {
+            spacing: 8px;
+            vertical-stretch: 1;
+            HorizontalLayout {
+                spacing: 8px;
+                vertical-stretch: 1;
+                Screen {
+                    id: 10;
+                    horizontal-stretch: 1;
+                    source: App.instr-pfd;
+                    caption: "PFD";
+                }
+                Screen {
+                    id: 11;
+                    horizontal-stretch: 1;
+                    source: App.instr-nd;
+                    caption: "ND";
+                }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                vertical-stretch: 1;
+                Screen {
+                    id: 12;
+                    horizontal-stretch: 3;
+                    source: App.instr-panel;
+                }
+                Screen {
+                    id: 13;
+                    horizontal-stretch: 2;
+                    source: App.instr-engines;
+                    caption: @tr("SILNIKI");
+                }
+            }
+        }
+    }
+}

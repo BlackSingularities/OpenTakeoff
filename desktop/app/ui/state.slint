@@ -1,0 +1,456 @@
+// Stan interfejsu wspólny dla wszystkich kart: dane z Rusta (modele, teksty, obrazy map) i polecenia
+// (App.cmd – jedno wejście dla wszystkich akcji, jak w OpenDTP).
+
+export struct KV {
+    k: string,
+    v: string,
+}
+
+export struct LogV {
+    time: string,
+    text: string,
+}
+
+export struct EngineV {
+    label: string,
+    main: string,
+    sub: string,
+    level: float,
+}
+
+export struct LiveV {
+    has-data: bool,
+    title: string,
+    category: string,
+    source: string,
+    phase: string,
+    on-ground: bool,
+    paused: bool,
+    alt: string,
+    alt-unit: string,
+    agl: string,
+    ias: string,
+    tas: string,
+    gs: string,
+    mach: string,
+    vs: string,
+    vs-value: float,
+    hdg: string,
+    trk: string,
+    pitch: float,
+    bank: float,
+    position: string,
+    nearest: string,
+    wind: string,
+    oat: string,
+    qnh: string,
+    fuel: string,
+    fuel-level: float,
+    ap-line: string,
+    ap-master: bool,
+    ap-alt: string,
+    ap-hdg: string,
+    ap-spd: string,
+    ap-vs: string,
+    com1: string,
+    com2: string,
+    nav1: string,
+    nav2: string,
+    xpdr: string,
+    gear: string,
+    flaps: string,
+    spoilers: string,
+    brake: bool,
+    lights: string,
+    next-wp: string,
+    next-dist: string,
+    next-ete: string,
+    dest-ete: string,
+    wp-progress: float,
+    sim-time: string,
+    touchdown: string,
+    controlled-by: string,
+}
+
+export struct FlightV {
+    id: string,
+    date: string,
+    month: string,
+    time: string,
+    from: string,
+    to: string,
+    aircraft: string,
+    category: string,
+    duration: string,
+    distance: string,
+    max-alt: string,
+    score: int,
+    grade: string,
+    landings: int,
+    source: string,
+    favorite: bool,
+    tags: string,
+    notes: bool,
+    selected: bool,
+    header: bool,
+}
+
+export struct LandingV {
+    title: string,
+    score: int,
+    grade: string,
+    vs: string,
+    g: string,
+    runway: string,
+    along: string,
+    notes: string,
+    at: string,
+}
+
+export struct MarkerV {
+    t: int,
+    time: string,
+    label: string,
+    pos: float,
+}
+
+export struct LabelV {
+    x: float,
+    y: float,
+    text: string,
+    kind: int,
+}
+
+export struct ChartV {
+    // Ścieżki SVG w układzie 1000×100 (oś czasu × wartość).
+    alt: string,
+    spd: string,
+    gs: string,
+    vs: string,
+    ground: string,
+    grid: string,
+    y-labels: [LabelV],
+    x-labels: [LabelV],
+    y2-labels: [LabelV],
+    markers: [LabelV],
+    has-ias: bool,
+    has-vs: bool,
+}
+
+export struct DetailV {
+    id: string,
+    title: string,
+    route: string,
+    subtitle: string,
+    aircraft: string,
+    category: string,
+    from: string,
+    to: string,
+    duration: string,
+    distance: string,
+    max-alt: string,
+    avg-gs: string,
+    max-gs: string,
+    max-vs: string,
+    min-vs: string,
+    points: string,
+    source: string,
+    notes: string,
+    tags: string,
+    favorite: bool,
+    in-trash: bool,
+    score: int,
+    grade: string,
+    cursor-info: string,
+    cursor-pos: float,
+}
+
+export struct BarV {
+    label: string,
+    value: float,
+    text: string,
+    accent: bool,
+}
+
+export struct NavV {
+    apt: bool,
+    vor: bool,
+    ndb: bool,
+    vor-rose: bool,
+    rose: bool,
+    rings: bool,
+    vector: bool,
+    track: bool,
+    route: bool,
+    curtain: bool,
+    rwy: bool,
+    tool: int,
+    view3d: bool,
+    cam: int,
+    inbound: bool,
+    has-ref: bool,
+    has-sel: bool,
+    has-data: bool,
+}
+
+export struct InstrV {
+    style: int,
+    style-name: string,
+    layout: int,
+    range: string,
+    rose: bool,
+    apt: bool,
+    vor: bool,
+    ndb: bool,
+    has-data: bool,
+    title: string,
+}
+
+export struct RowV {
+    name: string,
+    a: string,
+    b: string,
+    level: float,
+    id: string,
+}
+
+export struct StatsV {
+    flights: string,
+    hours: string,
+    distance: string,
+    landings: string,
+    avg-score: string,
+    avg-vs: string,
+    airports: string,
+    aircraft: string,
+    since: string,
+    longest: string,
+    farthest: string,
+    highest: string,
+    softest: string,
+    best: string,
+    longest-id: string,
+    farthest-id: string,
+    highest-id: string,
+    softest-id: string,
+    best-id: string,
+}
+
+export struct AptV {
+    ident: string,
+    name: string,
+    place: string,
+    kind: string,
+    extra: string,
+    cat: string,
+}
+
+export struct RwyV {
+    ident: string,
+    length: string,
+    surface: string,
+    heading: string,
+    wind: string,
+    head: float,
+    cross: float,
+    best: bool,
+    ils: string,
+}
+
+export struct FreqV {
+    kind: string,
+    name: string,
+    mhz: string,
+}
+
+export struct GroupV {
+    token: string,
+    meaning: string,
+}
+
+export struct WxV {
+    icao: string,
+    name: string,
+    cat: string,
+    raw: string,
+    wind: string,
+    vis: string,
+    temp: string,
+    qnh: string,
+    age: string,
+}
+
+export struct ProcV {
+    name: string,
+    info: string,
+    kind: int,
+}
+
+export struct LegV {
+    fix: string,
+    kind: string,
+    alt: string,
+    speed: string,
+    course: string,
+    dist: string,
+}
+
+export struct DevV {
+    token: string,
+    name: string,
+    ip: string,
+    status: string,
+    last-seen: string,
+    last-sync: string,
+    connected: bool,
+    controlling: bool,
+    session: string,
+}
+
+export struct OptV {
+    id: string,
+    label: string,
+}
+
+export global App {
+    // 0 Pulpit, 1 Na żywo, 2 Dziennik, 3 Statystyki, 4 Lotniska, 5 Narzędzia, 6 Telefony, 7 Ustawienia
+    in-out property <int> tab: 0;
+    in-out property <bool> maximized;
+    in property <string> version;
+    callback win(int);
+    callback cmd(string, string);
+    // Zdarzenia mapy: id mapy (0 na żywo, 1 lot, 2 lotnisko, 3 statystyki), rodzaj, x, y, dx, dy.
+    callback map-event(int, string, float, float, float, float);
+    pure callback calc(string, [string]) -> [string];
+
+    // Pasek stanu i Pulpit
+    in property <bool> sim-connected;
+    in property <string> sim-status;
+    in property <string> sim-name;
+    in property <bool> simulation;
+    in property <int> phones;
+    in property <string> phones-text;
+    in property <bool> recording;
+    in property <string> recording-text;
+    in property <string> pairing-code;
+    in property <string> addresses;
+    in property <string> port;
+    in property <string> db-status;
+    in property <string> toast;
+    in property <int> toast-serial;
+    in property <bool> link-ok: true;
+    in property <string> update-text;
+    // Okno potwierdzenia (usuwanie, unieważnianie): pusty tekst = ukryte
+    in property <string> confirm-text;
+    in property <string> confirm-label;
+    in property <bool> busy;
+    in property <string> busy-text;
+    in property <bool> update-ready;
+
+    // Na żywo
+    in property <LiveV> live;
+    in property <[EngineV]> engines;
+    in property <image> map-live;
+    in property <[LabelV]> map-live-labels;
+    in property <image> pfd;
+    // Przyrządy
+    in property <InstrV> instr;
+    in property <image> instr-pfd;
+    in property <image> instr-nd;
+    in property <image> instr-panel;
+    in property <image> instr-engines;
+    // Mapa nawigacyjna i 3D
+    in property <NavV> nav;
+    in property <image> map-nav;
+    in property <[LabelV]> map-nav-labels;
+    in property <string> map-nav-scale;
+    in property <[KV]> nav-info;
+    in property <[RowV]> nav-airports;
+    in property <[RowV]> nav-vors;
+    in property <string> nav-tool-title;
+    in property <[KV]> nav-tool;
+    in property <string> nav-hover;
+    in-out property <string> nav-query;
+    in-out property <bool> follow: true;
+    in property <string> map-live-scale;
+    in property <string> map-attribution: "© Esri, HERE, Garmin, © OpenStreetMap";
+
+    // Dziennik
+    in property <[FlightV]> flights;
+    in property <string> flights-summary;
+    in-out property <string> filter-text;
+    in-out property <int> sort-by: 0;
+    in-out property <int> filter-period: 0;
+    in-out property <bool> filter-favorites;
+    in-out property <bool> show-trash;
+    in property <int> trash-count;
+    in property <bool> has-detail;
+    in property <DetailV> detail;
+    in property <[LandingV]> detail-landings;
+    in property <[MarkerV]> detail-markers;
+    in property <ChartV> chart;
+    in property <image> map-flight;
+    in property <[LabelV]> map-flight-labels;
+    in-out property <float> replay: 0;
+    in property <bool> replay-playing;
+    in-out property <int> chart-mode: 0;
+    in property <int> selected-count;
+
+    // Statystyki
+    in property <StatsV> stats;
+    in property <[BarV]> stats-months;
+    in property <[BarV]> stats-scores;
+    in property <[RowV]> stats-aircraft;
+    in property <[RowV]> stats-airports;
+    in property <[RowV]> stats-routes;
+    in property <image> map-stats;
+    in-out property <int> stats-metric: 0;
+
+    // Lotniska i pogoda
+    in-out property <string> airport-query;
+    in property <[AptV]> airport-results;
+    in property <bool> has-airport;
+    in property <AptV> airport;
+    in property <[KV]> airport-info;
+    in property <[RwyV]> airport-runways;
+    in property <[FreqV]> airport-freqs;
+    in property <string> metar-raw;
+    in property <[GroupV]> metar-groups;
+    in property <[KV]> metar-summary;
+    in property <string> taf-raw;
+    in property <[GroupV]> taf-groups;
+    in property <[string]> metar-history;
+    in property <string> weather-status;
+    in property <image> map-airport;
+    in property <[LabelV]> map-airport-labels;
+    in property <[AptV]> airport-nearby;
+    in property <[WxV]> watchlist;
+    in property <bool> airport-watched;
+    in-out property <int> airport-view: 0;
+    in property <[ProcV]> procedures;
+    in property <string> procedures-status;
+    in property <[LegV]> procedure-legs;
+    in property <string> procedure-title;
+
+    // Telefony
+    in property <[DevV]> devices;
+    in property <[LogV]> activity;
+    in property <int> look-sensitivity: 100;
+
+    // Ustawienia
+    in property <int> theme-mode;
+    in property <[OptV]> languages;
+    in property <int> language-index;
+    in property <bool> record-flights: true;
+    in property <int> record-interval;
+    in property <bool> autostart;
+    in property <bool> start-minimized;
+    in property <bool> close-to-tray: true;
+    in property <int> units-alt;
+    in property <int> units-speed;
+    in property <int> map-style;
+    in property <bool> auto-sync: true;
+    in property <string> data-path;
+    in property <string> logbook-size;
+    in property <string> about;
+}

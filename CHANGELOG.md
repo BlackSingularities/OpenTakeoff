@@ -1,3 +1,13 @@
+## 3.0.0
+
+- Nowy OpenTakeoff na Windows (Rust) zamiast OpenTakeoff Link – robi wszystko to co Link (most MSFS ↔ telefon, sparowane telefony działają dalej), a do tego ma własne funkcje. Instalator OpenTakeoff-Setup na redzikowski.com.
+- Przyrządy jak w telefonie: PFD w sześciu stylach kabin (A320, 737, 787, ATR 72, E190, G1000), zegary analogowe (C172, R44, szybowiec), ND/MFD z zasięgiem, ARC/ROSE i pomocami nawigacyjnymi, ekran silników w stylu ECAM/EICAS.
+- Mapa nawigacyjna: VOR, NDB i lotniska, róże VOR z radialami, róża kursowa na samolocie, pierścienie odległości, przewidywana ścieżka na 1, 2 i 5 minut, narzędzie radiali z przechwyceniem i poprawką na wiatr, pomiar odległości i namiaru.
+- Widok 3D: podkład mapy albo satelita w perspektywie, ścieżka lotu z kurtyną do ziemi, model samolotu, pasy, róża kompasu; kamera za samolotem, swobodna albo z góry.
+- Dziennik lotów na komputerze z synchronizacją z telefonem w obie strony (bez dubli), statystyki, eksport GPX/KML/CSV, briefing lotnisk z pogodą i procedurami.
+- Motywy: AMOLED, grafitowy, jasny, granatowy, nocny kokpit i sepia; karty w górnym pasku okna.
+- Aplikacja: przycisk synchronizacji dziennika z komputerem i automatyczna synchronizacja po połączeniu.
+
 ## 2.8.1
 
 - Ikona aplikacji bez tła: na ekranie głównym widać sam kolorowy emblemat, spójnie z trybem „Bez tła” w OpenDesktop.
