@@ -70,6 +70,11 @@ pub struct Settings {
     pub sim_kind: i32,
     /// Adres komputera z X-Plane (pusty – ten komputer).
     pub xplane_host: String,
+    /// Strony dla OBS (pasek, karta lądowania) także dla innych komputerów w sieci lokalnej.
+    pub obs_lan: bool,
+    /// Aktualizacje: sprawdzanie co kilka godzin i wersja, o której użytkownik nie chce przypominać.
+    pub update_auto: bool,
+    pub update_skip: String,
 }
 
 /// Położenie okna na ekranie: 0 środek, 1 u góry na środku, 2 u dołu na środku, 3 lewy górny róg,
@@ -256,6 +261,9 @@ impl Default for Settings {
             nav_shots: true,
             sim_kind: 0,
             xplane_host: String::new(),
+            obs_lan: false,
+            update_auto: true,
+            update_skip: String::new(),
         }
     }
 }

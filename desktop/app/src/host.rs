@@ -78,6 +78,7 @@ impl Host {
         let logbook = LogbookStore::open(paths::logbook());
         let server = LinkServer::new(pairing.clone(), axes.clone(), nav.clone(), version(), Arc::new(log_line));
         server.set_sync(logbook.clone());
+        server.set_web(crate::web::pages());
         let mut rec = Recorder::new(
             Box::new(|lat, lon| airports::db().map(|d| d.runways_near(lat, lon)).unwrap_or_default()),
             Box::new(|lat, lon| airports::db().and_then(|d| d.nearest(lat, lon).map(|a| a.ident.clone()))),
@@ -221,6 +222,11 @@ impl Host {
     pub fn recording(&self) -> (bool, Option<i64>, bool, Option<f64>, Option<opentakeoff_core::logbook::LandingReport>) {
         let r = self.recorder.lock();
         (r.recording, r.started_at(), r.hold_until_ground, r.start_fuel_kg, r.last_landing.clone())
+    }
+
+    /// Id lotu, który właśnie się nagrywa.
+    pub fn recording_id(&self) -> Option<String> {
+        self.recorder.lock().recording_id().map(str::to_string)
     }
 
     pub fn current_track(&self) -> Vec<opentakeoff_core::logbook::TrackPoint> {

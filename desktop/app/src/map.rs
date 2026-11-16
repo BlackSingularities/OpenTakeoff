@@ -299,7 +299,7 @@ pub struct Point {
     pub lat: f64,
     pub lon: f64,
     pub label: String,
-    /// 0 lotnisko, 1 punkt nawigacyjny, 2 wyróżniony (znacznik/przyziemienie), 3 lotnisko małe
+    /// 0 lotnisko, 1 punkt nawigacyjny, 2 wyróżniony (znacznik/przyziemienie), 3 lotnisko małe, 4 zrzut ekranu
     pub kind: i32,
 }
 
@@ -491,6 +491,7 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
             0 => (4.5, [91, 140, 255, 255]),
             1 => (3.0, [180, 180, 190, 255]),
             2 => (5.0, [255, 181, 71, 255]),
+            4 => (5.0, [79, 216, 235, 255]),
             _ => (3.0, [91, 140, 255, 200]),
         };
         if let Some(circle) = PathBuilder::from_circle(x, y, r * sc) {

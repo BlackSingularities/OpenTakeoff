@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenTakeoff – karta lądowania</title>
+<style>
+@font-face { font-family: "B612 Mono"; src: url("/obs/fonts/mono-bold.ttf"); font-weight: 700; }
+@font-face { font-family: "B612 Mono"; src: url("/obs/fonts/mono.ttf"); font-weight: 400; }
+@font-face { font-family: "Plex Cond"; src: url("/obs/fonts/cond-bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Plex Cond"; src: url("/obs/fonts/cond.ttf"); font-weight: 400; }
+:root { --k: 1; --tone: #3ccf7a; --accent: #5b8cff; --bg: rgba(0,0,0,.92); }
+html, body { margin: 0; background: transparent; overflow: hidden; }
+body { font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: #fff; }
+.stage { position: fixed; inset: 0; display: flex; padding: calc(16px * var(--k)); box-sizing: border-box; }
+.stage.c { align-items: center; justify-content: center; }
+.stage.tl { align-items: flex-start; justify-content: flex-start; }
+.stage.tr { align-items: flex-start; justify-content: flex-end; }
+.stage.bl { align-items: flex-end; justify-content: flex-start; }
+.stage.br { align-items: flex-end; justify-content: flex-end; }
+.card {
+  position: relative; width: calc(var(--w) * 1px * var(--k)); box-sizing: border-box;
+  padding: calc(18px * var(--k)) calc(20px * var(--k)) calc(16px * var(--k));
+  border-radius: calc(18px * var(--k)); background: var(--bg);
+  border: 1px solid rgba(255,255,255,.08); overflow: hidden;
+  opacity: 0; transform: translateY(calc(14px * var(--k))) scale(.98);
+  transition: opacity .45s ease, transform .45s cubic-bezier(.2,.8,.2,1);
+}
+.card.show { opacity: 1; transform: none; }
+.progress { position: absolute; left: 0; top: 0; height: calc(3px * var(--k)); background: var(--tone); width: 100%; transform-origin: left; }
+.head { display: flex; gap: calc(16px * var(--k)); align-items: center; }
+.ring { flex: none; position: relative; width: calc(var(--ring) * 1px * var(--k)); height: calc(var(--ring) * 1px * var(--k)); }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 calc(var(--ring) * .34px * var(--k)) "B612 Mono", monospace; }
+.ttl { min-width: 0; flex: 1; }
+.kicker { font: 400 calc(13px * var(--k)) "Plex Cond", sans-serif; color: rgba(255,255,255,.62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grade { font: 700 calc(28px * var(--k)) "Plex Cond", sans-serif; color: var(--tone); line-height: 1.1; }
+.vs { font: 700 calc(30px * var(--k)) "B612 Mono", monospace; line-height: 1.15; }
+.vs small { font-size: .5em; color: rgba(255,255,255,.6); font-weight: 400; margin-left: .3em; }
+.scale { position: relative; margin-top: calc(14px * var(--k)); height: calc(8px * var(--k)); border-radius: 99px;
+  background: linear-gradient(90deg, #3ccf7a 0%, #8bd450 22%, #ffb547 45%, #ff8a4c 68%, #ff5a5f 100%); opacity: .9; }
+.scale i { position: absolute; top: 50%; width: calc(14px * var(--k)); height: calc(14px * var(--k)); border-radius: 50%; background: #fff; border: calc(3px * var(--k)) solid #000; transform: translate(-50%, -50%); }
+.ticks { display: flex; justify-content: space-between; margin-top: calc(4px * var(--k)); font: 400 calc(9.5px * var(--k)) "B612 Mono", monospace; color: rgba(255,255,255,.45); }
+.spark { margin-top: calc(10px * var(--k)); height: calc(42px * var(--k)); }
+.spark svg { width: 100%; height: 100%; overflow: visible; }
+.tiles { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: calc(8px * var(--k)); margin-top: calc(14px * var(--k)); }
+.tile { border-radius: calc(10px * var(--k)); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.07); padding: calc(8px * var(--k)) calc(10px * var(--k)); min-width: 0; }
+.tile b { display: block; font: 700 calc(16px * var(--k)) "B612 Mono", monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile span { display: block; font-size: calc(10.5px * var(--k)); color: rgba(255,255,255,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notes { margin: calc(12px * var(--k)) 0 0; padding: 0; list-style: none; font-size: calc(12.5px * var(--k)); color: rgba(255,255,255,.78); }
+.notes li { display: flex; gap: calc(8px * var(--k)); margin-top: calc(4px * var(--k)); }
+.notes li::before { content: ""; flex: none; width: calc(6px * var(--k)); height: calc(6px * var(--k)); border-radius: 50%; margin-top: calc(6px * var(--k)); background: var(--tone); }
+.foot { display: flex; justify-content: space-between; gap: 12px; margin-top: calc(12px * var(--k)); font: 400 calc(11px * var(--k)) "Plex Cond", sans-serif; color: rgba(255,255,255,.5); }
+.foot span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wide .body { display: grid; grid-template-columns: 1.1fr 1fr; gap: calc(18px * var(--k)); align-items: start; }
+.wide .tiles { margin-top: 0; }
+.hide { display: none !important; }
+@media (prefers-reduced-motion: reduce) { .card { transition: opacity .2s linear; transform: none; } }
+</style>
+</head>
+<body>
+<div class="stage c" id="stage">
+  <div class="card" id="card">
+    <div class="progress" id="progress"></div>
+    <div class="body">
+      <div>
+        <div class="head">
+          <div class="ring" id="ringbox">
+            <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-opacity=".18" stroke-width="7" id="ringbg"/><circle cx="50" cy="50" r="44" fill="none" stroke-width="7" stroke-linecap="round" id="ring"/></svg>
+            <div class="num" id="score">–</div>
+          </div>
+          <div class="ttl">
+            <div class="kicker" id="kicker"></div>
+            <div class="grade" id="grade"></div>
+            <div class="vs" id="vs"></div>
+          </div>
+        </div>
+        <div id="scalebox"><div class="scale"><i id="mark"></i></div><div class="ticks"><span>0</span><span>200</span><span>400</span><span>600</span><span>800 ft/min</span></div></div>
+        <div class="spark" id="sparkbox"><svg viewBox="0 0 300 42" preserveAspectRatio="none"><line x1="0" x2="300" y1="0" y2="0" stroke="rgba(255,255,255,.12)" id="zero"/><polyline fill="none" stroke-width="2" vector-effect="non-scaling-stroke" id="spark"/></svg></div>
+      </div>
+      <div>
+        <div class="tiles" id="tiles"></div>
+        <ul class="notes" id="notes"></ul>
+      </div>
+    </div>
+    <div class="foot"><span id="aircraft"></span><span id="time"></span></div>
+  </div>
+</div>
+<script>
+// Adres: ?demo=1 – przykładowa karta na stałe (do ustawienia źródła), ?hold=1 – ostatnie lądowanie
+// zostaje na ekranie, ?pos=c|tl|tr|bl|br – położenie, ?scale=1.2, ?seconds=20
+const q = new URLSearchParams(location.search);
+const demo = q.get("demo") === "1";
+const hold = q.get("hold") === "1";
+const $ = id => document.getElementById(id);
+let seen = null, hideAt = 0, total = 0;
+
+function setVar(n, v) { document.documentElement.style.setProperty(n, v); }
+
+function tile(label, value) {
+  if (!value) return null;
+  const t = document.createElement("div");
+  t.className = "tile";
+  const b = document.createElement("b"); b.textContent = value;
+  const s = document.createElement("span"); s.textContent = label;
+  t.append(b, s);
+  return t;
+}
+
+function render(d) {
+  const c = d.cfg || {}, x = d.data || {}, L = d.labels || {};
+  const layout = c.layout || 0;
+  const k = parseFloat(q.get("scale") || c.scale || 1);
+  const tone = c.tone === 1 ? (c.accent || "#5b8cff") : c.tone === 2 ? "#ffffff" : (x.color || "#3ccf7a");
+  setVar("--k", k);
+  setVar("--tone", tone);
+  setVar("--w", layout === 1 ? 360 : layout === 2 ? 820 : 460);
+  setVar("--ring", layout === 1 ? 72 : 96);
+  setVar("--cols", layout === 2 ? 2 : layout === 1 ? 2 : 3);
+  setVar("--bg", `rgba(0,0,0,${q.get("opacity") || c.opacity || 0.92})`);
+  $("stage").className = "stage " + (q.get("pos") || c.pos || "c");
+  $("card").classList.toggle("wide", layout === 2);
+
+  $("ringbox").classList.toggle("hide", c.showScore === false);
+  const circ = 2 * Math.PI * 44, frac = Math.max(0, Math.min(1, (x.score ?? 0) / 100));
+  $("ring").setAttribute("stroke", tone);
+  $("ringbg").style.color = tone;
+  $("ring").setAttribute("stroke-dasharray", `${circ * frac} ${circ}`);
+  $("score").textContent = x.score ?? "–";
+  $("grade").textContent = x.grade || "";
+  $("kicker").textContent = [L.heading, c.showAirport !== false ? x.airport : "", c.showRunway !== false && x.runway ? "RWY " + x.runway : ""].filter(Boolean).join(" · ");
+  $("vs").classList.toggle("hide", c.showVs === false);
+  $("vs").innerHTML = "";
+  $("vs").append(document.createTextNode(x.vs || ""));
+  const u = document.createElement("small"); u.textContent = "ft/min"; $("vs").append(u);
+  $("scalebox").classList.toggle("hide", c.showScale === false);
+  $("mark").style.left = Math.min(100, Math.abs(x.vsFpm || 0) / 8) + "%";
+
+  // Prędkość pionowa w ostatnich 30 s przed przyziemieniem
+  const sp = x.spark || [];
+  $("sparkbox").classList.toggle("hide", sp.length < 5 || c.showVs === false || layout === 1);
+  if (sp.length >= 5) {
+    const lo = Math.min(-200, ...sp), hi = Math.max(0, ...sp);
+    const y = v => 40 - (v - lo) / (hi - lo || 1) * 38;
+    $("spark").setAttribute("points", sp.map((v, i) => `${(i / (sp.length - 1) * 300).toFixed(1)},${y(v).toFixed(1)}`).join(" "));
+    $("spark").setAttribute("stroke", tone);
+    $("zero").setAttribute("y1", y(0)); $("zero").setAttribute("y2", y(0));
+  }
+
+  const tiles = [
+    c.showG !== false && tile(L.g, x.g),
+    c.showSpeed !== false && tile(L.ias, x.ias ? x.ias + " kt" : ""),
+    c.showOffsets !== false && tile(L.along, x.along),
+    c.showOffsets !== false && layout !== 1 && tile(L.cross, x.cross),
+    c.showBounces !== false && layout !== 1 && tile(L.bounces, x.bounces),
+    c.showWind !== false && layout !== 1 && tile(L.wind, x.wind),
+  ].filter(Boolean);
+  $("tiles").replaceChildren(...tiles);
+  $("tiles").classList.toggle("hide", tiles.length === 0);
+  const notes = (c.showNotes !== false && layout !== 1 ? x.notes || [] : []).slice(0, 4).map(n => { const li = document.createElement("li"); li.textContent = n; return li; });
+  $("notes").replaceChildren(...notes);
+  $("aircraft").textContent = c.showAircraft !== false ? x.aircraft || "" : "";
+  $("time").textContent = x.time || "";
+}
+
+function show(d) {
+  render(d);
+  const secs = parseFloat(q.get("seconds") || (d.secs ?? 15));
+  total = demo || hold || secs <= 0 ? 0 : secs * 1000;
+  hideAt = total ? Date.now() + total : 0;
+  $("progress").classList.toggle("hide", !total);
+  requestAnimationFrame(() => $("card").classList.add("show"));
+}
+
+function tick() {
+  if (hideAt) {
+    const left = hideAt - Date.now();
+    $("progress").style.transform = `scaleX(${Math.max(0, left / total)})`;
+    if (left <= 0) { hideAt = 0; $("card").classList.remove("show"); }
+  }
+  requestAnimationFrame(tick);
+}
+tick();
+
+async function poll() {
+  try {
+    const r = await fetch("/obs/landing.json" + (demo ? "?demo=1" : ""), { cache: "no-store" });
+    const d = await r.json();
+    if (d.seq && d.seq !== seen) {
+      // Pierwsze otwarcie strony nie pokazuje starego lądowania (chyba że ?hold=1 albo ?demo=1)
+      const fresh = seen !== null || demo || hold;
+      seen = d.seq;
+      if (fresh) show(d);
+    } else if (demo || hold) {
+      render(d);
+    }
+  } catch (e) { /* program zamknięty – spróbuj ponownie */ }
+  setTimeout(poll, 500);
+}
+poll();
+</script>
+</body>
+</html>

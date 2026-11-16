@@ -69,6 +69,14 @@ struct Session {
 
 type LogFn = Arc<dyn Fn(String) + Send + Sync>;
 
+/// Strony dla OBS (`/obs…`): pasek i karta lądowania jako źródło przeglądarki.
+pub trait WebPages: Send + Sync {
+    /// Treść strony albo danych: (typ, bajty); None – nie ma takiej strony.
+    fn get(&self, path: &str, query: &str) -> Option<(&'static str, Vec<u8>)>;
+    /// Czy strony mogą otwierać inne komputery w sieci (drugi komputer do streamu).
+    fn allow_lan(&self) -> bool;
+}
+
 struct Inner {
     pairing: Arc<Pairing>,
     axes: Arc<AxisController>,
@@ -78,6 +86,7 @@ struct Inner {
     seq: AtomicI64,
     nav: Arc<NavDataService>,
     sync: RwLock<Option<Arc<dyn SyncHandler>>>,
+    web: RwLock<Option<Arc<dyn WebPages>>>,
     stop: AtomicBool,
     port: AtomicU16,
     log: LogFn,
@@ -101,6 +110,7 @@ impl LinkServer {
                 seq: AtomicI64::new(0),
                 nav,
                 sync: RwLock::new(None),
+                web: RwLock::new(None),
                 stop: AtomicBool::new(false),
                 port: AtomicU16::new(0),
                 log,
@@ -148,6 +158,10 @@ impl LinkServer {
 
     pub fn set_sync(&self, handler: Arc<dyn SyncHandler>) {
         *self.inner.sync.write() = Some(handler);
+    }
+
+    pub fn set_web(&self, pages: Arc<dyn WebPages>) {
+        *self.inner.web.write() = Some(pages);
     }
 
     pub fn source_name(&self) -> &'static str {
@@ -281,12 +295,13 @@ fn respond(stream: &mut TcpStream, code: u16, content_type: &str, body: &[u8]) -
         200 => "OK",
         400 => "Bad Request",
         401 => "Unauthorized",
+        403 => "Forbidden",
         404 => "Not Found",
         413 => "Payload Too Large",
         503 => "Service Unavailable",
         _ => "Error",
     };
-    let head = format!("HTTP/1.1 {code} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len());
+    let head = format!("HTTP/1.1 {code} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n", body.len());
     stream.write_all(head.as_bytes())?;
     stream.write_all(body)?;
     stream.flush()
@@ -298,6 +313,20 @@ fn json_body(v: &Value) -> Vec<u8> {
 
 fn http(inner: &Arc<Inner>, mut stream: TcpStream, req: Request, ip: &str) {
     let path = req.path.split('?').next().unwrap_or("").to_string();
+    if path == "/obs" || path.starts_with("/obs/") {
+        let query = req.path.split_once('?').map(|(_, q)| q).unwrap_or("");
+        let web = inner.web.read().clone();
+        let local = ip.parse::<std::net::IpAddr>().is_ok_and(|a| a.is_loopback());
+        let _ = match web {
+            Some(w) if !local && !w.allow_lan() => respond(&mut stream, 403, "text/plain; charset=utf-8", tr("Strony dla OBS są dostępne tylko na tym komputerze. Włącz dostęp z sieci lokalnej na karcie Nakładki.").as_bytes()),
+            Some(w) if req.method == "GET" => match w.get(&path, query) {
+                Some((ct, body)) => respond(&mut stream, 200, ct, &body),
+                None => respond(&mut stream, 404, "text/plain", b"Not Found"),
+            },
+            _ => respond(&mut stream, 404, "text/plain", b"Not Found"),
+        };
+        return;
+    }
     if !path.starts_with("/v1/") {
         let body = format!("OpenTakeoff {} – {}\n", inner.version, tr("połącz się z tym komputerem z aplikacji OpenTakeoff na telefonie."));
         let _ = respond(&mut stream, 200, "text/plain; charset=utf-8", body.as_bytes());
@@ -747,6 +776,31 @@ mod tests {
         assert_eq!(srv.clients().len(), 1);
         assert_eq!(srv.clients()[0].name, "Test");
         srv.stop();
+    }
+
+    #[test]
+    fn obs_pages_local_only() {
+        struct Pages(bool);
+        impl WebPages for Pages {
+            fn get(&self, path: &str, _q: &str) -> Option<(&'static str, Vec<u8>)> {
+                (path == "/obs/bar").then(|| ("text/html", b"<html>bar</html>".to_vec()))
+            }
+            fn allow_lan(&self) -> bool {
+                self.0
+            }
+        }
+        let (srv, _p, port) = server();
+        srv.set_web(Arc::new(Pages(false)));
+        let get = |path: &str| {
+            let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
+            s.write_all(format!("GET {path} HTTP/1.1\r\nHost: x\r\n\r\n").as_bytes()).unwrap();
+            let mut out = String::new();
+            let _ = s.read_to_string(&mut out);
+            out
+        };
+        let ok = get("/obs/bar?x=1");
+        assert!(ok.starts_with("HTTP/1.1 200") && ok.contains("<html>bar</html>") && ok.contains("no-store"), "{ok}");
+        assert!(get("/obs/none").starts_with("HTTP/1.1 404"));
     }
 
     #[test]

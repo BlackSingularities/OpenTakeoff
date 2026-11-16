@@ -2,6 +2,7 @@
 // narzędzi z odczytem lotu i przyciskiem zapisu, panel boczny ze stanem lotu, strona karty, pasek
 // stanu oraz nakładki (potwierdzenie, komunikat, podpowiedzi).
 
+import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, KV, LogV, EngineV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV } from "state.slint";
@@ -671,6 +672,14 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
+                icon: Icons.map-pin;
+                label: @tr("Mapa lotów");
+                tip: @tr("Wszystkie loty w jednym pliku KML do Google Earth – z lądowaniami i zrzutami ekranu");
+                clicked => {
+                    App.cmd("export", "kml-all");
+                }
+            }
+            BigButton {
                 icon: Icons.archive;
                 label: ".oab";
                 tip: @tr("Archiwum lotów (zaznaczone albo wszystkie) – do telefonu lub kopii zapasowej");
@@ -1315,6 +1324,106 @@ export component AppWindow inherits Window {
                         primary: true;
                         clicked => {
                             App.cmd("confirm-yes", "");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Nowa wersja programu
+    if App.update-dialog: Rectangle {
+        background: #00000088;
+        TouchArea { }
+        Card {
+            width: min(560px, parent.width - 40px);
+            height: min(ul.preferred-height, parent.height - 60px);
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            ul := VerticalLayout {
+                padding: 20px;
+                spacing: 14px;
+                HorizontalLayout {
+                    spacing: 12px;
+                    Rectangle {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 20px;
+                        background: Theme.accent-soft;
+                        Image {
+                            source: Icons.download;
+                            width: 20px;
+                            height: 20px;
+                            colorize: Theme.accent;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: @tr("Dostępna nowa wersja OpenTakeoff");
+                            font-family: Theme.cond;
+                            font-size: 20px;
+                            font-weight: 700;
+                            color: Theme.text;
+                        }
+                        Text {
+                            text: App.version + "  →  " + App.update-version;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs;
+                            color: Theme.accent;
+                        }
+                    }
+                }
+                if App.update-notes != "": Rectangle {
+                    height: min(un.preferred-height + 20px, 300px);
+                    border-radius: Theme.r;
+                    background: Theme.raised;
+                    border-width: 1px;
+                    border-color: Theme.line;
+                    ScrollView {
+                        content-height: un.preferred-height + 20px;
+                        un := Text {
+                            x: 12px;
+                            y: 10px;
+                            width: parent.width - 24px;
+                            text: App.update-notes;
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text-dim;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+                Text {
+                    text: @tr("Instalacja trwa kilkanaście sekund: program zamknie się, zainstaluje nową wersję (Windows może zapytać o zgodę administratora) i uruchomi się ponownie. Dziennik i ustawienia zostają.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Button {
+                        label: @tr("Pomiń tę wersję");
+                        clicked => {
+                            App.cmd("update-skip", "");
+                        }
+                    }
+                    Rectangle {
+                        horizontal-stretch: 1;
+                    }
+                    Button {
+                        label: @tr("Później");
+                        clicked => {
+                            App.cmd("update-later", "");
+                        }
+                    }
+                    Button {
+                        label: @tr("Zainstaluj teraz");
+                        icon: Icons.download;
+                        primary: true;
+                        clicked => {
+                            App.cmd("update-install", "");
                         }
                     }
                 }

@@ -33,6 +33,8 @@ pub struct Shot {
     pub aircraft: String,
     pub phase: String,
     pub nearest: String,
+    /// Lot z dziennika nagrywany w chwili zrzutu (puste – starsze zrzuty; wtedy dopasowanie po czasie).
+    pub flight: String,
 }
 
 thread_local! {
@@ -76,6 +78,34 @@ pub fn points() -> Vec<(f64, f64, String)> {
     with_list(|l| l.iter().filter(|s| s.has_pos).map(|s| (s.lat, s.lon, crate::fmt::time(s.time))).collect())
 }
 
+/// Zrzuty z danego lotu: zapisane z jego id albo zrobione w czasie jego trwania.
+pub fn for_flight(f: &opentakeoff_core::logbook::FlightLog) -> Vec<Shot> {
+    with_list(|l| {
+        let mut v: Vec<Shot> = l.iter().filter(|s| s.flight == f.id || (s.flight.is_empty() && s.time >= f.start - 60_000 && s.time <= f.end + 60_000)).cloned().collect();
+        v.sort_by_key(|s| s.time);
+        v
+    })
+}
+
+/// Lot z dziennika, do którego należy zrzut (id albo czas).
+fn flight_of(s: &Shot) -> Option<std::sync::Arc<opentakeoff_core::logbook::FlightLog>> {
+    let store = state().borrow().host.logbook.clone();
+    if !s.flight.is_empty() {
+        if let Some(f) = store.get(&s.flight) {
+            return Some(f);
+        }
+    }
+    store.flights().into_iter().find(|f| s.time >= f.start - 60_000 && s.time <= f.end + 60_000)
+}
+
+pub fn file_path(s: &Shot) -> PathBuf {
+    dir().join(&s.file)
+}
+
+pub fn thumb_image(s: &Shot) -> slint::Image {
+    slint::Image::load_from_path(&dir().join(&s.thumb)).unwrap_or_default()
+}
+
 /// Skrót (ustawienia): 1–4 F9–F12, 5 Ctrl+Shift+S, 6 Ctrl+F12.
 fn hotkey_down(key: i32) -> bool {
     use crate::screen::key_down;
@@ -112,10 +142,10 @@ pub fn take() {
     }
     let Some(u) = ui() else { return };
     let mons = crate::screen::monitors(u.window());
-    let (idx, snap) = {
+    let (idx, snap, flight) = {
         let st = state();
         let b = st.borrow();
-        (b.s.shot_monitor, b.host.snapshot())
+        (b.s.shot_monitor, b.host.snapshot(), b.host.recording_id())
     };
     let Some(m) = mons.get(idx.max(0) as usize).or(mons.first()).cloned() else {
         app::toast(tr("Nie znaleziono ekranu do zrzutu"));
@@ -123,7 +153,7 @@ pub fn take() {
     };
     let live = u.global::<App>().get_live();
     let now = unix_ms();
-    let mut shot = Shot { id: now.to_string(), time: now, ..Default::default() };
+    let mut shot = Shot { id: now.to_string(), time: now, flight: flight.unwrap_or_default(), ..Default::default() };
     if let Some(s) = &snap {
         shot.has_pos = true;
         shot.lat = s.position.lat;
@@ -196,6 +226,7 @@ fn view(s: &Shot, units: &crate::fmt::Units) -> ShotV {
         coords: ss(if s.has_pos { crate::fmt::latlon(s.lat, s.lon) } else { String::new() }),
         aircraft: ss(if s.phase.is_empty() { s.aircraft.clone() } else { format!("{} · {}", s.aircraft, s.phase) }),
         has_pos: s.has_pos,
+        flight: ss(flight_of(s).map(|f| format!("{} → {} · {}", f.from.as_deref().unwrap_or("?"), f.to.as_deref().unwrap_or("?"), crate::fmt::date(f.start))).unwrap_or_default()),
     }
 }
 
@@ -256,6 +287,23 @@ pub fn cmd(id: &str, arg: &str) -> bool {
         "shot-take" => take(),
         "shot-select" => {
             SELECTED.with(|x| *x.borrow_mut() = arg.to_string());
+            refresh();
+        }
+        "shot-flight" => {
+            if let Some(f) = selected().as_ref().and_then(flight_of) {
+                if let Some(u) = ui() {
+                    u.global::<App>().set_tab(2);
+                }
+                crate::app::refresh_logbook();
+                crate::app::open_flight(&f.id);
+            }
+        }
+        "shot-show" => {
+            // Z dziennika: zrzut w galerii
+            SELECTED.with(|x| *x.borrow_mut() = arg.to_string());
+            if let Some(u) = ui() {
+                u.global::<App>().set_tab(11);
+            }
             refresh();
         }
         "shot-open" => {

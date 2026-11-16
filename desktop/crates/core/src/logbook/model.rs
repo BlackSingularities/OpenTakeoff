@@ -66,6 +66,30 @@ pub struct LandingReport {
     pub at: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runway_length_ft: Option<i32>,
+    /// Przebieg podejścia: ~30 s przed przyziemieniem i kilka sekund po nim, co 200 ms
+    /// (tylko komputer; telefon pomija to pole).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub profile: Vec<LandingSample>,
+}
+
+/// Próbka podejścia do analizy lądowania. `dt` – ms względem przyziemienia (ujemne przed nim),
+/// `x`/`y` – ft wzdłuż osi pasa od progu i w poprzek (+ w prawo), gdy pas jest znany.
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct LandingSample {
+    pub dt: i32,
+    pub agl: i32,
+    pub vs: i32,
+    pub ias: i32,
+    pub gs: i32,
+    pub g: f32,
+    pub bank: f32,
+    pub pitch: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub x: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub y: Option<i32>,
+    pub gnd: bool,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]

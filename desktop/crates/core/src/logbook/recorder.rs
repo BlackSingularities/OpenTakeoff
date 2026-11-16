@@ -3,7 +3,9 @@
 //! Skok pozycji większy niż możliwy przelot (restart lotu w symulatorze) albo zmiana samolotu zamyka wpis.
 
 use super::landing::{self, RunwayGeom, Touchdown};
-use super::model::{new_id, FlightLog, FlightMarker, LandingReport, TrackPoint};
+use std::collections::VecDeque;
+
+use super::model::{new_id, FlightLog, FlightMarker, LandingReport, LandingSample, TrackPoint};
 use crate::navdata::math::distance_nm;
 use crate::proto::FlightState;
 
@@ -11,6 +13,10 @@ pub type RunwaysNear = Box<dyn Fn(f64, f64) -> Vec<RunwayGeom> + Send>;
 pub type NearestAirport = Box<dyn Fn(f64, f64) -> Option<String> + Send>;
 
 pub const MAX_POINTS: usize = 60_000;
+/// Analiza lądowania: próbki co 200 ms, 30 s przed przyziemieniem i 6 s po nim.
+const PROFILE_STEP_MS: i64 = 200;
+const PROFILE_BEFORE_MS: i64 = 30_000;
+const PROFILE_AFTER_MS: i64 = 6_000;
 
 pub struct Recorder {
     runways_near: RunwaysNear,
@@ -34,6 +40,12 @@ pub struct Recorder {
     airborne_since: Option<i64>,
     pub start_fuel_kg: Option<f64>,
     pub last_landing: Option<LandingReport>,
+    /// Ostatnie ~30 s lotu (gęściej niż tor) do analizy podejścia.
+    recent: VecDeque<TrackPoint>,
+    /// Przebieg bieżącego lądowania i pas, względem którego liczymy położenie.
+    profile: Vec<TrackPoint>,
+    profile_until: i64,
+    profile_rw: Option<RunwayGeom>,
     pub recording: bool,
     pub hold_until_ground: bool,
 }
@@ -81,6 +93,10 @@ impl Recorder {
             airborne_since: None,
             start_fuel_kg: None,
             last_landing: None,
+            recent: VecDeque::new(),
+            profile: Vec::new(),
+            profile_until: 0,
+            profile_rw: None,
             recording: false,
             hold_until_ground: false,
         }
@@ -88,6 +104,11 @@ impl Recorder {
 
     pub fn current_track(&self) -> &[TrackPoint] {
         &self.points
+    }
+
+    /// Id nagrywanego lotu (ten sam trafi do dziennika).
+    pub fn recording_id(&self) -> Option<&str> {
+        self.recording.then_some(self.recording_id.as_str())
     }
 
     pub fn started_at(&self) -> Option<i64> {
@@ -114,6 +135,7 @@ impl Recorder {
         if s.aircraft.paused {
             return None;
         }
+        self.sample(s, now);
         let gs = s.speed.gs_kt;
         let on_ground = s.aircraft.on_ground;
         if !self.recording {
@@ -137,6 +159,8 @@ impl Recorder {
                 self.last_landing = None;
                 self.landings.clear();
                 self.markers.clear();
+                self.profile.clear();
+                self.profile_until = 0;
                 self.airborne_since = Some(now);
                 self.start_fuel_kg = Some(s.fuel.total_kg);
                 self.last_td_seq = s.touchdown.as_ref().map(|t| t.seq);
@@ -234,6 +258,9 @@ impl Recorder {
             bounces: 0,
         });
         self.landing_at = now;
+        self.profile = self.recent.iter().filter(|p| p.t >= now - PROFILE_BEFORE_MS).cloned().collect();
+        self.profile_until = now + PROFILE_AFTER_MS;
+        self.profile_rw = rw.clone();
         self.landing_airport = (self.nearest_airport)(lat, lon);
         self.bounces = 0;
         self.airborne_since = None;
@@ -247,8 +274,54 @@ impl Recorder {
             let mut r = landing::evaluate(&t);
             r.airport = self.landing_airport.clone();
             r.at = Some(self.landing_at);
+            r.profile = self.profile_samples();
             r
         })
+    }
+
+    /// Próbka co 200 ms do bufora ostatnich 30 s; po przyziemieniu także do przebiegu lądowania.
+    fn sample(&mut self, s: &FlightState, now: i64) {
+        if self.recent.back().is_some_and(|p| now - p.t < PROFILE_STEP_MS) {
+            return;
+        }
+        let p = point(s, now);
+        if self.profile_until > 0 && now <= self.profile_until {
+            self.profile.push(p.clone());
+            if now + PROFILE_STEP_MS > self.profile_until {
+                // Przebieg kompletny – raport z pełnym wykresem
+                self.profile_until = 0;
+                if self.recording && self.landing.is_some() {
+                    self.last_landing = self.report();
+                }
+            }
+        }
+        self.recent.push_back(p);
+        while self.recent.front().is_some_and(|f| now - f.t > PROFILE_BEFORE_MS + 2_000) {
+            self.recent.pop_front();
+        }
+    }
+
+    fn profile_samples(&self) -> Vec<LandingSample> {
+        let t0 = self.landing_at;
+        self.profile
+            .iter()
+            .map(|p| {
+                let off = self.profile_rw.as_ref().map(|r| landing::offset(r, p.lat, p.lon));
+                LandingSample {
+                    dt: (p.t - t0) as i32,
+                    agl: p.agl_ft.unwrap_or(0),
+                    vs: p.vs_fpm.unwrap_or(0),
+                    ias: p.ias_kt.unwrap_or(0),
+                    gs: p.gs_kt,
+                    g: p.g_load.unwrap_or(1.0),
+                    bank: p.bank_deg.unwrap_or(0.0),
+                    pitch: p.pitch_deg.unwrap_or(0.0),
+                    x: off.map(|o| o.along_ft.round() as i32),
+                    y: off.map(|o| o.cross_ft.round() as i32),
+                    gnd: p.on_ground.unwrap_or(false),
+                }
+            })
+            .collect()
     }
 
     pub fn stop_by_user(&mut self, now: i64) -> Option<FlightLog> {
@@ -350,6 +423,12 @@ mod tests {
         // Symulacja przyziemia tuż przed progiem 29 – ocena to wyłapuje
         assert_eq!(l.runway.as_deref(), Some("29"), "{:?}", l.notes);
         assert!(l.notes.iter().any(|n| n.contains("progiem")), "{:?}", l.notes);
+        // Analiza lądowania: ~30 s przed przyziemieniem i ~6 s po nim, z położeniem względem pasa
+        assert!(l.profile.len() > 130, "{}", l.profile.len());
+        assert!(l.profile.first().unwrap().dt <= -29_000);
+        assert!(l.profile.last().unwrap().dt >= 5_000);
+        assert!(l.profile.iter().all(|p| p.x.is_some()));
+        assert!(l.profile.iter().filter(|p| p.dt < 0).all(|p| !p.gnd));
     }
 }
 
@@ -362,7 +441,14 @@ mod sample {
         use crate::axes::AxisOutput;
         use crate::simulation::FlightSimulation;
         let dir = std::path::PathBuf::from(std::env::var("OTK_SAMPLE").expect("OTK_SAMPLE"));
-        let mut rec = super::Recorder::new(Box::new(|_, _| Vec::new()), Box::new(|lat, _| Some(if lat > 53.0 { "EPGD".into() } else { "EPWA".into() })));
+        let rw = |lat: f64, _lon: f64| {
+            if lat > 53.0 {
+                vec![super::RunwayGeom { ident: "29".into(), threshold_lat: 54.3790, threshold_lon: 18.4880, heading_true_deg: 292.0, length_ft: Some(9186.0) }]
+            } else {
+                Vec::new()
+            }
+        };
+        let mut rec = super::Recorder::new(Box::new(rw), Box::new(|lat, _| Some(if lat > 53.0 { "EPGD".into() } else { "EPWA".into() })));
         rec.interval_ms = 2000;
         let mut flights = Vec::new();
         let mut t = 1_792_000_000_000i64;

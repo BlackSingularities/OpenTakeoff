@@ -41,6 +41,12 @@ msgstr "Computer addresses"
 msgid "Aktywność"
 msgstr "Activity"
 
+msgid "Analiza"
+msgstr "Analysis"
+
+msgid "Analiza lądowania"
+msgstr "Landing analysis"
+
 msgid "Anuluj"
 msgstr "Cancel"
 
@@ -329,14 +335,20 @@ msgstr "Good"
 msgid "Dodaj lotniska na karcie Lotniska (gwiazdka), żeby widzieć tu ich bieżącą pogodę."
 msgstr "Add airports on the Airports tab (star) to see their current weather here."
 
+msgid "Dodaj w OBS źródło Przeglądarka z jednym z adresów poniżej. Wygląd i pola ustawiasz w programie na karcie Nakładki – strony zmieniają się same."
+msgstr "Add a Browser source in OBS with one of the addresses below. You set the look and fields in the app on the Overlays tab – the pages update by themselves."
+
 msgid "Dodano znacznik"
 msgstr "Marker added"
 
 msgid "Doskonałe"
 msgstr "Excellent"
 
-msgid "Dostępna nowa wersja OpenTakeoff {v} – Ustawienia → Program"
-msgstr "New OpenTakeoff version {v} available – Settings → Program"
+msgid "Dostęp z innych komputerów w sieci lokalnej (OBS na drugim komputerze)"
+msgstr "Allow other computers on the local network (OBS on a second PC)"
+
+msgid "Dostępna nowa wersja OpenTakeoff"
+msgstr "A new version of OpenTakeoff is available"
 
 msgid "Dostępna wersja {v} – zainstaluj z tego miejsca."
 msgstr "Version {v} is available – install it from here."
@@ -431,6 +443,15 @@ msgstr "Information"
 msgid "Instalacja anulowana albo brak uprawnień administratora"
 msgstr "Installation cancelled or no administrator rights"
 
+msgid "Instalacja trwa kilkanaście sekund: program zamknie się, zainstaluje nową wersję (Windows może zapytać o zgodę administratora) i uruchomi się ponownie. Dziennik i ustawienia zostają."
+msgstr "Installing takes a few seconds: the app closes, installs the new version (Windows may ask for administrator approval) and starts again. Your logbook and settings are kept."
+
+msgid "Instrukcja i wszystkie opcje"
+msgstr "Instructions and all options"
+
+msgid "Jak dodać w OBS"
+msgstr "How to add it in OBS"
+
 msgid "Jak szybko obraca się kamera MSFS przy rozglądaniu z telefonu"
 msgstr "How fast the MSFS camera turns when looking around from the phone"
 
@@ -461,8 +482,14 @@ msgstr "Default camera"
 msgid "Karta lądowania"
 msgstr "Landing card"
 
+msgid "Karta lądowania – podgląd"
+msgstr "Landing card – preview"
+
 msgid "Karta lądowania, pasek do transmisji, okno zawsze na wierzchu, zrzuty ekranu"
 msgstr "Landing card, streaming bar, always-on-top window, screenshots"
+
+msgid "Karta – podgląd na stałe"
+msgstr "Card – permanent preview"
 
 msgid "Kategoria"
 msgstr "Category"
@@ -517,6 +544,9 @@ msgstr "X-Plane computer"
 
 msgid "Kopia zapasowa"
 msgstr "Backup"
+
+msgid "Kopiuj"
+msgstr "Copy"
 
 msgid "Kopiuj adres"
 msgstr "Copy address"
@@ -671,11 +701,20 @@ msgstr "MSFS unavailable: {e}"
 msgid "MSFS został zamknięty"
 msgstr "MSFS was closed"
 
+msgid "Maks. przechylenie poniżej 200 ft"
+msgstr "Max bank below 200 ft"
+
+msgid "Maks. zejście z osi na dobiegu"
+msgstr "Max centreline deviation on rollout"
+
 msgid "Maksymalizuj"
 msgstr "Maximize"
 
 msgid "Mapa"
 msgstr "Map"
+
+msgid "Mapa lotów"
+msgstr "Flight map"
 
 msgid "Mapa nawigacyjna"
 msgstr "Navigation map"
@@ -745,6 +784,9 @@ msgstr "Press F12 in the simulator – the screenshot remembers where the aircra
 
 msgid "Naciśnij skrót (domyślnie F12) w symulatorze albo przycisk „Zrób zrzut”. Każdy zrzut zapamiętuje miejsce samolotu i pojawia się na mapie."
 msgstr "Press the shortcut (F12 by default) in the simulator or the “Take screenshot” button. Each screenshot remembers the aircraft position and appears on the map."
+
+msgid "Nad progiem"
+msgstr "Over the threshold"
 
 msgid "Nagrany na tym komputerze"
 msgstr "Recorded on this computer"
@@ -875,6 +917,12 @@ msgstr "New point"
 msgid "Np. nazwa kanału albo numer lotu – pole „Własny tekst”"
 msgstr "E.g. channel name or flight number – the “Custom text” field"
 
+msgid "OBS na innym komputerze: włącz w programie dostęp z sieci lokalnej i zamień 127.0.0.1 na adres tego komputera."
+msgstr "OBS on another computer: allow local network access in the app and replace 127.0.0.1 with this computer's address."
+
+msgid "OBS – źródło Przeglądarka"
+msgstr "OBS – Browser source"
+
 msgid "ODLOTY (SID)"
 msgstr "DEPARTURES (SID)"
 
@@ -992,6 +1040,9 @@ msgstr "Surroundings"
 msgid "Okresowo"
 msgstr "Temporarily"
 
+msgid "OpenTakeoff dla OBS"
+msgstr "OpenTakeoff for OBS"
+
 msgid "OpenTakeoff {v} dla Windows – dziennik lotów, briefing i most do telefonu. Pomysł i wykonanie: Adam Rędzikowski · redzikowski.com. Dane: OurAirports (domena publiczna), aviationweather.gov (NOAA), mapy © OpenStreetMap, © CARTO."
 msgstr "OpenTakeoff {v} for Windows – flight logbook, briefing and phone bridge. Idea and development: Adam Rędzikowski · redzikowski.com. Data: OurAirports (public domain), aviationweather.gov (NOAA), maps © OpenStreetMap, © CARTO."
 
@@ -1030,6 +1081,9 @@ msgstr "Open folder"
 
 msgid "Otwórz folder z dziennikiem programu"
 msgstr "Open the folder with the program log"
+
+msgid "Otwórz lot w dzienniku"
+msgstr "Open flight in logbook"
 
 msgid "Otwórz podgląd na żywo"
 msgstr "Open the live view"
@@ -1090,6 +1144,9 @@ msgstr "Bar"
 
 msgid "Pasek do transmisji"
 msgstr "Streaming bar"
+
+msgid "Pasek i karta lądowania jako strony z przezroczystym tłem. Działają także przy symulatorze w wyłącznym pełnym ekranie i nie wymagają przechwytywania okna. Wygląd i pola są te same co w ustawieniach poniżej."
+msgstr "The bar and the landing card as pages with a transparent background. They also work with the simulator in exclusive full screen and need no window capture. Look and fields follow the settings below."
 
 msgid "Pasy"
 msgstr "Runways"
@@ -1184,6 +1241,9 @@ msgstr "Get a plan from SimBrief"
 msgid "Pobrano {t}"
 msgstr "Downloaded {t}"
 
+msgid "Pochylenie"
+msgstr "Pitch"
+
 msgid "Początek zniżania (TOD)"
 msgstr "Top of descent (TOD)"
 
@@ -1217,6 +1277,12 @@ msgstr "Weather unavailable: {e}"
 msgid "Pogoda – obserwowane lotniska"
 msgstr "Weather – watched airports"
 
+msgid "Pokazana niżej"
+msgstr "Shown below"
+
+msgid "Pokazuje się sama po przyziemieniu i znika po ustawionym czasie. ?hold=1 – ostatnie lądowanie zostaje na ekranie, ?pos=br – róg."
+msgstr "Appears by itself at touchdown and hides after the set time. ?hold=1 – the last landing stays on screen, ?pos=br – corner."
+
 msgid "Pokazuje się sama po przyziemieniu: ocena, prędkość pionowa, położenie na pasie i uwagi."
 msgstr "Appears automatically after touchdown: score, vertical speed, runway position and remarks."
 
@@ -1247,11 +1313,17 @@ msgstr "Show the route on the map"
 msgid "Pokaż trasę planu na mapie"
 msgstr "Show the plan route on the map"
 
+msgid "Pola lotu w wybranej kolejności. Dodatkowe opcje w adresie: ?scale=1.5, ?edge=top, ?labels=0, ?logo=0."
+msgstr "Flight fields in the order you chose. Extra options in the address: ?scale=1.5, ?edge=top, ?labels=0, ?logo=0."
+
 msgid "Pola paska – włącz i ułóż strzałkami"
 msgstr "Bar fields – turn on and order with the arrows"
 
 msgid "Pomiar"
 msgstr "Measure"
+
+msgid "Pomiń tę wersję"
+msgstr "Skip this version"
 
 msgid "Pomoc"
 msgstr "Help"
@@ -1346,6 +1418,12 @@ msgstr "Program"
 msgid "Program nie steruje samolotem sam – przekazuje do symulatora tylko polecenia ze sparowanego telefonu (autopilot, radia, osie)."
 msgstr "The program doesn't fly the aircraft on its own – it only passes commands from the paired phone to the simulator (autopilot, radios, axes)."
 
+msgid "Przebieg podejścia (co 200 ms) do arkusza"
+msgstr "Approach profile (every 200 ms) to a spreadsheet"
+
+msgid "Przechylenie"
+msgstr "Bank"
+
 msgid "Przechylenie {deg}° – przyziemienie na jedno koło."
 msgstr "Bank {deg}° – touchdown on one wheel."
 
@@ -1388,6 +1466,9 @@ msgstr "Zoom in"
 msgid "Przygotowanie bazy lotnisk…"
 msgstr "Preparing the airport database…"
 
+msgid "Przykładowa karta na stałe – do ustawienia źródła i wyglądu."
+msgstr "A sample card that stays on screen – for setting up the source and look."
+
 msgid "Przyrządy"
 msgstr "Instruments"
 
@@ -1415,6 +1496,9 @@ msgstr "Touchdown just past the threshold ({ft} ft)."
 msgid "Prędkość"
 msgstr "Speed"
 
+msgid "Prędkość 50 ft → przyziemienie"
+msgstr "Speed 50 ft → touchdown"
+
 msgid "Prędkość nad ziemią"
 msgstr "Ground speed"
 
@@ -1433,8 +1517,14 @@ msgstr "Dashboard"
 msgid "Punkt"
 msgstr "Point"
 
+msgid "Punkt przyziemienia"
+msgstr "Touchdown point"
+
 msgid "Punkt rosy"
 msgstr "Dew point"
+
+msgid "Później"
+msgstr "Later"
 
 msgid "Radia"
 msgstr "Radios"
@@ -1477,6 +1567,12 @@ msgstr "Broadcasting on UDP {port}"
 
 msgid "Rozgłaszanie w sieci nie działa: {e}"
 msgstr "Network broadcast doesn't work: {e}"
+
+msgid "Rozmiar źródła: 1920 × 60 (dla skali 1). Pasek trzyma się górnej albo dolnej krawędzi źródła."
+msgstr "Source size: 1920 × 60 (at scale 1). The bar sticks to the top or bottom edge of the source."
+
+msgid "Rozmiar źródła: najlepiej cały ekran (1920 × 1080); karta ustawia się w środku albo w rogu."
+msgstr "Source size: ideally the full screen (1920 × 1080); the card sits in the centre or a corner."
 
 msgid "Rozłącz"
 msgstr "Disconnect"
@@ -1544,11 +1640,20 @@ msgstr "SimBrief: {e}"
 msgid "Skala V/S"
 msgstr "V/S scale"
 
+msgid "Skala poprzeczna powiększona: ±{f} ft"
+msgstr "Lateral scale exaggerated: ±{f} ft"
+
+msgid "Skopiowano"
+msgstr "Copied"
+
 msgid "Skopiowano adres {text}"
 msgstr "Copied address {text}"
 
 msgid "Skopiowano {text}"
 msgstr "Copied {text}"
+
+msgid "Skopiowano {url}"
+msgstr "Copied {url}"
 
 msgid "Skrót działa też w symulatorze. Każdy zrzut zapamiętuje pozycję, wysokość i kurs – widać go na mapie."
 msgstr "The shortcut works inside the simulator too. Each screenshot remembers position, altitude and heading – you'll see it on the map."
@@ -1574,11 +1679,17 @@ msgstr "Paired: {name} ({ip}), {rate} Hz"
 msgid "Spoilery"
 msgstr "Spoilers"
 
+msgid "Sprawdzaj aktualizacje samoczynnie (po starcie i co 6 godzin)"
+msgstr "Check for updates automatically (at startup and every 6 hours)"
+
 msgid "Sprawdzanie aktualizacji…"
 msgstr "Checking for updates…"
 
 msgid "Sprawdź aktualizacje"
 msgstr "Check for updates"
+
+msgid "Stabilizacja podejścia"
+msgstr "Approach stability"
 
 msgid "Stan"
 msgstr "Status"
@@ -1597,6 +1708,9 @@ msgstr "Controlling"
 
 msgid "Stopniowa zmiana"
 msgstr "Gradual change"
+
+msgid "Strony dla OBS są dostępne tylko na tym komputerze. Włącz dostęp z sieci lokalnej na karcie Nakładki."
+msgstr "OBS pages are available on this computer only. Allow local network access on the Overlays tab."
 
 msgid "Styl PFD i ND; Auto – rozpoznany z samolotu w symulatorze"
 msgstr "PFD and ND style; Auto – detected from the aircraft in the simulator"
@@ -1637,6 +1751,9 @@ msgstr "Sync with the phone"
 msgid "Systemy"
 msgstr "Systems"
 
+msgid "Szczyt przeciążenia"
+msgstr "Peak g-load"
+
 msgid "Szerokość"
 msgstr "Width"
 
@@ -1669,6 +1786,12 @@ msgstr "Temperature"
 
 msgid "Temperatura {ta} °C, punkt rosy {td} °C"
 msgstr "Temperature {ta} °C, dew point {td} °C"
+
+msgid "Ten lot nie ma zapisanego przebiegu podejścia"
+msgstr "This flight has no recorded approach profile"
+
+msgid "Ten lot nie ma zapisanego przebiegu podejścia. Analiza powstaje dla lądowań nagranych na komputerze od wersji 3.3."
+msgstr "This flight has no recorded approach profile. The analysis is made for landings recorded on the PC from version 3.3 on."
 
 msgid "Ten rok"
 msgstr "This year"
@@ -1720,6 +1843,9 @@ msgstr "Window title"
 
 msgid "Tło"
 msgstr "Background"
+
+msgid "Tło jest przezroczyste – nie trzeba dodawać własnego CSS."
+msgstr "The background is transparent – no custom CSS needed."
 
 msgid "U dołu"
 msgstr "Bottom"
@@ -1922,6 +2048,9 @@ msgstr "Windows"
 msgid "Windows zablokował symulowanie myszy"
 msgstr "Windows blocked simulated mouse input"
 
+msgid "Wklej adres i ustaw szerokość oraz wysokość źródła jak przy danej stronie."
+msgstr "Paste the address and set the source width and height as given for that page."
+
 msgid "Wklej depeszę – każda grupa dostanie opis. Prawdziwe depesze znajdziesz na karcie Lotniska."
 msgstr "Paste a report – each group gets a description. Real reports are on the Airports tab."
 
@@ -1936,6 +2065,9 @@ msgstr "Paused until landing – “Resume” to record right away"
 
 msgid "Wszystkie"
 msgstr "All"
+
+msgid "Wszystkie loty w jednym pliku KML do Google Earth – z lądowaniami i zrzutami ekranu"
+msgstr "All flights in one KML file for Google Earth – with landings and screenshots"
 
 msgid "Wszystkie loty z komputera i telefonu"
 msgstr "All flights from the computer and the phone"
@@ -1985,6 +2117,9 @@ msgstr "Result"
 msgid "Wyrównanie"
 msgstr "Alignment"
 
+msgid "Wyrównanie od 50 ft"
+msgstr "Flare from 50 ft"
+
 msgid "Wysokość"
 msgstr "Altitude"
 
@@ -1993,6 +2128,9 @@ msgstr "Pressure altitude"
 
 msgid "Wysokość gęstościowa"
 msgstr "Density altitude"
+
+msgid "Wysokość nad ziemią"
+msgstr "Height above ground"
 
 msgid "Wyszukaj lotnisko"
 msgstr "Find an airport"
@@ -2065,6 +2203,9 @@ msgstr "Imported"
 
 msgid "Zainstaluj aktualizację"
 msgstr "Install update"
+
+msgid "Zainstaluj teraz"
+msgstr "Install now"
 
 msgid "Zakończ"
 msgstr "Finish"
@@ -2195,6 +2336,9 @@ msgstr "Screenshots"
 msgid "Zrzuty ekranu symulatora z miejscem samolotu"
 msgstr "Simulator screenshots with the aircraft position"
 
+msgid "Zrzuty ekranu z lotu"
+msgstr "Screenshots from this flight"
+
 msgid "Zrzuty ekranu z miejscem samolotu"
 msgstr "Screenshots with the aircraft position"
 
@@ -2206,6 +2350,12 @@ msgstr "Take a screenshot now"
 
 msgid "Zwykłe"
 msgstr "Normal"
+
+msgid "bez wyraźnego wyrównania"
+msgstr "no clear flare"
+
+msgid "bez zmian"
+msgstr "unchanged"
 
 msgid "boczny"
 msgstr "cross"
@@ -2249,6 +2399,9 @@ msgstr "freezing rain"
 msgid "do celu "
 msgstr "to destination "
 
+msgid "do ustawienia źródła"
+msgstr "for setting up the source"
+
 msgid "dobieg"
 msgstr "landing roll"
 
@@ -2260,6 +2413,9 @@ msgstr "large airport"
 
 msgid "dym"
 msgstr "smoke"
+
+msgid "długie wytrzymanie – samolot płynął nad pasem"
+msgstr "long hold-off – the aircraft floated over the runway"
 
 msgid "dźwignia"
 msgstr "lever"
@@ -2284,6 +2440,9 @@ msgstr "taxi"
 
 msgid "krupa"
 msgstr "snow pellets"
+
+msgid "krótko, przed strefą przyziemienia"
+msgstr "short, before the touchdown zone"
 
 msgid "kwi"
 msgstr "Apr"
@@ -2363,6 +2522,9 @@ msgstr "no"
 msgid "nieliczne (1–2/8)"
 msgstr "few (1–2/8)"
 
+msgid "niestabilne"
+msgstr "unstable"
+
 msgid "nieznany opad"
 msgstr "unknown precipitation"
 
@@ -2371,6 +2533,9 @@ msgstr "unknown aircraft"
 
 msgid "nigdy"
 msgstr "never"
+
+msgid "nisko – ryzyko przyziemienia przed progiem"
+msgstr "low – risk of touching down short"
 
 msgid "np. VATSIM, szkolenie"
 msgstr "e.g. VATSIM, training"
@@ -2414,11 +2579,20 @@ msgstr "connect to this computer from the OpenTakeoff app on your phone."
 msgid "przed chwilą"
 msgstr "just now"
 
+msgid "przed progiem"
+msgstr "before the threshold"
+
 msgid "przelot"
 msgstr "cruise"
 
 msgid "przelotne"
 msgstr "showers"
+
+msgid "przyziemienie przed progiem"
+msgstr "touchdown before the threshold"
+
+msgid "próg"
+msgstr "threshold"
 
 msgid "punktów ścieżki"
 msgstr "track points"
@@ -2459,6 +2633,9 @@ msgstr "August"
 msgid "silne"
 msgstr "heavy"
 
+msgid "stabilne"
+msgstr "stable"
+
 msgid "stopy (ft)"
 msgstr "feet (ft)"
 
@@ -2495,11 +2672,17 @@ msgstr "armed"
 msgid "w lewo"
 msgstr "left"
 
+msgid "w normie (ok. 50 ft)"
+msgstr "normal (about 50 ft)"
+
 msgid "w pobliżu"
 msgstr "in the vicinity"
 
 msgid "w prawo"
 msgstr "right"
+
+msgid "w strefie przyziemienia"
+msgstr "in the touchdown zone"
 
 msgid "widzialność pionowa"
 msgstr "vertical visibility"
@@ -2516,6 +2699,9 @@ msgstr "September"
 msgid "wypuszczone"
 msgstr "extended"
 
+msgid "wysoko – dłuższe przyziemienie"
+msgstr "high – longer touchdown"
+
 msgid "wyłączone"
 msgstr "off"
 
@@ -2530,6 +2716,9 @@ msgstr "from the left"
 
 msgid "z prawej"
 msgstr "from the right"
+
+msgid "za strefą przyziemienia – długie lądowanie"
+msgstr "beyond the touchdown zone – long landing"
 
 msgid "zaciągnięty"
 msgstr "set"
@@ -2597,6 +2786,9 @@ msgstr "{n} phones connected"
 msgid "{n} – przechylanie telefonu albo drążek"
 msgstr "{n} – tilting the phone or a stick"
 
+msgid "{s} s od 50 ft do przyziemienia"
+msgstr "{s} s from 50 ft to touchdown"
+
 msgid "Ścieżka"
 msgstr "Path"
 
@@ -2627,6 +2819,9 @@ msgstr "Average"
 msgid "Średnia GS"
 msgstr "Average GS"
 
+msgid "Średnia V/S w ostatnich 5 s"
+msgstr "Average V/S in the last 5 s"
+
 msgid "Średnia ocena"
 msgstr "Average score"
 
@@ -2635,6 +2830,9 @@ msgstr "Screen centre"
 
 msgid "Światła"
 msgstr "Lights"
+
+msgid "ścieżka 3° do punktu celowania (1000 ft)"
+msgstr "3° path to the aiming point (1000 ft)"
 
 msgid "śnieg"
 msgstr "snow"
@@ -2648,6 +2846,9 @@ msgstr "medium airport"
 msgid "średnio {v} ft/min"
 msgstr "average {v} ft/min"
 
+msgid "Źródła → + → Przeglądarka, nadaj nazwę."
+msgstr "Sources → + → Browser, give it a name."
+
 msgid "Źródło danych"
 msgstr "Data source"
 
@@ -2659,6 +2860,12 @@ msgstr "Data source: MSFS or X-Plane (automatic)"
 
 msgid "Źródło danych: X-Plane"
 msgstr "Data source: X-Plane"
+
+msgid "źródło 1920 × 1080, pokazuje się po przyziemieniu"
+msgstr "1920 × 1080 source, appears at touchdown"
+
+msgid "źródło 1920 × 60"
+msgstr "1920 × 60 source"
 
 msgid "…"
 msgstr "…"

@@ -194,6 +194,7 @@ pub fn evaluate(t: &Touchdown) -> LandingReport {
         airport: None,
         at: None,
         runway_length_ft: t.runway_length_ft.map(|v| v.round() as i32),
+        profile: Vec::new(),
     }
 }
 

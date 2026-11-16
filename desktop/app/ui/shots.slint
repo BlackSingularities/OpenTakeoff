@@ -136,14 +136,19 @@ export component Shots inherits Rectangle {
                     color: Theme.text-dim;
                     wrap: word-wrap;
                 }
-                if App.shot.has-pos: VerticalLayout {
+                if App.shot.has-pos || App.shot.flight != "": VerticalLayout {
                     spacing: 0;
-                    Pair {
+                    if App.shot.flight != "": Pair {
+                        k: @tr("Lot");
+                        v: App.shot.flight;
+                        mono: true;
+                    }
+                    if App.shot.has-pos: Pair {
                         k: @tr("Wysokość");
                         v: App.shot.alt;
                         mono: true;
                     }
-                    Pair {
+                    if App.shot.has-pos: Pair {
                         k: @tr("Pozycja");
                         v: App.shot.coords;
                         mono: true;
@@ -182,6 +187,13 @@ export component Shots inherits Rectangle {
                         clicked => {
                             App.cmd("shot-copy-pos", "");
                         }
+                    }
+                }
+                if App.shot.flight != "": Button {
+                    icon: Icons.book-open;
+                    label: @tr("Otwórz lot w dzienniku");
+                    clicked => {
+                        App.cmd("shot-flight", "");
                     }
                 }
                 Rectangle {

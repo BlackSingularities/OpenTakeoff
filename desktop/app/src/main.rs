@@ -4,6 +4,7 @@
 
 slint::include_modules!();
 
+mod analysis;
 mod app;
 mod avionics;
 mod chart;
@@ -19,6 +20,7 @@ mod screen;
 mod settings;
 mod shots;
 mod simbrief;
+mod web;
 mod win;
 
 use std::sync::atomic::Ordering;
@@ -48,6 +50,7 @@ fn apply_theme(ui: &AppWindow, s: &Settings) {
 fn apply_settings(ui: &AppWindow, s: &Settings) {
     let app = ui.global::<App>();
     app.set_sim_kind(s.sim_kind);
+    app.set_update_auto(s.update_auto);
     app.set_xplane_host(s.xplane_host.clone().into());
     app.set_theme_mode(s.theme);
     app.set_record_flights(s.record_flights);
@@ -393,6 +396,7 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
         }
         "import" => app::import(),
         "export" => app::export(arg),
+        "landing-analysis" => app::select_landing(arg.parse().unwrap_or(-1)),
         "export-all" => app::export("oab"),
         "replay-toggle" => {
             let st = state();
@@ -498,7 +502,27 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
             apply_settings(ui, &state().borrow().s.clone());
         }
         "update-check" => check_update(true),
-        "update-install" => install_update(),
+        "update-install" => {
+            app.set_update_dialog(false);
+            install_update();
+        }
+        "update-later" => app.set_update_dialog(false),
+        "update-skip" => {
+            app.set_update_dialog(false);
+            let v = app.get_update_version().to_string();
+            let st = state();
+            let mut b = st.borrow_mut();
+            b.s.update_skip = v;
+            b.s.save();
+        }
+        "update-auto" => {
+            let on = arg == "1";
+            app.set_update_auto(on);
+            let st = state();
+            let mut b = st.borrow_mut();
+            b.s.update_auto = on;
+            b.s.save();
+        }
         "feedback" => feedback::open_form(),
         _ => {
             if !instruments::cmd(id, arg) && !navmap::cmd(id, arg) && !overlays::cmd(id, arg) && !shots::cmd(id, arg) {
@@ -560,8 +584,16 @@ fn check_update(manual: bool) {
                 Ok(Some(r)) => {
                     a.set_update_text(trf!("Dostępna wersja {v} – zainstaluj z tego miejsca.", v = r.version).into());
                     a.set_update_ready(true);
-                    if !manual {
-                        toast(trf!("Dostępna nowa wersja OpenTakeoff {v} – Ustawienia → Program", v = r.version));
+                    let skipped = state().borrow().s.update_skip == r.version;
+                    // Okno z opisem zmian: po ręcznym sprawdzeniu zawsze, samoczynnie – raz na wersję,
+                    // chyba że użytkownik ją pominął
+                    let already = state().borrow().update.as_ref().is_some_and(|u| u.version == r.version);
+                    if manual || (!skipped && !already) {
+                        a.set_update_version(r.version.clone().into());
+                        let notes = r.notes.trim();
+                        let notes: String = if notes.chars().count() > 2500 { notes.chars().take(2500).collect::<String>() + "…" } else { notes.to_string() };
+                        a.set_update_notes(notes.into());
+                        a.set_update_dialog(true);
                     }
                     state().borrow_mut().update = Some(r);
                 }
@@ -848,7 +880,19 @@ fn main() {
     {
         // Sprawdzenie aktualizacji po starcie (w tle, bez komunikatu przy braku)
         let t = slint::Timer::default();
-        t.start(slint::TimerMode::SingleShot, Duration::from_secs(8), || check_update(false));
+        t.start(slint::TimerMode::SingleShot, Duration::from_secs(8), || {
+            if state().borrow().s.update_auto {
+                check_update(false)
+            }
+        });
+        std::mem::forget(t);
+        // Program działa całymi dniami w zasobniku – kolejne sprawdzenia co 6 godzin
+        let t = slint::Timer::default();
+        t.start(slint::TimerMode::Repeated, Duration::from_secs(6 * 3600), || {
+            if state().borrow().s.update_auto {
+                check_update(false)
+            }
+        });
         std::mem::forget(t);
     }
     if !start_hidden {
@@ -939,6 +983,10 @@ fn snapshots(ui: &AppWindow, dir: std::path::PathBuf) {
             let first = state().borrow().list.first().cloned();
             if let Some(id) = first {
                 cmd(&ui, "flight-open", &id);
+            }
+            // OPENTAKEOFF_SNAPSHOT_SCROLL=<px> – szczegóły lotu przewinięte (np. do analizy lądowania)
+            if let Some(px) = std::env::var("OPENTAKEOFF_SNAPSHOT_SCROLL").ok().and_then(|v| v.parse::<f32>().ok()) {
+                ui.global::<App>().set_detail_scroll(-px);
             }
         }
         if tab == 4 {

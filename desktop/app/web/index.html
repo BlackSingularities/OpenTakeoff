@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenTakeoff dla OBS</title>
+<style>
+@font-face { font-family: "B612 Mono"; src: url("/obs/fonts/mono.ttf"); }
+@font-face { font-family: "Plex Cond"; src: url("/obs/fonts/cond-bold.ttf"); font-weight: 700; }
+:root { --bg: #000; --raised: #0c0d10; --line: #1d2027; --text: #e8eaee; --dim: #9aa3ad; --accent: #5b8cff; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font: 15px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+header { display: flex; align-items: center; gap: 12px; }
+header img { width: 32px; height: 32px; }
+h1 { font: 700 28px "Plex Cond", sans-serif; margin: 0; }
+p.lead { color: var(--dim); margin: 10px 0 28px; }
+section { background: var(--raised); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin-top: 14px; }
+h2 { font: 700 19px "Plex Cond", sans-serif; margin: 0 0 4px; }
+section p { margin: 0 0 12px; color: var(--dim); }
+.url { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+code { font: 13px "B612 Mono", monospace; background: #000; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+button, a.btn { font: inherit; font-size: 13px; color: #fff; background: var(--accent); border: 0; border-radius: 8px; padding: 7px 12px; cursor: pointer; text-decoration: none; }
+a.btn { background: transparent; border: 1px solid var(--line); color: var(--text); }
+button:focus-visible, a.btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.size { font-size: 13px; color: var(--dim); margin-top: 8px; }
+ol { color: var(--dim); padding-left: 20px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <header><img src="/obs/logo.png" alt=""><h1 id="t-title"></h1></header>
+  <p class="lead" id="t-lead"></p>
+  <div id="pages"></div>
+  <section>
+    <h2 id="t-how"></h2>
+    <ol id="steps"></ol>
+  </section>
+</main>
+<script>
+const D = /*DATA*/{};
+const T = D.texts || {};
+document.getElementById("t-title").textContent = T.title || "OpenTakeoff";
+document.getElementById("t-lead").textContent = T.lead || "";
+document.getElementById("t-how").textContent = T.how || "";
+(T.steps || []).forEach(s => { const li = document.createElement("li"); li.textContent = s; document.getElementById("steps").append(li); });
+(D.pages || []).forEach(p => {
+  const sec = document.createElement("section");
+  const h = document.createElement("h2"); h.textContent = p.title;
+  const d = document.createElement("p"); d.textContent = p.text;
+  const row = document.createElement("div"); row.className = "url";
+  const url = location.origin + p.path;
+  const code = document.createElement("code"); code.textContent = url;
+  const copy = document.createElement("button"); copy.textContent = T.copy || "Copy";
+  copy.onclick = async () => { try { await navigator.clipboard.writeText(url); copy.textContent = T.copied || "OK"; setTimeout(() => copy.textContent = T.copy, 1500); } catch (e) {} };
+  const open = document.createElement("a"); open.className = "btn"; open.href = p.path; open.target = "_blank"; open.textContent = T.open || "Open";
+  row.append(code, copy, open);
+  const size = document.createElement("div"); size.className = "size"; size.textContent = p.size;
+  sec.append(h, d, row, size);
+  document.getElementById("pages").append(sec);
+});
+</script>
+</body>
+</html>

@@ -10,5 +10,5 @@ pub mod stats;
 pub mod store;
 pub mod sync;
 
-pub use model::{FlightLog, FlightMarker, LandingReport, TrackPoint};
+pub use model::{FlightLog, FlightMarker, LandingReport, LandingSample, TrackPoint};
 pub use store::{FlightMeta, ImportResult, LogbookStore};

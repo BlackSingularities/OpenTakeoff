@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenTakeoff – pasek</title>
+<style>
+@font-face { font-family: "B612 Mono"; src: url("/obs/fonts/mono-bold.ttf"); font-weight: 700; }
+@font-face { font-family: "B612 Mono"; src: url("/obs/fonts/mono.ttf"); font-weight: 400; }
+@font-face { font-family: "Plex Cond"; src: url("/obs/fonts/cond-bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Plex Cond"; src: url("/obs/fonts/cond.ttf"); font-weight: 400; }
+:root { --k: 1; --accent: #5b8cff; --bg: rgba(0,0,0,.88); }
+html, body { margin: 0; background: transparent; overflow: hidden; }
+body { font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: #fff; }
+.bar {
+  position: fixed; left: 0; right: 0; top: 0;
+  height: calc(var(--h) * 1px * var(--k));
+  display: flex; align-items: stretch;
+  padding: 0 calc(12px * var(--k));
+  background: var(--bg);
+  transition: opacity .4s ease;
+}
+.bar.bottom { top: auto; bottom: 0; }
+.bar.hidden { opacity: 0; }
+.line { position: absolute; left: 0; right: 0; height: calc(2px * var(--k)); background: var(--accent); }
+.bar:not(.bottom) .line { bottom: 0; }
+.bar.bottom .line { top: 0; }
+.logo { display: flex; align-items: center; gap: calc(7px * var(--k)); padding-right: calc(12px * var(--k)); flex: none; }
+.logo img { width: calc(20px * var(--k)); height: calc(20px * var(--k)); }
+.logo b { font: 700 calc(14px * var(--k)) "Plex Cond", sans-serif; letter-spacing: .01em; }
+.cell { display: flex; align-items: center; min-width: 0; flex: 1 1 0; }
+.cell.wide { flex-grow: 2; }
+.sep { width: 1px; height: 50%; background: rgba(255,255,255,.15); flex: none; }
+.txt { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 0 calc(10px * var(--k)) 0 calc(12px * var(--k)); }
+.lab { font-size: calc(9.5px * var(--k)); color: rgba(255,255,255,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.val { font: 700 calc(14px * var(--k)) "B612 Mono", monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell.route .val { font-size: calc(16px * var(--k)); }
+.cell.cond .val { font-family: "Plex Cond", sans-serif; }
+.waiting { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; font: 400 14px "Plex Cond", sans-serif; color: rgba(255,255,255,.6); }
+.waiting.on { display: flex; }
+</style>
+</head>
+<body>
+<div class="bar" id="bar"><div class="line" id="line"></div></div>
+<div class="waiting" id="wait">OpenTakeoff…</div>
+<script>
+// Ustawienia z adresu nadpisują te z programu: ?scale=1.5&edge=bottom&labels=0&logo=0
+const q = new URLSearchParams(location.search);
+const bar = document.getElementById("bar");
+const line = document.getElementById("line");
+let lastKey = "";
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function render(d) {
+  const c = d.cfg || {};
+  const labels = q.has("labels") ? q.get("labels") !== "0" : c.showLabels !== false;
+  const logo = q.has("logo") ? q.get("logo") !== "0" : c.showLogo !== false;
+  const edge = q.get("edge") || (c.edge === 0 ? "top" : "bottom");
+  const k = parseFloat(q.get("scale") || c.scale || 1);
+  const alpha = q.has("opacity") ? parseFloat(q.get("opacity")) : (c.opacity ?? 0.88);
+  const base = c.style === 2 ? shade(c.accent || "#5b8cff", 0.45) : c.style === 1 ? "#1b1c1f" : "#000000";
+  document.documentElement.style.setProperty("--k", k);
+  document.documentElement.style.setProperty("--h", labels ? 46 : 34);
+  document.documentElement.style.setProperty("--accent", c.accent || "#5b8cff");
+  document.documentElement.style.setProperty("--bg", rgba(base, alpha));
+  bar.classList.toggle("bottom", edge === "bottom");
+  line.style.display = c.accentLine === false ? "none" : "";
+  bar.classList.toggle("hidden", !d.cells || d.cells.length === 0);
+
+  const key = JSON.stringify([d.cells, labels, logo]);
+  if (key === lastKey) return;
+  lastKey = key;
+  [...bar.querySelectorAll(".logo, .cell")].forEach(n => n.remove());
+  if (logo) {
+    const l = el("div", "logo");
+    const img = el("img"); img.src = "/obs/logo.png"; img.alt = "";
+    l.append(img, el("b", "", "OpenTakeoff"));
+    bar.append(l);
+  }
+  (d.cells || []).forEach((cell, i) => {
+    const kind = cell.kind;
+    const box = el("div", "cell" + (kind === 1 || kind === 3 ? " wide" : "") + (kind === 1 ? " route" : "") + (kind === 3 || kind === 4 ? " cond" : ""));
+    if (i > 0 || logo) box.append(el("div", "sep"));
+    const t = el("div", "txt");
+    if (labels && cell.label) t.append(el("div", "lab", cell.label));
+    const v = el("div", "val", cell.value === "" ? "–" : cell.value);
+    if (kind === 2 || kind === 4) v.style.color = cell.tone;
+    t.append(v);
+    box.append(t);
+    bar.append(box);
+  });
+}
+
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
+  return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+async function poll() {
+  try {
+    const r = await fetch("/obs/bar.json", { cache: "no-store" });
+    render(await r.json());
+    document.getElementById("wait").classList.remove("on");
+  } catch (e) {
+    // Program zamknięty – pasek znika, wraca sam po uruchomieniu
+    bar.classList.add("hidden");
+  }
+  setTimeout(poll, 500);
+}
+poll();
+</script>
+</body>
+</html>

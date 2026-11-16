@@ -1,7 +1,7 @@
 //! Eksport lotów do formatów wymiany: GPX 1.1 (ślad z wysokością i czasem), KML (ślad 3D do Google Earth,
 //! z punktami lądowań) i CSV (pełny tor z parametrami – do arkusza).
 
-use super::model::{FlightLog, TrackPoint};
+use super::model::{FlightLog, LandingReport, TrackPoint};
 
 fn esc(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
@@ -20,31 +20,40 @@ pub fn title(f: &FlightLog) -> String {
 }
 
 pub fn gpx(f: &FlightLog) -> String {
+    gpx_many(std::slice::from_ref(f))
+}
+
+/// Jeden plik GPX z kilkoma lotami: osobny ślad na lot, lądowania jako punkty.
+pub fn gpx_many(flights: &[FlightLog]) -> String {
     let mut s = String::new();
     s.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     s.push_str("<gpx version=\"1.1\" creator=\"OpenTakeoff\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n");
-    s.push_str(&format!("  <metadata><name>{}</name><time>{}</time></metadata>\n", esc(&title(f)), iso(f.start)));
-    for (i, l) in f.all_landings().iter().enumerate() {
-        if let Some(at) = l.at {
-            if let Some(p) = nearest(&f.track, at) {
+    let name = if flights.len() == 1 { title(&flights[0]) } else { format!("OpenTakeoff – {} lotów", flights.len()) };
+    s.push_str(&format!("  <metadata><name>{}</name><time>{}</time></metadata>\n", esc(&name), iso(flights.first().map(|f| f.start).unwrap_or(0))));
+    for f in flights {
+        for (i, l) in f.all_landings().iter().enumerate() {
+            if let Some(p) = l.at.and_then(|at| nearest(&f.track, at)) {
                 s.push_str(&format!(
                     "  <wpt lat=\"{:.6}\" lon=\"{:.6}\"><ele>{:.1}</ele><time>{}</time><name>{}</name><desc>{} {} ft/min</desc></wpt>\n",
                     p.lat,
                     p.lon,
                     p.alt_ft as f64 * 0.3048,
-                    iso(at),
-                    esc(&format!("Lądowanie {}", i + 1)),
+                    iso(l.at.unwrap_or(p.t)),
+                    esc(&format!("Lądowanie {}{}", i + 1, f.to.as_ref().map(|t| format!(" {t}")).unwrap_or_default())),
                     l.score,
                     l.vs_fpm
                 ));
             }
         }
     }
-    s.push_str(&format!("  <trk><name>{}</name><trkseg>\n", esc(&title(f))));
-    for p in &f.track {
-        s.push_str(&format!("    <trkpt lat=\"{:.6}\" lon=\"{:.6}\"><ele>{:.1}</ele><time>{}</time></trkpt>\n", p.lat, p.lon, p.alt_ft as f64 * 0.3048, iso(p.t)));
+    for f in flights {
+        s.push_str(&format!("  <trk><name>{}</name><trkseg>\n", esc(&title(f))));
+        for p in &f.track {
+            s.push_str(&format!("    <trkpt lat=\"{:.6}\" lon=\"{:.6}\"><ele>{:.1}</ele><time>{}</time></trkpt>\n", p.lat, p.lon, p.alt_ft as f64 * 0.3048, iso(p.t)));
+        }
+        s.push_str("  </trkseg></trk>\n");
     }
-    s.push_str("  </trkseg></trk>\n</gpx>\n");
+    s.push_str("</gpx>\n");
     s
 }
 
@@ -53,32 +62,94 @@ fn nearest(track: &[TrackPoint], t: i64) -> Option<&TrackPoint> {
 }
 
 pub fn kml(f: &FlightLog) -> String {
+    kml_many(std::slice::from_ref(f), &[])
+}
+
+/// Punkt KML (np. zrzut ekranu): nazwa, czas, pozycja, opis w HTML (np. obraz z dysku).
+pub fn kml_point(name: &str, t: i64, lat: f64, lon: f64, alt_ft: f64, html: &str, style: &str) -> String {
+    format!(
+        "<Placemark><name>{}</name><TimeStamp><when>{}</when></TimeStamp><styleUrl>#{}</styleUrl><description><![CDATA[{}]]></description><Point><altitudeMode>absolute</altitudeMode><coordinates>{:.6},{:.6},{:.1}</coordinates></Point></Placemark>\n",
+        esc(name),
+        iso(t),
+        style,
+        html.replace("]]>", "]]&gt;"),
+        lon,
+        lat,
+        alt_ft * 0.3048
+    )
+}
+
+const KML_COLORS: [&str; 6] = ["ff3c8cff", "ff47b5ff", "ff7acf3c", "fffc84c0", "ffebd84f", "ff4c8aff"];
+
+/// Kilka lotów w jednym KML (np. cały dziennik do Google Earth): folder na lot ze śladem 3D,
+/// lądowaniami i dodatkowymi punktami `extra[i]` (np. zrzuty ekranu z tego lotu).
+pub fn kml_many(flights: &[FlightLog], extra: &[String]) -> String {
     let mut s = String::new();
     s.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<kml xmlns=\"http://www.opengis.net/kml/2.2\" xmlns:gx=\"http://www.google.com/kml/ext/2.2\">\n<Document>\n");
-    s.push_str(&format!("<name>{}</name>\n", esc(&title(f))));
-    s.push_str("<Style id=\"track\"><LineStyle><color>ff3c8cff</color><width>3</width></LineStyle><PolyStyle><color>403c8cff</color></PolyStyle></Style>\n");
-    s.push_str("<Placemark><name>Tor lotu</name><styleUrl>#track</styleUrl><gx:Track><altitudeMode>absolute</altitudeMode><extrude>1</extrude>\n");
-    for p in &f.track {
-        s.push_str(&format!("<when>{}</when>\n", iso(p.t)));
+    let name = if flights.len() == 1 { title(&flights[0]) } else { format!("OpenTakeoff – {} lotów", flights.len()) };
+    s.push_str(&format!("<name>{}</name>\n", esc(&name)));
+    for (i, c) in KML_COLORS.iter().enumerate() {
+        s.push_str(&format!("<Style id=\"track{i}\"><LineStyle><color>{c}</color><width>3</width></LineStyle><PolyStyle><color>40{}</color></PolyStyle></Style>\n", &c[2..]));
     }
-    for p in &f.track {
-        s.push_str(&format!("<gx:coord>{:.6} {:.6} {:.1}</gx:coord>\n", p.lon, p.lat, p.alt_ft as f64 * 0.3048));
-    }
-    s.push_str("</gx:Track></Placemark>\n");
-    for (i, l) in f.all_landings().iter().enumerate() {
-        if let Some(p) = l.at.and_then(|at| nearest(&f.track, at)) {
-            s.push_str(&format!(
-                "<Placemark><name>{}</name><description>{} · {} ft/min{}</description><Point><coordinates>{:.6},{:.6},0</coordinates></Point></Placemark>\n",
-                esc(&format!("Lądowanie {} – {}", i + 1, l.score)),
-                esc(&l.grade),
-                l.vs_fpm,
-                l.runway.as_ref().map(|r| format!(" · RWY {}", esc(r))).unwrap_or_default(),
-                p.lon,
-                p.lat
-            ));
+    s.push_str("<Style id=\"landing\"><IconStyle><color>ff47b5ff</color><Icon><href>http://maps.google.com/mapfiles/kml/shapes/airports.png</href></Icon></IconStyle></Style>\n");
+    s.push_str("<Style id=\"shot\"><IconStyle><color>ffebd84f</color><Icon><href>http://maps.google.com/mapfiles/kml/shapes/camera.png</href></Icon></IconStyle></Style>\n");
+    let many = flights.len() > 1;
+    for (k, f) in flights.iter().enumerate() {
+        if many {
+            s.push_str(&format!("<Folder><name>{}</name><TimeSpan><begin>{}</begin><end>{}</end></TimeSpan>\n", esc(&format!("{} · {}", title(f), &iso(f.start)[..10])), iso(f.start), iso(f.end)));
+        }
+        s.push_str(&format!("<Placemark><name>{}</name><styleUrl>#track{}</styleUrl><gx:Track><altitudeMode>absolute</altitudeMode><extrude>{}</extrude>\n", esc(if many { "Tor lotu" } else { "Tor lotu" }), k % KML_COLORS.len(), if many { 0 } else { 1 }));
+        for p in &f.track {
+            s.push_str(&format!("<when>{}</when>\n", iso(p.t)));
+        }
+        for p in &f.track {
+            s.push_str(&format!("<gx:coord>{:.6} {:.6} {:.1}</gx:coord>\n", p.lon, p.lat, p.alt_ft as f64 * 0.3048));
+        }
+        s.push_str("</gx:Track></Placemark>\n");
+        for (i, l) in f.all_landings().iter().enumerate() {
+            if let Some(p) = l.at.and_then(|at| nearest(&f.track, at)) {
+                s.push_str(&format!(
+                    "<Placemark><name>{}</name><styleUrl>#landing</styleUrl><description>{} · {} ft/min{}</description><Point><coordinates>{:.6},{:.6},0</coordinates></Point></Placemark>\n",
+                    esc(&format!("Lądowanie {} – {}", i + 1, l.score)),
+                    esc(&l.grade),
+                    l.vs_fpm,
+                    l.runway.as_ref().map(|r| format!(" · RWY {}", esc(r))).unwrap_or_default(),
+                    p.lon,
+                    p.lat
+                ));
+            }
+        }
+        if let Some(x) = extra.get(k) {
+            s.push_str(x);
+        }
+        if many {
+            s.push_str("</Folder>\n");
         }
     }
     s.push_str("</Document>\n</kml>\n");
+    s
+}
+
+/// Przebieg podejścia jednego lądowania (analiza) do arkusza.
+pub fn landing_csv(l: &LandingReport) -> String {
+    let mut s = String::from("t_rel_s,agl_ft,vs_fpm,ias_kt,gs_kt,g,bank_deg,pitch_deg,along_rwy_ft,cross_rwy_ft,on_ground\n");
+    let o = |v: Option<i32>| v.map(|x| x.to_string()).unwrap_or_default();
+    for p in &l.profile {
+        s.push_str(&format!(
+            "{:.1},{},{},{},{},{:.2},{:.1},{:.1},{},{},{}\n",
+            p.dt as f64 / 1000.0,
+            p.agl,
+            p.vs,
+            p.ias,
+            p.gs,
+            p.g,
+            p.bank,
+            p.pitch,
+            o(p.x),
+            o(p.y),
+            if p.gnd { 1 } else { 0 }
+        ));
+    }
     s
 }
 
@@ -193,6 +264,19 @@ mod tests {
             ],
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn many_in_one_file() {
+        let mut b = f();
+        b.id = "y".into();
+        b.from = Some("EPGD".into());
+        b.to = Some("EPKK".into());
+        let k = kml_many(&[f(), b.clone()], &["".into(), kml_point("Zrzut 12:00", 30_000, 52.01, 21.0, 1200.0, "<img src='x.jpg'>", "shot")]);
+        assert_eq!(k.matches("<Folder>").count(), 2);
+        assert!(k.contains("Zrzut 12:00") && k.contains("<![CDATA[<img src='x.jpg'>]]>"));
+        let g = gpx_many(&[f(), b]);
+        assert_eq!(g.matches("<trk>").count(), 2);
     }
 
     #[test]

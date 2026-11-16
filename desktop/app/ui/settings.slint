@@ -275,6 +275,13 @@ export component Settings inherits Rectangle {
                         color: Theme.text-dim;
                         wrap: word-wrap;
                     }
+                    Switch {
+                        on: App.update-auto;
+                        label: @tr("Sprawdzaj aktualizacje samoczynnie (po starcie i co 6 godzin)");
+                        toggled => {
+                            App.cmd("update-auto", App.update-auto ? "0" : "1");
+                        }
+                    }
                     Text {
                         text: App.update-text;
                         font-family: Theme.font;

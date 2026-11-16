@@ -152,6 +152,12 @@ pub fn push_settings() {
     app.set_shot_monitor(s.shot_monitor);
     app.set_shot_key(s.shot_key);
     app.set_simbrief_user(ss(&s.simbrief_user));
+    app.set_obs_lan(s.obs_lan);
+    let port = state().borrow().host.server.port();
+    let port = if port == 0 { 47810 } else { port };
+    app.set_obs_base(ss(format!("http://127.0.0.1:{port}/obs")));
+    crate::web::set_lan(s.obs_lan);
+    web_static();
 }
 
 fn field_label(k: &str) -> &'static str {
@@ -275,6 +281,107 @@ fn fill_landing(w: &LandingWindow, r: &LandingReport, cfg: &LandingCardCfg, prev
     w.set_progress(1.0);
 }
 
+/// Karta lądowania dla strony OBS – te same dane i ustawienia co okno na ekranie.
+fn landing_json(r: &LandingReport, cfg: &LandingCardCfg, preview: bool) -> serde_json::Value {
+    let snap = state().borrow().host.snapshot();
+    let live = ui().map(|u| u.global::<App>().get_live());
+    let airport = if preview {
+        "EPGD".to_string()
+    } else {
+        r.airport.clone().filter(|a| !a.is_empty()).or_else(|| live.as_ref().map(|l| l.nearest.split(' ').next().unwrap_or("").to_string())).unwrap_or_default()
+    };
+    let aircraft = if preview { "Airbus A320neo".to_string() } else { snap.as_ref().map(|s| s.aircraft.title.clone()).unwrap_or_default() };
+    // V/S w ostatnich 30 s przed przyziemieniem (co ~0,6 s)
+    let spark: Vec<i32> = if preview {
+        (0..50).map(|i| -720 + ((i as f64 / 49.0).powi(3) * 560.0) as i32).collect()
+    } else {
+        r.profile.iter().filter(|p| p.dt <= 0).step_by(3).map(|p| p.vs).collect()
+    };
+    let pos = match cfg.position {
+        3 => "tl",
+        4 => "tr",
+        5 => "bl",
+        6 => "br",
+        _ => "c",
+    };
+    serde_json::json!({
+        "preview": preview,
+        "secs": effective_secs(cfg),
+        "cfg": {
+            "layout": cfg.layout, "tone": cfg.tone, "scale": ([0.8, 1.0, 1.25, 1.55][cfg.size.clamp(0, 3) as usize]),
+            "opacity": cfg.opacity.clamp(30, 100) as f32 / 100.0, "accent": crate::web::color(accent()), "pos": pos,
+            "showScore": cfg.show_score, "showVs": cfg.show_vs, "showG": cfg.show_g, "showSpeed": cfg.show_speed,
+            "showRunway": cfg.show_runway, "showOffsets": cfg.show_offsets, "showBounces": cfg.show_bounces,
+            "showWind": cfg.show_wind, "showNotes": cfg.show_notes, "showAirport": cfg.show_airport,
+            "showAircraft": cfg.show_aircraft, "showScale": cfg.show_scale,
+        },
+        "data": {
+            "score": r.score, "grade": landing::grade_of(r.score), "color": crate::web::color(score_color(r.score)),
+            "vsFpm": r.vs_fpm, "vs": minus(r.vs_fpm.to_string()),
+            "g": r.g_force.map(|g| format!("{g:.2} g")).unwrap_or_default(),
+            "ias": r.ias_kt.map(|v| v.to_string()).unwrap_or_default(),
+            "runway": r.runway.clone().unwrap_or_default(),
+            "along": r.along_ft.map(|a| minus(format!("{a} ft"))).unwrap_or_default(),
+            "cross": r.cross_ft.map(|c| if c >= 0 { format!("{} ft →", c) } else { format!("← {} ft", -c) }).unwrap_or_default(),
+            "bounces": r.bounces.to_string(),
+            "wind": r.crosswind_kt.map(|c| format!("{} kt", c.abs())).unwrap_or_default(),
+            "airport": airport, "aircraft": aircraft,
+            "time": crate::fmt::time(r.at.unwrap_or_else(unix_ms)),
+            "notes": landing::notes_now(r),
+            "spark": spark,
+        },
+        "labels": {
+            "heading": tr("Lądowanie"), "along": tr("Za progiem"), "cross": tr("Od osi pasa"), "bounces": tr("Odbicia"),
+            "wind": tr("Wiatr boczny"), "g": tr("Przeciążenie"), "ias": tr("Prędkość"),
+        },
+    })
+}
+
+/// Stałe dane stron OBS: przykładowa karta (`?demo=1`) i strona z adresami.
+fn web_static() {
+    let cfg = state().borrow().s.landing_card.clone();
+    crate::web::set_demo(landing_json(&sample_report(), &cfg, true));
+    crate::web::set_index(serde_json::json!({
+        "texts": {
+            "title": tr("OpenTakeoff dla OBS"),
+            "lead": tr("Dodaj w OBS źródło Przeglądarka z jednym z adresów poniżej. Wygląd i pola ustawiasz w programie na karcie Nakładki – strony zmieniają się same."),
+            "how": tr("Jak dodać w OBS"),
+            "steps": [
+                tr("Źródła → + → Przeglądarka, nadaj nazwę."),
+                tr("Wklej adres i ustaw szerokość oraz wysokość źródła jak przy danej stronie."),
+                tr("Tło jest przezroczyste – nie trzeba dodawać własnego CSS."),
+                tr("OBS na innym komputerze: włącz w programie dostęp z sieci lokalnej i zamień 127.0.0.1 na adres tego komputera."),
+            ],
+            "copy": tr("Kopiuj"), "copied": tr("Skopiowano"), "open": tr("Otwórz"),
+        },
+        "pages": [
+            { "title": tr("Pasek do transmisji"), "path": "/obs/bar", "text": tr("Pola lotu w wybranej kolejności. Dodatkowe opcje w adresie: ?scale=1.5, ?edge=top, ?labels=0, ?logo=0."), "size": tr("Rozmiar źródła: 1920 × 60 (dla skali 1). Pasek trzyma się górnej albo dolnej krawędzi źródła.") },
+            { "title": tr("Karta lądowania"), "path": "/obs/landing", "text": tr("Pokazuje się sama po przyziemieniu i znika po ustawionym czasie. ?hold=1 – ostatnie lądowanie zostaje na ekranie, ?pos=br – róg."), "size": tr("Rozmiar źródła: najlepiej cały ekran (1920 × 1080); karta ustawia się w środku albo w rogu.") },
+            { "title": tr("Karta lądowania – podgląd"), "path": "/obs/landing?demo=1", "text": tr("Przykładowa karta na stałe – do ustawienia źródła i wyglądu."), "size": "" },
+        ],
+    }));
+}
+
+/// Pasek dla strony OBS (tylko gdy strona była niedawno otwarta).
+fn web_bar() {
+    if !crate::web::wanted() {
+        return;
+    }
+    let cfg = state().borrow().s.stream_bar.clone();
+    let cells: Vec<serde_json::Value> = stream_cells(&cfg)
+        .iter()
+        .map(|c| serde_json::json!({ "label": c.label.as_str(), "value": c.value.as_str(), "kind": c.kind, "tone": crate::web::color(c.tone) }))
+        .collect();
+    crate::web::publish_bar(serde_json::json!({
+        "cfg": {
+            "edge": cfg.edge, "style": cfg.style, "scale": ([0.85, 1.0, 1.3][cfg.size.clamp(0, 2) as usize]),
+            "opacity": cfg.opacity.clamp(30, 100) as f32 / 100.0, "showLabels": cfg.show_labels, "showLogo": cfg.show_logo,
+            "accentLine": cfg.accent_line, "accent": crate::web::color(accent()),
+        },
+        "cells": cells,
+    }));
+}
+
 fn effective_secs(cfg: &LandingCardCfg) -> i32 {
     if cfg.seconds <= 0 && cfg.click_through {
         15
@@ -336,12 +443,19 @@ fn landing_tick() {
 /// Wykrywa nowe lądowanie (raport z rejestratora lotu) i pokazuje kartę.
 fn detect_landing() {
     let last = state().borrow().host.recording().4;
-    let key = last.as_ref().map(|r| serde_json::to_string(r).unwrap_or_default()).unwrap_or_default();
+    // Klucz bez przebiegu podejścia – ten dopisuje się kilka sekund po przyziemieniu
+    let key = last.as_ref().map(|r| serde_json::to_string(&LandingReport { profile: Vec::new(), ..r.clone() }).unwrap_or_default()).unwrap_or_default();
     let (first, changed) = OV.with(|o| {
         let o = o.borrow();
         (o.last_key.is_none(), o.last_key.as_deref() != Some(key.as_str()))
     });
     if !changed {
+        // Ten sam raport, ale z pełnym przebiegiem – podmiana bez ponownego pokazania karty
+        if let Some(r) = &last {
+            if r.profile.len() > OV.with(|o| o.borrow().last_report.as_ref().map(|x| x.profile.len()).unwrap_or(0)) {
+                OV.with(|o| o.borrow_mut().last_report = Some(r.clone()));
+            }
+        }
         return;
     }
     OV.with(|o| {
@@ -354,6 +468,8 @@ fn detect_landing() {
     if let Some(r) = &last {
         push_last_landing(r);
         if !first {
+            let cfg = state().borrow().s.landing_card.clone();
+            crate::web::publish_landing(landing_json(r, &cfg, false));
             show_landing(r, false);
         }
     }
@@ -660,6 +776,7 @@ pub fn tick() {
     landing_tick();
     if t % 10 == 0 {
         stream_tick();
+        web_bar();
     }
     overlay_tick(t);
 }
@@ -778,7 +895,32 @@ pub fn cmd(id: &str, arg: &str) -> bool {
                 apply_overlay();
             }
         }
-        "ovl-landing-preview" => show_landing(&sample_report(), true),
+        "ovl-landing-preview" => {
+            let cfg = state().borrow().s.landing_card.clone();
+            crate::web::publish_landing(landing_json(&sample_report(), &cfg, true));
+            show_landing(&sample_report(), true);
+        }
+        "obs-lan" => {
+            {
+                let st = state();
+                let mut b = st.borrow_mut();
+                b.s.obs_lan = set_bool(arg);
+                b.s.save();
+            }
+            push_settings();
+        }
+        "obs-copy" | "obs-open" => {
+            let base = ui().map(|u| u.global::<App>().get_obs_base().to_string()).unwrap_or_default();
+            let url = format!("{base}{arg}");
+            if id == "obs-open" {
+                let _ = open::that(&url);
+            } else {
+                if let Ok(mut c) = arboard::Clipboard::new() {
+                    let _ = c.set_text(url.clone());
+                }
+                app::toast(opentakeoff_core::trf!("Skopiowano {url}"));
+            }
+        }
         "ovl-landing-last" => {
             let r = OV.with(|o| o.borrow().last_report.clone());
             match r {

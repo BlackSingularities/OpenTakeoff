@@ -1,0 +1,433 @@
+// Analiza lądowania w szczegółach lotu: ślad na tle pasa (z góry i z boku ze ścieżką 3°),
+// wnioski z przebiegu podejścia i sześć małych wykresów ostatnich 30 s przed przyziemieniem.
+
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, MiniChartV, FactV, RwyViewV } from "state.slint";
+import { Panel, Heading, Score, Colors } from "parts.slint";
+import { Button } from "widgets.slint";
+
+global Tones {
+    pure public function fact(t: int) -> color {
+        return t == 0 ? #3ccf7a : t == 1 ? #ffb547 : #ff5a5f;
+    }
+    pure public function chart(t: int) -> color {
+        return t == 0 ? Colors.vs : t == 1 ? Colors.alt : t == 2 ? Colors.spd : t == 3 ? Colors.gs : t == 4 ? #4fd8eb : #ff8a4c;
+    }
+}
+
+component MiniChart inherits Rectangle {
+    in property <MiniChartV> c;
+    property <length> pad-t: 26px * Theme.scale;
+    property <length> pad-b: 18px * Theme.scale;
+    property <length> pad-x: 8px;
+    property <length> pw: self.width - 2 * pad-x;
+    property <length> ph: self.height - pad-t - pad-b;
+    border-radius: Theme.r;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    clip: true;
+    Text {
+        x: root.pad-x;
+        y: 6px;
+        text: root.c.title;
+        font-family: Theme.cond;
+        font-size: 12px * Theme.scale;
+        font-weight: 600;
+        color: Theme.text-dim;
+    }
+    Text {
+        x: root.width - self.width - root.pad-x;
+        y: 5px;
+        text: root.c.value;
+        font-family: Theme.mono;
+        font-size: 12px * Theme.scale;
+        font-weight: 700;
+        color: Tones.chart(root.c.tone);
+    }
+    // Zero
+    if root.c.zero >= 0: Rectangle {
+        x: root.pad-x;
+        y: root.pad-t + root.ph * root.c.zero;
+        width: root.pw;
+        height: 1px;
+        background: Theme.line;
+    }
+    // Chwila przyziemienia
+    Rectangle {
+        x: root.pad-x + root.pw * root.c.td;
+        y: root.pad-t - 4px;
+        width: 1px;
+        height: root.ph + 8px;
+        background: Theme.text-faint;
+    }
+    Path {
+        x: root.pad-x;
+        y: root.pad-t;
+        width: root.pw;
+        height: root.ph;
+        fit: fill;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.c.path;
+        stroke: Tones.chart(root.c.tone);
+        stroke-width: 1.6px;
+        fill: transparent;
+    }
+    Text {
+        x: root.pad-x;
+        y: root.pad-t - 2px;
+        text: root.c.top;
+        font-family: Theme.mono;
+        font-size: 9px * Theme.scale;
+        color: Theme.text-faint;
+    }
+    Text {
+        x: root.pad-x;
+        y: root.pad-t + root.ph - self.height - 1px;
+        text: root.c.bottom;
+        font-family: Theme.mono;
+        font-size: 9px * Theme.scale;
+        color: Theme.text-faint;
+    }
+    Text {
+        x: root.pad-x;
+        y: root.height - root.pad-b + 2px;
+        text: "−30 s";
+        font-family: Theme.mono;
+        font-size: 9px * Theme.scale;
+        color: Theme.text-faint;
+    }
+    Text {
+        x: root.pad-x + root.pw * root.c.td - self.width / 2;
+        y: root.height - root.pad-b + 2px;
+        text: "TD";
+        font-family: Theme.mono;
+        font-size: 9px * Theme.scale;
+        font-weight: 700;
+        color: Theme.text-dim;
+    }
+    Text {
+        x: root.width - self.width - root.pad-x;
+        y: root.height - root.pad-b + 2px;
+        text: "+6 s";
+        font-family: Theme.mono;
+        font-size: 9px * Theme.scale;
+        color: Theme.text-faint;
+    }
+}
+
+component FactRow inherits Rectangle {
+    in property <FactV> f;
+    height: max(34px * Theme.scale, vl.preferred-height + 8px);
+    border-radius: Theme.r-small;
+    background: Theme.raised;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 9px;
+        Rectangle {
+            width: 8px;
+            height: 8px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 4px;
+            background: Tones.fact(root.f.tone);
+        }
+        vl := VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: 1px;
+            Text {
+                text: root.f.label;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                overflow: elide;
+            }
+            if root.f.note != "": Text {
+                text: root.f.note;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-faint;
+                wrap: word-wrap;
+            }
+        }
+        Text {
+            text: root.f.value;
+            font-family: Theme.mono;
+            font-size: Theme.fs;
+            font-weight: 700;
+            color: Theme.text;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+        }
+    }
+}
+
+/// Pas z góry: nawierzchnia, oznakowanie, ślad w powietrzu (przerywany kolor) i na ziemi, punkt przyziemienia.
+component RunwayTop inherits Rectangle {
+    in property <RwyViewV> v;
+    border-radius: Theme.r;
+    background: Theme.dark ? #0b1a10 : #dfe9d8;
+    border-width: 1px;
+    border-color: Theme.line;
+    clip: true;
+    Path {
+        x: 10px;
+        y: 10px;
+        width: root.width - 20px;
+        height: root.height - 20px;
+        fit: fill;
+        viewbox-width: 1000;
+        viewbox-height: 200;
+        commands: root.v.runway;
+        fill: Theme.dark ? #2a2d33 : #6b7079;
+        stroke: transparent;
+    }
+    Path {
+        x: 10px;
+        y: 10px;
+        width: root.width - 20px;
+        height: root.height - 20px;
+        fit: fill;
+        viewbox-width: 1000;
+        viewbox-height: 200;
+        commands: root.v.marks;
+        fill: #e8eaee;
+        stroke: transparent;
+    }
+    Path {
+        x: 10px;
+        y: 10px;
+        width: root.width - 20px;
+        height: root.height - 20px;
+        fit: fill;
+        viewbox-width: 1000;
+        viewbox-height: 200;
+        commands: root.v.air;
+        stroke: Theme.accent;
+        stroke-width: 2.4px;
+        fill: transparent;
+    }
+    Path {
+        x: 10px;
+        y: 10px;
+        width: root.width - 20px;
+        height: root.height - 20px;
+        fit: fill;
+        viewbox-width: 1000;
+        viewbox-height: 200;
+        commands: root.v.ground;
+        stroke: #ffb547;
+        stroke-width: 2.4px;
+        fill: transparent;
+    }
+    if root.v.td-x >= 0: Rectangle {
+        x: 10px + (root.width - 20px) * root.v.td-x - 6px;
+        y: 10px + (root.height - 20px) * root.v.td-y - 6px;
+        width: 12px;
+        height: 12px;
+        border-radius: 6px;
+        background: Colors.score(App.analysis.score);
+        border-width: 2px;
+        border-color: #ffffff;
+    }
+    Text {
+        x: 12px;
+        y: 6px;
+        text: root.v.title;
+        font-family: Theme.mono;
+        font-size: 11px * Theme.scale;
+        font-weight: 700;
+        color: Theme.dark ? #e8eaee : #1a1d22;
+    }
+    Text {
+        x: root.width - self.width - 12px;
+        y: root.height - self.height - 6px;
+        text: root.v.scale-note;
+        font-family: Theme.font;
+        font-size: 10px * Theme.scale;
+        color: Theme.dark ? #9aa3ad : #3a3f46;
+    }
+}
+
+/// Z boku: wysokość nad pasem, ścieżka 3° do punktu celowania, linia 50 ft, próg.
+component RunwaySide inherits Rectangle {
+    in property <RwyViewV> v;
+    border-radius: Theme.r;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    clip: true;
+    property <length> iw: self.width - 20px;
+    property <length> ih: self.height - 12px;
+    Rectangle {
+        x: 10px;
+        y: 6px + root.ih * root.v.ground-line;
+        width: root.iw;
+        height: 1px;
+        background: Theme.text-faint;
+    }
+    Rectangle {
+        x: 10px;
+        y: 6px + root.ih * root.v.line-50;
+        width: root.iw;
+        height: 1px;
+        background: Theme.line;
+    }
+    Text {
+        x: 14px;
+        y: 6px + root.ih * root.v.line-50 - self.height;
+        text: "50 ft";
+        font-family: Theme.mono;
+        font-size: 9px * Theme.scale;
+        color: Theme.text-faint;
+    }
+    Rectangle {
+        x: 10px + root.iw * root.v.threshold-x;
+        y: 6px;
+        width: 1px;
+        height: root.ih * root.v.ground-line;
+        background: Theme.line;
+    }
+    Text {
+        x: 10px + root.iw * root.v.threshold-x + 4px;
+        y: 6px;
+        text: @tr("próg");
+        font-family: Theme.font;
+        font-size: 10px * Theme.scale;
+        color: Theme.text-faint;
+    }
+    Path {
+        x: 10px;
+        y: 6px;
+        width: root.iw;
+        height: root.ih;
+        fit: fill;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.v.glide;
+        stroke: Theme.text-faint;
+        stroke-width: 1px;
+        fill: transparent;
+    }
+    Path {
+        x: 10px;
+        y: 6px;
+        width: root.iw;
+        height: root.ih;
+        fit: fill;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: root.v.side;
+        stroke: Theme.accent;
+        stroke-width: 2px;
+        fill: transparent;
+    }
+    Text {
+        x: root.width - self.width - 12px;
+        y: 6px;
+        text: @tr("ścieżka 3° do punktu celowania (1000 ft)");
+        font-family: Theme.font;
+        font-size: 10px * Theme.scale;
+        color: Theme.text-faint;
+    }
+}
+
+export component LandingAnalysis inherits Panel {
+    VerticalLayout {
+        padding: 10px;
+        spacing: 10px;
+        HorizontalLayout {
+            spacing: 10px;
+            Heading {
+                text: @tr("Analiza lądowania");
+                icon: Icons.activity;
+                horizontal-stretch: 1;
+            }
+            Text {
+                text: App.analysis.title;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+            }
+            Score {
+                score: App.analysis.score;
+                size: 26px * Theme.scale;
+            }
+            if App.analysis.has: Button {
+                icon: Icons.table;
+                label: "CSV";
+                tip: @tr("Przebieg podejścia (co 200 ms) do arkusza");
+                clicked => {
+                    App.cmd("export", "landing-csv");
+                }
+            }
+        }
+        if !App.analysis.has: Text {
+            text: @tr("Ten lot nie ma zapisanego przebiegu podejścia. Analiza powstaje dla lądowań nagranych na komputerze od wersji 3.3.");
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            wrap: word-wrap;
+        }
+        if App.analysis.has && App.analysis.rwy.has: RunwayTop {
+            height: 170px * Theme.scale;
+            v: App.analysis.rwy;
+        }
+        if App.analysis.has && App.analysis.rwy.has: RunwaySide {
+            height: 110px * Theme.scale;
+            v: App.analysis.rwy;
+        }
+        if App.analysis.has: HorizontalLayout {
+            spacing: 8px;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 4px;
+                alignment: start;
+                for f in App.analysis.facts-a: FactRow {
+                    f: f;
+                }
+            }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 4px;
+                alignment: start;
+                for f in App.analysis.facts-b: FactRow {
+                    f: f;
+                }
+            }
+        }
+        if App.analysis.has && App.analysis.charts.length >= 6: VerticalLayout {
+            spacing: 8px;
+            HorizontalLayout {
+                spacing: 8px;
+                height: 118px * Theme.scale;
+                MiniChart {
+                    c: App.analysis.charts[0];
+                }
+                MiniChart {
+                    c: App.analysis.charts[1];
+                }
+                MiniChart {
+                    c: App.analysis.charts[2];
+                }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                height: 118px * Theme.scale;
+                MiniChart {
+                    c: App.analysis.charts[3];
+                }
+                MiniChart {
+                    c: App.analysis.charts[4];
+                }
+                MiniChart {
+                    c: App.analysis.charts[5];
+                }
+            }
+        }
+    }
+}

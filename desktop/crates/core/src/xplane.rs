@@ -827,16 +827,16 @@ mod tests {
         while subs.len() < src.inner.paths.len() && t0.elapsed() < Duration::from_secs(5) {
             if let Ok((n, from)) = fake.recv_from(&mut buf) {
                 client = Some(from);
-                if n == 413 && &buf[..5] == b"RREF " {
+                if n == 413 && &buf[..5] == b"RREF\0" {
                     let idx = i32::from_le_bytes([buf[9], buf[10], buf[11], buf[12]]);
-                    let path = String::from_utf8_lossy(&buf[13..413]).trim_end_matches(' ').to_string();
+                    let path = String::from_utf8_lossy(&buf[13..413]).trim_end_matches('\0').to_string();
                     subs.insert(path, idx);
                 }
             }
         }
         assert_eq!(subs.len(), src.inner.paths.len(), "subskrypcje");
         let client = client.unwrap();
-        let mut pkt = b"RREF ".to_vec();
+        let mut pkt = b"RREF\0".to_vec();
         for (key, val) in [("lat", 54.38f32), ("lon", 18.47), ("ias", 142.0), ("vs", -650.0), ("servos", 1.0), ("on_ground", 0.0), ("engines", 2.0)] {
             pkt.extend_from_slice(&subs[path(key)].to_le_bytes());
             pkt.extend_from_slice(&val.to_le_bytes());
@@ -866,7 +866,7 @@ mod tests {
         let mut got = false;
         while !got && t0.elapsed() < Duration::from_secs(3) {
             if let Ok((n, _)) = fake.recv_from(&mut buf) {
-                got = n > 5 && &buf[..5] == b"CMND " && buf[5..n].starts_with(b"sim/flight_controls/landing_gear_down");
+                got = n > 5 && &buf[..5] == b"CMND\0" && buf[5..n].starts_with(b"sim/flight_controls/landing_gear_down");
             }
         }
         assert!(got, "brak CMND");

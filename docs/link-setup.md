@@ -90,13 +90,13 @@ stery w neutrum i oddaje sterowanie joystickowi. Naraz osiami steruje tylko jede
 
 ## 8. X-Plane 11 i 12
 
-Dla X-Plane zamiast programu Windows uruchom most `bridge-xplane/xplane_link.py` (Python 3.9+). Nie potrzebuje wtyczek.
+OpenTakeoff na Windows obsługuje też X-Plane 11 i 12, bez wtyczek i bez osobnych programów.
 
-1. Zainstaluj zależność: `pip install "websockets>=10.1"`.
-2. Uruchom X-Plane, a potem `python xplane_link.py`. Jeśli X-Plane działa na innym komputerze, dodaj `--xplane-host ADRES`.
-3. Sparuj telefon kodem wypisanym w oknie, jak w punkcie 3.
+1. W X-Plane otwórz Settings → Network i włącz przyjmowanie połączeń UDP (port 49000).
+2. W OpenTakeoff wybierz źródło danych **Automatycznie** albo **X-Plane** (pasek narzędzi albo karta Telefony). Jeśli X-Plane działa na innym komputerze, wpisz jego adres w polu „Komputer z X-Plane”.
+3. Sparuj telefon kodem, jak w punkcie 3.
 
-Most podaje pozycję, przyrządy, autopilota, radia, silniki i przyziemienia oraz przyjmuje komendy i sterowanie osiami. Nie ma danych nawigacyjnych z bazy (punkt 5), planu lotu GPS, odbiorników NAV ani rozglądania się. Nie uruchamiaj go razem z programem dla MSFS, bo oba używają portu 47810.
+Program podaje pozycję, przyrządy, autopilota, radia, silniki i przyziemienia oraz przyjmuje komendy i sterowanie osiami z telefonu. W X-Plane nie ma danych nawigacyjnych z bazy (punkt 5) ani rozglądania się kamerą z telefonu. W trybie Automatycznie, gdy działają oba symulatory, pierwszeństwo ma MSFS.
 
 ## Problemy
 

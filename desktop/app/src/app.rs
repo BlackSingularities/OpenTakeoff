@@ -595,13 +595,32 @@ pub fn open_flight(id: &str) {
             along: ss(l.along_ft.map(|a| trf!("{a} ft za progiem")).unwrap_or_default()),
             notes: ss(landing::notes_now(l).join(" ")),
             at: ss(l.at.map(fmt::time).unwrap_or_default()),
+            has_profile: l.profile.len() >= 10,
         })
         .collect();
     app.set_detail_landings(model(landings));
+    // Analiza: ostatnie lądowanie z zapisanym przebiegiem
+    let all = f.all_landings();
+    let pick = all.iter().rposition(|l| l.profile.len() >= 10).or(if all.is_empty() { None } else { Some(all.len() - 1) });
+    show_analysis(&app, &f, pick);
     let span = (f.end - f.start).max(1) as f32;
     let markers: Vec<MarkerV> =
         f.markers.iter().map(|m| MarkerV { t: (m.t / 1000) as i32, time: ss(fmt::clock(m.t)), label: ss(&m.label), pos: ((m.t - t.first().map(|p| p.t).unwrap_or(f.start)) as f32 / span).clamp(0.0, 1.0) }).collect();
     app.set_detail_markers(model(markers));
+    let shots: Vec<ShotV> = crate::shots::for_flight(&f)
+        .iter()
+        .map(|s| ShotV {
+            id: ss(&s.id),
+            thumb: crate::shots::thumb_image(s),
+            time: ss(fmt::clock(s.time)),
+            date: ss(fmt::date(s.time)),
+            place: ss(&s.nearest),
+            alt: ss(if s.has_pos { u.alt_full(s.alt_ft) } else { String::new() }),
+            has_pos: s.has_pos,
+            ..Default::default()
+        })
+        .collect();
+    app.set_detail_shots(model(shots));
     set_chart(&app, &f, &st.s);
     app.set_has_detail(true);
     app.set_replay_playing(false);
@@ -612,6 +631,30 @@ pub fn open_flight(id: &str) {
     drop(st);
     render_flight_map();
     update_cursor();
+}
+
+fn show_analysis(app: &App, f: &FlightLog, idx: Option<usize>) {
+    let all = f.all_landings();
+    match idx.and_then(|i| all.get(i).map(|l| (i, l))) {
+        Some((i, l)) => {
+            let title = format!("{} {}{}", tr("Lądowanie"), i + 1, l.at.map(|t| format!(" · {}", fmt::time(t))).unwrap_or_default());
+            app.set_analysis(crate::analysis::build(l, title));
+            app.set_analysis_index(i as i32);
+        }
+        None => {
+            app.set_analysis(AnalysisV::default());
+            app.set_analysis_index(-1);
+        }
+    }
+}
+
+/// Analiza wybranego lądowania bieżącego lotu.
+pub fn select_landing(i: i32) {
+    let Some(ui) = ui() else { return };
+    let f = state().borrow().detail.clone();
+    if let Some(f) = f {
+        show_analysis(&ui.global::<App>(), &f, usize::try_from(i).ok());
+    }
 }
 
 fn set_chart(app: &App, f: &FlightLog, s: &Settings) {
@@ -662,6 +705,9 @@ pub fn render_flight_map() {
         if let Some(p) = f.track.iter().min_by_key(|p| (p.t - m.t).abs()) {
             ov.points.push(Point { lat: p.lat, lon: p.lon, label: m.label.clone(), kind: 2 });
         }
+    }
+    for s in crate::shots::for_flight(&f).iter().filter(|s| s.has_pos) {
+        ov.points.push(Point { lat: s.lat, lon: s.lon, label: format!("{} {}", tr("Zrzut"), fmt::time(s.time)), kind: 4 });
     }
     if let Some(p) = replay_point(&f, st.replay) {
         ov.aircraft = Some((p.lat, p.lon, p.hdg.unwrap_or(0) as f64));
@@ -1277,9 +1323,26 @@ pub fn export(kind: &str) {
         ids.sort_by_key(|id| s.list.iter().position(|x| x == id));
         (s.host.logbook.clone(), ids, s.detail.clone())
     };
-    let flights: Vec<FlightLog> = if !ids.is_empty() {
+    // Analiza lądowania: przebieg podejścia do arkusza
+    if kind == "landing-csv" {
+        let idx = ui().map(|u| u.global::<App>().get_analysis_index()).unwrap_or(-1);
+        let Some(l) = detail.as_ref().and_then(|f| f.all_landings().get(idx.max(0) as usize).cloned()).filter(|l| !l.profile.is_empty()) else {
+            toast(tr("Ten lot nie ma zapisanego przebiegu podejścia"));
+            return;
+        };
+        let Some(f) = detail.as_ref() else { return };
+        let name = format!("ladowanie-{}-{}.csv", fmt::date(l.at.unwrap_or(f.end)).replace('.', "-"), l.airport.as_deref().or(f.to.as_deref()).unwrap_or("X"));
+        let Some(path) = rfd::FileDialog::new().set_file_name(&name).add_filter("CSV", &["csv"]).save_file() else { return };
+        match std::fs::write(&path, export::landing_csv(&l)) {
+            Ok(()) => toast(trf!("Zapisano: {p}", p = path.display())),
+            Err(e) => toast(trf!("Nie zapisano pliku: {e}")),
+        }
+        return;
+    }
+    let all = kind == "oab" || kind == "list" || kind == "kml-all";
+    let flights: Vec<FlightLog> = if !ids.is_empty() && kind != "kml-all" {
         ids.iter().filter_map(|i| store.get(i)).map(|f| store.effective(&f)).collect()
-    } else if kind == "oab" || kind == "list" {
+    } else if all {
         store.flights().iter().map(|f| store.effective(f)).collect()
     } else {
         detail.iter().map(|f| (**f).clone()).collect()
@@ -1290,13 +1353,19 @@ pub fn export(kind: &str) {
     }
     let (ext, filter) = match kind {
         "gpx" => ("gpx", "GPX"),
-        "kml" => ("kml", "KML"),
+        "kml" | "kml-all" => ("kml", "KML"),
         "csv" | "list" => ("csv", "CSV"),
         _ => ("oab", "OpenTakeoff"),
     };
-    let single = flights.len() == 1 && kind != "oab" && kind != "list";
+    let single = flights.len() == 1 && !all;
+    // GPX i KML: kilka lotów w jednym pliku; CSV z torem – osobny plik na lot
+    let one_file = single || all || kind == "gpx" || kind == "kml";
     let name = if kind == "list" {
         "dziennik-lotow.csv".to_string()
+    } else if kind == "kml-all" {
+        format!("OpenTakeoff-mapa-lotow-{}.kml", chrono::Local::now().format("%Y-%m-%d"))
+    } else if !single && (kind == "gpx" || kind == "kml") {
+        format!("OpenTakeoff-{}-lotow.{ext}", flights.len())
     } else if kind == "oab" {
         format!("OpenTakeoff-{}.oab", chrono::Local::now().format("%Y-%m-%d"))
     } else if single {
@@ -1305,11 +1374,14 @@ pub fn export(kind: &str) {
     } else {
         String::new()
     };
-    if single || kind == "oab" || kind == "list" {
+    if one_file {
         let Some(path) = rfd::FileDialog::new().set_file_name(&name).add_filter(filter, &[ext]).save_file() else { return };
         let bytes: Vec<u8> = match kind {
-            "gpx" => export::gpx(&flights[0]).into_bytes(),
-            "kml" => export::kml(&flights[0]).into_bytes(),
+            "gpx" => export::gpx_many(&flights).into_bytes(),
+            "kml" | "kml-all" => {
+                let extra: Vec<String> = flights.iter().map(shots_kml).collect();
+                export::kml_many(&flights, &extra).into_bytes()
+            }
             "csv" => export::csv(&flights[0]).into_bytes(),
             "list" => export::logbook_csv(&flights).into_bytes(),
             _ => opentakeoff_core::logbook::archive::encode(&flights),
@@ -1335,6 +1407,19 @@ pub fn export(kind: &str) {
         }
     }
     toast(trf!("Zapisano {n} plików w {d}", d = dir.display()));
+}
+
+/// Zrzuty ekranu z lotu jako punkty KML (z podglądem obrazu z dysku w Google Earth).
+fn shots_kml(f: &FlightLog) -> String {
+    crate::shots::for_flight(f)
+        .iter()
+        .filter(|s| s.has_pos)
+        .map(|s| {
+            let img = crate::shots::file_path(s).display().to_string().replace('\\', "/");
+            let html = format!("<img src=\"file:///{img}\" width=\"480\"><br>{} · {:.0} ft · HDG {:03.0}°", s.nearest, s.alt_ft, s.hdg);
+            export::kml_point(&format!("{} {}", tr("Zrzut"), fmt::time(s.time)), s.time, s.lat, s.lon, s.alt_ft, &html, "shot")
+        })
+        .collect()
 }
 
 pub fn import() {

@@ -119,6 +119,67 @@ component SliderRow inherits HorizontalLayout {
     }
 }
 
+/// Adres strony dla OBS z przyciskami.
+component ObsRow inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> note;
+    in property <string> path;
+    spacing: 10px;
+    VerticalLayout {
+        alignment: center;
+        width: 190px * Theme.scale;
+        Text {
+            text: root.title;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            font-weight: 600;
+            color: Theme.text;
+        }
+        Text {
+            text: root.note;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            wrap: word-wrap;
+        }
+    }
+    Rectangle {
+        horizontal-stretch: 1;
+        height: 30px * Theme.scale;
+        y: (parent.height - self.height) / 2;
+        border-radius: Theme.r-small;
+        background: Theme.bg;
+        border-width: 1px;
+        border-color: Theme.line;
+        Text {
+            x: 10px;
+            width: parent.width - 20px;
+            text: App.obs-base + root.path;
+            font-family: Theme.mono;
+            font-size: 11.5px * Theme.scale;
+            color: Theme.text;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    Button {
+        y: (parent.height - self.height) / 2;
+        icon: Icons.copy;
+        label: @tr("Kopiuj");
+        clicked => {
+            App.cmd("obs-copy", root.path);
+        }
+    }
+    Button {
+        y: (parent.height - self.height) / 2;
+        icon: Icons.external-link;
+        label: @tr("Otwórz");
+        clicked => {
+            App.cmd("obs-open", root.path);
+        }
+    }
+}
+
 export component Studio inherits Rectangle {
     property <LandingCfgV> l: App.ovl-landing;
     property <StreamCfgV> b: App.ovl-stream;
@@ -164,6 +225,55 @@ export component Studio inherits Rectangle {
                         tip: @tr("Wczytaj listę monitorów od nowa (po podłączeniu ekranu)");
                         clicked => {
                             App.cmd("ovl-monitors", "");
+                        }
+                    }
+                }
+            }
+            // ---------- OBS ----------
+            Panel {
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 10px;
+                    Head {
+                        title: @tr("OBS – źródło Przeglądarka");
+                        sub: @tr("Pasek i karta lądowania jako strony z przezroczystym tłem. Działają także przy symulatorze w wyłącznym pełnym ekranie i nie wymagają przechwytywania okna. Wygląd i pola są te same co w ustawieniach poniżej.");
+                        icon: Icons.radio-tower;
+                        on: true;
+                        has-switch: false;
+                    }
+                    ObsRow {
+                        title: @tr("Pasek do transmisji");
+                        note: @tr("źródło 1920 × 60");
+                        path: "/bar";
+                    }
+                    ObsRow {
+                        title: @tr("Karta lądowania");
+                        note: @tr("źródło 1920 × 1080, pokazuje się po przyziemieniu");
+                        path: "/landing";
+                    }
+                    ObsRow {
+                        title: @tr("Karta – podgląd na stałe");
+                        note: @tr("do ustawienia źródła");
+                        path: "/landing?demo=1";
+                    }
+                    HorizontalLayout {
+                        spacing: 10px;
+                        Switch {
+                            on: App.obs-lan;
+                            label: @tr("Dostęp z innych komputerów w sieci lokalnej (OBS na drugim komputerze)");
+                            toggled => {
+                                App.cmd("obs-lan", root.flag(!App.obs-lan));
+                            }
+                        }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+                        Button {
+                            icon: Icons.info;
+                            label: @tr("Instrukcja i wszystkie opcje");
+                            clicked => {
+                                App.cmd("obs-open", "");
+                            }
                         }
                     }
                 }

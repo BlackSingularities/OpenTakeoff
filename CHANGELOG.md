@@ -1,3 +1,13 @@
+## 3.3.0
+
+- Analiza lądowania w dzienniku: program zapisuje ostatnie 30 s przed przyziemieniem i 6 s po nim (co 200 ms). Widok pasa z góry ze śladem samolotu, punktem przyziemienia, oznakowaniem progu i strefy przyziemienia; widok z boku z wysokością nad pasem i ścieżką 3° do punktu celowania; wykresy prędkości pionowej, wysokości, prędkości, przeciążenia, przechylenia i pochylenia; wnioski: wysokość nad progiem, wyrównanie od 50 ft, spadek prędkości, stabilizacja podejścia, przechylenie nisko nad ziemią, punkt przyziemienia i zejście z osi na dobiegu. Przebieg można zapisać do CSV.
+- Pasek do transmisji i karta lądowania jako strony dla OBS (źródło Przeglądarka, przezroczyste tło): działają także przy symulatorze w wyłącznym pełnym ekranie i bez przechwytywania okna. Ten sam wygląd i pola co nakładki; karta pokazuje się po przyziemieniu z wykresem prędkości pionowej z podejścia. Podgląd na stałe do ustawienia źródła, opcje w adresie (skala, krawędź, róg, zostawienie ostatniego lądowania) i dostęp z drugiego komputera w sieci lokalnej.
+- Zrzuty ekranu przypięte do lotów: galeria zrzutów w szczegółach lotu, miejsca zrzutów na mapie lotu, przejście ze zrzutu do lotu w dzienniku.
+- Eksport: kilka zaznaczonych lotów w jednym pliku GPX albo KML; „Mapa lotów” – cały dziennik w jednym KML do Google Earth, z lądowaniami i zrzutami ekranu (z podglądem obrazu); zrzuty także w KML pojedynczego lotu.
+- Aktualizacje: okno z opisem zmian nowej wersji, „Zainstaluj teraz”, „Później” albo „Pomiń tę wersję”; sprawdzanie także co 6 godzin (program zwykle działa w zasobniku) i zapasowe sprawdzanie na GitHubie; włącznik w Ustawieniach.
+- Wykres profilu lotu w dzienniku wypełnia całą szerokość (wcześniej był lekko ściśnięty do środka).
+- Usunięty stary most X-Plane w Pythonie – X-Plane obsługuje sam program na Windows.
+
 ## 3.2.0
 
 - X-Plane 11/12 w aplikacji na Windows: dane lotu, autopilot, radia, transponder, podwozie, klapy, światła, przepustnice, osie i hamulce z telefonu – przez wbudowany protokół UDP X-Plane, bez wtyczek. Osobny most w Pythonie (bridge-xplane) nie jest już potrzebny; jedna aplikacja obsługuje MSFS i X-Plane.

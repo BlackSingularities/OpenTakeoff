@@ -105,6 +105,7 @@ export struct LandingV {
     along: string,
     notes: string,
     at: string,
+    has-profile: bool,
 }
 
 export struct MarkerV {
@@ -163,6 +164,56 @@ export struct DetailV {
     grade: string,
     cursor-info: string,
     cursor-pos: float,
+}
+
+// Analiza lądowania (ścieżki w viewboxach: wykresy 1000×100, pas z góry 1000×200, z boku 1000×100)
+export struct MiniChartV {
+    title: string,
+    unit: string,
+    path: string,
+    zero: float,
+    td: float,
+    top: string,
+    bottom: string,
+    value: string,
+    tone: int,
+}
+
+export struct FactV {
+    label: string,
+    value: string,
+    note: string,
+    tone: int,
+}
+
+export struct RwyViewV {
+    has: bool,
+    title: string,
+    runway: string,
+    marks: string,
+    air: string,
+    ground: string,
+    td-x: float,
+    td-y: float,
+    side: string,
+    glide: string,
+    ground-line: float,
+    line-50: float,
+    threshold-x: float,
+    aim-x: float,
+    scale-note: string,
+    hmax: string,
+}
+
+export struct AnalysisV {
+    has: bool,
+    title: string,
+    summary: string,
+    score: int,
+    charts: [MiniChartV],
+    facts-a: [FactV],
+    facts-b: [FactV],
+    rwy: RwyViewV,
 }
 
 export struct BarV {
@@ -445,6 +496,7 @@ export struct ShotV {
     coords: string,
     aircraft: string,
     has-pos: bool,
+    flight: string,
 }
 
 export global App {
@@ -485,6 +537,10 @@ export global App {
     in property <bool> busy;
     in property <string> busy-text;
     in property <bool> update-ready;
+    in property <bool> update-dialog;
+    in property <string> update-version;
+    in property <string> update-notes;
+    in property <bool> update-auto: true;
 
     // Na żywo
     in property <LiveV> live;
@@ -526,7 +582,11 @@ export global App {
     in property <bool> has-detail;
     in property <DetailV> detail;
     in property <[LandingV]> detail-landings;
+    in property <AnalysisV> analysis;
+    in-out property <length> detail-scroll;
+    in property <int> analysis-index: -1;
     in property <[MarkerV]> detail-markers;
+    in property <[ShotV]> detail-shots;
     in property <ChartV> chart;
     in property <image> map-flight;
     in property <[LabelV]> map-flight-labels;
@@ -615,4 +675,7 @@ export global App {
     in property <int> shot-monitor;
     in property <int> shot-key;
     in property <string> shots-dir;
+    // OBS i aktualizacje
+    in property <string> obs-base;
+    in property <bool> obs-lan;
 }

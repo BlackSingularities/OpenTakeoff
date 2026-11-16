@@ -7,6 +7,7 @@ import { Icons } from "icons.slint";
 import { App, FlightV } from "state.slint";
 import { Button, IconButton, Field, Segmented, TipArea } from "widgets.slint";
 import { Panel, Heading, Metric, Pair, Score, MapView, ChartView, ListRow, Empty, Colors } from "parts.slint";
+import { LandingAnalysis } from "analysis.slint";
 
 component FlightRow inherits Rectangle {
     in property <FlightV> f;
@@ -121,6 +122,7 @@ component FlightRow inherits Rectangle {
 }
 
 component Detail inherits ScrollView {
+    content-y <=> App.detail-scroll;
     VerticalLayout {
         width: root.visible-width;
         padding-right: 8px;
@@ -257,7 +259,7 @@ component Detail inherits ScrollView {
                     text: @tr("Lądowania");
                     icon: Icons.plane-landing;
                 }
-                for l in App.detail-landings: HorizontalLayout {
+                for l[i] in App.detail-landings: HorizontalLayout {
                     spacing: 12px;
                     padding-top: 4px;
                     padding-bottom: 4px;
@@ -290,11 +292,99 @@ component Detail inherits ScrollView {
                             wrap: word-wrap;
                         }
                     }
+                    VerticalLayout {
+                        alignment: start;
+                        spacing: 4px;
+                        Text {
+                            text: l.at;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            horizontal-alignment: right;
+                        }
+                        if l.has-profile: Button {
+                            label: App.analysis-index == i ? @tr("Pokazana niżej") : @tr("Analiza");
+                            icon: Icons.activity;
+                            primary: App.analysis-index != i;
+                            clicked => {
+                                App.cmd("landing-analysis", i);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if App.analysis-index >= 0: LandingAnalysis { }
+        // Zrzuty ekranu z tego lotu
+        if App.detail-shots.length > 0: Panel {
+            VerticalLayout {
+                padding: 10px;
+                spacing: 8px;
+                HorizontalLayout {
+                    Heading {
+                        text: @tr("Zrzuty ekranu z lotu");
+                        icon: Icons.image;
+                        horizontal-stretch: 1;
+                    }
                     Text {
-                        text: l.at;
-                        font-family: Theme.font;
+                        text: App.detail-shots.length;
+                        font-family: Theme.mono;
                         font-size: Theme.fs-small;
                         color: Theme.text-faint;
+                        vertical-alignment: center;
+                    }
+                }
+                ScrollView {
+                    height: 150px * Theme.scale;
+                    content-height: 140px * Theme.scale;
+                    content-width: App.detail-shots.length * 196px * Theme.scale;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        for s in App.detail-shots: Rectangle {
+                            width: 188px * Theme.scale;
+                            height: 134px * Theme.scale;
+                            border-radius: Theme.r-small;
+                            background: sta.has-hover ? Theme.hover : Theme.raised;
+                            border-width: 1px;
+                            border-color: Theme.line;
+                            clip: true;
+                            VerticalLayout {
+                                padding: 4px;
+                                spacing: 4px;
+                                Image {
+                                    height: 100px * Theme.scale;
+                                    source: s.thumb;
+                                    image-fit: cover;
+                                }
+                                HorizontalLayout {
+                                    spacing: 6px;
+                                    padding-left: 2px;
+                                    padding-right: 2px;
+                                    Text {
+                                        text: s.time;
+                                        font-family: Theme.mono;
+                                        font-size: Theme.fs-small;
+                                        font-weight: 700;
+                                        color: Theme.text;
+                                    }
+                                    Text {
+                                        text: s.alt;
+                                        font-family: Theme.mono;
+                                        font-size: Theme.fs-small;
+                                        color: Theme.text-dim;
+                                        horizontal-alignment: right;
+                                        horizontal-stretch: 1;
+                                    }
+                                }
+                            }
+                            sta := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    App.cmd("shot-show", s.id);
+                                }
+                            }
+                        }
                     }
                 }
             }
