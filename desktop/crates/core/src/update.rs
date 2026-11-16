@@ -157,9 +157,15 @@ pub fn apply(setup: &std::path::Path, restart: bool) -> Result<(), String> {
     if restart {
         args.push_str(" /RESTARTAPPLICATIONS");
     }
-    // Zawsze ten sam folder, w którym działa program.
-    if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(|d| d.to_path_buf())) {
-        args.push_str(&format!(" /DIR=\"{}\"", dir.display()));
+    // Zawsze ten sam folder: gdy program działa z folderu instalacji, wskazujemy go wprost. Kopia spoza
+    // instalacji (przenośna, z folderu kompilacji) nie podaje /DIR – instalator sam bierze folder
+    // poprzedniej instalacji z rejestru (UsePreviousAppDir i [Code] w OpenTakeoff.iss).
+    if installed() {
+        if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(|d| d.to_path_buf())) {
+            // Bez końcowego „\”, który przed cudzysłowem zepsułby parametr.
+            let dir = dir.display().to_string();
+            args.push_str(&format!(" /DIR=\"{}\"", dir.trim_end_matches('\\')));
+        }
     }
     let file = HSTRING::from(setup.as_os_str());
     let params = HSTRING::from(args);

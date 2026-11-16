@@ -20,6 +20,7 @@ pub mod source;
 pub mod touchdown;
 pub mod update;
 pub mod xplane;
+pub mod xpnav;
 
 /// Wersja programu (z tagu wydania; lokalnie z Cargo.toml).
 pub fn version() -> &'static str {

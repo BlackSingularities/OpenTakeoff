@@ -22,6 +22,10 @@ pub struct Settings {
     pub autostart: bool,
     pub start_minimized: bool,
     pub close_to_tray: bool,
+    /// Wpis w exe.xml MSFS 2020/2024: program startuje razem z symulatorem.
+    pub sim_launch: bool,
+    /// Folder X-Plane z danymi nawigacyjnymi (puste – wykryj automatycznie).
+    pub xplane_path: String,
     /// 0 ft, 1 m.
     pub units_alt: i32,
     /// 0 kt, 1 km/h.
@@ -236,6 +240,8 @@ impl Default for Settings {
             autostart: false,
             start_minimized: false,
             close_to_tray: true,
+            sim_launch: false,
+            xplane_path: String::new(),
             units_alt: 0,
             units_speed: 0,
             map_style: 0,

@@ -7,19 +7,23 @@ slint::include_modules!();
 mod analysis;
 mod app;
 mod avionics;
+mod briefing;
 mod chart;
 mod feedback;
+mod flightplan;
 mod fmt;
 mod host;
 mod instruments;
 mod map;
 mod navmap;
 mod overlays;
+mod params;
 mod scene3d;
 mod screen;
 mod settings;
 mod shots;
 mod simbrief;
+mod simlaunch;
 mod web;
 mod wxmap;
 mod win;
@@ -59,6 +63,7 @@ fn apply_settings(ui: &AppWindow, s: &Settings) {
     app.set_autostart(s.autostart);
     app.set_start_minimized(s.start_minimized);
     app.set_close_to_tray(s.close_to_tray);
+    app.set_sim_launch(s.sim_launch);
     app.set_units_alt(s.units_alt);
     app.set_units_speed(s.units_speed);
     app.set_map_style(s.map_style);
@@ -117,6 +122,7 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
                     overlays::push_settings();
                 }
                 11 => shots::refresh(),
+                12 => flightplan::refresh(),
                 _ => {}
             }
             if t == 0 {
@@ -511,6 +517,25 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
             save();
             apply_settings(ui, &state().borrow().s.clone());
         }
+        "sim-launch" => {
+            let on = arg == "1";
+            match simlaunch::set(on) {
+                Ok(sims) => {
+                    state().borrow_mut().s.sim_launch = on;
+                    save();
+                    let mut list: Vec<&str> = simlaunch::registered();
+                    for s in sims {
+                        if !list.contains(&s) {
+                            list.push(s);
+                        }
+                    }
+                    let sims = if list.is_empty() { tr("MSFS i X-Plane (czuwanie na proces symulatora)").to_string() } else { list.join(", ") };
+                    toast(if on { trf!("OpenTakeoff uruchomi się razem z: {sims}") } else { tr("OpenTakeoff nie będzie się już uruchamiać z symulatorem").to_string() });
+                }
+                Err(e) => toast(trf!("Nie udało się zmienić pliku exe.xml symulatora: {e}")),
+            }
+            apply_settings(ui, &state().borrow().s.clone());
+        }
         "update-check" => check_update(true),
         "update-install" => {
             app.set_update_dialog(false);
@@ -535,7 +560,7 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
         }
         "feedback" => feedback::open_form(),
         _ => {
-            if !instruments::cmd(id, arg) && !navmap::cmd(id, arg) && !overlays::cmd(id, arg) && !shots::cmd(id, arg) {
+            if !instruments::cmd(id, arg) && !flightplan::cmd(id, arg) && !navmap::cmd(id, arg) && !overlays::cmd(id, arg) && !shots::cmd(id, arg) {
                 log::warn(&format!("Nieznane polecenie: {id} {arg}"));
             }
         }
@@ -657,14 +682,36 @@ fn main() {
     log::install_panic_hook();
     let args: Vec<String> = std::env::args().collect();
     let minimized_arg = args.iter().any(|a| a == "--minimized");
+    // Proces czuwania na symulator (X-Plane, MSFS z nietypowej instalacji) – bez okna
+    if args.iter().any(|a| a == "--sim-watch") {
+        simlaunch::watch_main();
+        return;
+    }
+    // Deinstalator: usuń wpisy z exe.xml symulatorów
+    if args.iter().any(|a| a == "--sim-launch-off") {
+        let _ = simlaunch::set(false);
+        return;
+    }
     let settings = Settings::load();
     let code = lang::init(&settings.language);
     let _ = slint::select_bundled_translation(&code);
     feedback::install("opentakeoff", "OpenTakeoff", opentakeoff_core::version(), opentakeoff_core::paths::cache(), || lang::current() == "pl", true);
     // Jedna kopia programu: druga tylko pokazuje okno pierwszej
-    if !win::single_instance() {
-        win::signal_show();
+    // Tryb zrzutów (diagnostyka) działa obok uruchomionego programu
+    if std::env::var_os("OPENTAKEOFF_SNAPSHOT").is_none() && !win::single_instance() {
+        // Start z symulatorem przy działającym już programie: nie wyciągaj okna na wierzch
+        if !args.iter().any(|a| a == "--from-sim") {
+            win::signal_show();
+        }
         return;
+    }
+    // Start z symulatorem włączony: odśwież wpisy (nowa ścieżka po reinstalacji, MSFS doinstalowany później)
+    if settings.sim_launch {
+        std::thread::spawn(|| {
+            if let Err(e) = simlaunch::set_refresh() {
+                log::warn(&format!("exe.xml symulatora: {e}"));
+            }
+        });
     }
     log::info(&format!("OpenTakeoff {} – start", opentakeoff_core::version()));
     if win::legacy_link_running() {
@@ -820,6 +867,11 @@ fn main() {
             shots::poll_key();
             if tick % 20 == 0 {
                 simbrief::refresh();
+                // historia parametrów do wykresów trybu Dane (ostatnie 10 minut)
+                let snap = state().borrow().host.snapshot();
+                if let Some(s) = snap {
+                    params::sample(&s);
+                }
             }
             // Przyrządy płynniej (co 100 ms), mapa nawigacyjna sama ogranicza częstość
             let tab_now = ui.global::<App>().get_tab();
@@ -965,6 +1017,14 @@ fn unused(m: &slint::ModelRc<FlightV>) -> usize {
 
 fn snapshots(ui: &AppWindow, dir: std::path::PathBuf) {
     let _ = std::fs::create_dir_all(&dir);
+    // OPENTAKEOFF_SNAPSHOT_SIZE="1100x720" – rozmiar okna w pikselach fizycznych (test wąskiego okna)
+    if let Some((sw, sh)) = std::env::var("OPENTAKEOFF_SNAPSHOT_SIZE").ok().and_then(|v| {
+        let (a, b) = v.split_once('x')?;
+        Some((a.trim().parse::<u32>().ok()?, b.trim().parse::<u32>().ok()?))
+    }) {
+        ui.window().set_maximized(false);
+        ui.window().set_size(slint::PhysicalSize::new(sw, sh));
+    }
     let w = ui.as_weak();
     let step = std::rc::Rc::new(std::cell::Cell::new(0i32));
     let t = slint::Timer::default();
@@ -977,15 +1037,15 @@ fn snapshots(ui: &AppWindow, dir: std::path::PathBuf) {
                 let _ = image::save_buffer(&path, buf.as_bytes(), buf.width(), buf.height(), image::ExtendedColorType::Rgba8);
             }
         }
-        // Karty 0–11, potem 12: Mapa w widoku 3D (OPENTAKEOFF_SNAPSHOT_TABS="1,8,9,12" – wybrane)
-        let order: Vec<i32> = std::env::var("OPENTAKEOFF_SNAPSHOT_TABS").ok().map(|t| t.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_else(|| (0..=12).collect());
+        // Karty 0–12 (12: Plan lotu), potem 99: Mapa w widoku 3D (OPENTAKEOFF_SNAPSHOT_TABS="1,8,9,99" – wybrane)
+        let order: Vec<i32> = std::env::var("OPENTAKEOFF_SNAPSHOT_TABS").ok().map(|t| t.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_else(|| (0..=12).chain([99]).collect());
         if i as usize >= order.len() {
             cmd(&ui, "nav-3d", "0");
             quit();
             return;
         }
         let tab = order[i as usize];
-        let three_d = tab == 12;
+        let three_d = tab == 99;
         let tab = if three_d { 9 } else { tab };
         if tab == 9 {
             cmd(&ui, "nav-3d", if three_d { "1" } else { "0" });

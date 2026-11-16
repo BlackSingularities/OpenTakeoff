@@ -3121,3 +3121,1003 @@ msgstr "…"
 
 msgid "… {x} …"
 msgstr "… {x} …"
+
+msgid "Uruchamiaj razem z symulatorem"
+msgstr "Start with the simulator"
+
+
+msgid "Nie znaleziono MSFS 2020 ani 2024 – uruchom symulator choć raz i spróbuj ponownie"
+msgstr "MSFS 2020 or 2024 not found – run the simulator once and try again"
+
+msgid "OpenTakeoff uruchomi się razem z: {sims}"
+msgstr "OpenTakeoff will start with: {sims}"
+
+msgid "OpenTakeoff nie będzie się już uruchamiać z symulatorem"
+msgstr "OpenTakeoff will no longer start with the simulator"
+
+msgid "Nie udało się zmienić pliku exe.xml symulatora: {e}"
+msgstr "Couldn't change the simulator's exe.xml file: {e}"
+
+msgid "Najedź na mapę"
+msgstr "Hover over the map"
+
+msgid "MSFS 2020 i 2024 – OpenTakeoff startuje w zasobniku"
+msgstr "MSFS 2020 and 2024 – OpenTakeoff starts in the tray"
+
+msgid "Parametry"
+msgstr "Parameters"
+
+msgid "Wszystkie dane z symulatora: pozycja, prędkości, położenie, autopilot, radio, silniki, paliwo, światła"
+msgstr "All simulator data: position, speeds, attitude, autopilot, radio, engines, fuel, lights"
+
+msgid "Parametry pojawią się po połączeniu z symulatorem"
+msgstr "Parameters appear once the simulator is connected"
+
+msgid "Silnik"
+msgstr "Engine"
+
+msgid "Źródło"
+msgstr "Source"
+
+msgid "Na ziemi"
+msgstr "On ground"
+
+msgid "TAK"
+msgstr "YES"
+
+msgid "NIE"
+msgstr "NO"
+
+msgid "Dziesiętnie"
+msgstr "Decimal"
+
+msgid "Teren"
+msgstr "Terrain"
+
+msgid "Zakręt"
+msgstr "Turn rate"
+
+msgid "Kulka"
+msgstr "Slip ball"
+
+msgid "Tryby"
+msgstr "Modes"
+
+msgid "Plan"
+msgstr "Plan"
+
+msgid "Odcinek"
+msgstr "Leg"
+
+msgid "brak sygnału"
+msgstr "no signal"
+
+msgid "Razem"
+msgstr "Total"
+
+msgid "Lewy"
+msgstr "Left"
+
+msgid "Środkowy"
+msgstr "Center"
+
+msgid "Prawy"
+msgstr "Right"
+
+msgid "Różnica L/P"
+msgstr "L/R imbalance"
+
+msgid "Przepływ"
+msgstr "Fuel flow"
+
+msgid "Wystarczy na"
+msgstr "Endurance"
+
+msgid "Spojlery"
+msgstr "Spoilers"
+
+msgid "Spojlery uzbr."
+msgstr "Spoilers armed"
+
+msgid "Hamulce L/P"
+msgstr "Brakes L/R"
+
+msgid "Trym"
+msgstr "Trim"
+
+msgid "Przepustnica"
+msgstr "Throttle"
+
+msgid "Mieszanka"
+msgstr "Mixture"
+
+msgid "Śmigło"
+msgstr "Propeller"
+
+msgid "Czołowy / boczny"
+msgstr "Head / cross"
+
+msgid "Podciśnienie"
+msgstr "Suction"
+
+msgid "Prędkości"
+msgstr "Speeds"
+
+msgid "Odbiorniki"
+msgstr "Receivers"
+
+msgid "Silniki"
+msgstr "Engines"
+
+msgid "Sterowanie"
+msgstr "Controls"
+
+msgid "Środowisko"
+msgstr "Environment"
+
+msgid "lot z widocznością"
+msgstr "visual flight"
+
+msgid "warunki pogorszone"
+msgstr "reduced conditions"
+
+msgid "lot według przyrządów"
+msgstr "instrument flight"
+
+msgid "bardzo złe warunki"
+msgstr "very poor conditions"
+
+msgid "kierunek zmienny"
+msgstr "variable direction"
+
+msgid "porywy do {g} kt"
+msgstr "gusts to {g} kt"
+
+msgid "zmienny {a:03.0}°–{b:03.0}°"
+msgstr "variable {a:03.0}°–{b:03.0}°"
+
+msgid "stały kierunek"
+msgstr "steady direction"
+
+msgid "Podstawa chmur"
+msgstr "Ceiling"
+
+msgid "brak pułapu"
+msgstr "no ceiling"
+
+msgid "bez znaczących chmur"
+msgstr "no significant cloud"
+
+msgid "punkt rosy {dp:.0} °C · ryzyko mgły"
+msgstr "dew point {dp:.0} °C · fog risk"
+
+msgid "punkt rosy {dp:.0} °C · różnica {spread:.0}°"
+msgstr "dew point {dp:.0} °C · spread {spread:.0}°"
+
+msgid "stałe od {h:.0} h"
+msgstr "steady for {h:.0} h"
+
+msgid "ciśnieniowa {pa:.0} ft"
+msgstr "pressure alt {pa:.0} ft"
+
+msgid "brak danych o pasach"
+msgstr "no runway data"
+
+msgid "WIATR"
+msgstr "WIND"
+
+msgid "PAS W UŻYCIU"
+msgstr "ACTIVE RUNWAY"
+
+msgid "kursy rzeczywiste"
+msgstr "true headings"
+
+msgid "brak METAR-u"
+msgstr "no METAR"
+
+msgid "0°C przy ziemi – oblodzenie"
+msgstr "0°C at surface – icing"
+
+msgid "PUŁAP"
+msgstr "CEILING"
+
+msgid "BEZ CHMUR"
+msgstr "NO CLOUDS"
+
+msgid "brak prognozy TAF dla tego lotniska"
+msgstr "no TAF for this airport"
+
+msgid "PROGNOZA"
+msgstr "FORECAST"
+
+msgid "Dane: X-Plane ({p})"
+msgstr "Data: X-Plane ({p})"
+
+msgid "Dane: X-Plane, AIRAC {c}"
+msgstr "Data: X-Plane, AIRAC {c}"
+
+msgid "Dane: MSFS na żywo (zapisywane na później)"
+msgstr "Data: live MSFS (saved for later)"
+
+msgid "Dane: tryb symulacji (przykładowe procedury EPWA, EPGD)"
+msgstr "Data: simulation mode (sample procedures EPWA, EPGD)"
+
+msgid "Dane: zapisane z MSFS i OurAirports – uruchom MSFS albo wskaż folder X-Plane, by mieć procedury i drogi lotnicze"
+msgstr "Data: saved from MSFS and OurAirports – start MSFS or choose the X-Plane folder for procedures and airways"
+
+msgid "Paliwo trasy"
+msgstr "Trip fuel"
+
+msgid "Punkty"
+msgstr "Waypoints"
+
+msgid "Wczytywanie procedur…"
+msgstr "Loading procedures…"
+
+msgid "Brak procedur dla tego lotniska w dostępnych danych"
+msgstr "No procedures for this airport in the available data"
+
+msgid "Nie znaleziono: {m}"
+msgstr "Not found: {m}"
+
+msgid "Nie znaleziono punktu {ident}"
+msgstr "Waypoint {ident} not found"
+
+msgid "Najpierw pobierz plan z SimBrief (Pulpit → SimBrief)"
+msgstr "Fetch a SimBrief plan first (Dashboard → SimBrief)"
+
+msgid "Folder X-Plane"
+msgstr "X-Plane folder"
+
+msgid "To nie jest folder X-Plane (brak Resources/default data)"
+msgstr "This is not an X-Plane folder (no Resources/default data)"
+
+msgid "Dodaj lotniska i punkty, aby zobaczyć profil"
+msgstr "Add airports and waypoints to see the profile"
+
+msgid "Plan potrzebuje lotniska startu i celu"
+msgstr "The plan needs a departure and destination airport"
+
+msgid "Zapisano plan {f}"
+msgstr "Saved plan {f}"
+
+msgid "FL/ft"
+msgstr "FL/ft"
+
+msgid "Wysokość w punkcie (np. FL240 albo 9000); puste – bez ograniczenia"
+msgstr "Altitude at waypoint (e.g. FL240 or 9000); empty – no constraint"
+
+msgid "Ustaw wysokość"
+msgstr "Set altitude"
+
+msgid "Przesuń wyżej"
+msgstr "Move up"
+
+msgid "Przesuń niżej"
+msgstr "Move down"
+
+msgid "Usuń punkt"
+msgstr "Delete waypoint"
+
+msgid "Start"
+msgstr "Departure"
+
+msgid "Cel"
+msgstr "Destination"
+
+msgid "EPWA SID PUNKT DROGA PUNKT … STAR EPKK"
+msgstr "EPWA SID FIX AIRWAY FIX … STAR EPKK"
+
+msgid "Punkty, drogi lotnicze (z danymi X-Plane), DCT, współrzędne 5230N02000E; Enter – zastosuj"
+msgstr "Waypoints, airways (with X-Plane data), DCT, coordinates 5230N02000E; Enter – apply"
+
+msgid "Zastosuj"
+msgstr "Apply"
+
+msgid "Odlot"
+msgstr "Departure"
+
+msgid "Przylot"
+msgstr "Arrival"
+
+msgid "Podejście"
+msgstr "Approach"
+
+msgid "Pas startowy"
+msgstr "Runway"
+
+msgid "Wpisz lotnisko startu"
+msgstr "Enter the departure airport"
+
+msgid "Brak procedur – uruchom MSFS albo wskaż folder X-Plane"
+msgstr "No procedures – start MSFS or choose the X-Plane folder"
+
+msgid "Przejście"
+msgstr "Transition"
+
+msgid "Wybierz procedurę"
+msgstr "Pick a procedure"
+
+msgid "Pas do lądowania"
+msgstr "Landing runway"
+
+msgid "Wybierz SID"
+msgstr "Pick a SID"
+
+msgid "Wpisz lotnisko celu"
+msgstr "Enter the destination airport"
+
+msgid "PUNKT"
+msgstr "FIX"
+
+msgid "DROGA"
+msgstr "VIA"
+
+msgid "OGRANICZ."
+msgstr "CONSTR."
+
+msgid "Punkt, VOR, NDB…"
+msgstr "Fix, VOR, NDB…"
+
+msgid "Dodaje punkt za zaznaczonym (albo na końcu trasy)"
+msgstr "Adds a waypoint after the selected one (or at the end)"
+
+msgid "Dodaj punkt"
+msgstr "Add waypoint"
+
+msgid "Wiatr i pasy"
+msgstr "Wind and runways"
+
+msgid "Profil nieba"
+msgstr "Sky profile"
+
+msgid "Składowe wiatru"
+msgstr "Wind components"
+
+msgid "Ostatnie godziny"
+msgstr "Last hours"
+
+msgid "Ukryj rozkodowanie"
+msgstr "Hide decoding"
+
+msgid "Rozkoduj grupy"
+msgstr "Decode groups"
+
+msgid "Trasa, SID, STAR, podejścia, profil i eksport do MSFS i X-Plane"
+msgstr "Route, SID, STAR, approaches, profile and export to MSFS and X-Plane"
+
+msgid "Nowy"
+msgstr "New"
+
+msgid "Pusty plan lotu"
+msgstr "Empty flight plan"
+
+msgid "Z SimBrief"
+msgstr "From SimBrief"
+
+msgid "Przenieś pobrany plan SimBrief do edycji"
+msgstr "Load the fetched SimBrief plan for editing"
+
+msgid "Pokaż plan na karcie Mapa (2D i 3D)"
+msgstr "Show the plan on the Map tab (2D and 3D)"
+
+msgid "Plan do wczytania w MSFS 2020 i 2024 (z SID, STAR i podejściem)"
+msgstr "Plan for MSFS 2020 and 2024 (with SID, STAR and approach)"
+
+msgid "Plan dla FMC X-Plane 11/12 (Output/FMS plans)"
+msgstr "Plan for the X-Plane 11/12 FMC (Output/FMS plans)"
+
+msgid "Dane nawigacyjne"
+msgstr "Navigation data"
+
+msgid "Wskaż X-Plane 11/12: punkty, drogi lotnicze i procedury (CIFP) z jego bazy, także bez uruchamiania symulatora. MSFS: procedury pobierane na żywo przez SimConnect i zapisywane na później."
+msgstr "Choose X-Plane 11/12: waypoints, airways and procedures (CIFP) from its database, even without running the simulator. MSFS: procedures are read live via SimConnect and saved for later."
+
+msgid "Panel lotu"
+msgstr "Flight panel"
+
+msgid "MSFS 2020/2024 i X-Plane 11/12 – OpenTakeoff startuje w zasobniku"
+msgstr "MSFS 2020/2024 and X-Plane 11/12 – OpenTakeoff starts in the tray"
+
+msgid "MSFS i X-Plane (czuwanie na proces symulatora)"
+msgstr "MSFS and X-Plane (watching for the simulator process)"
+
+msgid "symulacja"
+msgstr "simulation"
+
+msgid "Edytuj w karcie Plan lotu (punkty, SID, STAR, podejście, eksport)"
+msgstr "Edit in the Flight plan tab (waypoints, SID, STAR, approach, export)"
+
+msgid "Na starcie"
+msgstr "At departure"
+
+msgid "Teraz / plan"
+msgstr "Now / plan"
+
+msgid "Masy"
+msgstr "Weights"
+
+msgid "PALIWO"
+msgstr "FUEL"
+
+msgid "Wszystkie dane z symulatora liczbowo i wykresy z ostatnich 10 minut"
+msgstr "All simulator data as numbers and charts from the last 10 minutes"
+
+msgid "PFD i ND z najważniejszymi danymi pod spodem"
+msgstr "PFD and ND with key data below"
+
+msgid "Wykresy pojawią się po kilku sekundach lotu"
+msgstr "Charts appear after a few seconds of flight"
+
+msgid "ostatnie {m:.0} min"
+msgstr "last {m:.0} min"
+
+msgid "Dane pojawią się po połączeniu z symulatorem"
+msgstr "Data appears once the simulator is connected"
+
+msgid "Kokpit i dane razem: PFD, ND, ekrany silników, wykresy i wszystkie parametry"
+msgstr "Cockpit and data together: PFD, ND, engine displays, charts and all parameters"
+
+msgid "Kołowanie"
+msgstr "Taxi"
+
+msgid "Wznoszenie"
+msgstr "Climb"
+
+msgid "Zniżanie"
+msgstr "Descent"
+
+msgid "do celu"
+msgstr "to destination"
+
+msgid "Brak planu lotu – wczytaj go w symulatorze albo pobierz z SimBrief na karcie Plan."
+msgstr "No flight plan – load one in the simulator or fetch it from SimBrief on the Plan tab."
+
+msgid "Profil wysokości"
+msgstr "Altitude profile"
+
+msgid "Profil pojawi się w locie"
+msgstr "The profile appears in flight"
+
+msgid "Zasięg"
+msgstr "Endurance"
+
+msgid "Na celu"
+msgstr "At destination"
+
+msgid "Wobec planu"
+msgstr "Versus plan"
+
+msgid "Uruchom MSFS albo X-Plane – podgląd lotu pojawi się tu sam."
+msgstr "Start MSFS or X-Plane – the live view will appear here on its own."
+
+msgid "czołowy {kt} kt"
+msgstr "headwind {kt} kt"
+
+msgid "tylny {kt} kt"
+msgstr "tailwind {kt} kt"
+
+msgid "z prawej {kt} kt"
+msgstr "from the right {kt} kt"
+
+msgid "z lewej {kt} kt"
+msgstr "from the left {kt} kt"
+
+msgid "12 mies."
+msgstr "12 mo."
+
+msgid "Całość"
+msgstr "All"
+
+msgid "Pn"
+msgstr "Mo"
+
+msgid "Wt"
+msgstr "Tu"
+
+msgid "Śr"
+msgstr "We"
+
+msgid "Cz"
+msgstr "Th"
+
+msgid "Pt"
+msgstr "Fr"
+
+msgid "Sb"
+msgstr "Sa"
+
+msgid "Nd"
+msgstr "Su"
+
+msgid "Czas w fazach lotu"
+msgstr "Time in flight phases"
+
+msgid "Dziennik pilota"
+msgstr "Pilot logbook"
+
+msgid "Dzień tygodnia"
+msgstr "Day of week"
+
+msgid "Godzina startu"
+msgstr "Departure hour"
+
+msgid "Hangar"
+msgstr "Hangar"
+
+msgid "Uczeń pilot"
+msgstr "Student pilot"
+
+msgid "Pilot turystyczny"
+msgstr "Private pilot"
+
+msgid "Pilot zawodowy"
+msgstr "Commercial pilot"
+
+msgid "Drugi pilot"
+msgstr "First officer"
+
+msgid "Starszy drugi pilot"
+msgstr "Senior first officer"
+
+msgid "Kapitan"
+msgstr "Captain"
+
+msgid "Starszy kapitan"
+msgstr "Senior captain"
+
+msgid "Szef pilotów"
+msgstr "Chief pilot"
+
+msgid "Najwyższy stopień"
+msgstr "Highest rank"
+
+msgid "Stopień"
+msgstr "Rank"
+
+msgid "Lądowania z opadaniem poniżej 60 ft/min"
+msgstr "Landings with a sink rate below 60 ft/min"
+
+msgid "Masło"
+msgstr "Butter"
+
+msgid "Najsilniejszy boczny wiatr"
+msgstr "Strongest crosswind"
+
+msgid "Najwyższy poziom lotu"
+msgstr "Highest flight level"
+
+msgid "Oceny"
+msgstr "Grades"
+
+msgid "Od osi"
+msgstr "Off centreline"
+
+msgid "Odsetek lądowań z odbiciem"
+msgstr "Share of landings with a bounce"
+
+msgid "Okres statystyk (osiągnięcia i kalendarz liczą się zawsze z całego dziennika)"
+msgstr "Statistics period (achievements and the calendar always use the whole logbook)"
+
+msgid "Opadanie przy przyziemieniu (ft/min)"
+msgstr "Sink rate at touchdown (ft/min)"
+
+msgid "Ostatnie lądowania (ocena)"
+msgstr "Recent landings (score)"
+
+msgid "Profil pojawi się po pierwszych lotach"
+msgstr "The profile appears after your first flights"
+
+msgid "Typy"
+msgstr "Types"
+
+msgid "bieżący rok"
+msgstr "this year"
+
+msgid "brak lotów"
+msgstr "no flights"
+
+msgid "brak lądowań"
+msgstr "no landings"
+
+msgid "cały dziennik"
+msgstr "whole logbook"
+
+msgid "jeszcze {h} do stopnia: {r}"
+msgstr "{h} more to: {r}"
+
+msgid "kliknij, żeby otworzyć lot"
+msgstr "click to open the flight"
+
+msgid "mniej"
+msgstr "less"
+
+msgid "więcej"
+msgstr "more"
+
+msgid "nalotu"
+msgstr "flight time"
+
+msgid "ostatnie 12 miesięcy"
+msgstr "last 12 months"
+
+msgid "ostatnie 26 tygodni"
+msgstr "last 26 weeks"
+
+msgid "ostatnie 30 dni"
+msgstr "last 30 days"
+
+msgid "rekord: {n} dni"
+msgstr "record: {n} days"
+
+msgid "w okresie"
+msgstr "in period"
+
+msgid "{n} dni z rzędu"
+msgstr "{n} days in a row"
+
+msgid "{x}× dookoła Ziemi"
+msgstr "{x}× around the Earth"
+
+msgid "Średnie odejście od osi pasa przy przyziemieniu"
+msgstr "Average distance from the runway centreline at touchdown"
+
+msgid "Średnio G"
+msgstr "Average G"
+
+msgid "średni lot"
+msgstr "average flight"
+
+msgid "średnia ocena"
+msgstr "average score"
+
+msgid "średnio"
+msgstr "average"
+
+msgid "Alfabet i transponder"
+msgstr "Phonetics and transponder"
+
+msgid "Atmosfera"
+msgstr "Atmosphere"
+
+msgid "Atmosfera wzorcowa"
+msgstr "Standard atmosphere"
+
+msgid "Bezprawne zawładnięcie statkiem powietrznym"
+msgstr "Unlawful interference (hijack)"
+
+msgid "Bilans paliwa"
+msgstr "Fuel balance"
+
+msgid "Boczny (kt)"
+msgstr "Cross (kt)"
+
+msgid "Boczny w porywach"
+msgstr "Gust crosswind"
+
+msgid "Brak danych z symulatora"
+msgstr "No simulator data"
+
+msgid "Czas, prędkość, dystans"
+msgstr "Time, speed, distance"
+
+msgid "Czołowy (kt)"
+msgstr "Head (kt)"
+
+msgid "Depesza"
+msgstr "Report"
+
+msgid "Elewacje"
+msgstr "Elevations"
+
+msgid "GS wobec TAS"
+msgstr "GS versus TAS"
+
+msgid "Gradient"
+msgstr "Gradient"
+
+msgid "Gradient wznoszenia"
+msgstr "Climb gradient"
+
+msgid "Gęstość względna"
+msgstr "Density ratio"
+
+msgid "Izoterma 0 °C (szacunkowo)"
+msgstr "0 °C isotherm (estimate)"
+
+msgid "Jednostki"
+msgstr "Units"
+
+msgid "Kody transpondera"
+msgstr "Transponder codes"
+
+msgid "Kontrola na ścieżce"
+msgstr "Path check"
+
+msgid "Kurs do utrzymania, znoszenie, GS"
+msgstr "Heading to fly, drift, GS"
+
+msgid "Kurs końcowy (rzecz.)"
+msgstr "Final course (true)"
+
+msgid "Kurs początkowy (rzecz.)"
+msgstr "Initial course (true)"
+
+msgid "Kąt"
+msgstr "Angle"
+
+msgid "Liczy brakującą wartość"
+msgstr "Solves the missing value"
+
+msgid "Limit"
+msgstr "Limit"
+
+msgid "Limit wiatru bocznego"
+msgstr "Crosswind limit"
+
+msgid "Literowanie ICAO"
+msgstr "ICAO spelling"
+
+msgid "Literowanie ICAO, kody specjalne"
+msgstr "ICAO spelling, special codes"
+
+msgid "Lot IFR bez przydzielonego kodu"
+msgstr "IFR flight without an assigned code"
+
+msgid "Lot VFR (USA, Kanada)"
+msgstr "VFR flight (USA, Canada)"
+
+msgid "Lot VFR bez przydzielonego kodu (Europa)"
+msgstr "VFR flight without an assigned code (Europe)"
+
+msgid "Mile na minutę"
+msgstr "Miles per minute"
+
+msgid "Na milę"
+msgstr "Per mile"
+
+msgid "Nachylenie"
+msgstr "Slope"
+
+msgid "Nagłe wejście w strefę z lotu na małej wysokości (Wielka Brytania)"
+msgstr "Sudden entry into controlled airspace from low level (UK)"
+
+msgid "Nawigacja"
+msgstr "Navigation"
+
+msgid "Nie znaleziono lotniska o tym kodzie."
+msgstr "No airport found with this code."
+
+msgid "Niebezpieczeństwo (MAYDAY)"
+msgstr "Distress (MAYDAY)"
+
+msgid "Numer pasa (np. 29) albo kurs w stopniach. Limit to największy wiatr boczny, przy jakim lądujesz danym samolotem."
+msgstr "Runway number (e.g. 29) or heading in degrees. The limit is the strongest crosswind you land this aircraft in."
+
+msgid "Odchyłka"
+msgstr "Deviation"
+
+msgid "Opis grup"
+msgstr "Group decoding"
+
+msgid "Opis każdej grupy depeszy"
+msgstr "Description of every group in a report"
+
+msgid "Ortodroma"
+msgstr "Great circle"
+
+msgid "Ortodroma, kursy, czas i paliwo"
+msgstr "Great circle, courses, time and fuel"
+
+msgid "PA, DA, TAS, odchyłka od ISA"
+msgstr "PA, DA, TAS, ISA deviation"
+
+msgid "PRZEKROCZONY"
+msgstr "EXCEEDED"
+
+msgid "Paliwo na pokładzie"
+msgstr "Fuel on board"
+
+msgid "Pas lub kurs"
+msgstr "Runway or heading"
+
+msgid "Pasy lotniska"
+msgstr "Airport runways"
+
+msgid "Pełny okrąg"
+msgstr "Full circle"
+
+msgid "Planowanie"
+msgstr "Planning"
+
+msgid "Podaj dwa kody ICAO lotnisk, np. EPWA i EGLL"
+msgstr "Enter two ICAO airport codes, e.g. EPWA and EGLL"
+
+msgid "Podejście i wznoszenie"
+msgstr "Approach and climb"
+
+msgid "Podstawa chmur, mgła, izoterma 0°"
+msgstr "Cloud base, fog, freezing level"
+
+msgid "Poprawka"
+msgstr "Correction"
+
+msgid "Porywy"
+msgstr "Gusts"
+
+msgid "Poziomy (reguła półkolowa)"
+msgstr "Levels (semicircular rule)"
+
+msgid "Prawdziwe depesze znajdziesz na karcie Lotniska"
+msgstr "You will find real reports on the Airports tab"
+
+msgid "Procedury odlotu (SID) podają minimalny gradient wznoszenia – zwykle 3,3 % albo więcej przy przeszkodach."
+msgstr "Departure procedures (SID) specify a minimum climb gradient – usually 3.3% or more with obstacles."
+
+msgid "Promień w metrach"
+msgstr "Radius in metres"
+
+msgid "Promień zakrętu"
+msgstr "Turn radius"
+
+msgid "Przechylenie do zakrętu standardowego"
+msgstr "Bank for a standard-rate turn"
+
+msgid "Przechylenie, promień, przeciążenie"
+msgstr "Bank, radius, load factor"
+
+msgid "Przeliczniki i radio"
+msgstr "Converters and radio"
+
+msgid "Przelot, rezerwa, zasięg"
+msgstr "Trip, reserve, endurance"
+
+msgid "Prędkość dźwięku"
+msgstr "Speed of sound"
+
+msgid "Prędkość kątowa"
+msgstr "Turn rate"
+
+msgid "Prędkość pionowa wg GS"
+msgstr "Vertical speed by GS"
+
+msgid "Reguła 3:1"
+msgstr "3:1 rule"
+
+msgid "Rozkład"
+msgstr "Spread"
+
+msgid "Składowe wiatru, porywy, wszystkie pasy lotniska"
+msgstr "Wind components, gusts, all airport runways"
+
+msgid "TOD, prędkość pionowa, profil"
+msgstr "TOD, vertical speed, profile"
+
+msgid "Tabela ISA"
+msgstr "ISA table"
+
+msgid "Tabela V/S i wysokości jak na karcie"
+msgstr "V/S and altitude table like on the chart"
+
+msgid "Tekst lub znak wywoławczy"
+msgstr "Text or callsign"
+
+msgid "Temperatura ISA"
+msgstr "ISA temperature"
+
+msgid "Temperatura i ciśnienie ISA"
+msgstr "ISA temperature and pressure"
+
+msgid "Tor zakrętu"
+msgstr "Turn path"
+
+msgid "Trasa między lotniskami"
+msgstr "Route between airports"
+
+msgid "Trójkąt prędkości"
+msgstr "Speed triangle"
+
+msgid "Utrata łączności radiowej"
+msgstr "Radio communication failure"
+
+msgid "W NORMIE"
+msgstr "WITHIN LIMITS"
+
+msgid "W jednostce"
+msgstr "In unit"
+
+msgid "W kilometrach"
+msgstr "In kilometres"
+
+msgid "Wiatr z danych powyżej. Podświetlony – najkorzystniejszy kierunek, przygaszone – z wiatrem tylnym."
+msgstr "Wind from the data above. Highlighted – the most favourable direction, dimmed – with a tailwind."
+
+msgid "Wpisz bieżące wartości z symulatora"
+msgstr "Fill in current values from the simulator"
+
+msgid "Wpisz dwie wartości, a trzecią zostaw pustą – zostanie policzona."
+msgstr "Enter two values and leave the third empty – it will be calculated."
+
+msgid "Wszystkie jednostki naraz"
+msgstr "All units at once"
+
+msgid "Wymagane wznoszenie"
+msgstr "Required climb"
+
+msgid "Wymóg SID w ft/NM i ft/min"
+msgstr "SID requirement in ft/NM and ft/min"
+
+msgid "Wyprzedzenie zakrętu o 90°"
+msgstr "Turn anticipation for 90°"
+
+msgid "Wysoka wysokość gęstościowa wydłuża rozbieg i osłabia wznoszenie – samolot „czuje się” jak wyżej."
+msgstr "High density altitude lengthens the take-off run and weakens the climb – the aircraft “feels” higher."
+
+msgid "Wysokość nad progiem"
+msgstr "Height above threshold"
+
+msgid "Wysokość nad progiem (TCH)"
+msgstr "Threshold crossing height (TCH)"
+
+msgid "Wznoszenie wg GS"
+msgstr "Climb by GS"
+
+msgid "Wzrost prędkości przeciągnięcia"
+msgstr "Stall speed increase"
+
+msgid "Z symulatora"
+msgstr "From simulator"
+
+msgid "Zakręt standardowy (rate 1) to 3°/s – pełny okrąg w 2 minuty. Przybliżenie pamięciowe: TAS / 10 + 7."
+msgstr "A standard-rate (rate 1) turn is 3°/s – a full circle in 2 minutes. Rule of thumb: TAS / 10 + 7."
+
+msgid "Zasięg w czasie"
+msgstr "Endurance in time"
+
+msgid "Zasięg w milach"
+msgstr "Range in miles"
+
+msgid "Zostanie na celu"
+msgstr "Left at destination"
+
+msgid "brak"
+msgstr "none"
+
+msgid "dźwięk kt"
+msgstr "sound kt"
+
+msgid "na pokładzie"
+msgstr "on board"
+
+msgid "nieparzyste (na wschód)"
+msgstr "odd (eastbound)"
+
+msgid "odległość do końca zniżania → wysokość"
+msgstr "distance to end of descent → altitude"
+
+msgid "opcjonalnie"
+msgstr "optional"
+
+msgid "pamięciowo: GS / 60"
+msgstr "rule of thumb: GS / 60"
+
+msgid "parzyste (na zachód)"
+msgstr "even (westbound)"
+
+msgid "przy ziemi"
+msgstr "at the surface"
+
+msgid "rezerwa"
+msgstr "reserve"
+
+msgid "starczy z rezerwą"
+msgstr "enough with reserve"
+
+msgid "tropopauza 36 089 ft, powyżej −56,5 °C"
+msgstr "tropopause 36,089 ft, −56.5 °C above"
+
+msgid "za mało paliwa na przelot z rezerwą"
+msgstr "not enough fuel for the trip with reserve"
+
+msgid "Ścieżka podejścia"
+msgstr "Approach path"

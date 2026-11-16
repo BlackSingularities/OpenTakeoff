@@ -16,6 +16,26 @@ export struct EngineV {
     main: string,
     sub: string,
     level: float,
+    // Karta Na żywo: zegar jak na E/WD – łuk wartości i wskazówka (ścieżki w polu 100×100),
+    // znacznik dźwigni, odczyty pod zegarem.
+    kind: string,
+    value: string,
+    arc: string,
+    needle: string,
+    thr-tick: string,
+    egt: string,
+    egt-level: float,
+    ff: string,
+    n2: string,
+    warn: bool,
+}
+
+// Lampka (systemy, światła, tryby autopilota): 0 – zielona, 1 – bursztynowa, 2 – czerwona, 3 – cyjan.
+export struct LampV {
+    k: string,
+    v: string,
+    on: bool,
+    tone: int,
 }
 
 export struct LiveV {
@@ -61,6 +81,12 @@ export struct LiveV {
     flaps: string,
     spoilers: string,
     brake: bool,
+    // Krótkie wartości do lampek w panelu bocznym
+    gear-short: string,
+    gear-on: bool,
+    flaps-short: string,
+    spoilers-short: string,
+    spoilers-on: bool,
     lights: string,
     next-wp: string,
     next-dist: string,
@@ -70,6 +96,60 @@ export struct LiveV {
     sim-time: string,
     touchdown: string,
     controlled-by: string,
+    // Karta Na żywo
+    // Etap lotu na osi: 0 kołowanie, 1 start, 2 wznoszenie, 3 przelot, 4 zniżanie, 5 podejście, 6 po lądowaniu
+    phase-index: int,
+    utc: string,
+    flight-time: string,
+    eta: string,
+    // FMA: automat ciągu, tryb pionowy, tryb poziomy, AP/FD
+    fma-thr: string,
+    fma-vert: string,
+    fma-lat: string,
+    ap-fd: bool,
+    ap-athr: bool,
+    // Radia jak na panelu RMP: częstotliwość czynna i zapasowa osobno
+    com1-a: string,
+    com1-s: string,
+    com2-a: string,
+    com2-s: string,
+    nav1-a: string,
+    nav1-s: string,
+    nav1-id: string,
+    nav1-dme: string,
+    nav2-a: string,
+    nav2-s: string,
+    xpdr-code: string,
+    xpdr-mode: string,
+    // Wiatr względem dziobu (stopnie, 0 = prosto w nos) i składowe
+    wind-rel: float,
+    wind-head: string,
+    wind-cross: string,
+    wind-spd: string,
+    // Paliwo
+    fuel-flow: string,
+    fuel-endurance: string,
+    fuel-dest: string,
+    fuel-dest-low: bool,
+    tank-l: string,
+    tank-c: string,
+    tank-r: string,
+    tank-l-level: float,
+    tank-c-level: float,
+    tank-r-level: float,
+    has-center: bool,
+    // Profil wysokości z bieżącego śladu (ścieżki w polu 200×60) i najwyższy punkt
+    alt-line: string,
+    alt-area: string,
+    alt-top: string,
+    // Parametry lotu
+    g-force: string,
+    aoa: string,
+    tat: string,
+    trim: string,
+    stall: bool,
+    overspeed: bool,
+    has-route: bool,
 }
 
 export struct FlightV {
@@ -250,6 +330,42 @@ export struct NavV {
     wx: string,
 }
 
+/// Parametr na karcie Przyrządy → Parametry: tone 0 zwykły, 1 włączone, 2 ostrzeżenie, 3 wyłączone, 4 nastawa.
+export struct ParamV {
+    k: string,
+    v: string,
+    tone: int,
+}
+
+export struct ParamGroupV {
+    title: string,
+    items: [ParamV],
+}
+
+/// Wiersz tabeli planu lotu.
+export struct PlanRowV {
+    idx: int,
+    ident: string,
+    via: string,
+    kind: string,
+    seg: string,
+    constraint: string,
+    alt: string,
+    crs: string,
+    dist: string,
+    cum: string,
+    ete: string,
+    editable: bool,
+    selected: bool,
+}
+
+/// Opcja do wyboru (pas, procedura, przejście).
+export struct PlanOptV {
+    name: string,
+    sub: string,
+    selected: bool,
+}
+
 export struct InstrV {
     style: int,
     style-name: string,
@@ -317,6 +433,35 @@ export struct StatsV {
     highest-id: string,
     softest-id: string,
     best-id: string,
+    // Karta pilota: stopień wg nalotu, belki na pagonach (1–4), postęp do następnego stopnia
+    rank: string,
+    rank-next: string,
+    rank-left: string,
+    rank-progress: float,
+    rank-stripes: int,
+    avg-flight: string,
+    avg-dist: string,
+    earth-laps: string,
+    streak: string,
+    streak-best: string,
+    period: string,
+    // Czas w fazach lotu (z zapisanych śladów)
+    t-ground: string,
+    t-climb: string,
+    t-cruise: string,
+    t-descent: string,
+    f-ground: float,
+    f-climb: float,
+    f-cruise: float,
+    f-descent: float,
+    // Lądowania
+    score-value: int,
+    grade: string,
+    butter: string,
+    avg-g: string,
+    bounces: string,
+    avg-cross: string,
+    max-xwind: string,
 }
 
 export struct AptV {
@@ -349,6 +494,28 @@ export struct FreqV {
 export struct GroupV {
     token: string,
     meaning: string,
+}
+
+/// Kafelek briefingu: tone 0 zwykły, 2 uwaga, 3 źle; cat – kolor kategorii lotu.
+export struct BriefTileV {
+    label: string,
+    value: string,
+    sub: string,
+    tone: int,
+    cat: string,
+}
+
+/// Depesza w trendzie z ostatnich godzin.
+export struct WxHistV {
+    time: string,
+    cat: string,
+    dir: float,
+    has-dir: bool,
+    wind: string,
+    vis: string,
+    temp: string,
+    qnh: string,
+    ceiling: string,
 }
 
 export struct WxV {
@@ -501,6 +668,10 @@ export struct PlanV {
     fuel-now: string,
     fuel-diff: string,
     fuel-ok: bool,
+    // Udziały paliwa względem paliwa na starcie (0–1)
+    burn-frac: float,
+    reserve-frac: float,
+    fuel-now-frac: float,
 }
 
 export struct PlanFixV {
@@ -544,6 +715,8 @@ export global App {
     // Pasek stanu i Pulpit
     in property <bool> sim-connected;
     in property <string> sim-status;
+    in property <[ParamGroupV]> params;
+    in property <image> params-charts;
     in property <string> sim-name;
     in property <bool> simulation;
     // Symulator: 0 automatycznie (MSFS albo X-Plane), 1 MSFS, 2 X-Plane
@@ -575,6 +748,8 @@ export global App {
     // Na żywo
     in property <LiveV> live;
     in property <[EngineV]> engines;
+    in property <[LampV]> live-lamps;
+    in property <[LampV]> live-lights;
     in property <image> map-live;
     in property <[LabelV]> map-live-labels;
     in property <image> pfd;
@@ -642,6 +817,18 @@ export global App {
     in property <[RowV]> stats-routes;
     in property <image> map-stats;
     in-out property <int> stats-metric: 0;
+    // Karta Narzędzia: wybrane narzędzie
+    in-out property <int> tool: 0;
+    // Okres statystyk: 0 – całość, 1 – 12 miesięcy, 2 – 30 dni, 3 – bieżący rok
+    in-out property <int> stats-period: 0;
+    in property <[BarV]> stats-heat;
+    in property <[string]> stats-heat-months;
+    in property <[BarV]> stats-hours;
+    in property <[BarV]> stats-weekdays;
+    in property <[BarV]> stats-vs;
+    in property <[BarV]> stats-levels;
+    in property <[RowV]> stats-grades;
+    in property <[BarV]> stats-recent;
 
     // Lotniska i pogoda
     in-out property <string> airport-query;
@@ -657,6 +844,13 @@ export global App {
     in property <string> taf-raw;
     in property <[GroupV]> taf-groups;
     in property <[string]> metar-history;
+    in property <image> brief-wind;
+    in property <image> brief-sky;
+    in property <image> brief-taf;
+    in property <int> brief-taf-lanes;
+    in property <[BriefTileV]> brief-tiles;
+    in property <[WxHistV]> brief-history;
+    in-out property <bool> brief-decode;
     in property <string> weather-status;
     in property <image> map-airport;
     in property <[LabelV]> map-airport-labels;
@@ -683,6 +877,7 @@ export global App {
     in property <bool> autostart;
     in property <bool> start-minimized;
     in property <bool> close-to-tray: true;
+    in property <bool> sim-launch;
     in property <int> units-alt;
     in property <int> units-speed;
     in property <int> map-style;
@@ -704,6 +899,24 @@ export global App {
     in property <PlanV> plan;
     in property <[PlanFixV]> plan-fixes;
     in property <bool> plan-busy;
+    in property <image> plan-profile-sb;
+    // Karta Plan lotu
+    in property <string> plan-origin;
+    in property <string> plan-dest;
+    in property <string> plan-cruise;
+    in property <string> plan-tas;
+    in property <string> plan-source;
+    in property <string> plan-status;
+    in property <string> plan-route-text;
+    in property <[PlanRowV]> plan-rows;
+    in property <[KV]> plan-summary;
+    in property <[PlanOptV]> plan-opts-a;
+    in property <[PlanOptV]> plan-opts-b;
+    in property <[PlanOptV]> plan-opts-c;
+    in-out property <int> plan-proc-tab;
+    in property <image> plan-map;
+    in property <[LabelV]> plan-map-labels;
+    in property <image> plan-profile;
 
     // Zrzuty ekranu
     in property <[ShotV]> shots;

@@ -79,6 +79,8 @@ pub struct Scene<'a> {
     pub runways: &'a [(f64, f64, f64, f64, f64)],
     pub points: &'a [Label3],
     pub route: &'a [(f64, f64)],
+    /// Plan lotu z SimBrief: (szer., dł., planowana wysokość ft MSL, nazwa punktu).
+    pub plan: &'a [(f64, f64, i32, String)],
     pub hud: Vec<String>,
     pub compass: bool,
     pub curtain: bool,
@@ -407,6 +409,33 @@ pub fn draw(c: &mut Canvas, sc: &Scene, cam: &Camera) {
         }
     }
 
+    // ---------- plan lotu z SimBrief: linia na planowanych wysokościach, piony do ziemi, nazwy punktów ----------
+    if sc.plan.len() > 1 {
+        const CYAN: Argb = 0xFF4FD8EB;
+        let v3 = |f: &(f64, f64, i32, String)| p.enu(f.0, f.1, (f.2 as f64 * FT).max(ground + 30.0));
+        for f in sc.plan {
+            if let Some((a, b)) = p.segment(p.enu(f.0, f.1, ground), v3(f)) {
+                c.line(a.0, a.1, b.0, b.1, alpha(CYAN, 0x60), 1.0 * s);
+            }
+        }
+        for wseg in sc.plan.windows(2) {
+            if let Some((a, b)) = p.segment(v3(&wseg[0]), v3(&wseg[1])) {
+                c.line(a.0, a.1, b.0, b.1, 0x90000000, 5.0 * s);
+                c.line(a.0, a.1, b.0, b.1, CYAN, 2.6 * s);
+            }
+        }
+        let far = cam.dist * 40.0 + 60_000.0;
+        for f in sc.plan {
+            if let Some((x, y, z)) = p.project(v3(f)) {
+                if z < far && x > -50.0 && x < wf + 50.0 && y > -50.0 && y < hf + 50.0 {
+                    c.circle(x, y, 3.4 * s, 0xFF0A1218, 0.0);
+                    c.circle(x, y, 3.4 * s, CYAN, 1.6 * s);
+                    c.text_halo(&f.3, x + 6.0 * s, y - 6.0 * s, 11.0 * s, 0xFFC8F6FC, 0xB0000000, Align::Left, false);
+                }
+            }
+        }
+    }
+
     // ---------- punkty (lotniska, VOR, NDB) ----------
     let mut pts: Vec<(f64, &Label3, f32, f32)> = sc
         .points
@@ -637,6 +666,7 @@ mod tests {
         let last = *track.last().unwrap();
         let rw = [(52.1716, 20.9586, 52.1489, 20.9813, 197.0)];
         let pts = vec![Label3 { lat: 52.1657, lon: 20.9671, text: "EPWA".into(), kind: 0 }, Label3 { lat: 52.20, lon: 20.85, text: "WAR".into(), kind: 1 }];
+        let plan: Vec<(f64, f64, i32, String)> = [(52.1657, 20.9671, 360, "EPWA"), (52.26, 20.80, 5000, "WA201"), (52.40, 20.62, 9000, "LOGDA"), (52.62, 20.40, 15000, "SORIX")].iter().map(|&(a, b, c, d)| (a, b, c, d.to_string())).collect();
         for (name, cam) in [
             ("chase", Camera::default()),
             ("free", Camera { mode: CamMode::Free, yaw: 60.0, pitch: 30.0, dist: 9000.0 }),
@@ -661,6 +691,7 @@ mod tests {
                 runways: &rw,
                 points: &pts,
                 route: &[],
+                plan: &plan,
                 hud: vec!["SP-LWA · B738".into(), "ALT 7960 ft · GS 210 kt".into()],
                 compass: true,
                 curtain: true,

@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
 
-use chrono::{Datelike, Local, TimeZone};
+use chrono::{Datelike, Local, TimeZone, Timelike};
 use opentakeoff_core::aero::airports::{self, Airport};
 use opentakeoff_core::aero::weather::{flight_category, Metar, Taf};
 use opentakeoff_core::aero::{calc, metar as metar_dec};
@@ -114,6 +114,14 @@ fn style(st: &State, dark: bool) -> Style {
             }
         }
     }
+}
+
+pub fn map_style(st: &State, dark: bool) -> Style {
+    style(st, dark)
+}
+
+pub fn labels_model(l: Vec<(f32, f32, String, i32)>) -> ModelRc<LabelV> {
+    labels(l)
 }
 
 fn labels(l: Vec<(f32, f32, String, i32)>) -> ModelRc<LabelV> {
@@ -269,6 +277,105 @@ fn phase(s: &opentakeoff_core::proto::FlightState) -> String {
     }
 }
 
+/// Etap lotu na osi karty Na żywo: 0 kołowanie, 1 start, 2 wznoszenie, 3 przelot, 4 zniżanie,
+/// 5 podejście, 6 po lądowaniu. Nagrywanie zaczyna się dopiero w powietrzu, więc rozbieg z trwającym
+/// nagraniem to dobieg po lądowaniu.
+fn phase_index(s: &opentakeoff_core::proto::FlightState, recording: bool) -> i32 {
+    if s.aircraft.on_ground {
+        match (recording, s.speed.gs_kt > 30.0) {
+            (false, false) => 0,
+            (false, true) => 1,
+            (true, _) => 6,
+        }
+    } else if s.speed.vs_fpm > 400.0 {
+        2
+    } else if s.speed.vs_fpm < -400.0 {
+        if s.position.alt_agl_ft < 3000.0 {
+            5
+        } else {
+            4
+        }
+    } else if s.position.alt_agl_ft < 1500.0 && s.speed.vs_fpm < -100.0 {
+        5
+    } else {
+        3
+    }
+}
+
+fn parse_sim_utc(t: Option<&str>) -> Option<chrono::DateTime<chrono::Utc>> {
+    let t = t?;
+    chrono::DateTime::parse_from_rfc3339(t).ok().map(|d| d.with_timezone(&chrono::Utc)).or_else(|| chrono::NaiveDateTime::parse_from_str(t.trim_end_matches('Z'), "%Y-%m-%dT%H:%M:%S").ok().map(|n| n.and_utc()))
+}
+
+/// Godzina symulatora „HH:MM:SSZ”.
+fn utc_clock(t: Option<&str>) -> String {
+    parse_sim_utc(t).map(|d| d.format("%H:%MZ").to_string()).unwrap_or_default()
+}
+
+/// Przewidywana godzina przylotu (czas symulatora + pozostały czas).
+fn utc_plus(t: Option<&str>, sec: f64) -> String {
+    parse_sim_utc(t).map(|d| (d + chrono::Duration::seconds(sec as i64)).format("%H:%MZ").to_string()).unwrap_or_default()
+}
+
+fn lamp(k: &str, v: &str, on: bool, tone: i32) -> LampV {
+    LampV { k: ss(k), v: ss(v), on, tone }
+}
+
+// Zegar silnika jak na E/WD: łuk 210° od lewego dołu (0 %) do prawej (100 %), środek (50, 56), promień 38,
+// w polu 100×100. Kąt liczony od góry zgodnie z ruchem wskazówek.
+const GAUGE_START: f64 = -120.0;
+const GAUGE_SWEEP: f64 = 210.0;
+
+fn gauge_pt(frac: f64, r: f64) -> (f64, f64) {
+    let a = (GAUGE_START + GAUGE_SWEEP * frac).to_radians();
+    (50.0 + r * a.sin(), 56.0 - r * a.cos())
+}
+
+fn gauge_arc(frac: f64) -> String {
+    let f = frac.clamp(0.0, 1.1);
+    if f < 0.005 {
+        return String::new();
+    }
+    let (x0, y0) = gauge_pt(0.0, 38.0);
+    let (x1, y1) = gauge_pt(f, 38.0);
+    let large = if GAUGE_SWEEP * f > 180.0 { 1 } else { 0 };
+    format!("M {x0:.2} {y0:.2} A 38 38 0 {large} 1 {x1:.2} {y1:.2}")
+}
+
+fn gauge_needle(frac: f64) -> String {
+    let f = frac.clamp(0.0, 1.1);
+    let (x1, y1) = gauge_pt(f, 42.0);
+    let (x0, y0) = gauge_pt(f, 8.0);
+    format!("M {x0:.2} {y0:.2} L {x1:.2} {y1:.2}")
+}
+
+/// Znacznik położenia dźwigni na zewnątrz łuku.
+fn gauge_tick(frac: f64) -> String {
+    let (x0, y0) = gauge_pt(frac, 43.0);
+    let (x1, y1) = gauge_pt(frac, 49.0);
+    format!("M {x0:.2} {y0:.2} L {x1:.2} {y1:.2}")
+}
+
+/// Profil wysokości z bieżącego śladu: linia i wypełnienie w polu 200×60 (do 160 próbek).
+fn alt_profile(track: &[crate::host::LivePoint]) -> (String, String, i32) {
+    if track.len() < 2 {
+        return (String::new(), String::new(), 0);
+    }
+    let n = track.len().min(160);
+    let pts: Vec<i32> = (0..n).map(|i| track[i * (track.len() - 1) / (n - 1).max(1)].alt).collect();
+    let top = pts.iter().copied().max().unwrap_or(0);
+    let lo = pts.iter().copied().min().unwrap_or(0).min(0);
+    let span = ((top - lo) as f64).max(500.0);
+    let mut line = String::new();
+    for (i, a) in pts.iter().enumerate() {
+        let x = i as f64 * 200.0 / (n - 1) as f64;
+        let y = 58.0 - (*a - lo) as f64 / span * 54.0;
+        line.push_str(&format!("{} {x:.1} {y:.1} ", if i == 0 { "M" } else { "L" }));
+    }
+    let area = format!("{line}L 200 60 L 0 60 Z");
+    (line, area, top)
+}
+
 pub fn refresh_live(force_map: bool) {
     let Some(ui) = ui() else { return };
     let app = ui.global::<App>();
@@ -311,7 +418,7 @@ pub fn refresh_live(force_map: bool) {
         live.oat = ss(format!("{:.0} °C", s.environment.oat_c));
         live.qnh = ss(if av.baro_std { "STD".to_string() } else { format!("{:.0} hPa", s.environment.qnh_hpa) });
         live.fuel = ss(format!("{:.0} kg", s.fuel.total_kg));
-        let (_, _, _, fuel0, last) = st.host.recording();
+        let (_, rec_since, _, fuel0, last) = st.host.recording();
         live.fuel_level = fuel0.map(|f| (s.fuel.total_kg / f.max(1.0)) as f32).unwrap_or(1.0);
         let ap = &s.autopilot;
         let mut modes = Vec::new();
@@ -340,6 +447,11 @@ pub fn refresh_live(force_map: bool) {
         live.flaps = ss(format!("{} / {} ({:.0} %)", c.flaps_index, (c.flaps_positions - 1).max(0), c.flaps_pct));
         live.spoilers = ss(if c.spoilers_armed { tr("uzbrojone").to_string() } else { format!("{:.0} %", c.spoilers_pct) });
         live.brake = c.parking_brake;
+        live.gear_short = ss(if c.gear_pct >= 99.0 { "DN".to_string() } else if c.gear_pct <= 1.0 { "UP".to_string() } else { format!("{:.0}%", c.gear_pct) });
+        live.gear_on = c.gear_pct > 1.0;
+        live.flaps_short = ss(if c.flaps_index <= 0 { "UP".to_string() } else { c.flaps_index.to_string() });
+        live.spoilers_short = ss(if c.spoilers_armed { "ARM".to_string() } else if c.spoilers_pct > 1.0 { format!("{:.0}%", c.spoilers_pct) } else { "RET".to_string() });
+        live.spoilers_on = c.spoilers_armed || c.spoilers_pct > 1.0;
         let l = &s.lights;
         let lights: Vec<&str> = [(l.beacon, "BCN"), (l.strobe, "STRB"), (l.nav, "NAV"), (l.landing, "LDG"), (l.taxi, "TAXI"), (l.logo, "LOGO")].into_iter().filter(|x| x.0).map(|x| x.1).collect();
         live.lights = ss(if lights.is_empty() { tr("wyłączone").to_string() } else { lights.join(" ") });
@@ -351,17 +463,112 @@ pub fn refresh_live(force_map: bool) {
         live.wp_progress = if g.wp_count > 1 { (g.wp_index as f32 / (g.wp_count - 1) as f32).clamp(0.0, 1.0) } else { 0.0 };
         live.sim_time = ss(s.sim_time_utc.clone().unwrap_or_default().replace('T', " ").replace('Z', " UTC"));
         live.touchdown = ss(last.map(|l| format!("{} · {} · {} ft/min{}\n{}", l.score, landing::grade_of(l.score), l.vs_fpm, l.runway.as_ref().map(|r| format!(" · RWY {r}")).unwrap_or_default(), landing::notes_now(&l).join(" "))).unwrap_or_default());
+        // ---- Karta Na żywo ----
+        live.phase_index = phase_index(s, rec_since.is_some());
+        live.utc = ss(utc_clock(s.sim_time_utc.as_deref()));
+        live.flight_time = ss(rec_since.map(|t| fmt::duration_min((unix_ms() - t) / 60_000)).unwrap_or_default());
+        live.eta = ss(if g.dest_ete_sec > 0.0 { utc_plus(s.sim_time_utc.as_deref(), g.dest_ete_sec) } else { String::new() });
+        // FMA
+        let m = &ap.modes;
+        live.fma_thr = ss(if ap.athr { if av.ap.mach_hold { "MACH" } else { "SPEED" } } else { "" });
+        live.fma_vert = ss(if m.apr && av.nav1.has_gs { "G/S" } else if m.flc { if ap.alt_ft > s.position.alt_ind_ft { "OP CLB" } else { "OP DES" } } else if m.vs { "V/S" } else if m.alt { "ALT" } else { "" });
+        live.fma_lat = ss(if m.apr || m.loc { "LOC" } else if m.nav { if g.active_flight_plan { "NAV" } else { "VOR" } } else if m.hdg { "HDG" } else { "" });
+        live.ap_fd = ap.fd;
+        live.ap_athr = ap.athr;
+        // Radia
+        live.com1_a = ss(format!("{:.3}", r.com1.active_mhz));
+        live.com1_s = ss(format!("{:.3}", r.com1.standby_mhz));
+        live.com2_a = ss(format!("{:.3}", r.com2.active_mhz));
+        live.com2_s = ss(format!("{:.3}", r.com2.standby_mhz));
+        live.nav1_a = ss(format!("{:.2}", r.nav1.active_mhz));
+        live.nav1_s = ss(format!("{:.2}", r.nav1.standby_mhz));
+        live.nav1_id = ss(&av.nav1.ident);
+        live.nav1_dme = ss(if av.nav1.has_dme && av.nav1.dme_nm > 0.0 { format!("{:.1} NM", av.nav1.dme_nm) } else { String::new() });
+        live.nav2_a = ss(format!("{:.2}", r.nav2.active_mhz));
+        live.nav2_s = ss(format!("{:.2}", r.nav2.standby_mhz));
+        live.xpdr_code = ss(&r.transponder.code);
+        live.xpdr_mode = ss(r.transponder.mode.to_uppercase());
+        // Wiatr względem dziobu: składowa czołowa (+) / tylna (−) i boczna
+        let rel_deg = (s.environment.wind_dir_deg - s.attitude.hdg_true_deg).rem_euclid(360.0);
+        let ws = s.environment.wind_spd_kt;
+        let (head, cross) = (ws * rel_deg.to_radians().cos(), ws * rel_deg.to_radians().sin());
+        live.wind_rel = rel_deg as f32;
+        live.wind_spd = ss(format!("{:.0}", ws));
+        live.wind_head = ss(if ws < 1.0 { String::new() } else if head >= 0.0 { trf!("czołowy {kt} kt", kt = head.round()) } else { trf!("tylny {kt} kt", kt = (-head).round()) });
+        live.wind_cross = ss(if cross.abs() < 1.0 { String::new() } else if cross > 0.0 { trf!("z prawej {kt} kt", kt = cross.round()) } else { trf!("z lewej {kt} kt", kt = (-cross).round()) });
+        // Paliwo: przepływ, zasięg w czasie, zapas na celu
+        let ff: f64 = s.engines.iter().map(|e| e.fuel_flow_kg_h).sum();
+        live.fuel_flow = ss(if ff > 1.0 { format!("{:.0} kg/h", ff) } else { String::new() });
+        live.fuel_endurance = ss(if ff > 1.0 { fmt::ete(s.fuel.total_kg / ff * 3600.0) } else { String::new() });
+        let at_dest = if ff > 1.0 && g.dest_ete_sec > 0.0 { Some(s.fuel.total_kg - ff * g.dest_ete_sec / 3600.0) } else { None };
+        live.fuel_dest = ss(at_dest.map(|f| format!("{:.0} kg", f.max(0.0))).unwrap_or_default());
+        live.fuel_dest_low = at_dest.is_some_and(|f| f < ff * 0.75);
+        let t = &s.fuel.tanks;
+        let tmax = t.left_kg.max(t.right_kg).max(t.center_kg).max(1.0);
+        live.tank_l = ss(format!("{:.0}", t.left_kg));
+        live.tank_c = ss(format!("{:.0}", t.center_kg));
+        live.tank_r = ss(format!("{:.0}", t.right_kg));
+        live.tank_l_level = (t.left_kg / tmax) as f32;
+        live.tank_c_level = (t.center_kg / tmax) as f32;
+        live.tank_r_level = (t.right_kg / tmax) as f32;
+        live.has_center = t.center_kg > 0.5;
+        // Parametry lotu
+        live.g_force = ss(if av.g_force != 0.0 { format!("{:.2}", av.g_force) } else { String::new() });
+        live.aoa = ss(if av.aoa_deg != 0.0 { format!("{:.1}°", av.aoa_deg) } else { String::new() });
+        live.tat = ss(if av.tat_c != 0.0 { format!("{:.0} °C", av.tat_c) } else { String::new() });
+        live.trim = ss(format!("{:+.0} %", c.elevator_trim_pct));
+        live.stall = av.stall_warning;
+        live.overspeed = av.overspeed_warning;
+        live.has_route = !g.next_id.is_empty();
+        if tab == 1 {
+            let (line, area, top) = alt_profile(&st.host.live_track());
+            live.alt_line = ss(line);
+            live.alt_area = ss(area);
+            live.alt_top = ss(if top > 0 { u.alt_full(top as f64) } else { String::new() });
+        }
+        // Lampki systemów i świateł
+        let gear_tone = if c.gear_pct >= 99.0 { 0 } else { 1 };
+        let marker = av.marker.to_uppercase();
+        let lamps = vec![
+            lamp("GEAR", &live.gear_short, c.gear_pct > 1.0, gear_tone),
+            lamp("FLAPS", &live.flaps_short, c.flaps_index > 0, 3),
+            lamp("SPLR", &live.spoilers_short, live.spoilers_on, if c.spoilers_pct > 1.0 { 1 } else { 0 }),
+            lamp("BRAKE", if c.parking_brake { "SET" } else { "OFF" }, c.parking_brake, 1),
+            lamp("STALL", if av.stall_warning { "WARN" } else { "" }, av.stall_warning, 2),
+            lamp("OVSPD", if av.overspeed_warning { "WARN" } else { "" }, av.overspeed_warning, 2),
+            lamp("MKR", &marker, !marker.is_empty() && marker != "NONE", 3),
+            lamp("SIM", if s.aircraft.paused { "PAUSE" } else { "RUN" }, s.aircraft.paused, 1),
+        ];
+        app.set_live_lamps(model(lamps));
+        let lt = &s.lights;
+        let lights: Vec<LampV> = [(lt.beacon, "BCN"), (lt.strobe, "STRB"), (lt.nav, "NAV"), (lt.landing, "LDG"), (lt.taxi, "TAXI"), (lt.logo, "LOGO"), (lt.wing, "WING")]
+            .into_iter()
+            .map(|(on, k)| lamp(k, "", on, 0))
+            .collect();
+        app.set_live_lights(model(lights));
         let engines: Vec<EngineV> = s
             .engines
             .iter()
             .enumerate()
             .map(|(i, e)| {
                 let turbine = e.n1_pct > 0.5;
+                let frac = if turbine { e.n1_pct / 100.0 } else { e.rpm / 2700.0 };
+                let thr = (e.throttle_pct / 100.0).clamp(0.0, 1.0);
                 EngineV {
                     label: ss(trf!("Silnik {n}", n = i + 1)),
                     main: ss(if turbine { format!("N1 {:.1} %", e.n1_pct) } else { format!("{:.0} RPM", e.rpm) }),
                     sub: ss(format!("EGT {:.0} °C · {:.0} kg/h · {} {:.0} %", e.egt_c, e.fuel_flow_kg_h, tr("dźwignia"), e.throttle_pct)),
-                    level: if turbine { (e.n1_pct / 100.0) as f32 } else { (e.rpm / 2800.0).min(1.0) as f32 },
+                    level: frac.clamp(0.0, 1.0) as f32,
+                    kind: ss(if turbine { "N1" } else { "RPM" }),
+                    value: ss(if turbine { format!("{:.1}", e.n1_pct) } else { format!("{:.0}", e.rpm) }),
+                    arc: ss(gauge_arc(frac)),
+                    needle: ss(gauge_needle(frac)),
+                    thr_tick: ss(gauge_tick(thr)),
+                    egt: ss(format!("{:.0}", e.egt_c)),
+                    egt_level: (e.egt_c / if turbine { 950.0 } else { 900.0 }).clamp(0.0, 1.0) as f32,
+                    ff: ss(format!("{:.0}", e.fuel_flow_kg_h)),
+                    n2: ss(if turbine && e.n2_pct > 0.5 { format!("{:.1}", e.n2_pct) } else if e.prop_rpm > 1.0 { format!("{:.0}", e.prop_rpm) } else { String::new() }),
+                    warn: frac > 1.0,
                 }
             })
             .collect();
@@ -779,6 +986,7 @@ fn render_flight_3d(f: &FlightLog, st: &State, dark: bool) -> slint::Image {
         runways: &runways,
         points: &points,
         route: &[],
+        plan: &[],
         hud,
         compass: false,
         curtain: true,
@@ -865,6 +1073,247 @@ pub fn update_cursor() {
 
 // ---------- Statystyki ----------
 
+/// Początek okresu statystyk (ms): 0 – całość, 1 – 12 miesięcy, 2 – 30 dni, 3 – bieżący rok.
+fn period_start(period: i32) -> i64 {
+    let now = unix_ms();
+    match period {
+        1 => now - 365 * 86_400_000,
+        2 => now - 30 * 86_400_000,
+        3 => Local.with_ymd_and_hms(Local::now().year(), 1, 1, 0, 0, 0).single().map(|d| d.timestamp_millis()).unwrap_or(0),
+        _ => i64::MIN,
+    }
+}
+
+/// Stopnie pilota wg nalotu (godziny, nazwa, belki na pagonach).
+fn ranks() -> [(i64, &'static str, i32); 8] {
+    [
+        (0, tr("Uczeń pilot"), 1),
+        (10, tr("Pilot turystyczny"), 1),
+        (50, tr("Pilot zawodowy"), 2),
+        (150, tr("Drugi pilot"), 2),
+        (400, tr("Starszy drugi pilot"), 3),
+        (800, tr("Kapitan"), 4),
+        (1500, tr("Starszy kapitan"), 4),
+        (3000, tr("Szef pilotów"), 4),
+    ]
+}
+
+/// Czas w fazach lotu z zapisanego śladu (minuty): ziemia, wznoszenie, przelot, zniżanie.
+fn phase_minutes(f: &FlightLog) -> [f64; 4] {
+    let mut out = [0.0; 4];
+    for w in f.track.windows(2) {
+        let dt = (w[1].t - w[0].t) as f64 / 60_000.0;
+        if !(0.0..=10.0).contains(&dt) {
+            continue;
+        }
+        let p = &w[0];
+        let vs = p.vs_fpm.map(|v| v as f64).unwrap_or_else(|| (w[1].alt_ft - w[0].alt_ft) as f64 / dt.max(0.01));
+        let i = if p.on_ground.unwrap_or(p.gs_kt < 40 && p.agl_ft.unwrap_or(100) < 20) {
+            0
+        } else if vs > 300.0 {
+            1
+        } else if vs < -300.0 {
+            3
+        } else {
+            2
+        };
+        out[i] += dt;
+    }
+    out
+}
+
+/// Seria dni z lotami: (bieżąca, najdłuższa).
+fn streaks(flights: &[FlightLog]) -> (i64, i64) {
+    let mut days: Vec<i64> = flights.iter().filter_map(|f| Local.timestamp_millis_opt(f.start).single()).map(|d| d.date_naive().num_days_from_ce() as i64).collect();
+    days.sort_unstable();
+    days.dedup();
+    let (mut best, mut run) = (0i64, 0i64);
+    for (i, d) in days.iter().enumerate() {
+        run = if i > 0 && days[i - 1] + 1 == *d { run + 1 } else { 1 };
+        best = best.max(run);
+    }
+    let today = Local::now().date_naive().num_days_from_ce() as i64;
+    let current = match days.last() {
+        Some(&l) if l == today || l + 1 == today => run,
+        _ => 0,
+    };
+    (current, best)
+}
+
+fn extra_stats(flights: &[FlightLog], s: &stats::Stats, u: &Units, period: i32) -> StatsV {
+    let mut v = StatsV::default();
+    // Stopień pilota liczony z całego nalotu w okresie
+    let hours = s.minutes / 60;
+    let r = ranks();
+    let idx = r.iter().rposition(|x| hours >= x.0).unwrap_or(0);
+    v.rank = ss(r[idx].1);
+    v.rank_stripes = r[idx].2;
+    if let Some(next) = r.get(idx + 1) {
+        let span = (next.0 - r[idx].0).max(1) as f64 * 60.0;
+        v.rank_progress = (((s.minutes - r[idx].0 * 60) as f64) / span).clamp(0.0, 1.0) as f32;
+        v.rank_next = ss(next.1);
+        v.rank_left = ss(trf!("jeszcze {h} do stopnia: {r}", h = fmt::hours(next.0 * 60 - s.minutes), r = next.1));
+    } else {
+        v.rank_progress = 1.0;
+        v.rank_left = ss(tr("Najwyższy stopień"));
+    }
+    v.period = ss(match period {
+        1 => tr("ostatnie 12 miesięcy"),
+        2 => tr("ostatnie 30 dni"),
+        3 => tr("bieżący rok"),
+        _ => tr("cały dziennik"),
+    });
+    if s.flights > 0 {
+        v.avg_flight = ss(fmt::duration_min(s.minutes / s.flights as i64));
+        v.avg_dist = ss(u.dist(s.distance_nm as f64 / s.flights as f64));
+    }
+    let laps = s.distance_nm as f64 / 21_600.0;
+    v.earth_laps = ss(if laps >= 0.01 { trf!("{x}× dookoła Ziemi", x = format!("{laps:.2}").replace('.', ",")) } else { String::new() });
+    let (cur, best) = streaks(flights);
+    v.streak = ss(if cur > 0 { trf!("{n} dni z rzędu", n = cur) } else { String::new() });
+    v.streak_best = ss(if best > 0 { trf!("rekord: {n} dni", n = best) } else { String::new() });
+    // Fazy lotu
+    let mut ph = [0.0f64; 4];
+    for f in flights {
+        let m = phase_minutes(f);
+        for i in 0..4 {
+            ph[i] += m[i];
+        }
+    }
+    let total: f64 = ph.iter().sum::<f64>().max(1.0);
+    let t = |m: f64| ss(fmt::duration_min(m.round() as i64));
+    v.t_ground = t(ph[0]);
+    v.t_climb = t(ph[1]);
+    v.t_cruise = t(ph[2]);
+    v.t_descent = t(ph[3]);
+    v.f_ground = (ph[0] / total) as f32;
+    v.f_climb = (ph[1] / total) as f32;
+    v.f_cruise = (ph[2] / total) as f32;
+    v.f_descent = (ph[3] / total) as f32;
+    // Lądowania
+    let lands: Vec<LandingReportLite> = flights.iter().flat_map(|f| f.all_landings()).map(|l| LandingReportLite { score: l.score, vs: l.vs_fpm.abs(), g: l.g_force, bounces: l.bounces, cross: l.cross_ft, xwind: l.crosswind_kt }).collect();
+    if let Some(avg) = s.avg_score {
+        v.score_value = avg.round() as i32;
+        v.grade = ss(landing::grade_of(avg.round() as i32));
+    } else {
+        v.score_value = -1;
+    }
+    if !lands.is_empty() {
+        let n = lands.len() as f64;
+        v.butter = ss(lands.iter().filter(|l| l.vs < 60).count().to_string());
+        let gs: Vec<f64> = lands.iter().filter_map(|l| l.g).collect();
+        v.avg_g = ss(if gs.is_empty() { String::new() } else { format!("{:.2} G", gs.iter().sum::<f64>() / gs.len() as f64) });
+        v.bounces = ss(format!("{:.0} %", lands.iter().filter(|l| l.bounces > 0).count() as f64 / n * 100.0));
+        let cr: Vec<f64> = lands.iter().filter_map(|l| l.cross.map(|c| c.abs() as f64)).collect();
+        v.avg_cross = ss(if cr.is_empty() { String::new() } else { format!("{:.0} ft", cr.iter().sum::<f64>() / cr.len() as f64) });
+        v.max_xwind = ss(lands.iter().filter_map(|l| l.xwind).map(|x| x.abs()).max().map(|x| format!("{x} kt")).unwrap_or_default());
+    }
+    v
+}
+
+struct LandingReportLite {
+    score: i32,
+    vs: i32,
+    g: Option<f64>,
+    bounces: i32,
+    cross: Option<i32>,
+    xwind: Option<i32>,
+}
+
+fn bars(vals: &[(String, f64, String)], accent_last: bool) -> ModelRc<BarV> {
+    let max = vals.iter().map(|x| x.1).fold(0.0, f64::max).max(1e-9);
+    let n = vals.len();
+    model(vals.iter().enumerate().map(|(i, (l, v, t))| BarV { label: ss(l), value: (v / max) as f32, text: ss(t), accent: accent_last && i + 1 == n }).collect())
+}
+
+/// Wykresy karty Statystyki: kalendarz aktywności, godziny, dni tygodnia, poziomy przelotu,
+/// opadanie przy przyziemieniu, oceny i ostatnie lądowania.
+fn set_stats_charts(app: &App, flights: &[FlightLog], all: &[FlightLog]) {
+    // Kalendarz ostatnich 26 tygodni (zawsze z całego dziennika), kolumny = tygodnie od poniedziałku
+    let today = Local::now().date_naive();
+    let monday = today - chrono::Duration::days(today.weekday().num_days_from_monday() as i64);
+    let first = monday - chrono::Duration::weeks(25);
+    let mut mins = vec![0i64; 26 * 7];
+    let mut count = vec![0usize; 26 * 7];
+    for f in all {
+        if let Some(d) = Local.timestamp_millis_opt(f.start).single() {
+            let idx = (d.date_naive() - first).num_days();
+            if (0..26 * 7).contains(&idx) {
+                mins[idx as usize] += f.duration_min().max(0);
+                count[idx as usize] += 1;
+            }
+        }
+    }
+    let hmax = mins.iter().copied().max().unwrap_or(0).max(1) as f32;
+    let heat: Vec<BarV> = (0..26 * 7)
+        .map(|i| {
+            let day = first + chrono::Duration::days(i as i64);
+            let future = day > today;
+            BarV {
+                label: ss(format!("{} {}", day.day(), fmt::month_short(day.month()))),
+                value: if future { -1.0 } else if mins[i] == 0 && count[i] == 0 { 0.0 } else { (mins[i] as f32 / hmax).max(0.12) },
+                text: ss(if count[i] == 0 { tr("brak lotów").to_string() } else { format!("{} · {}", fmt::flights(count[i]), fmt::duration_min(mins[i])) }),
+                accent: day == today,
+            }
+        })
+        .collect();
+    app.set_stats_heat(model(heat));
+    let mut months = Vec::new();
+    let mut last_m = 0;
+    for w in 0..26 {
+        let d = first + chrono::Duration::weeks(w);
+        months.push(if d.month() != last_m { fmt::month_short(d.month()).to_string() } else { String::new() });
+        last_m = d.month();
+    }
+    app.set_stats_heat_months(model_strings(months));
+    // Godzina startu i dzień tygodnia
+    let mut hours = [0usize; 24];
+    let mut wd = [0usize; 7];
+    for f in flights {
+        if let Some(d) = Local.timestamp_millis_opt(f.start).single() {
+            hours[d.hour() as usize] += 1;
+            wd[d.weekday().num_days_from_monday() as usize] += 1;
+        }
+    }
+    let cnt = |n: usize| if n == 0 { String::new() } else { n.to_string() };
+    app.set_stats_hours(bars(&hours.iter().enumerate().map(|(h, &n)| (if h % 3 == 0 { format!("{h:02}") } else { String::new() }, n as f64, cnt(n))).collect::<Vec<_>>(), false));
+    let names = [tr("Pn"), tr("Wt"), tr("Śr"), tr("Cz"), tr("Pt"), tr("Sb"), tr("Nd")];
+    app.set_stats_weekdays(bars(&wd.iter().enumerate().map(|(i, &n)| (names[i].to_string(), n as f64, cnt(n))).collect::<Vec<_>>(), false));
+    // Najwyższy poziom lotu
+    let lv_edges = [(0, "<5k"), (5_000, "5–10k"), (10_000, "FL100"), (20_000, "FL200"), (30_000, "FL300"), (35_000, "FL350"), (40_000, "FL400+")];
+    let mut lv = [0usize; 7];
+    for f in flights {
+        let i = lv_edges.iter().rposition(|e| f.max_alt_ft >= e.0).unwrap_or(0);
+        lv[i] += 1;
+    }
+    app.set_stats_levels(bars(&lv_edges.iter().zip(lv).map(|(e, n)| (e.1.to_string(), n as f64, cnt(n))).collect::<Vec<_>>(), false));
+    // Prędkość opadania przy przyziemieniu
+    let mut lands: Vec<(i64, i32, i32, String)> = flights.iter().flat_map(|f| f.all_landings().into_iter().map(move |l| (l.at.unwrap_or(f.end), l.score, l.vs_fpm.abs(), l.airport.clone().or(f.to.clone()).unwrap_or_default()))).collect();
+    let vs_edges = [(0, "<60"), (60, "60"), (120, "120"), (180, "180"), (240, "240"), (360, "360"), (600, "600+")];
+    let mut vb = [0usize; 7];
+    for l in &lands {
+        vb[vs_edges.iter().rposition(|e| l.2 >= e.0).unwrap_or(0)] += 1;
+    }
+    app.set_stats_vs(bars(&vs_edges.iter().zip(vb).map(|(e, n)| (e.1.to_string(), n as f64, cnt(n))).collect::<Vec<_>>(), false));
+    // Oceny wg stopni
+    let grades = [(90, 101), (75, 90), (55, 75), (35, 55), (i32::MIN, 35)];
+    let total = lands.len().max(1) as f32;
+    let gmax = grades.iter().map(|g| lands.iter().filter(|l| l.1 >= g.0 && l.1 < g.1).count()).max().unwrap_or(1).max(1) as f32;
+    app.set_stats_grades(model(
+        grades
+            .iter()
+            .map(|g| {
+                let n = lands.iter().filter(|l| l.1 >= g.0 && l.1 < g.1).count();
+                RowV { name: ss(landing::grade_of(if g.0 == i32::MIN { 0 } else { g.0 })), a: ss(n.to_string()), b: ss(format!("{:.0} %", n as f32 / total * 100.0)), level: n as f32 / gmax, id: ss("") }
+            })
+            .collect(),
+    ));
+    // Ostatnie 30 lądowań
+    lands.sort_by_key(|l| l.0);
+    let recent: Vec<BarV> = lands.iter().rev().take(30).rev().map(|l| BarV { label: ss(&l.3), value: (l.1.max(0) as f32 / 100.0).max(0.04), text: ss(format!("{} · {} ft/min", l.1, l.2)), accent: false }).collect();
+    app.set_stats_recent(model(recent));
+}
+
 pub fn refresh_stats() {
     let Some(ui) = ui() else { return };
     let app = ui.global::<App>();
@@ -873,7 +1322,10 @@ pub fn refresh_stats() {
     let u = units(&st.s);
     let store = st.host.logbook.clone();
     st.stats_rev = store.revision();
-    let flights: Vec<FlightLog> = store.flights().iter().map(|f| store.effective(f)).collect();
+    let all_flights: Vec<FlightLog> = store.flights().iter().map(|f| store.effective(f)).collect();
+    let period = app.get_stats_period();
+    let from = period_start(period);
+    let flights: Vec<FlightLog> = all_flights.iter().filter(|f| f.start >= from).cloned().collect();
     let s = stats::compute(&flights);
     let rec = |r: &Option<stats::Record>, f: &dyn Fn(f64) -> String| (r.as_ref().map(|r| f(r.value)).unwrap_or_default(), r.as_ref().map(|r| r.flight_id.clone()).unwrap_or_default());
     let (longest, longest_id) = rec(&s.longest, &|v| fmt::duration_min(v as i64));
@@ -901,9 +1353,11 @@ pub fn refresh_stats() {
         highest_id: ss(highest_id),
         softest_id: ss(softest_id),
         best_id: ss(best_id),
+        ..extra_stats(&flights, &s, &u, period)
     });
+    set_stats_charts(&app, &flights, &all_flights);
     // Osiągnięcia i wyzwania tygodnia
-    let ach = achievements::compute(&flights, unix_ms());
+    let ach = achievements::compute(&all_flights, unix_ms());
     let icon = |i: achievements::Icon| i as i32;
     app.set_ach_badges(model(
         ach.badges
@@ -931,7 +1385,7 @@ pub fn refresh_stats() {
     app.set_ach_count(ss(trf!("{a} z {b} poziomów", a = ach.unlocked, b = ach.total_levels)));
     // Powiadomienie o nowym poziomie albo zaliczonym wyzwaniu (pierwsze liczenie – bez powiadomień)
     let keys = ach.keys();
-    if !flights.is_empty() || st.s.ach_init {
+    if !all_flights.is_empty() || st.s.ach_init {
         let fresh: Vec<String> = if st.s.ach_init { keys.iter().filter(|k| !st.s.ach_seen.contains(k)).cloned().collect() } else { Vec::new() };
         if !st.s.ach_init || !fresh.is_empty() {
             st.s.ach_init = true;
@@ -1021,7 +1475,8 @@ pub fn render_stats_map() {
     let store = st.host.logbook.clone();
     let accent = ACCENTS[st.s.accent.min(ACCENTS.len() - 1)];
     let mut ov = Overlay::default();
-    for f in store.flights().iter().take(500) {
+    let from = period_start(app.get_stats_period());
+    for f in store.flights().iter().filter(|f| f.start >= from).take(500) {
         let step = (f.track.len() / 300).max(1);
         ov.tracks.push(Track {
             pts: f.track.iter().step_by(step).map(|p| (p.lat, p.lon, p.alt_ft)).collect(),
@@ -1218,6 +1673,7 @@ fn show_weather(icao: &str, metars: &[Metar], taf: &Option<Taf>, status: &str) {
     app.set_metar_summary(model(summary));
     if let Some(a) = airports::db().and_then(|d| d.get(icao).cloned()) {
         set_runways(&a, m);
+        crate::briefing::set(&a, metars, taf);
     }
 }
 
@@ -1409,6 +1865,175 @@ pub fn refresh_watchlist(fetch: bool) {
 
 // ---------- kalkulatory ----------
 
+// ---------- narzędzia: obliczenia pomocnicze ----------
+
+/// Atmosfera wzorcowa: (temperatura °C, ciśnienie hPa, gęstość względna, prędkość dźwięku kt).
+fn isa(alt_ft: f64) -> (f64, f64, f64, f64) {
+    let h = alt_ft.max(-2000.0);
+    let t = isa_temp(h);
+    let p = if h <= 36_089.0 { 1013.25 * (1.0 - 6.875_6e-6 * h).powf(5.2559) } else { 226.32 * (-(h - 36_089.0) / 20_806.0).exp() };
+    let tk = t + 273.15;
+    (t, p, (p / 1013.25) / (tk / 288.15), 661.47 * (tk / 288.15).sqrt())
+}
+
+fn isa_temp(alt_ft: f64) -> f64 {
+    (15.0 - 1.98 * alt_ft / 1000.0).max(-56.5)
+}
+
+/// Ścieżki trójkąta wiatru w polu 100×100 (północ u góry): wektor kursu z TAS, wiatru i drogi.
+fn triangle_paths(hdg: f64, tas: f64, wind_dir: f64, wind_kt: f64) -> (String, String, String) {
+    let v = |deg: f64, len: f64| (len * deg.to_radians().sin(), len * deg.to_radians().cos());
+    let a = v(hdg, tas);
+    let w = v(wind_dir + 180.0, wind_kt);
+    let b = (a.0 + w.0, a.1 + w.1);
+    let pts = [(0.0, 0.0), a, b];
+    let (minx, maxx) = pts.iter().fold((f64::MAX, f64::MIN), |m, p| (m.0.min(p.0), m.1.max(p.0)));
+    let (miny, maxy) = pts.iter().fold((f64::MAX, f64::MIN), |m, p| (m.0.min(p.1), m.1.max(p.1)));
+    let span = (maxx - minx).max(maxy - miny).max(1.0);
+    let k = 76.0 / span;
+    let (cx, cy) = ((minx + maxx) / 2.0, (miny + maxy) / 2.0);
+    let map = |p: (f64, f64)| (50.0 + (p.0 - cx) * k, 50.0 - (p.1 - cy) * k);
+    let (o, a, b) = (map((0.0, 0.0)), map(a), map(b));
+    (arrow(o, a), arrow(a, b), arrow(o, b))
+}
+
+/// Odcinek ze strzałką na końcu (polecenia ścieżki SVG).
+fn arrow(p0: (f64, f64), p1: (f64, f64)) -> String {
+    let (dx, dy) = (p1.0 - p0.0, p1.1 - p0.1);
+    let len = (dx * dx + dy * dy).sqrt();
+    if len < 0.5 {
+        return String::new();
+    }
+    let (ux, uy) = (dx / len, dy / len);
+    let h = 5.0f64.min(len * 0.4);
+    let l = (p1.0 - h * ux + h * 0.5 * uy, p1.1 - h * uy - h * 0.5 * ux);
+    let r = (p1.0 - h * ux - h * 0.5 * uy, p1.1 - h * uy + h * 0.5 * ux);
+    format!("M {:.2} {:.2} L {:.2} {:.2} M {:.2} {:.2} L {:.2} {:.2} L {:.2} {:.2}", p0.0, p0.1, p1.0, p1.1, l.0, l.1, p1.0, p1.1, r.0, r.1)
+}
+
+/// Wiatr na wszystkich pasach lotniska: wiersze (pas, kurs, czołowy/tylny, boczny, najlepszy).
+/// Pierwszy element: nazwa lotniska albo pusty, gdy nie znaleziono.
+fn airport_winds(icao: &str, dir: Option<f64>, spd: Option<f64>) -> Vec<String> {
+    let Some(db) = airports::db() else { return vec![tr("Baza lotnisk jeszcze się wczytuje").to_string()] };
+    let Some(a) = db.get(&icao.trim().to_uppercase()) else { return vec![String::new()] };
+    let (dir, spd) = (dir.unwrap_or(0.0), spd.unwrap_or(0.0));
+    let mut ends: Vec<(String, f64, f64, f64, i32)> = Vec::new();
+    for r in a.runways.iter().filter(|r| !r.closed) {
+        for (id, hdg) in [(&r.le, r.le_heading()), (&r.he, r.he_heading())] {
+            let hdg = hdg.or_else(|| id.trim_start_matches('0').chars().take_while(|c| c.is_ascii_digit()).collect::<String>().parse::<f64>().ok().map(|x| x * 10.0));
+            if let Some(h) = hdg {
+                let (hw, xw) = calc::wind_components(dir, spd, h);
+                ends.push((id.clone(), h, hw, xw, r.length_ft));
+            }
+        }
+    }
+    let best = ends.iter().enumerate().max_by(|x, y| (x.1 .2 - x.1 .3.abs() * 0.5).partial_cmp(&(y.1 .2 - y.1 .3.abs() * 0.5)).unwrap_or(std::cmp::Ordering::Equal)).map(|x| x.0);
+    let mut out = vec![format!("{} – {}", a.ident, a.name)];
+    for (i, e) in ends.iter().enumerate() {
+        out.push(e.0.clone());
+        out.push(format!("{:03.0}°", e.1));
+        out.push(format!("{} {:.0}", if e.2 >= 0.0 { "▲" } else { "▼" }, e.2.abs()));
+        out.push(format!("{:.0} {}", e.3.abs(), if e.3 >= 0.0 { "→" } else { "←" }));
+        out.push(if e.4 > 0 { format!("{} ft", e.4) } else { String::new() });
+        out.push(if Some(i) == best { "1".into() } else if e.2 < -0.5 { "-1".into() } else { String::new() });
+    }
+    out
+}
+
+/// Trasa po ortodromie między lotniskami: [ok, nazwa A, nazwa B, dystans, kurs początkowy, kurs końcowy,
+/// czas przy TAS, elewacja A, elewacja B, różnica stref ±, paliwo] albo [pusty, komunikat].
+fn route_calc(a: &str, b: &str, tas: Option<f64>, burn: Option<f64>) -> Vec<String> {
+    let Some(db) = airports::db() else { return vec![String::new(), tr("Baza lotnisk jeszcze się wczytuje").to_string()] };
+    let (Some(x), Some(y)) = (db.get(&a.trim().to_uppercase()), db.get(&b.trim().to_uppercase())) else {
+        return vec![String::new(), tr("Podaj dwa kody ICAO lotnisk, np. EPWA i EGLL").to_string()];
+    };
+    let d = math::distance_nm(x.lat, x.lon, y.lat, y.lon);
+    let c1 = math::bearing_deg(x.lat, x.lon, y.lat, y.lon).rem_euclid(360.0);
+    let c2 = (math::bearing_deg(y.lat, y.lon, x.lat, x.lon) + 180.0).rem_euclid(360.0);
+    let min = tas.filter(|t| *t > 1.0).map(|t| d / t * 60.0);
+    let elev = |e: Option<i32>| e.map(|e| format!("{e} ft")).unwrap_or_default();
+    vec![
+        "1".into(),
+        format!("{} · {}", x.ident, x.name),
+        format!("{} · {}", y.ident, y.name),
+        format!("{d:.0} NM"),
+        format!("{c1:03.0}°"),
+        format!("{c2:03.0}°"),
+        min.map(|m| fmt::duration_min(m.round() as i64)).unwrap_or_default(),
+        elev(x.elev_ft),
+        elev(y.elev_ft),
+        format!("{:.0} km", d * 1.852),
+        match (min, burn.filter(|b| *b > 0.0)) {
+            (Some(m), Some(b)) => format!("{:.0} kg", m / 60.0 * b),
+            _ => String::new(),
+        },
+        if c1 < 180.0 { tr("nieparzyste (na wschód)").to_string() } else { tr("parzyste (na zachód)").to_string() },
+    ]
+}
+
+fn parse_hm(s: &str) -> Option<f64> {
+    let s = s.trim();
+    if s.is_empty() {
+        return None;
+    }
+    match s.split_once(':') {
+        Some((h, m)) => Some(h.trim().parse::<f64>().ok()? * 60.0 + m.trim().parse::<f64>().ok()?),
+        None => s.replace(',', ".").parse().ok(),
+    }
+}
+
+/// Czas–prędkość–dystans: liczy brakującą wartość. [dystans, prędkość, czas, która policzona 0/1/2].
+fn tsd(d: Option<f64>, s: Option<f64>, t: Option<f64>) -> Vec<String> {
+    let hm = |m: f64| format!("{}:{:02}", (m / 60.0).floor() as i64, (m.rem_euclid(60.0)).round() as i64);
+    match (d, s, t) {
+        (Some(d), Some(s), _) if s > 0.0 => vec![format!("{d:.0} NM"), format!("{s:.0} kt"), hm(d / s * 60.0), "2".into()],
+        (Some(d), None, Some(t)) if t > 0.0 => vec![format!("{d:.0} NM"), format!("{:.0} kt", d / (t / 60.0)), hm(t), "1".into()],
+        (None, Some(s), Some(t)) => vec![format!("{:.1} NM", s * t / 60.0), format!("{s:.0} kt"), hm(t), "0".into()],
+        _ => vec![String::new(), String::new(), String::new(), String::new()],
+    }
+}
+
+/// Alfabet ICAO: pary (znak, słowo).
+fn phonetic(text: &str) -> Vec<String> {
+    const W: [&str; 26] = ["ALFA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "GOLF", "HOTEL", "INDIA", "JULIETT", "KILO", "LIMA", "MIKE", "NOVEMBER", "OSCAR", "PAPA", "QUEBEC", "ROMEO", "SIERRA", "TANGO", "UNIFORM", "VICTOR", "WHISKEY", "X-RAY", "YANKEE", "ZULU"];
+    const D: [&str; 10] = ["ZERO", "ONE", "TWO", "TREE", "FOWER", "FIFE", "SIX", "SEVEN", "AIT", "NINER"];
+    let mut out = Vec::new();
+    for c in text.to_uppercase().chars().take(40) {
+        let w = match c {
+            'A'..='Z' => W[(c as u8 - b'A') as usize],
+            '0'..='9' => D[(c as u8 - b'0') as usize],
+            '.' => "DECIMAL",
+            ' ' => continue,
+            _ => continue,
+        };
+        out.push(c.to_string());
+        out.push(w.to_string());
+    }
+    out
+}
+
+/// Bieżące wartości z symulatora do narzędzi: [kierunek wiatru, prędkość wiatru, kurs magn., TAS, GS,
+/// wysokość, OAT, QNH, droga, najbliższe lotnisko, elewacja najbliższego, punkt rosy (brak)].
+fn live_numbers() -> Vec<String> {
+    let Some(snap) = state().borrow().host.snapshot() else { return Vec::new() };
+    let near = airports::db().and_then(|d| d.nearest(snap.position.lat, snap.position.lon).map(|a| (a.ident.clone(), a.elev_ft)));
+    vec![
+        format!("{:.0}", snap.environment.wind_dir_deg),
+        format!("{:.0}", snap.environment.wind_spd_kt),
+        format!("{:.0}", snap.attitude.hdg_mag_deg.rem_euclid(360.0)),
+        format!("{:.0}", snap.speed.tas_kt),
+        format!("{:.0}", snap.speed.gs_kt),
+        format!("{:.0}", snap.position.alt_ind_ft),
+        format!("{:.0}", snap.environment.oat_c),
+        format!("{:.0}", snap.environment.qnh_hpa),
+        format!("{:.0}", snap.attitude.track_true_deg.rem_euclid(360.0)),
+        near.as_ref().map(|n| n.0.clone()).unwrap_or_default(),
+        near.and_then(|n| n.1).map(|e| e.to_string()).unwrap_or_default(),
+        format!("{:.0}", snap.fuel.total_kg),
+        format!("{:.0}", snap.engines.iter().map(|e| e.fuel_flow_kg_h).sum::<f64>()),
+    ]
+}
+
 pub fn calc(kind: &str, input: &[String]) -> Vec<String> {
     let n = |i: usize| input.get(i).and_then(|s| s.trim().replace(',', ".").parse::<f64>().ok());
     let all = |k: usize| (0..k).map(n).collect::<Option<Vec<f64>>>();
@@ -1423,40 +2048,64 @@ pub fn calc(kind: &str, input: &[String]) -> Vec<String> {
         "wind-triangle" => match all(4) {
             Some(v) => {
                 let (wca, gs, hdg) = calc::wind_triangle(v[0], v[1], v[2], v[3]);
-                vec![format!("{hdg:03.0}°"), format!("{wca:+.0}°"), format!("{gs:.0} kt")]
+                let (ph, pw, pg) = triangle_paths(hdg, v[1], v[2], v[3]);
+                let drift = (v[0] - hdg + 540.0).rem_euclid(360.0) - 180.0;
+                vec![format!("{hdg:03.0}°"), format!("{wca:+.0}°"), format!("{gs:.0} kt"), ph, pw, pg, format!("{:.0} kt", gs - v[1]), format!("{drift:+.0}°")]
             }
-            None => vec![String::new(); 3],
+            None => vec![String::new(); 8],
         },
         "density" => match all(4) {
             Some(v) => {
                 let pa = calc::pressure_altitude(v[0], v[1]);
                 let da = calc::density_altitude(v[0], v[1], v[2]);
-                vec![format!("{pa:.0} ft"), format!("{da:.0} ft"), format!("{:.0} kt", calc::tas_from_ias(v[3], da))]
+                let tas = calc::tas_from_ias(v[3], da);
+                let isa = isa_temp(pa);
+                vec![format!("{pa:.0} ft"), format!("{da:.0} ft"), format!("{tas:.0} kt"), format!("{isa:.0} °C"), format!("ISA {:+.0} °C", v[2] - isa), format!("M {:.2}", calc::mach(tas, v[2]))]
             }
-            None => vec![String::new(); 3],
+            None => vec![String::new(); 6],
         },
         "descent" => match all(4) {
             Some(v) => {
                 let (nm, vs) = calc::descent(v[0], v[1], v[2], v[3]);
                 let min = nm / v[2].max(1.0) * 60.0;
-                vec![format!("{nm:.0} NM"), format!("{vs:.0} ft/min"), format!("{min:.0} min")]
+                let mut out = vec![format!("{nm:.0} NM"), format!("{vs:.0} ft/min"), format!("{min:.0} min"), format!("{:.0}", (v[0] - v[1]).max(0.0) / 1000.0 * 3.0)];
+                // Tabela: odległość do końca zniżania → wysokość na ścieżce
+                for k in (0..=8).rev() {
+                    let d = nm * k as f64 / 8.0;
+                    out.push(format!("{d:.0} NM"));
+                    out.push(format!("{:.0} ft", v[1] + d * 6076.12 * v[3].to_radians().tan()));
+                }
+                out
             }
-            None => vec![String::new(); 3],
+            None => vec![String::new(); 22],
         },
         "fuel" => match all(4) {
             Some(v) => {
                 let (min, trip, total) = calc::fuel(v[0], v[1], v[2], v[3]);
-                vec![fmt::duration_min(min.round() as i64), format!("{trip:.0} kg"), format!("{total:.0} kg")]
+                let mut out = vec![fmt::duration_min(min.round() as i64), format!("{trip:.0} kg"), format!("{total:.0} kg")];
+                // Paliwo na pokładzie (opcjonalne): zasięg w czasie i zapas na celu
+                match n(4).filter(|f| *f > 0.0) {
+                    Some(fob) => {
+                        let endur = fob / v[2].max(1.0) * 60.0;
+                        out.push(fmt::duration_min(endur.round() as i64));
+                        out.push(format!("{:.0} kg", fob - trip));
+                        out.push(if fob >= total { "1".into() } else { String::new() });
+                        out.push(format!("{:.0} NM", endur / 60.0 * v[1]));
+                    }
+                    None => out.extend([String::new(), String::new(), String::new(), String::new()]),
+                }
+                out
             }
-            None => vec![String::new(); 3],
+            None => vec![String::new(); 7],
         },
         "cloudbase" => match all(2) {
             Some(v) => {
                 let rh = calc::relative_humidity(v[0], v[1]);
                 let spread = v[0] - v[1];
-                vec![format!("{:.0} ft AGL", calc::cloud_base_ft(v[0], v[1])), format!("{rh:.0} %"), (if spread <= 2.0 { tr("duże") } else if spread <= 4.0 { tr("umiarkowane") } else { tr("małe") }).to_string()]
+                let fz = if v[0] > 0.0 { format!("{:.0} ft AGL", v[0] / 1.98 * 1000.0) } else { tr("przy ziemi").to_string() };
+                vec![format!("{:.0} ft AGL", calc::cloud_base_ft(v[0], v[1])), format!("{rh:.0} %"), (if spread <= 2.0 { tr("duże") } else if spread <= 4.0 { tr("umiarkowane") } else { tr("małe") }).to_string(), fz, format!("{spread:.0} °C"), format!("{:.0} °F", calc::celsius_to_f(v[0]))]
             }
-            None => vec![String::new(); 3],
+            None => vec![String::new(); 6],
         },
         "unit-names" => {
             let g = n(0).unwrap_or(0.0) as usize;
@@ -1470,6 +2119,89 @@ pub fn calc(kind: &str, input: &[String]) -> Vec<String> {
             }
             None => vec![String::new()],
         },
+        "airport-winds" => airport_winds(input.first().map(|s| s.as_str()).unwrap_or(""), n(1), n(2)),
+        "route" => route_calc(input.first().map(|s| s.as_str()).unwrap_or(""), input.get(1).map(|s| s.as_str()).unwrap_or(""), n(2), n(3)),
+        "turn" => match all(2) {
+            Some(v) => {
+                let ms = v[0] * 0.514_444;
+                let g = 9.806_65;
+                let rate1 = (ms * 3f64.to_radians() / g).atan().to_degrees();
+                let bank = v[1].clamp(1.0, 75.0).to_radians();
+                let r_m = ms * ms / (g * bank.tan());
+                let rate = (g * bank.tan() / ms.max(1.0)).to_degrees();
+                let n_load = 1.0 / bank.cos();
+                vec![
+                    format!("{rate1:.0}°"),
+                    format!("{:.2} NM", r_m / 1852.0),
+                    format!("{rate:.1}°/s"),
+                    format!("{:.0} s", 360.0 / rate.max(0.01)),
+                    format!("{n_load:.2} G"),
+                    format!("+{:.0} %", (n_load.sqrt() - 1.0) * 100.0),
+                    format!("{:.1} NM", r_m / 1852.0),
+                    format!("{:.0} m", r_m),
+                ]
+            }
+            None => vec![String::new(); 8],
+        },
+        "tsd" => tsd(n(0), input.get(1).and_then(|s| s.trim().replace(',', ".").parse::<f64>().ok()), input.get(2).and_then(|s| parse_hm(s))),
+        "approach" => match all(3) {
+            Some(v) => {
+                let t = v[0].to_radians().tan();
+                let mut out = vec![format!("{:.0} ft/min", v[1] * 6076.12 / 60.0 * t), format!("{:.0} ft/NM", 6076.12 * t), format!("{:.1} %", t * 100.0)];
+                for gs in [90.0, 110.0, 130.0, 140.0, 150.0, 160.0, 180.0] {
+                    out.push(format!("{gs:.0} kt"));
+                    out.push(format!("{:.0}", gs * 6076.12 / 60.0 * t));
+                }
+                for d in [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0] {
+                    out.push(format!("{d:.0} NM"));
+                    out.push(format!("{:.0} ft", v[2] + d * 6076.12 * t));
+                }
+                out
+            }
+            None => vec![String::new(); 35],
+        },
+        "climb" => match all(2) {
+            Some(v) => {
+                let ftnm = 6076.12 * v[1] / 100.0;
+                let mut out = vec![format!("{:.0} ft/min", v[0] / 60.0 * ftnm), format!("{ftnm:.0} ft/NM"), format!("{:.1}°", (v[1] / 100.0).atan().to_degrees())];
+                for gs in [100.0, 140.0, 180.0, 220.0, 260.0, 300.0] {
+                    out.push(format!("{gs:.0} kt"));
+                    out.push(format!("{:.0}", gs / 60.0 * ftnm));
+                }
+                out
+            }
+            None => vec![String::new(); 15],
+        },
+        "isa" => {
+            let alt = n(0).unwrap_or(0.0);
+            let (t, p, sigma, a) = isa(alt);
+            let mut out = vec![format!("{t:.1} °C"), format!("{p:.1} hPa"), format!("{sigma:.3}"), format!("{a:.0} kt"), format!("{:.2} inHg", p / 33.8639)];
+            for h in (0..=45_000).step_by(5_000) {
+                let (t, p, sigma, a) = isa(h as f64);
+                out.extend([if h == 0 { "MSL".to_string() } else if h >= 10_000 { format!("FL{:03}", h / 100) } else { format!("{h} ft") }, format!("{t:.1}"), format!("{p:.0}"), format!("{sigma:.3}"), format!("{a:.0}"), if (alt - h as f64).abs() < 2_500.0 { "1".into() } else { String::new() }]);
+            }
+            out
+        }
+        "units-all" => match all(3) {
+            Some(v) => {
+                let g = v[1] as usize;
+                calc::UNITS
+                    .get(g)
+                    .map(|u| {
+                        u.1.iter()
+                            .enumerate()
+                            .flat_map(|(i, x)| {
+                                let r = calc::convert(v[0], g, v[2] as usize, i);
+                                [x.0.to_string(), if r.abs() >= 100.0 { format!("{r:.1}") } else { format!("{r:.4}").trim_end_matches('0').trim_end_matches('.').to_string() }]
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            }
+            None => Vec::new(),
+        },
+        "phonetic" => phonetic(input.first().map(|s| s.as_str()).unwrap_or("")),
+        "live" => live_numbers(),
         "decode" => metar_dec::decode(input.first().map(|s| s.as_str()).unwrap_or("")).into_iter().filter(|g| !g.meaning.is_empty()).flat_map(|g| [g.token, g.meaning]).collect(),
         _ => Vec::new(),
     }
@@ -1656,6 +2388,22 @@ pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
     }
     if id == 4 {
         crate::navmap::event(kind, x, y, dx, dy);
+        return;
+    }
+    if id == crate::simbrief::PROFILE {
+        if kind == "size" {
+            crate::simbrief::size(x, y);
+        }
+        return;
+    }
+    if id == crate::flightplan::MAP || id == crate::flightplan::PROFILE {
+        crate::flightplan::map_event(id, kind, x, y, dx, dy);
+        return;
+    }
+    if (30..40).contains(&id) {
+        if kind == "size" {
+            crate::briefing::size(id, x, y);
+        }
         return;
     }
     if id >= 10 {

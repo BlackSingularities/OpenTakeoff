@@ -5,8 +5,8 @@
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { App, KV, LogV, EngineV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV } from "state.slint";
-import { Tip, TipArea, IconButton, BigButton, Group, Button, Card, Segmented, Splitter } from "widgets.slint";
+import { App, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV } from "state.slint";
+import { Tip, TipArea, IconButton, BigButton, Group, Col, Row, Button, Card, Segmented, Splitter } from "widgets.slint";
 import { NavTab, Readout, RecordButton, Sidebar } from "shell.slint";
 import { Toast, Dot, Colors } from "parts.slint";
 import { Dashboard } from "dashboard.slint";
@@ -22,9 +22,10 @@ import { Settings } from "settings.slint";
 import { FeedbackWindow } from "feedback.slint";
 import { Studio } from "studio.slint";
 import { Shots } from "shots.slint";
+import { PlanView } from "plan.slint";
 import { LandingWindow, StreamWindow, OverlayWindow, StreamCell } from "overlays.slint";
 
-export { App, Theme, Icons, Tip, FeedbackWindow, LandingWindow, StreamWindow, OverlayWindow, StreamCell, KV, LogV, EngineV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV }
+export { App, Theme, Icons, Tip, FeedbackWindow, LandingWindow, StreamWindow, OverlayWindow, StreamCell, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV }
 
 component WinButton inherits Rectangle {
     in property <int> kind;
@@ -101,6 +102,12 @@ component Tabs inherits Rectangle {
                 tip: @tr("Zrzuty ekranu symulatora z miejscem samolotu");
             }
             NavTab {
+                index: 12;
+                label: @tr("Plan lotu");
+                icon: Icons.route;
+                tip: @tr("Trasa, SID, STAR, podejścia, profil i eksport do MSFS i X-Plane");
+            }
+            NavTab {
                 index: 4;
                 label: @tr("Lotniska");
                 icon: Icons.map-pin;
@@ -134,6 +141,274 @@ component Tabs inherits Rectangle {
     }
 }
 
+/// Przełącznik wł./wył. (suwak).
+component Toggle inherits Rectangle {
+    in property <bool> on;
+    callback toggled();
+    width: 38px * Theme.scale;
+    height: 22px * Theme.scale;
+    border-radius: self.height / 2;
+    background: root.on ? Theme.accent : ta.has-hover ? Theme.press : Theme.hover;
+    border-width: 1px;
+    border-color: root.on ? Theme.accent : Theme.line;
+    animate background, border-color { duration: 140ms; }
+    Rectangle {
+        x: root.on ? parent.width - self.width - 3px : 3px;
+        y: 3px;
+        width: parent.height - 6px;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: root.on ? #ffffff : Theme.text-dim;
+        drop-shadow-blur: 3px;
+        drop-shadow-color: #00000040;
+        animate x { duration: 160ms; easing: ease-out; }
+        animate background { duration: 140ms; }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.toggled();
+        }
+    }
+}
+
+/// Wybór źródła danych w okienku stanu: kafelek z ikoną.
+component SourceTile inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    in property <bool> active;
+    in property <string> tip;
+    callback clicked();
+    height: 54px * Theme.scale;
+    horizontal-stretch: 1;
+    border-radius: Theme.r-small;
+    background: root.active ? Theme.accent.with-alpha(0.16) : ta.pressed ? Theme.press : ta.has-hover ? Theme.hover : Theme.raised;
+    border-width: 1px;
+    border-color: root.active ? Theme.accent.with-alpha(0.7) : Theme.line;
+    animate background, border-color { duration: 120ms; }
+    VerticalLayout {
+        alignment: center;
+        spacing: 4px;
+        Image {
+            source: root.icon;
+            height: 17px * Theme.scale;
+            colorize: root.active ? Theme.accent : Theme.text-dim;
+        }
+        Text {
+            text: root.label;
+            horizontal-alignment: center;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            font-weight: root.active ? 600 : 400;
+            color: root.active ? Theme.text : Theme.text-dim;
+        }
+    }
+    ta := TipArea {
+        tip: root.tip;
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+/// Przycisk stanu symulatora przy kontrolkach okna i jego okienko: stan, źródło danych, start z symulatorem.
+component SimButton inherits Rectangle {
+    property <color> tone: App.sim-connected ? Theme.ok : App.simulation ? Theme.accent : Colors.warn;
+    property <string> name: App.sim-connected ? App.sim-name : App.simulation ? @tr("Symulacja") : @tr("Brak symulatora");
+    height: 26px * Theme.scale;
+    width: min(sl.preferred-width, 280px * Theme.scale);
+    border-radius: self.height / 2;
+    background: ta.pressed ? Theme.press : ta.has-hover ? Theme.hover : Theme.raised;
+    border-width: 1px;
+    border-color: root.tone.with-alpha(App.sim-connected ? 0.5 : 0.28);
+    animate background, border-color { duration: 140ms; }
+    sl := HorizontalLayout {
+        padding-left: 3px;
+        padding-right: 9px;
+        spacing: 7px;
+        Rectangle {
+            width: 20px * Theme.scale;
+            height: self.width;
+            y: (parent.height - self.height) / 2;
+            border-radius: self.width / 2;
+            background: root.tone.with-alpha(0.18);
+            Image {
+                source: App.sim-connected || App.simulation ? Icons.plug : Icons.unplug;
+                width: 11px * Theme.scale;
+                height: self.width;
+                colorize: root.tone;
+            }
+        }
+        Text {
+            text: root.name;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            font-weight: App.sim-connected ? 600 : 400;
+            color: App.sim-connected ? Theme.text : Theme.text-dim;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        if App.sim-launch: Image {
+            source: Icons.power;
+            width: 11px * Theme.scale;
+            height: 11px * Theme.scale;
+            image-fit: contain;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.accent;
+        }
+        Image {
+            source: Icons.chevron-down;
+            width: 12px * Theme.scale;
+            height: 12px * Theme.scale;
+            image-fit: contain;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.text-faint;
+        }
+    }
+    ta := TipArea {
+        tip: App.sim-status;
+        mouse-cursor: pointer;
+        clicked => {
+            pop.show();
+        }
+    }
+    pop := PopupWindow {
+        x: root.width - self.width;
+        y: root.height + 6px;
+        width: 330px * Theme.scale;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            border-radius: Theme.r;
+            background: Theme.surface;
+            border-width: 1px;
+            border-color: Theme.line;
+            drop-shadow-blur: 22px;
+            drop-shadow-offset-y: 6px;
+            drop-shadow-color: #00000070;
+            VerticalLayout {
+                padding: 14px;
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 11px;
+                    Rectangle {
+                        width: 36px * Theme.scale;
+                        height: self.width;
+                        border-radius: self.width / 2;
+                        background: root.tone.with-alpha(0.16);
+                        border-width: 1px;
+                        border-color: root.tone.with-alpha(0.45);
+                        Image {
+                            source: App.sim-connected || App.simulation ? Icons.plug : Icons.unplug;
+                            width: 17px * Theme.scale;
+                            height: self.width;
+                            colorize: root.tone;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 2px;
+                        Text {
+                            text: root.name;
+                            font-family: Theme.cond;
+                            font-size: Theme.fs + 2px;
+                            font-weight: 700;
+                            color: Theme.text;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: App.simulation ? @tr("Lot testowy EPWA → EPGD bez symulatora") : App.sim-status;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+                Text {
+                    text: @tr("Źródło danych");
+                    font-family: Theme.cond;
+                    font-size: Theme.fs-small;
+                    font-weight: 600;
+                    color: Theme.text-faint;
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    SourceTile {
+                        icon: Icons.sparkles;
+                        label: "Auto";
+                        active: !App.simulation && App.sim-kind == 0;
+                        tip: @tr("MSFS albo X-Plane – ten, który działa");
+                        clicked => {
+                            App.cmd("source", "auto");
+                        }
+                    }
+                    SourceTile {
+                        icon: Icons.monitor;
+                        label: "MSFS";
+                        active: !App.simulation && App.sim-kind == 1;
+                        tip: @tr("Dane z MSFS przez SimConnect");
+                        clicked => {
+                            App.cmd("source", "msfs");
+                        }
+                    }
+                    SourceTile {
+                        icon: Icons.mountain;
+                        label: "X-Plane";
+                        active: !App.simulation && App.sim-kind == 2;
+                        tip: @tr("Dane z X-Plane 11/12 przez UDP (bez wtyczek)");
+                        clicked => {
+                            App.cmd("source", "xplane");
+                        }
+                    }
+                    SourceTile {
+                        icon: Icons.plane;
+                        label: @tr("Symulacja");
+                        active: App.simulation;
+                        tip: @tr("Lot testowy EPWA → EPGD bez symulatora");
+                        clicked => {
+                            App.cmd("source", "sim");
+                        }
+                    }
+                }
+                Rectangle {
+                    height: 1px;
+                    background: Theme.line;
+                }
+                HorizontalLayout {
+                    spacing: 12px;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        alignment: center;
+                        spacing: 2px;
+                        Text {
+                            text: @tr("Uruchamiaj razem z symulatorem");
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text;
+                            wrap: word-wrap;
+                        }
+                        Text {
+                            text: @tr("MSFS 2020/2024 i X-Plane 11/12 – OpenTakeoff startuje w zasobniku");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                    Toggle {
+                        y: (parent.height - self.height) / 2;
+                        on: App.sim-launch;
+                        toggled => {
+                            App.cmd("sim-launch", App.sim-launch ? "0" : "1");
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 component TopBar inherits Rectangle {
     height: Theme.title-h;
     background: Theme.chrome;
@@ -146,7 +421,7 @@ component TopBar inherits Rectangle {
             height: 22px;
             y: (parent.height - self.height) / 2;
         }
-        if Theme.ribbon-level < 1: Text {
+        if Theme.tabs-level == 0: Text {
             text: "OpenTakeoff";
             font-family: Theme.cond;
             font-size: 16px * Theme.scale;
@@ -174,39 +449,10 @@ component TopBar inherits Rectangle {
             HorizontalLayout {
                 alignment: end;
                 padding-right: 10px;
-                // Stan symulatora: pigułka z kropką
-                Rectangle {
+                // Stan symulatora: przycisk przy kontrolkach okna; po kliknięciu okienko ze źródłem danych
+                // i startem razem z symulatorem
+                SimButton {
                     y: (parent.height - self.height) / 2;
-                    height: 24px * Theme.scale;
-                    width: min(sl.preferred-width, 260px);
-                    border-radius: self.height / 2;
-                    background: App.sim-connected ? Theme.ok.with-alpha(0.10) : Theme.raised;
-                    border-width: 1px;
-                    border-color: App.sim-connected ? Theme.ok.with-alpha(0.35) : Theme.line;
-                    sl := HorizontalLayout {
-                        padding-left: 10px;
-                        padding-right: 12px;
-                        spacing: 7px;
-                        Dot {
-                            state: App.sim-connected ? 2 : 1;
-                            y: (parent.height - self.height) / 2;
-                        }
-                        Text {
-                            text: App.sim-connected ? App.sim-name : App.simulation ? @tr("Symulacja") : @tr("Brak symulatora");
-                            font-family: Theme.font;
-                            font-size: Theme.fs-small;
-                            color: App.sim-connected ? Theme.text : Theme.text-dim;
-                            vertical-alignment: center;
-                            overflow: elide;
-                        }
-                    }
-                    TipArea {
-                        tip: App.sim-status;
-                        clicked => {
-                            App.tab = 0;
-                            App.cmd("tab", 0);
-                        }
-                    }
                 }
             }
         }
@@ -233,42 +479,61 @@ component Ribbon inherits Rectangle {
         padding-left: 4px;
         spacing: 0;
         alignment: start;
-        if App.tab == 0 || App.tab == 1 || App.tab == 6: Group {
-            title: @tr("Źródło danych");
+        if App.tab == 12: Group {
+            title: @tr("Plan");
             BigButton {
-                icon: Icons.sparkles;
-                label: "Auto";
-                active: !App.simulation && App.sim-kind == 0;
-                tip: @tr("MSFS albo X-Plane – ten, który działa");
+                icon: Icons.file-plus;
+                label: @tr("Nowy");
+                tip: @tr("Pusty plan lotu");
                 clicked => {
-                    App.cmd("source", "auto");
+                    App.cmd("plan-new", "");
                 }
             }
             BigButton {
-                icon: Icons.monitor;
-                label: "MSFS";
-                active: !App.simulation && App.sim-kind == 1;
-                tip: @tr("Dane z MSFS przez SimConnect");
+                icon: Icons.download;
+                label: @tr("Z SimBrief");
+                tip: @tr("Przenieś pobrany plan SimBrief do edycji");
                 clicked => {
-                    App.cmd("source", "msfs");
+                    App.cmd("plan-simbrief", "");
                 }
             }
             BigButton {
-                icon: Icons.mountain;
-                label: "X-Plane";
-                active: !App.simulation && App.sim-kind == 2;
-                tip: @tr("Dane z X-Plane 11/12 przez UDP (bez wtyczek)");
+                icon: Icons.map;
+                label: @tr("Na mapie");
+                tip: @tr("Pokaż plan na karcie Mapa (2D i 3D)");
                 clicked => {
-                    App.cmd("source", "xplane");
+                    App.cmd("plan-to-map", "");
+                }
+            }
+        }
+        if App.tab == 12: Group {
+            title: @tr("Eksport");
+            BigButton {
+                icon: Icons.save;
+                label: "MSFS .pln";
+                tip: @tr("Plan do wczytania w MSFS 2020 i 2024 (z SID, STAR i podejściem)");
+                clicked => {
+                    App.cmd("plan-export-pln", "");
                 }
             }
             BigButton {
-                icon: Icons.plane;
-                label: @tr("Symulacja");
-                active: App.simulation;
-                tip: @tr("Lot testowy EPWA → EPGD bez symulatora");
+                icon: Icons.save;
+                label: "X-Plane .fms";
+                tip: @tr("Plan dla FMC X-Plane 11/12 (Output/FMS plans)");
                 clicked => {
-                    App.cmd("source", "sim");
+                    App.cmd("plan-export-fms", "");
+                }
+            }
+        }
+        if App.tab == 12: Group {
+            title: @tr("Dane nawigacyjne");
+            last: true;
+            BigButton {
+                icon: Icons.folder-open;
+                label: @tr("Folder X-Plane");
+                tip: @tr("Wskaż X-Plane 11/12: punkty, drogi lotnicze i procedury (CIFP) z jego bazy, także bez uruchamiania symulatora. MSFS: procedury pobierane na żywo przez SimConnect i zapisywane na później.");
+                clicked => {
+                    App.cmd("plan-xp-folder", "");
                 }
             }
         }
@@ -424,10 +689,10 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
-                icon: Icons.gauge;
-                label: @tr("Zegary");
+                icon: Icons.list;
+                label: @tr("Dane");
                 active: App.instr.layout == 1;
-                tip: @tr("Zegary analogowe i silniki");
+                tip: @tr("Wszystkie dane z symulatora liczbowo i wykresy z ostatnich 10 minut");
                 clicked => {
                     App.cmd("instr-layout", "1");
                 }
@@ -436,7 +701,7 @@ component Ribbon inherits Rectangle {
                 icon: Icons.grid-3x3;
                 label: @tr("Wszystko");
                 active: App.instr.layout == 2;
-                tip: @tr("PFD, ND, zegary i silniki naraz");
+                tip: @tr("Kokpit i dane razem: PFD, ND, ekrany silników, wykresy i wszystkie parametry");
                 clicked => {
                     App.cmd("instr-layout", "2");
                 }
@@ -510,99 +775,105 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 9: Group {
             title: @tr("Warstwy");
-            BigButton {
-                slim: true;
-                icon: Icons.map-pin;
-                label: @tr("Lotniska");
-                active: App.nav.apt;
-                clicked => {
-                    App.cmd("nav-layer", "apt");
+            Col {
+                Row {
+                    BigButton {
+                        slim: true;
+                        icon: Icons.map-pin;
+                        label: @tr("Lotniska");
+                        active: App.nav.apt;
+                        clicked => {
+                            App.cmd("nav-layer", "apt");
+                        }
+                    }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.hexagon;
+                        label: "VOR";
+                        active: App.nav.vor;
+                        clicked => {
+                            App.cmd("nav-layer", "vor");
+                        }
+                    }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.circle-dot;
+                        label: "NDB";
+                        active: App.nav.ndb;
+                        clicked => {
+                            App.cmd("nav-layer", "ndb");
+                        }
+                    }
+                    if !App.nav.view3d: BigButton {
+                        slim: true;
+                        icon: Icons.radius;
+                        label: @tr("Róże VOR");
+                        active: App.nav.vor-rose;
+                        tip: @tr("Róże z radialami wokół VOR (względem deklinacji stacji)");
+                        clicked => {
+                            App.cmd("nav-layer", "vor-rose");
+                        }
+                    }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.compass;
+                        label: @tr("Róża kursu");
+                        active: App.nav.rose;
+                        tip: @tr("Róża kursowa na samolocie: kurs, tor, nastawa AP, namiar na punkt");
+                        clicked => {
+                            App.cmd("nav-layer", "rose");
+                        }
+                    }
                 }
-            }
-            BigButton {
-                slim: true;
-                icon: Icons.hexagon;
-                label: "VOR";
-                active: App.nav.vor;
-                clicked => {
-                    App.cmd("nav-layer", "vor");
-                }
-            }
-            BigButton {
-                slim: true;
-                icon: Icons.circle-dot;
-                label: "NDB";
-                active: App.nav.ndb;
-                clicked => {
-                    App.cmd("nav-layer", "ndb");
-                }
-            }
-            if !App.nav.view3d: BigButton {
-                slim: true;
-                icon: Icons.radius;
-                label: @tr("Róże VOR");
-                active: App.nav.vor-rose;
-                tip: @tr("Róże z radialami wokół VOR (względem deklinacji stacji)");
-                clicked => {
-                    App.cmd("nav-layer", "vor-rose");
-                }
-            }
-            BigButton {
-                slim: true;
-                icon: Icons.compass;
-                label: @tr("Róża kursu");
-                active: App.nav.rose;
-                tip: @tr("Róża kursowa na samolocie: kurs, tor, nastawa AP, namiar na punkt");
-                clicked => {
-                    App.cmd("nav-layer", "rose");
-                }
-            }
-            if !App.nav.view3d: BigButton {
-                slim: true;
-                icon: Icons.circle;
-                label: @tr("Pierścienie");
-                active: App.nav.rings;
-                tip: @tr("Pierścienie odległości wokół samolotu");
-                clicked => {
-                    App.cmd("nav-layer", "rings");
-                }
-            }
-            if !App.nav.view3d: BigButton {
-                slim: true;
-                icon: Icons.spline;
-                label: @tr("Wektor");
-                active: App.nav.vector;
-                tip: @tr("Przewidywana ścieżka na 1, 2 i 5 minut (z bieżącym zakrętem)");
-                clicked => {
-                    App.cmd("nav-layer", "vector");
-                }
-            }
-            BigButton {
-                slim: true;
-                icon: Icons.activity;
-                label: @tr("Ślad");
-                active: App.nav.track;
-                clicked => {
-                    App.cmd("nav-layer", "track");
-                }
-            }
-            BigButton {
-                slim: true;
-                icon: Icons.route;
-                label: @tr("Trasa");
-                active: App.nav.route;
-                tip: @tr("Bieżący odcinek planu lotu z GPS symulatora");
-                clicked => {
-                    App.cmd("nav-layer", "route");
-                }
-            }
-            BigButton {
-                slim: true;
-                icon: Icons.minus;
-                label: @tr("Pasy");
-                active: App.nav.rwy;
-                clicked => {
-                    App.cmd("nav-layer", "rwy");
+                Row {
+                    if !App.nav.view3d: BigButton {
+                        slim: true;
+                        icon: Icons.circle;
+                        label: @tr("Pierścienie");
+                        active: App.nav.rings;
+                        tip: @tr("Pierścienie odległości wokół samolotu");
+                        clicked => {
+                            App.cmd("nav-layer", "rings");
+                        }
+                    }
+                    if !App.nav.view3d: BigButton {
+                        slim: true;
+                        icon: Icons.spline;
+                        label: @tr("Wektor");
+                        active: App.nav.vector;
+                        tip: @tr("Przewidywana ścieżka na 1, 2 i 5 minut (z bieżącym zakrętem)");
+                        clicked => {
+                            App.cmd("nav-layer", "vector");
+                        }
+                    }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.activity;
+                        label: @tr("Ślad");
+                        active: App.nav.track;
+                        clicked => {
+                            App.cmd("nav-layer", "track");
+                        }
+                    }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.route;
+                        label: @tr("Trasa");
+                        active: App.nav.route;
+                        tip: @tr("Bieżący odcinek planu lotu z GPS symulatora");
+                        clicked => {
+                            App.cmd("nav-layer", "route");
+                        }
+                    }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.minus;
+                        label: @tr("Pasy");
+                        active: App.nav.rwy;
+                        clicked => {
+                            App.cmd("nav-layer", "rwy");
+                        }
+                    }
                 }
             }
         }
@@ -1009,7 +1280,8 @@ component Toolbar inherits Rectangle {
                 height: parent.height;
             }
         }
-        if Theme.ribbon-level < 3: Readout {
+        // Odczyt lotu tylko przy pełnej wstążce (te same dane są w panelu bocznym)
+        if Theme.ribbon-level < 1: Readout {
             y: (parent.height - self.height) / 2;
         }
         RecordButton {
@@ -1145,11 +1417,15 @@ export component AppWindow inherits Window {
     // bez podpisów, 3 – bez odczytu lotu.
     function fit-ribbon() {
         Theme.ribbon-level = self.width / Theme.scale < 1080px ? 3 : self.width / Theme.scale < 1280px ? 2 : self.width / Theme.scale < 1500px ? 1 : 0;
+        Theme.tabs-level = self.width / Theme.scale < 1560px ? 2 : self.width / Theme.scale < 1860px ? 1 : 0;
     }
+    // Wąskie okno: całość zmniejsza się proporcjonalnie (Rust zmienia skalę okna), potem zwężanie wstążki
     changed width => {
+        App.win(100);
         root.fit-ribbon();
     }
     init => {
+        App.win(100);
         root.fit-ribbon();
     }
     fs := FocusScope {
@@ -1235,6 +1511,10 @@ export component AppWindow inherits Window {
                         height: parent.height;
                     }
                     if App.tab == 11: Shots {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 12: PlanView {
                         width: parent.width;
                         height: parent.height;
                     }

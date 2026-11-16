@@ -140,20 +140,36 @@ export component Pair inherits HorizontalLayout {
 }
 
 /// Odznaka kategorii lotu (VFR, MVFR, IFR, LIFR).
+/// Stonowany prostokąt z kolorową kropką (świecącą) i tekstem w kolorze tekstu – czytelny na każdym motywie.
 export component CatBadge inherits Rectangle {
     in property <string> cat;
-    width: cat == "" ? 0 : ct.preferred-width + 12px;
+    visible: cat != "";
+    width: cat == "" ? 0 : bl.preferred-width;
     height: 18px * Theme.scale;
-    border-radius: 9px * Theme.scale;
-    background: Colors.cat(root.cat).with-alpha(0.18);
-    border-width: 1px;
-    border-color: Colors.cat(root.cat).with-alpha(0.6);
-    ct := Text {
-        text: root.cat;
-        font-family: Theme.font;
-        font-size: 10.5px * Theme.scale;
-        font-weight: 700;
-        color: Colors.cat(root.cat);
+    border-radius: min(4px, Theme.r-small);
+    background: Colors.cat(root.cat).with-alpha(0.13);
+    bl := HorizontalLayout {
+        padding-left: 6px * Theme.scale;
+        padding-right: 7px * Theme.scale;
+        spacing: 5px * Theme.scale;
+        Rectangle {
+            width: 6px * Theme.scale;
+            height: self.width;
+            y: (parent.height - self.height) / 2;
+            border-radius: self.width / 2;
+            background: Colors.cat(root.cat);
+            drop-shadow-blur: 4px;
+            drop-shadow-color: Colors.cat(root.cat).with-alpha(0.8);
+        }
+        Text {
+            text: root.cat;
+            font-family: Theme.cond;
+            font-size: 11px * Theme.scale;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: Theme.text;
+            vertical-alignment: center;
+        }
     }
 }
 

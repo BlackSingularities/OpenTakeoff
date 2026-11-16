@@ -4,7 +4,7 @@
 import { ScrollView, ListView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { App, GroupV } from "state.slint";
+import { App, GroupV, BriefTileV, WxHistV, RwyV } from "state.slint";
 import { Button, IconButton, Field, Segmented, TipArea } from "widgets.slint";
 import { Panel, Heading, Metric, Pair, CatBadge, MapView, ListRow, Empty, Colors, Bar } from "parts.slint";
 
@@ -46,6 +46,325 @@ component Decoded inherits VerticalLayout {
             color: Theme.text-dim;
             wrap: word-wrap;
         }
+    }
+}
+
+/// Ekran wizualizacji briefingu: ciemne tło jak wyświetlacz, obraz z Rusta, rozmiar zgłaszany do Rusta.
+component BriefScreen inherits Rectangle {
+    in property <int> id;
+    in property <image> source;
+    border-radius: Theme.r-small;
+    background: #0b1016;
+    clip: true;
+    changed width => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    changed height => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    init => {
+        App.map-event(root.id, "size", self.width / 1px, self.height / 1px, 0, 0);
+    }
+    Image {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
+        source: root.source;
+        image-fit: fill;
+    }
+}
+
+/// Panel z nagłówkiem wersalikami (jak opis panelu w kabinie) i treścią.
+component VizPanel inherits Panel {
+    in property <string> title;
+    in property <image> icon;
+    in property <string> note;
+    VerticalLayout {
+        padding: 10px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 7px;
+            height: 18px * Theme.scale;
+            Image {
+                source: root.icon;
+                width: 13px * Theme.scale;
+                height: 13px * Theme.scale;
+                y: (parent.height - self.height) / 2;
+                colorize: Theme.mode == 2 || Theme.mode == 5 ? #0a8fa3 : #4fd8eb;
+            }
+            Text {
+                text: root.title.to-uppercase();
+                font-family: Theme.cond;
+                font-size: 11.5px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 1.2px;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    height: 1px;
+                    background: Theme.line;
+                }
+            }
+            if root.note != "": Text {
+                text: root.note;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-faint;
+                vertical-alignment: center;
+            }
+        }
+        @children
+    }
+}
+
+/// Kafelek z najważniejszą wartością: kolor kategorii albo stanu, opis pod spodem.
+component BriefTile inherits Rectangle {
+    in property <BriefTileV> t;
+    property <color> tone: t.cat != "" ? Colors.cat(t.cat) : t.tone == 3 ? Colors.ifr : t.tone == 2 ? Colors.warn : Theme.text;
+    min-width: 112px * Theme.scale;
+    height: vl.preferred-height;
+    border-radius: Theme.r;
+    background: t.cat != "" ? root.tone.with-alpha(0.12) : Theme.raised;
+    border-width: 1px;
+    border-color: t.cat != "" || t.tone >= 2 ? root.tone.with-alpha(0.5) : Theme.line;
+    vl := VerticalLayout {
+        padding: 10px;
+        padding-top: 8px;
+        spacing: 2px;
+        Text {
+            text: root.t.label.to-uppercase();
+            font-family: Theme.cond;
+            font-size: 10.5px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: Theme.text-faint;
+            overflow: elide;
+        }
+        Text {
+            text: root.t.value;
+            font-family: Theme.mono;
+            font-size: 17px * Theme.scale;
+            font-weight: 700;
+            color: root.tone;
+            overflow: elide;
+        }
+        Text {
+            text: root.t.sub;
+            font-family: Theme.font;
+            font-size: 10.5px * Theme.scale;
+            color: Theme.text-dim;
+            overflow: elide;
+        }
+    }
+}
+
+/// Składowe wiatru dla końca pasa: słupek czołowy/tylny (od środka) i boczny.
+component WindComp inherits Rectangle {
+    in property <RwyV> r;
+    property <float> full: 30;
+    height: 30px * Theme.scale;
+    border-radius: Theme.r-small;
+    background: r.best ? Colors.vfr.with-alpha(0.10) : transparent;
+    HorizontalLayout {
+        padding-left: 6px;
+        padding-right: 6px;
+        spacing: 8px;
+        Text {
+            width: 42px * Theme.scale;
+            text: root.r.ident;
+            font-family: Theme.mono;
+            font-size: Theme.fs;
+            font-weight: 700;
+            color: root.r.best ? Colors.vfr : Theme.text;
+            vertical-alignment: center;
+        }
+        // czołowy (w prawo, zielony) / tylny (w lewo, czerwony)
+        Rectangle {
+            horizontal-stretch: 1;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                height: 8px;
+                border-radius: 4px;
+                background: Theme.hover;
+            }
+            Rectangle {
+                x: parent.width / 2;
+                y: (parent.height - 14px) / 2;
+                width: 1px;
+                height: 14px;
+                background: Theme.text-faint;
+            }
+            Rectangle {
+                property <length> len: parent.width / 2 * min(1, abs(root.r.head) / root.full);
+                x: root.r.head >= 0 ? parent.width / 2 : parent.width / 2 - self.len;
+                y: (parent.height - self.height) / 2;
+                width: self.len;
+                height: 8px;
+                border-radius: 4px;
+                background: root.r.head >= 0 ? Colors.vfr : Colors.ifr;
+            }
+        }
+        Text {
+            width: 46px * Theme.scale;
+            text: (root.r.head >= 0 ? "HW " : "TW ") + round(abs(root.r.head));
+            font-family: Theme.mono;
+            font-size: Theme.fs-small;
+            color: root.r.head >= 0 ? Theme.text : Colors.ifr;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+        }
+        // boczny
+        Rectangle {
+            width: 70px * Theme.scale;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                height: 8px;
+                border-radius: 4px;
+                background: Theme.hover;
+            }
+            Rectangle {
+                x: 0;
+                y: (parent.height - self.height) / 2;
+                width: parent.width * min(1, abs(root.r.cross) / 25);
+                height: 8px;
+                border-radius: 4px;
+                background: abs(root.r.cross) >= 20 ? Colors.ifr : abs(root.r.cross) >= 12 ? Colors.warn : #4fd8eb;
+            }
+        }
+        Text {
+            width: 40px * Theme.scale;
+            text: "X " + round(abs(root.r.cross));
+            font-family: Theme.mono;
+            font-size: Theme.fs-small;
+            color: Theme.text;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+        }
+    }
+}
+
+/// Jedna depesza w trendzie: godzina, kategoria, strzałka wiatru i wartości.
+component HistCell inherits Rectangle {
+    in property <WxHistV> m;
+    in property <bool> last;
+    horizontal-stretch: 1;
+    min-width: 74px * Theme.scale;
+    height: vl.preferred-height;
+    border-radius: Theme.r-small;
+    background: root.last ? Theme.raised : transparent;
+    border-width: root.last ? 1px : 0;
+    border-color: Theme.line;
+    vl := VerticalLayout {
+        padding: 6px;
+        spacing: 4px;
+        Text {
+            text: root.m.time;
+            horizontal-alignment: center;
+            font-family: Theme.mono;
+            font-size: 10.5px * Theme.scale;
+            color: root.last ? Theme.text : Theme.text-dim;
+        }
+        Rectangle {
+            height: 18px * Theme.scale;
+            border-radius: 3px;
+            background: Colors.cat(root.m.cat).with-alpha(0.22);
+            Text {
+                text: root.m.cat;
+                font-family: Theme.cond;
+                font-size: 10.5px * Theme.scale;
+                font-weight: 700;
+                color: Colors.cat(root.m.cat);
+            }
+        }
+        Rectangle {
+            height: 26px * Theme.scale;
+            if root.m.has-dir: Image {
+                source: Icons.arrow-down;
+                width: 20px * Theme.scale;
+                height: 20px * Theme.scale;
+                colorize: #4fd8eb;
+                rotation-angle: root.m.dir * 1deg;
+            }
+            if !root.m.has-dir: Text {
+                text: "○";
+                color: Theme.text-faint;
+            }
+        }
+        for v in [root.m.wind, root.m.ceiling, root.m.vis, root.m.temp + "  Q" + root.m.qnh]: Text {
+            text: v;
+            horizontal-alignment: center;
+            font-family: Theme.mono;
+            font-size: 10.5px * Theme.scale;
+            color: Theme.text-dim;
+            overflow: elide;
+        }
+    }
+}
+
+/// Rozkodowana depesza jako siatka kafelków: grupa (mono, akcent) i jej znaczenie.
+component TokenGrid inherits Rectangle {
+    in property <[GroupV]> groups;
+    property <int> cols: max(1, min(4, floor((self.width + 6px) / 230px)));
+    height: hl.preferred-height;
+    hl := HorizontalLayout {
+        spacing: 6px;
+        for c in root.cols: VerticalLayout {
+            width: (root.width - (root.cols - 1) * 6px) / root.cols;
+            spacing: 0;
+            alignment: start;
+            for g[i] in root.groups: Rectangle {
+                property <bool> mine: mod(i, root.cols) == c && g.meaning != "";
+                visible: self.mine;
+                height: self.mine ? tv.preferred-height + 6px : 0;
+                Rectangle {
+                    y: 0;
+                    height: parent.height - 6px;
+                    border-radius: Theme.r-small;
+                    background: Theme.raised;
+                    tv := VerticalLayout {
+                        padding: 7px;
+                        padding-left: 9px;
+                        spacing: 1px;
+                        Text {
+                            text: g.token;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            font-weight: 700;
+                            color: Theme.accent;
+                        }
+                        Text {
+                            text: g.meaning;
+                            font-family: Theme.font;
+                            font-size: 10.5px * Theme.scale;
+                            color: Theme.text-dim;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Surowa depesza na ciemnym pasku jak na wydruku z terminala.
+component RawStrip inherits Rectangle {
+    in property <string> text;
+    height: rt.preferred-height + 16px;
+    border-radius: Theme.r-small;
+    background: #0b1016;
+    rt := Text {
+        x: 10px;
+        width: parent.width - 20px;
+        text: root.text == "" ? "—" : root.text;
+        font-family: Theme.mono;
+        font-size: Theme.fs;
+        color: #c8f6fc;
+        wrap: word-wrap;
     }
 }
 
@@ -116,82 +435,153 @@ component Briefing inherits ScrollView {
         }
         if App.airport-view == 0: VerticalLayout {
             spacing: 10px;
-            HorizontalLayout {
+            // Najważniejsze wartości
+            if App.brief-tiles.length > 0: HorizontalLayout {
                 spacing: 8px;
-                for kv in App.metar-summary: Metric {
+                for t in App.brief-tiles: BriefTile {
                     horizontal-stretch: 1;
-                    label: kv.k;
-                    value: kv.v;
-                    big: 16px * Theme.scale;
+                    t: t;
                 }
             }
-            Panel {
-                VerticalLayout {
-                    padding: 10px;
-                    spacing: 6px;
-                    HorizontalLayout {
-                        Heading {
-                            text: "METAR";
-                            icon: Icons.cloud-sun;
-                            horizontal-stretch: 1;
-                        }
-                        Text {
-                            text: App.weather-status;
-                            font-family: Theme.font;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-faint;
-                            vertical-alignment: center;
-                        }
+            // Wiatr z pasami | profil nieba
+            HorizontalLayout {
+                spacing: 10px;
+                height: 330px * Theme.scale;
+                VizPanel {
+                    title: @tr("Wiatr i pasy");
+                    icon: Icons.compass;
+                    width: self.height - 30px * Theme.scale;
+                    BriefScreen {
+                        id: 30;
+                        vertical-stretch: 1;
+                        source: App.brief-wind;
                     }
-                    Decoded {
-                        raw: App.metar-raw;
-                        groups: App.metar-groups;
+                }
+                VizPanel {
+                    title: @tr("Profil nieba");
+                    icon: Icons.cloud-sun;
+                    note: App.weather-status;
+                    horizontal-stretch: 1;
+                    BriefScreen {
+                        id: 31;
+                        vertical-stretch: 1;
+                        source: App.brief-sky;
                     }
-                    if App.metar-history.length > 0: VerticalLayout {
+                }
+            }
+            // Składowe wiatru | trend
+            HorizontalLayout {
+                spacing: 10px;
+                if App.airport-runways.length > 0: VizPanel {
+                    title: @tr("Składowe wiatru");
+                    icon: Icons.wind;
+                    note: "kt";
+                    width: 400px * Theme.scale;
+                    VerticalLayout {
                         spacing: 2px;
-                        padding-top: 4px;
-                        Text {
-                            text: @tr("Wcześniejsze depesze");
-                            font-family: Theme.font;
-                            font-size: Theme.fs-small;
-                            font-weight: 600;
-                            color: Theme.text-dim;
+                        alignment: start;
+                        for r in App.airport-runways: WindComp {
+                            r: r;
                         }
-                        for m in App.metar-history: Text {
-                            text: m;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-faint;
-                            wrap: word-wrap;
+                    }
+                }
+                if App.brief-history.length > 0: VizPanel {
+                    title: @tr("Ostatnie godziny");
+                    icon: Icons.history;
+                    horizontal-stretch: 1;
+                    HorizontalLayout {
+                        spacing: 4px;
+                        for m[i] in App.brief-history: HistCell {
+                            m: m;
+                            last: i == App.brief-history.length - 1;
                         }
                     }
                 }
             }
-            Panel {
-                VerticalLayout {
-                    padding: 10px;
-                    spacing: 6px;
-                    Heading {
-                        text: "TAF";
-                        icon: Icons.calendar;
-                    }
-                    Decoded {
-                        raw: App.taf-raw;
-                        groups: App.taf-groups;
-                    }
+            // METAR
+            VizPanel {
+                title: "METAR";
+                icon: Icons.file-text;
+                RawStrip {
+                    text: App.metar-raw;
+                }
+                TokenGrid {
+                    groups: App.metar-groups;
                 }
             }
-            Panel {
-                VerticalLayout {
-                    padding: 10px;
-                    spacing: 2px;
-                    Heading {
-                        text: @tr("Informacje");
-                        icon: Icons.info;
+            // TAF: oś czasu z kategoriami
+            VizPanel {
+                title: "TAF";
+                icon: Icons.calendar;
+                BriefScreen {
+                    id: 32;
+                    height: (96px + max(0, App.brief-taf-lanes) * 34px) * Theme.scale;
+                    source: App.brief-taf;
+                }
+                RawStrip {
+                    text: App.taf-raw;
+                }
+                HorizontalLayout {
+                    alignment: start;
+                    Button {
+                        label: App.brief-decode ? @tr("Ukryj rozkodowanie") : @tr("Rozkoduj grupy");
+                        icon: Icons.list;
+                        clicked => {
+                            App.brief-decode = !App.brief-decode;
+                        }
                     }
-                    for kv in App.airport-info: Pair {
-                        k: kv.k;
-                        v: kv.v;
+                }
+                if App.brief-decode: TokenGrid {
+                    groups: App.taf-groups;
+                }
+            }
+            // Informacje jako kafelki
+            VizPanel {
+                title: @tr("Informacje");
+                icon: Icons.info;
+                info := Rectangle {
+                    property <int> cols: max(1, min(4, floor((self.width + 6px) / 200px)));
+                    height: ih.preferred-height;
+                    ih := HorizontalLayout {
+                        spacing: 6px;
+                        for c in info.cols: VerticalLayout {
+                            width: (info.width - (info.cols - 1) * 6px) / info.cols;
+                            spacing: 0;
+                            alignment: start;
+                            for kv[i] in App.airport-info: Rectangle {
+                                property <bool> mine: mod(i, info.cols) == c;
+                                visible: self.mine;
+                                height: self.mine ? 50px * Theme.scale : 0;
+                                Rectangle {
+                                    y: 0;
+                                    height: parent.height - 6px;
+                                    border-radius: Theme.r-small;
+                                    background: Theme.raised;
+                                    VerticalLayout {
+                                        padding-left: 9px;
+                                        padding-right: 9px;
+                                        alignment: center;
+                                        spacing: 1px;
+                                        Text {
+                                            text: kv.k.to-uppercase();
+                                            font-family: Theme.cond;
+                                            font-size: 10px * Theme.scale;
+                                            font-weight: 700;
+                                            letter-spacing: 0.6px;
+                                            color: Theme.text-faint;
+                                            overflow: elide;
+                                        }
+                                        Text {
+                                            text: kv.v;
+                                            font-family: Theme.mono;
+                                            font-size: Theme.fs;
+                                            color: Theme.text;
+                                            overflow: elide;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

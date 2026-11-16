@@ -1,368 +1,1425 @@
-// Karta Na żywo: podgląd lotu z symulatora tylko do odczytu – przyrządy, mapa z torem, autopilot, radia,
-// systemy, silniki, paliwo i postęp trasy z GPS. Sterowanie samolotem zostaje w telefonie.
+// Karta Na żywo: podgląd lotu z symulatora tylko do odczytu, ułożony jak stanowisko pilota.
+// U góry pasek lotu (samolot, trasa, oś etapów lotu, zegary UTC), pod nim trzy kolumny:
+// PFD z FMA i odczytami, mapa z postępem trasy i profilem wysokości, oraz panele systemów
+// (lampki, silniki, paliwo, radia, wiatr, przyziemienie, zapis). Wyświetlacze „kabinowe” są
+// zawsze ciemne, jak w samolocie; reszta idzie za motywem. Sterowanie samolotem zostaje w telefonie.
 
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { App } from "state.slint";
-import { Button, IconButton } from "widgets.slint";
-import { Panel, Heading, Metric, Pair, Bar, MapView, Empty, Colors, Dot } from "parts.slint";
+import { App, LampV, EngineV } from "state.slint";
+import { Button, TipArea } from "widgets.slint";
+import { Panel, Bar, MapView, Empty, Colors, Dot } from "parts.slint";
 import { Screen } from "instruments.slint";
 
-component Box inherits Panel {
+/// Kolory wyświetlaczy w kabinie (zawsze na ciemnym tle).
+global Cab {
+    out property <color> screen: #0b1016;
+    out property <color> edge: #ffffff17;
+    out property <color> white: #e8f6f8;
+    out property <color> dim: #6f7c8a;
+    out property <color> cyan: #4fd8eb;
+    out property <color> green: #3ee07a;
+    out property <color> amber: #ffb547;
+    out property <color> red: #ff5a5f;
+    out property <color> magenta: #e07cff;
+    // Cyjan na powierzchniach motywu (na jasnych ciemniejszy, żeby był czytelny).
+    out property <color> label: Theme.dark ? #4fd8eb : #0a8fa3;
+    pure public function tone(t: int) -> color {
+        return t == 1 ? amber : t == 2 ? red : t == 3 ? cyan : green;
+    }
+}
+
+/// Sekcja: tytuł wersalikami krojem IBM Plex Sans Condensed, linia jak podział panelu w kabinie,
+/// opcjonalny dopisek po prawej.
+component Section inherits Panel {
     in property <string> title;
     in property <image> icon;
+    in property <string> note;
+    in property <color> note-tone: Theme.text-dim;
     VerticalLayout {
-        padding: 10px;
-        spacing: 2px;
-        Heading {
-            text: root.title;
-            icon: root.icon;
+        padding: 12px;
+        padding-top: 10px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 7px;
+            height: 20px * Theme.scale;
+            Image {
+                source: root.icon;
+                width: 13px * Theme.scale;
+                height: 13px * Theme.scale;
+                y: (parent.height - self.height) / 2;
+                colorize: Cab.label;
+            }
+            Text {
+                text: root.title.to-uppercase();
+                font-family: Theme.cond;
+                font-size: 11.5px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 1.2px;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    height: 1px;
+                    background: Theme.line;
+                }
+            }
+            if root.note != "": Text {
+                text: root.note;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: root.note-tone;
+                vertical-alignment: center;
+            }
         }
         @children
     }
 }
 
-export component Live inherits Rectangle {
+/// Ciemny wyświetlacz (FMA, odczyty, radia, zegary silników).
+component Screenlet inherits Rectangle {
+    border-radius: Theme.r-small;
+    background: Cab.screen;
+    border-width: 1px;
+    border-color: Cab.edge;
+    clip: true;
+}
+
+/// Wiersz „etykieta – wartość” z cyjanowym skrótem i wartością krojem mono.
+component Row inherits HorizontalLayout {
+    in property <string> k;
+    in property <string> v;
+    in property <color> tone: Theme.text;
+    spacing: 8px;
+    height: 21px * Theme.scale;
+    Text {
+        text: root.k.to-uppercase();
+        font-family: Theme.cond;
+        font-size: 10.5px * Theme.scale;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        color: Cab.label;
+        vertical-alignment: center;
+        width: 92px * Theme.scale;
+        overflow: elide;
+    }
+    Text {
+        text: root.v == "" ? "–" : root.v;
+        font-family: Theme.mono;
+        font-size: Theme.fs-small;
+        color: root.tone;
+        vertical-alignment: center;
+        horizontal-stretch: 1;
+        horizontal-alignment: right;
+        overflow: elide;
+    }
+}
+
+/// Oś etapów lotu: kropki połączone linią, minione w kolorze akcentu, bieżąca podświetlona.
+component PhaseRail inherits Rectangle {
+    in property <int> current;
+    in property <bool> paused;
+    property <[string]> steps: [@tr("Kołowanie"), @tr("Start"), @tr("Wznoszenie"), @tr("Przelot"), @tr("Zniżanie"), @tr("Podejście"), @tr("Lądowanie")];
+    property <length> step-w: self.width / 7;
+    height: 40px * Theme.scale;
+    // linia bazowa i część przebyta
+    Rectangle {
+        x: root.step-w / 2;
+        y: 9px * Theme.scale;
+        width: root.width - root.step-w;
+        height: 2px;
+        background: Theme.line-strong;
+    }
+    Rectangle {
+        x: root.step-w / 2;
+        y: 9px * Theme.scale;
+        width: root.step-w * max(0, root.current);
+        height: 2px;
+        background: Theme.accent;
+        animate width { duration: 400ms; easing: ease-in-out; }
+    }
+    for s[i] in root.steps: Rectangle {
+        x: root.step-w * i;
+        y: 0;
+        width: root.step-w;
+        height: root.height;
+        property <bool> now: i == root.current;
+        property <bool> done: i < root.current;
+        Rectangle {
+            y: 10px * Theme.scale - self.height / 2;
+            width: (now ? 12px : 8px) * Theme.scale;
+            height: self.width;
+            border-radius: self.width / 2;
+            background: now ? (root.paused ? Colors.warn : Theme.accent) : done ? Theme.accent : Theme.panel;
+            border-width: now || done ? 0 : 1.5px;
+            border-color: Theme.line-strong;
+            drop-shadow-blur: now ? 8px : 0;
+            drop-shadow-color: root.paused ? Colors.warn : Theme.accent;
+        }
+        Text {
+            y: 20px * Theme.scale;
+            width: parent.width;
+            text: s;
+            font-family: Theme.cond;
+            font-size: 10.5px * Theme.scale;
+            font-weight: now ? 700 : 500;
+            color: now ? Theme.text : done ? Theme.text-dim : Theme.text-faint;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+/// Zegar w pasku lotu: wartość mono nad podpisem.
+component Clock inherits VerticalLayout {
+    in property <string> k;
+    in property <string> v;
+    in property <color> tone: Theme.text;
+    alignment: center;
+    spacing: 1px;
+    min-width: 62px * Theme.scale;
+    Text {
+        text: root.v == "" ? "–" : root.v;
+        font-family: Theme.mono;
+        font-size: 15px * Theme.scale;
+        font-weight: 700;
+        color: root.tone;
+        horizontal-alignment: right;
+    }
+    Text {
+        text: root.k.to-uppercase();
+        font-family: Theme.cond;
+        font-size: 9.5px * Theme.scale;
+        font-weight: 700;
+        letter-spacing: 0.9px;
+        color: Theme.text-faint;
+        horizontal-alignment: right;
+    }
+}
+
+/// Pigułka z tekstem (PAUZA, REC, kategoria).
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <color> tone: Theme.text-dim;
+    in property <bool> solid;
+    width: ct.preferred-width + 14px;
+    height: 20px * Theme.scale;
+    border-radius: min(4px, Theme.r-small);
+    background: root.solid ? root.tone : root.tone.with-alpha(0.12);
+    border-width: 1px;
+    border-color: root.tone.with-alpha(0.5);
+    ct := Text {
+        text: root.text.to-uppercase();
+        font-family: Theme.cond;
+        font-size: 10.5px * Theme.scale;
+        font-weight: 700;
+        letter-spacing: 0.7px;
+        color: root.solid ? #ffffff : root.tone;
+    }
+}
+
+/// Kolumna FMA: tryb zielonym krojem mono, podpis kolumny pod spodem.
+component Fma inherits Screenlet {
+    in property <string> k;
+    in property <string> v;
+    in property <color> tone: Cab.green;
+    horizontal-stretch: 1;
+    min-width: 0;
+    height: 42px * Theme.scale;
+    VerticalLayout {
+        alignment: center;
+        spacing: 1px;
+        Text {
+            text: root.v == "" ? "–" : root.v;
+            font-family: Theme.mono;
+            font-size: 12px * Theme.scale;
+            font-weight: 700;
+            color: root.v == "" ? Cab.dim : root.tone;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        Text {
+            text: root.k;
+            font-family: Theme.cond;
+            font-size: 8.5px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: Cab.dim;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+/// Duży odczyt na ciemnym wyświetlaczu: skrót cyjanem, wartość, jednostka.
+component Read inherits Screenlet {
+    in property <string> k;
+    in property <string> v;
+    in property <string> unit;
+    in property <color> tone: Cab.white;
+    horizontal-stretch: 1;
+    min-width: 0;
+    height: 50px * Theme.scale;
+    VerticalLayout {
+        padding-left: 9px;
+        padding-right: 6px;
+        alignment: center;
+        spacing: 0;
+        Text {
+            text: root.k;
+            font-family: Theme.cond;
+            font-size: 9.5px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: Cab.cyan;
+        }
+        HorizontalLayout {
+            spacing: 3px;
+            alignment: start;
+            Text {
+                text: root.v == "" ? "–" : root.v;
+                font-family: Theme.mono;
+                font-size: 17px * Theme.scale;
+                font-weight: 700;
+                color: root.tone;
+                overflow: elide;
+            }
+            Text {
+                text: root.unit;
+                font-family: Theme.mono;
+                font-size: 9.5px * Theme.scale;
+                color: Cab.dim;
+                vertical-alignment: bottom;
+            }
+        }
+    }
+}
+
+/// Lampka systemu: świeci w swoim kolorze, wyłączona przygaszona.
+component Lamp inherits Rectangle {
+    in property <LampV> lamp;
+    property <color> tone: Cab.tone(root.lamp.tone);
+    border-radius: min(4px, Theme.r-small);
+    background: root.lamp.on ? root.tone.with-alpha(0.14) : Cab.screen;
+    border-width: 1px;
+    border-color: root.lamp.on ? root.tone.with-alpha(0.6) : Cab.edge;
+    clip: true;
+    VerticalLayout {
+        alignment: center;
+        spacing: 0;
+        Text {
+            text: root.lamp.k;
+            font-family: Theme.cond;
+            font-size: 9.5px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 0.7px;
+            color: root.lamp.on ? root.tone : Cab.dim;
+            horizontal-alignment: center;
+        }
+        if root.lamp.v != "": Text {
+            text: root.lamp.v;
+            font-family: Theme.mono;
+            font-size: 10.5px * Theme.scale;
+            color: root.lamp.on ? Cab.white : Cab.dim;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+/// Radio jak na panelu RMP: nazwa, częstotliwość czynna, ⇄, zapasowa i dopisek (np. ident VOR).
+component Radio inherits Screenlet {
+    in property <string> k;
+    in property <string> active;
+    in property <string> standby;
+    in property <string> note;
+    height: 34px * Theme.scale;
     HorizontalLayout {
-        padding: 12px;
-        spacing: 12px;
-        // Lewa kolumna: przyrządy
+        padding-left: 9px;
+        padding-right: 9px;
+        spacing: 8px;
+        Text {
+            text: root.k;
+            font-family: Theme.cond;
+            font-size: 10px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            color: Cab.cyan;
+            vertical-alignment: center;
+            width: 38px * Theme.scale;
+        }
+        Text {
+            text: root.active;
+            font-family: Theme.mono;
+            font-size: 14px * Theme.scale;
+            font-weight: 700;
+            color: Cab.green;
+            vertical-alignment: center;
+        }
+        if root.standby != "": Text {
+            text: "⇄";
+            font-size: 11px * Theme.scale;
+            color: Cab.dim;
+            vertical-alignment: center;
+        }
+        Text {
+            text: root.standby;
+            font-family: Theme.mono;
+            font-size: 12px * Theme.scale;
+            color: Cab.amber.with-alpha(0.85);
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        if root.note != "": Text {
+            text: root.note;
+            font-family: Theme.mono;
+            font-size: 10px * Theme.scale;
+            color: Cab.white;
+            vertical-alignment: center;
+        }
+    }
+}
+
+/// Zegar silnika jak na E/WD: łuk, wskazówka, znacznik dźwigni, wartość w ramce i odczyty pod spodem.
+component Gauge inherits Screenlet {
+    in property <EngineV> e;
+    VerticalLayout {
+        padding: 6px;
+        padding-bottom: 8px;
+        spacing: 4px;
+        Text {
+            text: root.e.label.to-uppercase();
+            font-family: Theme.cond;
+            font-size: 9.5px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: Cab.dim;
+            horizontal-alignment: center;
+        }
+        Rectangle {
+            height: self.width * 0.78;
+            // tło łuku 0–100 % i czerwona strefa powyżej 100 %
+            Path {
+                width: parent.width;
+                height: parent.width;
+                y: 0;
+                viewbox-width: 100;
+                viewbox-height: 100;
+                stroke: #ffffff26;
+                stroke-width: 5px * Theme.scale;
+                fill: transparent;
+                commands: "M 17.09 75 A 38 38 0 1 1 88 56";
+            }
+            Path {
+                width: parent.width;
+                height: parent.width;
+                y: 0;
+                viewbox-width: 100;
+                viewbox-height: 100;
+                stroke: Cab.red;
+                stroke-width: 2px * Theme.scale;
+                fill: transparent;
+                commands: "M 88 56 A 38 38 0 0 1 85.48 69.62";
+            }
+            if root.e.arc != "": Path {
+                width: parent.width;
+                height: parent.width;
+                y: 0;
+                viewbox-width: 100;
+                viewbox-height: 100;
+                stroke: root.e.warn ? Cab.red : Cab.green;
+                stroke-width: 5px * Theme.scale;
+                fill: transparent;
+                commands: root.e.arc;
+            }
+            Path {
+                width: parent.width;
+                height: parent.width;
+                y: 0;
+                viewbox-width: 100;
+                viewbox-height: 100;
+                stroke: Cab.white;
+                stroke-width: 2px * Theme.scale;
+                fill: transparent;
+                commands: root.e.needle;
+            }
+            Path {
+                width: parent.width;
+                height: parent.width;
+                y: 0;
+                viewbox-width: 100;
+                viewbox-height: 100;
+                stroke: Cab.cyan;
+                stroke-width: 3px * Theme.scale;
+                fill: transparent;
+                commands: root.e.thr-tick;
+            }
+            // wartość w ramce pod środkiem łuku
+            Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: parent.width * 0.6;
+                width: vt.preferred-width + 10px;
+                height: vt.preferred-height + 2px;
+                border-radius: 2px;
+                border-width: 1px;
+                border-color: #ffffff40;
+                background: Cab.screen;
+                vt := Text {
+                    text: root.e.value;
+                    font-family: Theme.mono;
+                    font-size: 13px * Theme.scale;
+                    font-weight: 700;
+                    color: root.e.warn ? Cab.red : Cab.green;
+                }
+            }
+            Text {
+                x: (parent.width - self.width) / 2;
+                y: parent.width * 0.36;
+                text: root.e.kind;
+                font-family: Theme.cond;
+                font-size: 9px * Theme.scale;
+                font-weight: 700;
+                color: Cab.cyan;
+            }
+        }
+        HorizontalLayout {
+            padding-left: 4px;
+            padding-right: 4px;
+            spacing: 4px;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 1px;
+                Text {
+                    text: "EGT";
+                    font-family: Theme.cond;
+                    font-size: 8.5px * Theme.scale;
+                    font-weight: 700;
+                    color: Cab.cyan;
+                }
+                Text {
+                    text: root.e.egt;
+                    font-family: Theme.mono;
+                    font-size: 11px * Theme.scale;
+                    color: root.e.egt-level > 0.95 ? Cab.amber : Cab.white;
+                }
+            }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 1px;
+                Text {
+                    text: "FF";
+                    font-family: Theme.cond;
+                    font-size: 8.5px * Theme.scale;
+                    font-weight: 700;
+                    color: Cab.cyan;
+                    horizontal-alignment: right;
+                }
+                Text {
+                    text: root.e.ff;
+                    font-family: Theme.mono;
+                    font-size: 11px * Theme.scale;
+                    color: Cab.white;
+                    horizontal-alignment: right;
+                }
+            }
+        }
+        Rectangle {
+            height: 3px;
+            border-radius: 1.5px;
+            background: #ffffff17;
+            Rectangle {
+                x: 0;
+                width: parent.width * root.e.egt-level;
+                height: parent.height;
+                border-radius: 1.5px;
+                background: root.e.egt-level > 0.95 ? Cab.amber : Cab.green.with-alpha(0.7);
+            }
+        }
+        if root.e.n2 != "": Text {
+            text: (root.e.kind == "N1" ? "N2 " : "PROP ") + root.e.n2;
+            font-family: Theme.mono;
+            font-size: 9.5px * Theme.scale;
+            color: Cab.dim;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+/// Zbiornik paliwa: pionowy słupek z poziomem i ilością.
+component Tank inherits VerticalLayout {
+    in property <string> k;
+    in property <string> v;
+    in property <float> level;
+    horizontal-stretch: 1;
+    spacing: 3px;
+    Rectangle {
+        height: 54px * Theme.scale;
+        border-radius: 3px;
+        background: Cab.screen;
+        border-width: 1px;
+        border-color: Cab.edge;
+        clip: true;
+        Rectangle {
+            x: 2px;
+            width: parent.width - 4px;
+            height: (parent.height - 4px) * max(0, min(1, root.level));
+            y: parent.height - 2px - self.height;
+            border-radius: 2px;
+            background: @linear-gradient(180deg, Cab.cyan.with-alpha(0.75) 0%, Cab.cyan.with-alpha(0.35) 100%);
+            animate height { duration: 600ms; }
+        }
+    }
+    Text {
+        text: root.v;
+        font-family: Theme.mono;
+        font-size: Theme.fs-small;
+        color: Theme.text;
+        horizontal-alignment: center;
+    }
+    Text {
+        text: root.k;
+        font-family: Theme.cond;
+        font-size: 9.5px * Theme.scale;
+        font-weight: 700;
+        letter-spacing: 0.7px;
+        color: Theme.text-faint;
+        horizontal-alignment: center;
+    }
+}
+
+/// Róża wiatru względem dziobu: samolot zawsze w górę, strzałka pokazuje skąd wieje.
+component WindRose inherits Screenlet {
+    in property <float> rel;
+    in property <string> spd;
+    property <angle> a: root.rel * 1deg;
+    property <angle> a1: root.a - 13deg;
+    property <angle> a2: root.a + 13deg;
+    width: self.height;
+    border-radius: self.height / 2;
+    // pierścień i znaczniki co 30°
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: #ffffff2e;
+        stroke-width: 1px;
+        fill: transparent;
+        commands: "M 50 6 L 50 12 M 94 50 L 88 50 M 50 94 L 50 88 M 6 50 L 12 50 M 72 11.9 L 70.5 14.5 M 88.1 28 L 85.5 29.5 M 88.1 72 L 85.5 70.5 M 72 88.1 L 70.5 85.5 M 28 88.1 L 29.5 85.5 M 11.9 72 L 14.5 70.5 M 11.9 28 L 14.5 29.5 M 28 11.9 L 29.5 14.5";
+    }
+    // sylwetka samolotu
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: Cab.amber;
+        stroke-width: 2px;
+        fill: transparent;
+        commands: "M 50 38 L 50 62 M 38 49 L 62 49 M 45 60 L 55 60";
+    }
+    // strzałka wiatru od krawędzi do środka
+    if root.spd != "0": Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: Cab.cyan;
+        stroke-width: 2.5px;
+        fill: transparent;
+        MoveTo {
+            x: 50 + 44 * sin(root.a);
+            y: 50 - 44 * cos(root.a);
+        }
+        LineTo {
+            x: 50 + 20 * sin(root.a);
+            y: 50 - 20 * cos(root.a);
+        }
+        MoveTo {
+            x: 50 + 29 * sin(root.a1);
+            y: 50 - 29 * cos(root.a1);
+        }
+        LineTo {
+            x: 50 + 20 * sin(root.a);
+            y: 50 - 20 * cos(root.a);
+        }
+        LineTo {
+            x: 50 + 29 * sin(root.a2);
+            y: 50 - 29 * cos(root.a2);
+        }
+    }
+}
+
+/// Pasek trasy: lotnisko wylotu, tor z samolotem w miejscu postępu, lotnisko docelowe.
+component RouteRail inherits HorizontalLayout {
+    in property <string> from;
+    in property <string> to;
+    in property <float> progress;
+    spacing: 10px;
+    height: 26px * Theme.scale;
+    Text {
+        text: root.from == "" ? "–" : root.from;
+        font-family: Theme.mono;
+        font-size: 14px * Theme.scale;
+        font-weight: 700;
+        color: Theme.text;
+        vertical-alignment: center;
+    }
+    Rectangle {
+        horizontal-stretch: 1;
+        property <float> p: max(0, min(1, root.progress));
+        Rectangle {
+            y: (parent.height - self.height) / 2;
+            height: 2px;
+            background: Theme.line-strong;
+        }
+        Rectangle {
+            x: 0;
+            y: (parent.height - self.height) / 2;
+            width: parent.width * parent.p;
+            height: 2px;
+            background: Theme.accent;
+            animate width { duration: 600ms; }
+        }
+        Rectangle {
+            x: 0;
+            y: (parent.height - self.height) / 2;
+            width: 6px;
+            height: 6px;
+            border-radius: 3px;
+            background: Theme.accent;
+        }
+        Rectangle {
+            x: parent.width - self.width;
+            y: (parent.height - self.height) / 2;
+            width: 6px;
+            height: 6px;
+            border-radius: 3px;
+            background: Theme.panel;
+            border-width: 1.5px;
+            border-color: Theme.line-strong;
+        }
+        Rectangle {
+            x: parent.width * parent.p - self.width / 2;
+            y: (parent.height - self.height) / 2;
+            width: 22px * Theme.scale;
+            height: self.width;
+            border-radius: self.width / 2;
+            background: Theme.accent;
+            drop-shadow-blur: 8px;
+            drop-shadow-color: Theme.accent.with-alpha(0.6);
+            animate x { duration: 600ms; }
+            Image {
+                source: Icons.plane;
+                width: 13px * Theme.scale;
+                height: 13px * Theme.scale;
+                colorize: Theme.accent-text;
+            }
+        }
+    }
+    Text {
+        text: root.to == "" ? "–" : root.to;
+        font-family: Theme.mono;
+        font-size: 14px * Theme.scale;
+        font-weight: 700;
+        color: Theme.text;
+        vertical-alignment: center;
+    }
+}
+
+/// Wartość trasy: duża liczba nad podpisem.
+component Stat inherits VerticalLayout {
+    in property <string> k;
+    in property <string> v;
+    in property <color> tone: Theme.text;
+    horizontal-stretch: 1;
+    min-width: 0;
+    spacing: 1px;
+    Text {
+        text: root.v == "" ? "–" : root.v;
+        font-family: Theme.mono;
+        font-size: 14px * Theme.scale;
+        font-weight: 700;
+        color: root.tone;
+        overflow: elide;
+    }
+    Text {
+        text: root.k.to-uppercase();
+        font-family: Theme.cond;
+        font-size: 9.5px * Theme.scale;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        color: Theme.text-faint;
+        overflow: elide;
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+
+/// Pasek lotu u góry karty.
+component FlightBar inherits Panel {
+    in property <bool> wide;
+    height: 64px * Theme.scale;
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 14px;
+        Dot {
+            state: App.live.paused ? 1 : 2;
+            y: (parent.height - self.height) / 2;
+        }
         VerticalLayout {
-            width: 340px * Theme.scale;
-            spacing: 10px;
-            Screen {
-                id: 14;
-                height: 300px * Theme.scale;
-                source: App.pfd;
+            alignment: center;
+            spacing: 3px;
+            horizontal-stretch: 1;
+            min-width: 160px;
+            Text {
+                text: App.live.title;
+                font-family: Theme.font;
+                font-size: Theme.fs-big;
+                font-weight: 600;
+                color: Theme.text;
+                overflow: elide;
             }
             HorizontalLayout {
-                spacing: 8px;
-                Metric {
-                    horizontal-stretch: 1;
-                    label: "TAS";
-                    value: App.live.tas;
-                    unit: "kt";
-                    big: 18px * Theme.scale;
+                spacing: 6px;
+                alignment: start;
+                if App.plan.loaded && App.plan.callsign != "": Chip {
+                    text: App.plan.callsign;
+                    tone: Theme.accent;
                 }
-                Metric {
-                    horizontal-stretch: 1;
-                    label: @tr("Ścieżka");
-                    value: App.live.trk;
-                    unit: "°";
-                    big: 18px * Theme.scale;
+                if App.plan.loaded: Text {
+                    text: App.plan.origin + " → " + App.plan.dest;
+                    font-family: Theme.mono;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                    vertical-alignment: center;
                 }
-                Metric {
-                    horizontal-stretch: 1;
-                    label: "AGL";
-                    value: App.live.agl;
-                    big: 18px * Theme.scale;
-                }
-            }
-            Box {
-                title: @tr("Otoczenie");
-                icon: Icons.wind;
-                Pair {
-                    k: @tr("Wiatr");
-                    v: App.live.wind;
-                }
-                Pair {
-                    k: @tr("Temperatura");
-                    v: App.live.oat;
-                }
-                Pair {
-                    k: "QNH";
-                    v: App.live.qnh;
-                }
-                Pair {
-                    k: @tr("Pozycja");
-                    v: App.live.position;
-                }
-                Pair {
-                    k: @tr("W pobliżu");
-                    v: App.live.nearest;
-                }
-                Pair {
-                    k: @tr("Czas symulatora");
-                    v: App.live.sim-time;
-                }
-            }
-            Box {
-                vertical-stretch: 1;
-                title: @tr("Przyziemienie");
-                icon: Icons.plane-landing;
                 Text {
-                    text: App.live.touchdown != "" ? App.live.touchdown : @tr("Ocena pojawi się po wylądowaniu.");
+                    text: (App.live.category != "" ? App.live.category + " · " : "") + App.live.source.to-uppercase() + (App.simulation ? " · " + @tr("symulacja") : "");
+                    font-family: Theme.cond;
+                    font-size: 10.5px * Theme.scale;
+                    font-weight: 600;
+                    letter-spacing: 0.6px;
+                    color: Theme.text-faint;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+            }
+        }
+        if root.wide: PhaseRail {
+            width: min(460px * Theme.scale, root.width * 0.42);
+            y: (parent.height - self.height) / 2 + 2px;
+            current: App.live.phase-index;
+            paused: App.live.paused;
+        }
+        if !root.wide: VerticalLayout {
+            alignment: center;
+            Chip {
+                text: App.live.phase;
+                tone: Theme.accent;
+            }
+        }
+        if App.live.paused: VerticalLayout {
+            alignment: center;
+            Chip {
+                text: @tr("Pauza");
+                tone: Colors.warn;
+                solid: true;
+            }
+        }
+        if App.recording: VerticalLayout {
+            alignment: center;
+            Chip {
+                text: "● REC";
+                tone: Theme.rec;
+            }
+        }
+        Clock {
+            k: "UTC";
+            v: App.live.utc;
+        }
+        Clock {
+            k: @tr("Czas lotu");
+            v: App.live.flight-time;
+        }
+        Clock {
+            k: "ETA";
+            v: App.live.eta;
+            tone: Cab.label;
+        }
+    }
+}
+
+/// Lewa kolumna: PFD, FMA, odczyty i parametry lotu.
+component Pilot inherits VerticalLayout {
+    spacing: 8px;
+    Screen {
+        id: 14;
+        height: self.width * 0.86;
+        source: App.pfd;
+    }
+    // FMA: automat ciągu, tryb pionowy, tryb poziomy, AP/FD
+    HorizontalLayout {
+        spacing: 4px;
+        Fma {
+            k: "A/THR";
+            v: App.live.fma-thr;
+        }
+        Fma {
+            k: "VERT";
+            v: App.live.fma-vert;
+        }
+        Fma {
+            k: "LAT";
+            v: App.live.fma-lat;
+        }
+        Fma {
+            k: "AP · FD";
+            v: (App.live.ap-master ? "AP" : "") + (App.live.ap-master && App.live.ap-fd ? " " : "") + (App.live.ap-fd ? "FD" : "");
+            tone: Cab.white;
+        }
+    }
+    // Nastawy autopilota
+    HorizontalLayout {
+        spacing: 4px;
+        Read {
+            k: "SPD SEL";
+            v: App.live.ap-spd;
+            tone: Cab.cyan;
+        }
+        Read {
+            k: "HDG SEL";
+            v: App.live.ap-hdg;
+            tone: Cab.cyan;
+        }
+        Read {
+            k: "ALT SEL";
+            v: App.live.ap-alt;
+            tone: Cab.cyan;
+        }
+    }
+    HorizontalLayout {
+        spacing: 4px;
+        Read {
+            k: "GS";
+            v: App.live.gs;
+            unit: "kt";
+        }
+        Read {
+            k: "TAS";
+            v: App.live.tas;
+            unit: "kt";
+        }
+        Read {
+            k: App.live.mach != "" ? "MACH" : "TRK";
+            v: App.live.mach != "" ? App.live.mach : App.live.trk + "°";
+        }
+    }
+    HorizontalLayout {
+        spacing: 4px;
+        Read {
+            k: "V/S";
+            v: (App.live.vs-value > 50 ? "▲" : App.live.vs-value < -50 ? "▼" : "") + App.live.vs;
+            unit: "fpm";
+            tone: App.live.vs-value > 50 ? Cab.green : App.live.vs-value < -1500 && App.live.phase-index >= 5 ? Cab.red : App.live.vs-value < -50 ? Cab.amber : Cab.white;
+        }
+        Read {
+            k: "AGL";
+            v: App.live.agl;
+        }
+    }
+    Section {
+        title: @tr("Parametry");
+        icon: Icons.activity;
+        vertical-stretch: 1;
+        HorizontalLayout {
+            spacing: 10px;
+            Stat {
+                k: "G";
+                v: App.live.g-force;
+            }
+            Stat {
+                k: "AOA";
+                v: App.live.aoa;
+            }
+            Stat {
+                k: @tr("Trym");
+                v: App.live.trim;
+            }
+            Stat {
+                k: "TAT";
+                v: App.live.tat;
+            }
+        }
+        Rectangle { }
+    }
+}
+
+/// Środek: mapa z nakładką kursu oraz postęp trasy z profilem wysokości.
+component Center inherits VerticalLayout {
+    spacing: 8px;
+    Rectangle {
+        vertical-stretch: 1;
+        MapView {
+            id: 0;
+            width: parent.width;
+            height: parent.height;
+            source: App.map-live;
+            labels: App.map-live-labels;
+            scale-text: App.map-live-scale;
+            show-follow: true;
+        }
+        // nakładka w lewym górnym rogu mapy
+        Rectangle {
+            x: 10px;
+            y: 10px;
+            width: hud.preferred-width;
+            height: hud.preferred-height;
+            border-radius: Theme.r-small;
+            background: #0b1016d9;
+            border-width: 1px;
+            border-color: Cab.edge;
+            hud := HorizontalLayout {
+                padding: 6px;
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 12px;
+                for c in [{ k: "HDG", v: App.live.hdg + "°" }, { k: "TRK", v: App.live.trk + "°" }, { k: "GS", v: App.live.gs + " kt" }, { k: "ALT", v: App.live.alt + " " + App.live.alt-unit }]: VerticalLayout {
+                    spacing: 0;
+                    Text {
+                        text: c.k;
+                        font-family: Theme.cond;
+                        font-size: 9px * Theme.scale;
+                        font-weight: 700;
+                        letter-spacing: 0.7px;
+                        color: Cab.cyan;
+                    }
+                    Text {
+                        text: c.v;
+                        font-family: Theme.mono;
+                        font-size: 12px * Theme.scale;
+                        font-weight: 700;
+                        color: Cab.white;
+                    }
+                }
+            }
+        }
+    }
+    Section {
+        title: @tr("Trasa");
+        icon: Icons.route;
+        note: App.plan.loaded && App.plan.live ? App.plan.remaining + " " + @tr("do celu") : App.live.dest-ete != "" ? App.live.dest-ete + " " + @tr("do celu") : "";
+        HorizontalLayout {
+            spacing: 16px;
+            VerticalLayout {
+                horizontal-stretch: 3;
+                spacing: 10px;
+                RouteRail {
+                    from: App.plan.loaded ? App.plan.origin : "";
+                    to: App.plan.loaded ? App.plan.dest : "";
+                    progress: App.plan.loaded && App.plan.live ? App.plan.progress : App.live.wp-progress;
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    Stat {
+                        k: @tr("Następny punkt");
+                        v: App.live.has-route ? App.live.next-wp : App.plan.live ? App.plan.next : "";
+                        tone: Cab.magenta;
+                    }
+                    Stat {
+                        k: @tr("Odległość");
+                        v: App.live.has-route ? App.live.next-dist : App.plan.live ? App.plan.next-dist : "";
+                    }
+                    Stat {
+                        k: @tr("Czas do punktu");
+                        v: App.live.next-ete;
+                    }
+                    Stat {
+                        k: @tr("Do celu");
+                        v: App.live.dest-ete;
+                    }
+                }
+                if !App.live.has-route && !App.plan.loaded: Text {
+                    text: @tr("Brak planu lotu – wczytaj go w symulatorze albo pobierz z SimBrief na karcie Plan.");
                     font-family: Theme.font;
-                    font-size: Theme.fs;
-                    color: App.live.touchdown != "" ? Theme.text : Theme.text-faint;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
                     wrap: word-wrap;
                 }
             }
-        }
-        // Środek: mapa z torem
-        VerticalLayout {
-            horizontal-stretch: 1;
-            spacing: 10px;
-            HorizontalLayout {
-                spacing: 10px;
-                height: 36px * Theme.scale;
-                Dot {
-                    state: App.live.has-data ? 2 : 0;
-                    y: (parent.height - self.height) / 2;
-                }
-                Text {
-                    text: App.live.has-data ? App.live.title : @tr("Czekam na dane z symulatora");
-                    font-family: Theme.font;
-                    font-size: Theme.fs-big;
-                    font-weight: 600;
-                    color: Theme.text;
-                    vertical-alignment: center;
-                    overflow: elide;
-                    horizontal-stretch: 1;
-                }
-                Text {
-                    text: App.live.phase;
-                    font-family: Theme.font;
-                    font-size: Theme.fs;
-                    color: Theme.accent;
-                    vertical-alignment: center;
-                }
-                Text {
-                    text: App.live.paused ? @tr("PAUZA") : "";
-                    font-family: Theme.font;
-                    font-size: Theme.fs;
-                    font-weight: 700;
-                    color: Colors.warn;
-                    vertical-alignment: center;
-                }
-            }
-            MapView {
-                id: 0;
-                vertical-stretch: 1;
-                source: App.map-live;
-                labels: App.map-live-labels;
-                scale-text: App.map-live-scale;
-                show-follow: true;
-            }
-            Panel {
-                height: nav.preferred-height;
-                nav := VerticalLayout {
-                    padding: 10px;
-                    spacing: 6px;
-                    HorizontalLayout {
-                        spacing: 14px;
-                        Image {
-                            source: Icons.route;
-                            width: 18px;
-                            height: 18px;
-                            colorize: Theme.accent;
-                            y: (parent.height - self.height) / 2;
-                        }
-                        Pair {
-                            horizontal-stretch: 1;
-                            k: @tr("Następny punkt");
-                            v: App.live.next-wp;
-                        }
-                        Pair {
-                            horizontal-stretch: 1;
-                            k: @tr("Odległość");
-                            v: App.live.next-dist;
-                        }
-                        Pair {
-                            horizontal-stretch: 1;
-                            k: @tr("Czas do punktu");
-                            v: App.live.next-ete;
-                        }
-                        Pair {
-                            horizontal-stretch: 1;
-                            k: @tr("Do celu");
-                            v: App.live.dest-ete;
-                        }
-                    }
-                    Bar {
-                        value: App.live.wp-progress;
-                    }
-                }
-            }
-        }
-        // Prawa kolumna: systemy (tylko podgląd)
-        rsv := ScrollView {
-            width: 300px * Theme.scale;
+            // Profil wysokości z bieżącego lotu
             VerticalLayout {
-                width: rsv.visible-width - 4px;
-                spacing: 10px;
-                Box {
-                    title: @tr("Autopilot");
-                    icon: Icons.navigation;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        Dot {
-                            state: App.live.ap-master ? 2 : 0;
-                            y: (parent.height - self.height) / 2;
-                        }
-                        Text {
-                            text: App.live.ap-master ? "AP ON" : "AP OFF";
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-big;
-                            font-weight: 700;
-                            color: App.live.ap-master ? Theme.ok : Theme.text-dim;
-                        }
-                    }
-                    Pair {
-                        k: "HDG";
-                        v: App.live.ap-hdg;
-                        mono: true;
-                    }
-                    Pair {
-                        k: "ALT";
-                        v: App.live.ap-alt;
-                        mono: true;
-                    }
-                    Pair {
-                        k: "SPD";
-                        v: App.live.ap-spd;
-                        mono: true;
-                    }
-                    Pair {
-                        k: "V/S";
-                        v: App.live.ap-vs;
-                        mono: true;
-                    }
-                }
-                Box {
-                    title: @tr("Radia");
-                    icon: Icons.radio;
-                    Pair {
-                        k: "COM 1";
-                        v: App.live.com1;
-                        mono: true;
-                    }
-                    Pair {
-                        k: "COM 2";
-                        v: App.live.com2;
-                        mono: true;
-                    }
-                    Pair {
-                        k: "NAV 1";
-                        v: App.live.nav1;
-                        mono: true;
-                    }
-                    Pair {
-                        k: "NAV 2";
-                        v: App.live.nav2;
-                        mono: true;
-                    }
-                    Pair {
-                        k: "XPDR";
-                        v: App.live.xpdr;
-                        mono: true;
-                    }
-                }
-                Box {
-                    title: @tr("Systemy");
-                    icon: Icons.sliders-horizontal;
-                    Pair {
-                        k: @tr("Podwozie");
-                        v: App.live.gear;
-                    }
-                    Pair {
-                        k: @tr("Klapy");
-                        v: App.live.flaps;
-                    }
-                    Pair {
-                        k: @tr("Spoilery");
-                        v: App.live.spoilers;
-                    }
-                    Pair {
-                        k: @tr("Hamulec postojowy");
-                        v: App.live.brake ? @tr("zaciągnięty") : @tr("zwolniony");
-                    }
-                    Pair {
-                        k: @tr("Światła");
-                        v: App.live.lights;
-                    }
-                }
-                Box {
-                    title: @tr("Silniki i paliwo");
-                    icon: Icons.fuel;
-                    for e in App.engines: VerticalLayout {
-                        spacing: 2px;
-                        HorizontalLayout {
-                            Text {
-                                text: e.label;
-                                font-family: Theme.font;
-                                font-size: Theme.fs;
-                                color: Theme.text-dim;
-                                horizontal-stretch: 1;
-                            }
-                            Text {
-                                text: e.main;
-                                font-family: Theme.mono;
-                                font-size: Theme.fs;
-                                color: Theme.text;
-                            }
-                        }
-                        Bar {
-                            value: e.level;
-                            tone: Colors.spd;
-                        }
-                        Text {
-                            text: e.sub;
-                            font-family: Theme.font;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-faint;
-                        }
-                    }
-                    Pair {
-                        k: @tr("Paliwo");
-                        v: App.live.fuel;
-                    }
-                    Bar {
-                        value: App.live.fuel-level;
-                        tone: Colors.vs;
-                    }
-                }
-                Box {
-                    title: @tr("Zapis lotu");
-                    icon: Icons.circle-dot;
+                horizontal-stretch: 2;
+                spacing: 3px;
+                HorizontalLayout {
                     Text {
-                        text: App.recording ? App.recording-text : @tr("Zapis zacznie się sam po starcie (w powietrzu, prędkość nad ziemią > 40 kt).");
-                        font-family: Theme.font;
-                        font-size: Theme.fs;
+                        text: @tr("Profil wysokości").to-uppercase();
+                        font-family: Theme.cond;
+                        font-size: 9.5px * Theme.scale;
+                        font-weight: 700;
+                        letter-spacing: 0.8px;
+                        color: Theme.text-faint;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: App.live.alt-top != "" ? "▲ " + App.live.alt-top : "";
+                        font-family: Theme.mono;
+                        font-size: 10px * Theme.scale;
                         color: Theme.text-dim;
-                        wrap: word-wrap;
-                    }
-                    HorizontalLayout {
-                        spacing: 6px;
-                        padding-top: 4px;
-                        Button {
-                            label: @tr("Znacznik");
-                            icon: Icons.bookmark;
-                            enabled: App.recording;
-                            clicked => {
-                                App.cmd("record-mark", "");
-                            }
-                        }
-                        Button {
-                            label: App.recording ? @tr("Zakończ") : @tr("Wznów");
-                            icon: App.recording ? Icons.circle-stop : Icons.play;
-                            clicked => {
-                                App.cmd(App.recording ? "record-stop" : "record-resume", "");
-                            }
-                        }
                     }
                 }
-                if App.live.controlled-by != "": Box {
-                    title: @tr("Steruje");
-                    icon: Icons.smartphone;
-                    Text {
-                        text: App.live.controlled-by;
+                Screenlet {
+                    height: 62px * Theme.scale;
+                    if App.live.alt-line == "": Text {
+                        text: @tr("Profil pojawi się w locie");
                         font-family: Theme.font;
-                        font-size: Theme.fs;
-                        color: Theme.text;
-                        wrap: word-wrap;
+                        font-size: Theme.fs-small;
+                        color: Cab.dim;
                     }
+                    if App.live.alt-line != "": Path {
+                        x: 4px;
+                        y: 4px;
+                        width: parent.width - 8px;
+                        height: parent.height - 6px;
+                        viewbox-width: 200;
+                        viewbox-height: 60;
+                        fill: Theme.accent.with-alpha(0.18);
+                        stroke: transparent;
+                        commands: App.live.alt-area;
+                    }
+                    if App.live.alt-line != "": Path {
+                        x: 4px;
+                        y: 4px;
+                        width: parent.width - 8px;
+                        height: parent.height - 6px;
+                        viewbox-width: 200;
+                        viewbox-height: 60;
+                        fill: transparent;
+                        stroke: Theme.accent;
+                        stroke-width: 1.5px;
+                        commands: App.live.alt-line;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Prawa kolumna: systemy, silniki, paliwo, radia, otoczenie, przyziemienie, zapis.
+component Systems inherits VerticalLayout {
+    spacing: 8px;
+    Section {
+        title: @tr("Systemy");
+        icon: Icons.sliders-horizontal;
+        // lampki 4 × 2
+        Rectangle {
+            property <length> gap: 4px;
+            property <length> cw: (self.width - 3 * self.gap) / 4;
+            property <length> ch: 36px * Theme.scale;
+            height: 2 * self.ch + self.gap;
+            for l[i] in App.live-lamps: Lamp {
+                x: (i - floor(i / 4) * 4) * (parent.cw + parent.gap);
+                y: floor(i / 4) * (parent.ch + parent.gap);
+                width: parent.cw;
+                height: parent.ch;
+                lamp: l;
+            }
+        }
+        // światła zewnętrzne
+        HorizontalLayout {
+            spacing: 3px;
+            for l in App.live-lights: Rectangle {
+                horizontal-stretch: 1;
+                height: 20px * Theme.scale;
+                border-radius: min(3px, Theme.r-small);
+                background: l.on ? Cab.green.with-alpha(0.14) : Cab.screen;
+                border-width: 1px;
+                border-color: l.on ? Cab.green.with-alpha(0.55) : Cab.edge;
+                Text {
+                    text: l.k;
+                    font-family: Theme.cond;
+                    font-size: 9px * Theme.scale;
+                    font-weight: 700;
+                    letter-spacing: 0.4px;
+                    color: l.on ? Cab.green : Cab.dim;
+                }
+            }
+        }
+    }
+    if App.engines.length > 0: Section {
+        title: @tr("Silniki");
+        icon: Icons.gauge;
+        note: App.live.fuel-flow != "" ? "FF " + App.live.fuel-flow : "";
+        Rectangle {
+            property <int> n: App.engines.length;
+            property <int> cols: self.n == 1 ? 1 : 2;
+            property <length> gap: 6px;
+            property <length> cw: self.n == 1 ? min(self.width, 150px * Theme.scale) : (self.width - self.gap) / 2;
+            property <length> ch: self.cw * 0.78 + 88px * Theme.scale;
+            property <length> x0: self.n == 1 ? (self.width - self.cw) / 2 : 0;
+            height: ceil(self.n / self.cols) * (self.ch + self.gap) - self.gap;
+            for e[i] in App.engines: Gauge {
+                x: parent.x0 + (i - floor(i / parent.cols) * parent.cols) * (parent.cw + parent.gap);
+                y: floor(i / parent.cols) * (parent.ch + parent.gap);
+                width: parent.cw;
+                height: parent.ch;
+                e: e;
+            }
+        }
+    }
+    Section {
+        title: @tr("Paliwo");
+        icon: Icons.fuel;
+        note: App.live.fuel;
+        note-tone: App.live.fuel-level < 0.15 ? Colors.warn : Theme.text;
+        HorizontalLayout {
+            spacing: 8px;
+            Tank {
+                k: "L";
+                v: App.live.tank-l;
+                level: App.live.tank-l-level;
+            }
+            if App.live.has-center: Tank {
+                k: "CTR";
+                v: App.live.tank-c;
+                level: App.live.tank-c-level;
+            }
+            Tank {
+                k: "R";
+                v: App.live.tank-r;
+                level: App.live.tank-r-level;
+            }
+        }
+        Bar {
+            value: App.live.fuel-level;
+            tone: App.live.fuel-level < 0.15 ? Colors.warn : Cab.label;
+        }
+        VerticalLayout {
+            spacing: 0;
+            Row {
+                k: @tr("Zasięg");
+                v: App.live.fuel-endurance;
+            }
+            Row {
+                k: @tr("Na celu");
+                v: App.live.fuel-dest != "" ? "≈ " + App.live.fuel-dest : "";
+                tone: App.live.fuel-dest-low ? Colors.warn : Theme.text;
+            }
+            if App.plan.live && App.plan.fuel-plan != "": Row {
+                k: @tr("Wobec planu");
+                v: App.plan.fuel-diff;
+                tone: App.plan.fuel-ok ? Theme.ok : Colors.warn;
+            }
+        }
+    }
+    Section {
+        title: @tr("Radia");
+        icon: Icons.radio;
+        Radio {
+            k: "COM1";
+            active: App.live.com1-a;
+            standby: App.live.com1-s;
+        }
+        Radio {
+            k: "COM2";
+            active: App.live.com2-a;
+            standby: App.live.com2-s;
+        }
+        Radio {
+            k: "NAV1";
+            active: App.live.nav1-a;
+            standby: App.live.nav1-s;
+            note: App.live.nav1-id + (App.live.nav1-dme != "" ? " " + App.live.nav1-dme : "");
+        }
+        Radio {
+            k: "NAV2";
+            active: App.live.nav2-a;
+            standby: App.live.nav2-s;
+        }
+        Radio {
+            k: "XPDR";
+            active: App.live.xpdr-code;
+            standby: "";
+            note: App.live.xpdr-mode;
+        }
+    }
+    Section {
+        title: @tr("Otoczenie");
+        icon: Icons.wind;
+        HorizontalLayout {
+            spacing: 12px;
+            WindRose {
+                height: 92px * Theme.scale;
+                rel: App.live.wind-rel;
+                spd: App.live.wind-spd;
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+                Text {
+                    text: App.live.wind;
+                    font-family: Theme.mono;
+                    font-size: 14px * Theme.scale;
+                    font-weight: 700;
+                    color: Theme.text;
+                }
+                Text {
+                    text: App.live.wind-head;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                }
+                Text {
+                    text: App.live.wind-cross;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 0;
+            Row {
+                k: "OAT";
+                v: App.live.oat;
+            }
+            Row {
+                k: "QNH";
+                v: App.live.qnh;
+            }
+            Row {
+                k: @tr("Pozycja");
+                v: App.live.position;
+            }
+            Row {
+                k: @tr("W pobliżu");
+                v: App.live.nearest;
+            }
+        }
+    }
+    if App.live.touchdown != "": Section {
+        title: @tr("Przyziemienie");
+        icon: Icons.plane-landing;
+        Text {
+            text: App.live.touchdown;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            color: Theme.text;
+            wrap: word-wrap;
+        }
+    }
+    Section {
+        title: @tr("Zapis lotu");
+        icon: Icons.circle-dot;
+        note: App.recording ? "● REC" : "";
+        note-tone: Theme.rec;
+        Text {
+            text: App.recording ? App.recording-text : @tr("Zapis zacznie się sam po starcie (w powietrzu, prędkość nad ziemią > 40 kt).");
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-dim;
+            wrap: word-wrap;
+        }
+        HorizontalLayout {
+            spacing: 6px;
+            alignment: start;
+            Button {
+                label: @tr("Znacznik");
+                icon: Icons.bookmark;
+                enabled: App.recording;
+                clicked => {
+                    App.cmd("record-mark", "");
+                }
+            }
+            Button {
+                label: App.recording ? @tr("Zakończ") : @tr("Wznów");
+                icon: App.recording ? Icons.circle-stop : Icons.play;
+                clicked => {
+                    App.cmd(App.recording ? "record-stop" : "record-resume", "");
+                }
+            }
+        }
+    }
+    if App.live.controlled-by != "": Section {
+        title: @tr("Steruje");
+        icon: Icons.smartphone;
+        Text {
+            text: App.live.controlled-by;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text;
+            wrap: word-wrap;
+        }
+    }
+}
+
+export component Live inherits Rectangle {
+    // Bez danych: zaproszenie zamiast pustych wyświetlaczy
+    if !App.live.has-data: VerticalLayout {
+        alignment: center;
+        padding: 24px;
+        spacing: 14px;
+        Empty {
+            icon: Icons.plane;
+            title: @tr("Czekam na dane z symulatora");
+            text: App.sim-status != "" ? App.sim-status : @tr("Uruchom MSFS albo X-Plane – podgląd lotu pojawi się tu sam.");
+        }
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: 220px;
+                Bar {
+                    y: 0;
+                    width: parent.width;
+                    value: App.sim-connected ? 0.6 : 0.15;
+                    tone: App.sim-connected ? Theme.ok : Theme.accent;
+                }
+            }
+        }
+    }
+    if App.live.has-data: VerticalLayout {
+        padding: 12px;
+        spacing: 10px;
+        FlightBar {
+            wide: root.width > 1180px;
+        }
+        if App.live.stall || App.live.overspeed: Rectangle {
+            height: 30px * Theme.scale;
+            border-radius: Theme.r-small;
+            background: Cab.red.with-alpha(0.16);
+            border-width: 1px;
+            border-color: Cab.red;
+            Text {
+                text: App.live.stall ? "STALL" : "OVERSPEED";
+                font-family: Theme.mono;
+                font-size: 14px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 3px;
+                color: Cab.red;
+            }
+        }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            spacing: 10px;
+            lsv := ScrollView {
+                width: min(360px * Theme.scale, root.width * 0.3);
+                Pilot {
+                    width: lsv.visible-width - 4px;
+                }
+            }
+            Center {
+                horizontal-stretch: 1;
+                min-width: 300px;
+            }
+            rsv := ScrollView {
+                width: min(320px * Theme.scale, root.width * 0.28);
+                Systems {
+                    width: rsv.visible-width - 4px;
                 }
             }
         }

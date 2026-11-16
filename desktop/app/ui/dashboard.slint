@@ -65,6 +65,49 @@ component PlanStat inherits VerticalLayout {
     }
 }
 
+/// Etykieta (znak wywoławczy, typ samolotu).
+component Tag inherits Rectangle {
+    in property <string> text;
+    in property <color> tone;
+    width: tt.preferred-width + 14px;
+    height: 20px * Theme.scale;
+    y: 1px;
+    border-radius: min(4px, Theme.r-small);
+    background: root.tone.with-alpha(0.12);
+    border-width: 1px;
+    border-color: root.tone.with-alpha(0.45);
+    tt := Text {
+        text: root.text;
+        font-family: Theme.mono;
+        font-size: 11px * Theme.scale;
+        font-weight: 700;
+        color: root.tone;
+    }
+}
+
+/// Grupa wartości planu z podpisem wersalikami.
+component StatGroup inherits Rectangle {
+    in property <string> title;
+    border-radius: Theme.r;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    height: gv.preferred-height;
+    gv := VerticalLayout {
+        padding: 10px;
+        spacing: 8px;
+        Text {
+            text: root.title.to-uppercase();
+            font-family: Theme.cond;
+            font-size: 10.5px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: Theme.mode == 2 || Theme.mode == 5 ? #0a8fa3 : #4fd8eb;
+        }
+        @children
+    }
+}
+
 /// Plan lotu z SimBrief – główny element Pulpitu.
 component PlanHero inherits Panel {
     hv := VerticalLayout {
@@ -73,8 +116,19 @@ component PlanHero inherits Panel {
         HorizontalLayout {
             spacing: 10px;
             Heading {
-                text: App.plan.loaded ? @tr("Plan lotu") + (App.plan.callsign != "" ? "  " + App.plan.callsign : "") : @tr("Plan lotu");
+                text: @tr("Plan lotu");
                 icon: Icons.route;
+                horizontal-stretch: 0;
+            }
+            if App.plan.loaded && App.plan.callsign != "": Tag {
+                text: App.plan.callsign;
+                tone: #4fd8eb;
+            }
+            if App.plan.loaded && App.plan.aircraft != "": Tag {
+                text: App.plan.aircraft;
+                tone: Theme.text-dim;
+            }
+            Rectangle {
                 horizontal-stretch: 1;
             }
             if App.plan.loaded: Text {
@@ -90,6 +144,15 @@ component PlanHero inherits Panel {
                 enabled: !App.plan-busy;
                 clicked => {
                     App.cmd("simbrief-fetch", App.simbrief-user);
+                }
+            }
+            if App.plan.loaded: IconButton {
+                icon: Icons.square-pen;
+                tip: @tr("Edytuj w karcie Plan lotu (punkty, SID, STAR, podejście, eksport)");
+                clicked => {
+                    App.cmd("plan-simbrief", "");
+                    App.tab = 12;
+                    App.cmd("tab", 12);
                 }
             }
             if App.plan.loaded: IconButton {
@@ -210,54 +273,155 @@ component PlanHero inherits Panel {
                 width: 180px * Theme.scale;
             }
         }
-        if App.plan.loaded: HorizontalLayout {
-            spacing: 12px;
-            PlanStat {
-                label: @tr("Dystans");
-                value: App.plan.distance;
+        // Profil trasy: wysokość, planowane paliwo, T/C, T/D, samolot na żywo
+        if App.plan.loaded: Rectangle {
+            height: 150px * Theme.scale;
+            border-radius: Theme.r-small;
+            background: #0b1016;
+            clip: true;
+            changed width => {
+                App.map-event(42, "size", self.width / 1px, self.height / 1px, 0, 0);
             }
-            PlanStat {
-                label: @tr("Czas lotu");
-                value: App.plan.ete;
+            changed height => {
+                App.map-event(42, "size", self.width / 1px, self.height / 1px, 0, 0);
             }
-            PlanStat {
-                label: @tr("Przelot");
-                value: App.plan.cruise;
+            init => {
+                App.map-event(42, "size", self.width / 1px, self.height / 1px, 0, 0);
             }
-            PlanStat {
-                label: @tr("Paliwo na starcie");
-                value: App.plan.ramp;
-            }
-            PlanStat {
-                label: @tr("Spalanie");
-                value: App.plan.burn;
-            }
-            PlanStat {
-                label: "ZFW";
-                value: App.plan.zfw;
-            }
-            PlanStat {
-                label: "TOW";
-                value: App.plan.tow;
-            }
-            PlanStat {
-                label: @tr("Zapasowe");
-                value: App.plan.altn;
-            }
-            if App.plan.live && App.plan.fuel-plan != "": PlanStat {
-                label: @tr("Paliwo: teraz / plan");
-                value: App.plan.fuel-diff;
-                tone: App.plan.fuel-ok ? Theme.ok : Colors.warn;
+            Image {
+                x: 0;
+                y: 0;
+                width: parent.width;
+                height: parent.height;
+                source: App.plan-profile-sb;
+                image-fit: fill;
             }
         }
-        if App.plan.loaded && App.plan.route != "": Text {
-            text: App.plan.route;
-            font-family: Theme.mono;
-            font-size: 10.5px * Theme.scale;
-            color: Theme.text-faint;
-            wrap: word-wrap;
+        if App.plan.loaded: HorizontalLayout {
+            spacing: 8px;
+            StatGroup {
+                title: @tr("Trasa");
+                horizontal-stretch: 3;
+                HorizontalLayout {
+                    spacing: 10px;
+                    PlanStat {
+                        label: @tr("Dystans");
+                        value: App.plan.distance;
+                    }
+                    PlanStat {
+                        label: @tr("Czas lotu");
+                        value: App.plan.ete;
+                    }
+                    PlanStat {
+                        label: @tr("Przelot");
+                        value: App.plan.cruise;
+                    }
+                    if App.plan.ci != "": PlanStat {
+                        label: "CI";
+                        value: App.plan.ci;
+                    }
+                }
+            }
+            StatGroup {
+                title: @tr("Paliwo");
+                horizontal-stretch: 4;
+                HorizontalLayout {
+                    spacing: 10px;
+                    PlanStat {
+                        label: @tr("Na starcie");
+                        value: App.plan.ramp;
+                    }
+                    PlanStat {
+                        label: @tr("Spalanie");
+                        value: App.plan.burn;
+                        tone: #4fd8eb;
+                    }
+                    PlanStat {
+                        label: @tr("Rezerwa");
+                        value: App.plan.reserve;
+                        tone: Colors.warn;
+                    }
+                    if App.plan.live && App.plan.fuel-plan != "": PlanStat {
+                        label: @tr("Teraz / plan");
+                        value: App.plan.fuel-diff;
+                        tone: App.plan.fuel-ok ? Theme.ok : Colors.warn;
+                    }
+                }
+                // podział paliwa: spalanie | rezerwa | reszta; znacznik – paliwo teraz
+                Rectangle {
+                    height: 10px;
+                    border-radius: 5px;
+                    background: Theme.hover;
+                    clip: true;
+                    Rectangle {
+                        x: 0;
+                        width: parent.width * App.plan.burn-frac;
+                        background: #4fd8eb;
+                    }
+                    Rectangle {
+                        x: parent.width * App.plan.burn-frac;
+                        width: parent.width * App.plan.reserve-frac;
+                        background: Colors.warn;
+                    }
+                    if App.plan.fuel-now-frac > 0: Rectangle {
+                        x: parent.width * App.plan.fuel-now-frac - 1px;
+                        width: 3px;
+                        background: Theme.text;
+                    }
+                }
+            }
+            StatGroup {
+                title: @tr("Masy");
+                horizontal-stretch: 3;
+                HorizontalLayout {
+                    spacing: 10px;
+                    PlanStat {
+                        label: "ZFW";
+                        value: App.plan.zfw;
+                    }
+                    PlanStat {
+                        label: "TOW";
+                        value: App.plan.tow;
+                    }
+                    PlanStat {
+                        label: @tr("Zapasowe");
+                        value: App.plan.altn;
+                    }
+                }
+            }
+        }
+        if App.plan.loaded && App.plan.route != "": Rectangle {
+            height: rt.preferred-height + 14px;
+            border-radius: Theme.r-small;
+            background: #0b1016;
+            rt := Text {
+                x: 10px;
+                width: parent.width - 20px;
+                text: App.plan.route;
+                font-family: Theme.mono;
+                font-size: 11px * Theme.scale;
+                color: #c8f6fc;
+                wrap: word-wrap;
+            }
         }
         // Punkty trasy
+        if App.plan.loaded && App.plan-fixes.length > 0: HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            spacing: 10px;
+            height: 14px * Theme.scale;
+            for c[i] in [@tr("PUNKT"), @tr("DROGA"), "ALT", "Σ NM", @tr("WIATR"), @tr("PALIWO")]: Text {
+                width: i == 5 ? -1px : (i == 0 ? 90px : 70px) * Theme.scale;
+                horizontal-stretch: i == 5 ? 1 : 0;
+                text: c;
+                font-family: Theme.cond;
+                font-size: 10px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 0.8px;
+                color: Theme.text-faint;
+                horizontal-alignment: i >= 2 ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+            }
+        }
         if App.plan.loaded && App.plan-fixes.length > 0: Rectangle {
             height: 170px * Theme.scale;
             border-radius: Theme.r-small;

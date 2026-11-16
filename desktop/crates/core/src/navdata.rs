@@ -108,7 +108,7 @@ pub mod fix_types {
     pub const AIRPORT: &str = "airport";
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct NamedLegs {
     pub name: String,
     pub legs: Vec<LegInfo>,
@@ -121,7 +121,7 @@ impl NamedLegs {
 }
 
 /// SID albo STAR.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct TerminalProcedure {
     pub name: String,
     pub common_legs: Vec<LegInfo>,
@@ -129,7 +129,7 @@ pub struct TerminalProcedure {
     pub enroute_transitions: Vec<NamedLegs>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ApproachProcedure {
     pub name: String,
     pub kind: String,
@@ -140,7 +140,7 @@ pub struct ApproachProcedure {
     pub missed_legs: Vec<LegInfo>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AirportProcedures {
     pub icao: String,
     pub departures: Vec<TerminalProcedure>,

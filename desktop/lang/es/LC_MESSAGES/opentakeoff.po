@@ -3121,3 +3121,1003 @@ msgstr "…"
 
 msgid "… {x} …"
 msgstr "… {x} …"
+
+msgid "Uruchamiaj razem z symulatorem"
+msgstr "Iniciar con el simulador"
+
+
+msgid "Nie znaleziono MSFS 2020 ani 2024 – uruchom symulator choć raz i spróbuj ponownie"
+msgstr "No se encontró MSFS 2020 ni 2024: abre el simulador una vez e inténtalo de nuevo"
+
+msgid "OpenTakeoff uruchomi się razem z: {sims}"
+msgstr "OpenTakeoff se iniciará con: {sims}"
+
+msgid "OpenTakeoff nie będzie się już uruchamiać z symulatorem"
+msgstr "OpenTakeoff ya no se iniciará con el simulador"
+
+msgid "Nie udało się zmienić pliku exe.xml symulatora: {e}"
+msgstr "No se pudo cambiar el archivo exe.xml del simulador: {e}"
+
+msgid "Najedź na mapę"
+msgstr "Pasa el cursor sobre el mapa"
+
+msgid "MSFS 2020 i 2024 – OpenTakeoff startuje w zasobniku"
+msgstr "MSFS 2020 y 2024: OpenTakeoff se inicia en la bandeja"
+
+msgid "Parametry"
+msgstr "Parámetros"
+
+msgid "Wszystkie dane z symulatora: pozycja, prędkości, położenie, autopilot, radio, silniki, paliwo, światła"
+msgstr "Todos los datos del simulador: posición, velocidades, actitud, piloto automático, radio, motores, combustible, luces"
+
+msgid "Parametry pojawią się po połączeniu z symulatorem"
+msgstr "Los parámetros aparecen al conectar el simulador"
+
+msgid "Silnik"
+msgstr "Motor"
+
+msgid "Źródło"
+msgstr "Fuente"
+
+msgid "Na ziemi"
+msgstr "En tierra"
+
+msgid "TAK"
+msgstr "SÍ"
+
+msgid "NIE"
+msgstr "NO"
+
+msgid "Dziesiętnie"
+msgstr "Decimal"
+
+msgid "Teren"
+msgstr "Terreno"
+
+msgid "Zakręt"
+msgstr "Viraje"
+
+msgid "Kulka"
+msgstr "Bola"
+
+msgid "Tryby"
+msgstr "Modos"
+
+msgid "Plan"
+msgstr "Plan"
+
+msgid "Odcinek"
+msgstr "Tramo"
+
+msgid "brak sygnału"
+msgstr "sin señal"
+
+msgid "Razem"
+msgstr "Total"
+
+msgid "Lewy"
+msgstr "Izquierdo"
+
+msgid "Środkowy"
+msgstr "Central"
+
+msgid "Prawy"
+msgstr "Derecho"
+
+msgid "Różnica L/P"
+msgstr "Desequilibrio I/D"
+
+msgid "Przepływ"
+msgstr "Flujo"
+
+msgid "Wystarczy na"
+msgstr "Autonomía"
+
+msgid "Spojlery"
+msgstr "Spoilers"
+
+msgid "Spojlery uzbr."
+msgstr "Spoilers armados"
+
+msgid "Hamulce L/P"
+msgstr "Frenos I/D"
+
+msgid "Trym"
+msgstr "Compensador"
+
+msgid "Przepustnica"
+msgstr "Acelerador"
+
+msgid "Mieszanka"
+msgstr "Mezcla"
+
+msgid "Śmigło"
+msgstr "Hélice"
+
+msgid "Czołowy / boczny"
+msgstr "Frontal / cruzado"
+
+msgid "Podciśnienie"
+msgstr "Succión"
+
+msgid "Prędkości"
+msgstr "Velocidades"
+
+msgid "Odbiorniki"
+msgstr "Receptores"
+
+msgid "Silniki"
+msgstr "Motores"
+
+msgid "Sterowanie"
+msgstr "Mandos"
+
+msgid "Środowisko"
+msgstr "Entorno"
+
+msgid "lot z widocznością"
+msgstr "vuelo visual"
+
+msgid "warunki pogorszone"
+msgstr "condiciones reducidas"
+
+msgid "lot według przyrządów"
+msgstr "vuelo instrumental"
+
+msgid "bardzo złe warunki"
+msgstr "condiciones muy malas"
+
+msgid "kierunek zmienny"
+msgstr "dirección variable"
+
+msgid "porywy do {g} kt"
+msgstr "rachas de {g} kt"
+
+msgid "zmienny {a:03.0}°–{b:03.0}°"
+msgstr "variable {a:03.0}°–{b:03.0}°"
+
+msgid "stały kierunek"
+msgstr "dirección estable"
+
+msgid "Podstawa chmur"
+msgstr "Techo"
+
+msgid "brak pułapu"
+msgstr "sin techo"
+
+msgid "bez znaczących chmur"
+msgstr "sin nubes significativas"
+
+msgid "punkt rosy {dp:.0} °C · ryzyko mgły"
+msgstr "punto de rocío {dp:.0} °C · riesgo de niebla"
+
+msgid "punkt rosy {dp:.0} °C · różnica {spread:.0}°"
+msgstr "punto de rocío {dp:.0} °C · diferencia {spread:.0}°"
+
+msgid "stałe od {h:.0} h"
+msgstr "estable desde hace {h:.0} h"
+
+msgid "ciśnieniowa {pa:.0} ft"
+msgstr "altitud de presión {pa:.0} ft"
+
+msgid "brak danych o pasach"
+msgstr "sin datos de pistas"
+
+msgid "WIATR"
+msgstr "VIENTO"
+
+msgid "PAS W UŻYCIU"
+msgstr "PISTA EN USO"
+
+msgid "kursy rzeczywiste"
+msgstr "rumbos verdaderos"
+
+msgid "brak METAR-u"
+msgstr "sin METAR"
+
+msgid "0°C przy ziemi – oblodzenie"
+msgstr "0°C en superficie – engelamiento"
+
+msgid "PUŁAP"
+msgstr "TECHO"
+
+msgid "BEZ CHMUR"
+msgstr "SIN NUBES"
+
+msgid "brak prognozy TAF dla tego lotniska"
+msgstr "sin TAF para este aeropuerto"
+
+msgid "PROGNOZA"
+msgstr "PRONÓSTICO"
+
+msgid "Dane: X-Plane ({p})"
+msgstr "Datos: X-Plane ({p})"
+
+msgid "Dane: X-Plane, AIRAC {c}"
+msgstr "Datos: X-Plane, AIRAC {c}"
+
+msgid "Dane: MSFS na żywo (zapisywane na później)"
+msgstr "Datos: MSFS en vivo (guardados para después)"
+
+msgid "Dane: tryb symulacji (przykładowe procedury EPWA, EPGD)"
+msgstr "Datos: modo simulación (procedimientos de ejemplo EPWA, EPGD)"
+
+msgid "Dane: zapisane z MSFS i OurAirports – uruchom MSFS albo wskaż folder X-Plane, by mieć procedury i drogi lotnicze"
+msgstr "Datos: guardados de MSFS y OurAirports – inicia MSFS o elige la carpeta de X-Plane para procedimientos y aerovías"
+
+msgid "Paliwo trasy"
+msgstr "Combustible de ruta"
+
+msgid "Punkty"
+msgstr "Puntos"
+
+msgid "Wczytywanie procedur…"
+msgstr "Cargando procedimientos…"
+
+msgid "Brak procedur dla tego lotniska w dostępnych danych"
+msgstr "No hay procedimientos para este aeropuerto en los datos disponibles"
+
+msgid "Nie znaleziono: {m}"
+msgstr "No encontrado: {m}"
+
+msgid "Nie znaleziono punktu {ident}"
+msgstr "No se encontró el punto {ident}"
+
+msgid "Najpierw pobierz plan z SimBrief (Pulpit → SimBrief)"
+msgstr "Primero descarga un plan de SimBrief (Panel → SimBrief)"
+
+msgid "Folder X-Plane"
+msgstr "Carpeta de X-Plane"
+
+msgid "To nie jest folder X-Plane (brak Resources/default data)"
+msgstr "No es una carpeta de X-Plane (falta Resources/default data)"
+
+msgid "Dodaj lotniska i punkty, aby zobaczyć profil"
+msgstr "Añade aeropuertos y puntos para ver el perfil"
+
+msgid "Plan potrzebuje lotniska startu i celu"
+msgstr "El plan necesita aeropuerto de salida y destino"
+
+msgid "Zapisano plan {f}"
+msgstr "Plan guardado {f}"
+
+msgid "FL/ft"
+msgstr "FL/ft"
+
+msgid "Wysokość w punkcie (np. FL240 albo 9000); puste – bez ograniczenia"
+msgstr "Altitud en el punto (p. ej. FL240 o 9000); vacío – sin restricción"
+
+msgid "Ustaw wysokość"
+msgstr "Fijar altitud"
+
+msgid "Przesuń wyżej"
+msgstr "Subir"
+
+msgid "Przesuń niżej"
+msgstr "Bajar"
+
+msgid "Usuń punkt"
+msgstr "Eliminar punto"
+
+msgid "Start"
+msgstr "Salida"
+
+msgid "Cel"
+msgstr "Destino"
+
+msgid "EPWA SID PUNKT DROGA PUNKT … STAR EPKK"
+msgstr "EPWA SID PUNTO AEROVÍA PUNTO … STAR EPKK"
+
+msgid "Punkty, drogi lotnicze (z danymi X-Plane), DCT, współrzędne 5230N02000E; Enter – zastosuj"
+msgstr "Puntos, aerovías (con datos de X-Plane), DCT, coordenadas 5230N02000E; Enter – aplicar"
+
+msgid "Zastosuj"
+msgstr "Aplicar"
+
+msgid "Odlot"
+msgstr "Salida"
+
+msgid "Przylot"
+msgstr "Llegada"
+
+msgid "Podejście"
+msgstr "Aproximación"
+
+msgid "Pas startowy"
+msgstr "Pista"
+
+msgid "Wpisz lotnisko startu"
+msgstr "Introduce el aeropuerto de salida"
+
+msgid "Brak procedur – uruchom MSFS albo wskaż folder X-Plane"
+msgstr "Sin procedimientos – inicia MSFS o elige la carpeta de X-Plane"
+
+msgid "Przejście"
+msgstr "Transición"
+
+msgid "Wybierz procedurę"
+msgstr "Elige un procedimiento"
+
+msgid "Pas do lądowania"
+msgstr "Pista de aterrizaje"
+
+msgid "Wybierz SID"
+msgstr "Elige una SID"
+
+msgid "Wpisz lotnisko celu"
+msgstr "Introduce el aeropuerto de destino"
+
+msgid "PUNKT"
+msgstr "PUNTO"
+
+msgid "DROGA"
+msgstr "VÍA"
+
+msgid "OGRANICZ."
+msgstr "RESTR."
+
+msgid "Punkt, VOR, NDB…"
+msgstr "Punto, VOR, NDB…"
+
+msgid "Dodaje punkt za zaznaczonym (albo na końcu trasy)"
+msgstr "Añade un punto tras el seleccionado (o al final)"
+
+msgid "Dodaj punkt"
+msgstr "Añadir punto"
+
+msgid "Wiatr i pasy"
+msgstr "Viento y pistas"
+
+msgid "Profil nieba"
+msgstr "Perfil del cielo"
+
+msgid "Składowe wiatru"
+msgstr "Componentes del viento"
+
+msgid "Ostatnie godziny"
+msgstr "Últimas horas"
+
+msgid "Ukryj rozkodowanie"
+msgstr "Ocultar decodificación"
+
+msgid "Rozkoduj grupy"
+msgstr "Decodificar grupos"
+
+msgid "Trasa, SID, STAR, podejścia, profil i eksport do MSFS i X-Plane"
+msgstr "Ruta, SID, STAR, aproximaciones, perfil y exportación a MSFS y X-Plane"
+
+msgid "Nowy"
+msgstr "Nuevo"
+
+msgid "Pusty plan lotu"
+msgstr "Plan de vuelo vacío"
+
+msgid "Z SimBrief"
+msgstr "De SimBrief"
+
+msgid "Przenieś pobrany plan SimBrief do edycji"
+msgstr "Cargar el plan de SimBrief para editarlo"
+
+msgid "Pokaż plan na karcie Mapa (2D i 3D)"
+msgstr "Mostrar el plan en la pestaña Mapa (2D y 3D)"
+
+msgid "Plan do wczytania w MSFS 2020 i 2024 (z SID, STAR i podejściem)"
+msgstr "Plan para MSFS 2020 y 2024 (con SID, STAR y aproximación)"
+
+msgid "Plan dla FMC X-Plane 11/12 (Output/FMS plans)"
+msgstr "Plan para el FMC de X-Plane 11/12 (Output/FMS plans)"
+
+msgid "Dane nawigacyjne"
+msgstr "Datos de navegación"
+
+msgid "Wskaż X-Plane 11/12: punkty, drogi lotnicze i procedury (CIFP) z jego bazy, także bez uruchamiania symulatora. MSFS: procedury pobierane na żywo przez SimConnect i zapisywane na później."
+msgstr "Elige X-Plane 11/12: puntos, aerovías y procedimientos (CIFP) de su base, incluso sin iniciar el simulador. MSFS: los procedimientos se leen en vivo por SimConnect y se guardan para después."
+
+msgid "Panel lotu"
+msgstr "Panel de vuelo"
+
+msgid "MSFS 2020/2024 i X-Plane 11/12 – OpenTakeoff startuje w zasobniku"
+msgstr "MSFS 2020/2024 y X-Plane 11/12: OpenTakeoff se inicia en la bandeja"
+
+msgid "MSFS i X-Plane (czuwanie na proces symulatora)"
+msgstr "MSFS y X-Plane (vigilando el proceso del simulador)"
+
+msgid "symulacja"
+msgstr "simulación"
+
+msgid "Edytuj w karcie Plan lotu (punkty, SID, STAR, podejście, eksport)"
+msgstr "Editar en la pestaña Plan de vuelo (puntos, SID, STAR, aproximación, exportación)"
+
+msgid "Na starcie"
+msgstr "En la salida"
+
+msgid "Teraz / plan"
+msgstr "Ahora / plan"
+
+msgid "Masy"
+msgstr "Pesos"
+
+msgid "PALIWO"
+msgstr "COMBUSTIBLE"
+
+msgid "Wszystkie dane z symulatora liczbowo i wykresy z ostatnich 10 minut"
+msgstr "Todos los datos del simulador en cifras y gráficos de los últimos 10 minutos"
+
+msgid "PFD i ND z najważniejszymi danymi pod spodem"
+msgstr "PFD y ND con los datos clave debajo"
+
+msgid "Wykresy pojawią się po kilku sekundach lotu"
+msgstr "Los gráficos aparecen tras unos segundos de vuelo"
+
+msgid "ostatnie {m:.0} min"
+msgstr "últimos {m:.0} min"
+
+msgid "Dane pojawią się po połączeniu z symulatorem"
+msgstr "Los datos aparecen al conectar el simulador"
+
+msgid "Kokpit i dane razem: PFD, ND, ekrany silników, wykresy i wszystkie parametry"
+msgstr "Cabina y datos juntos: PFD, ND, pantallas de motores, gráficos y todos los parámetros"
+
+msgid "Kołowanie"
+msgstr "Rodaje"
+
+msgid "Wznoszenie"
+msgstr "Ascenso"
+
+msgid "Zniżanie"
+msgstr "Descenso"
+
+msgid "do celu"
+msgstr "al destino"
+
+msgid "Brak planu lotu – wczytaj go w symulatorze albo pobierz z SimBrief na karcie Plan."
+msgstr "Sin plan de vuelo: cárgalo en el simulador o descárgalo de SimBrief en la pestaña Plan."
+
+msgid "Profil wysokości"
+msgstr "Perfil de altitud"
+
+msgid "Profil pojawi się w locie"
+msgstr "El perfil aparece en vuelo"
+
+msgid "Zasięg"
+msgstr "Autonomía"
+
+msgid "Na celu"
+msgstr "En destino"
+
+msgid "Wobec planu"
+msgstr "Frente al plan"
+
+msgid "Uruchom MSFS albo X-Plane – podgląd lotu pojawi się tu sam."
+msgstr "Inicia MSFS o X-Plane: la vista en vivo aparecerá aquí sola."
+
+msgid "czołowy {kt} kt"
+msgstr "de cara {kt} kt"
+
+msgid "tylny {kt} kt"
+msgstr "de cola {kt} kt"
+
+msgid "z prawej {kt} kt"
+msgstr "por la derecha {kt} kt"
+
+msgid "z lewej {kt} kt"
+msgstr "por la izquierda {kt} kt"
+
+msgid "12 mies."
+msgstr "12 meses"
+
+msgid "Całość"
+msgstr "Todo"
+
+msgid "Pn"
+msgstr "Lu"
+
+msgid "Wt"
+msgstr "Ma"
+
+msgid "Śr"
+msgstr "Mi"
+
+msgid "Cz"
+msgstr "Ju"
+
+msgid "Pt"
+msgstr "Vi"
+
+msgid "Sb"
+msgstr "Sá"
+
+msgid "Nd"
+msgstr "Do"
+
+msgid "Czas w fazach lotu"
+msgstr "Tiempo por fase de vuelo"
+
+msgid "Dziennik pilota"
+msgstr "Libro de vuelo"
+
+msgid "Dzień tygodnia"
+msgstr "Día de la semana"
+
+msgid "Godzina startu"
+msgstr "Hora de salida"
+
+msgid "Hangar"
+msgstr "Hangar"
+
+msgid "Uczeń pilot"
+msgstr "Alumno piloto"
+
+msgid "Pilot turystyczny"
+msgstr "Piloto privado"
+
+msgid "Pilot zawodowy"
+msgstr "Piloto comercial"
+
+msgid "Drugi pilot"
+msgstr "Primer oficial"
+
+msgid "Starszy drugi pilot"
+msgstr "Primer oficial sénior"
+
+msgid "Kapitan"
+msgstr "Comandante"
+
+msgid "Starszy kapitan"
+msgstr "Comandante sénior"
+
+msgid "Szef pilotów"
+msgstr "Jefe de pilotos"
+
+msgid "Najwyższy stopień"
+msgstr "Rango más alto"
+
+msgid "Stopień"
+msgstr "Rango"
+
+msgid "Lądowania z opadaniem poniżej 60 ft/min"
+msgstr "Aterrizajes con descenso inferior a 60 ft/min"
+
+msgid "Masło"
+msgstr "Mantequilla"
+
+msgid "Najsilniejszy boczny wiatr"
+msgstr "Viento cruzado más fuerte"
+
+msgid "Najwyższy poziom lotu"
+msgstr "Nivel de vuelo más alto"
+
+msgid "Oceny"
+msgstr "Notas"
+
+msgid "Od osi"
+msgstr "Desvío del eje"
+
+msgid "Odsetek lądowań z odbiciem"
+msgstr "Porcentaje de aterrizajes con rebote"
+
+msgid "Okres statystyk (osiągnięcia i kalendarz liczą się zawsze z całego dziennika)"
+msgstr "Periodo de estadísticas (los logros y el calendario usan siempre todo el libro)"
+
+msgid "Opadanie przy przyziemieniu (ft/min)"
+msgstr "Descenso en la toma (ft/min)"
+
+msgid "Ostatnie lądowania (ocena)"
+msgstr "Últimos aterrizajes (nota)"
+
+msgid "Profil pojawi się po pierwszych lotach"
+msgstr "El perfil aparecerá tras los primeros vuelos"
+
+msgid "Typy"
+msgstr "Tipos"
+
+msgid "bieżący rok"
+msgstr "este año"
+
+msgid "brak lotów"
+msgstr "sin vuelos"
+
+msgid "brak lądowań"
+msgstr "sin aterrizajes"
+
+msgid "cały dziennik"
+msgstr "todo el libro"
+
+msgid "jeszcze {h} do stopnia: {r}"
+msgstr "faltan {h} para: {r}"
+
+msgid "kliknij, żeby otworzyć lot"
+msgstr "haz clic para abrir el vuelo"
+
+msgid "mniej"
+msgstr "menos"
+
+msgid "więcej"
+msgstr "más"
+
+msgid "nalotu"
+msgstr "de vuelo"
+
+msgid "ostatnie 12 miesięcy"
+msgstr "últimos 12 meses"
+
+msgid "ostatnie 26 tygodni"
+msgstr "últimas 26 semanas"
+
+msgid "ostatnie 30 dni"
+msgstr "últimos 30 días"
+
+msgid "rekord: {n} dni"
+msgstr "récord: {n} días"
+
+msgid "w okresie"
+msgstr "en el periodo"
+
+msgid "{n} dni z rzędu"
+msgstr "{n} días seguidos"
+
+msgid "{x}× dookoła Ziemi"
+msgstr "{x}× alrededor de la Tierra"
+
+msgid "Średnie odejście od osi pasa przy przyziemieniu"
+msgstr "Desvío medio del eje de pista en la toma"
+
+msgid "Średnio G"
+msgstr "G media"
+
+msgid "średni lot"
+msgstr "vuelo medio"
+
+msgid "średnia ocena"
+msgstr "nota media"
+
+msgid "średnio"
+msgstr "media"
+
+msgid "Alfabet i transponder"
+msgstr "Alfabeto y transpondedor"
+
+msgid "Atmosfera"
+msgstr "Atmósfera"
+
+msgid "Atmosfera wzorcowa"
+msgstr "Atmósfera estándar"
+
+msgid "Bezprawne zawładnięcie statkiem powietrznym"
+msgstr "Interferencia ilícita (secuestro)"
+
+msgid "Bilans paliwa"
+msgstr "Balance de combustible"
+
+msgid "Boczny (kt)"
+msgstr "Cruzado (kt)"
+
+msgid "Boczny w porywach"
+msgstr "Cruzado en ráfagas"
+
+msgid "Brak danych z symulatora"
+msgstr "Sin datos del simulador"
+
+msgid "Czas, prędkość, dystans"
+msgstr "Tiempo, velocidad, distancia"
+
+msgid "Czołowy (kt)"
+msgstr "Frontal (kt)"
+
+msgid "Depesza"
+msgstr "Mensaje"
+
+msgid "Elewacje"
+msgstr "Elevaciones"
+
+msgid "GS wobec TAS"
+msgstr "GS frente a TAS"
+
+msgid "Gradient"
+msgstr "Gradiente"
+
+msgid "Gradient wznoszenia"
+msgstr "Gradiente de ascenso"
+
+msgid "Gęstość względna"
+msgstr "Densidad relativa"
+
+msgid "Izoterma 0 °C (szacunkowo)"
+msgstr "Isoterma 0 °C (estimación)"
+
+msgid "Jednostki"
+msgstr "Unidades"
+
+msgid "Kody transpondera"
+msgstr "Códigos de transpondedor"
+
+msgid "Kontrola na ścieżce"
+msgstr "Control en la senda"
+
+msgid "Kurs do utrzymania, znoszenie, GS"
+msgstr "Rumbo a mantener, deriva, GS"
+
+msgid "Kurs końcowy (rzecz.)"
+msgstr "Rumbo final (verdadero)"
+
+msgid "Kurs początkowy (rzecz.)"
+msgstr "Rumbo inicial (verdadero)"
+
+msgid "Kąt"
+msgstr "Ángulo"
+
+msgid "Liczy brakującą wartość"
+msgstr "Calcula el valor que falta"
+
+msgid "Limit"
+msgstr "Límite"
+
+msgid "Limit wiatru bocznego"
+msgstr "Límite de viento cruzado"
+
+msgid "Literowanie ICAO"
+msgstr "Deletreo OACI"
+
+msgid "Literowanie ICAO, kody specjalne"
+msgstr "Deletreo OACI, códigos especiales"
+
+msgid "Lot IFR bez przydzielonego kodu"
+msgstr "Vuelo IFR sin código asignado"
+
+msgid "Lot VFR (USA, Kanada)"
+msgstr "Vuelo VFR (EE. UU., Canadá)"
+
+msgid "Lot VFR bez przydzielonego kodu (Europa)"
+msgstr "Vuelo VFR sin código asignado (Europa)"
+
+msgid "Mile na minutę"
+msgstr "Millas por minuto"
+
+msgid "Na milę"
+msgstr "Por milla"
+
+msgid "Nachylenie"
+msgstr "Pendiente"
+
+msgid "Nagłe wejście w strefę z lotu na małej wysokości (Wielka Brytania)"
+msgstr "Entrada repentina en espacio controlado desde baja altura (Reino Unido)"
+
+msgid "Nawigacja"
+msgstr "Navegación"
+
+msgid "Nie znaleziono lotniska o tym kodzie."
+msgstr "No se encontró un aeropuerto con ese código."
+
+msgid "Niebezpieczeństwo (MAYDAY)"
+msgstr "Socorro (MAYDAY)"
+
+msgid "Numer pasa (np. 29) albo kurs w stopniach. Limit to największy wiatr boczny, przy jakim lądujesz danym samolotem."
+msgstr "Número de pista (p. ej. 29) o rumbo en grados. El límite es el mayor viento cruzado con el que aterrizas este avión."
+
+msgid "Odchyłka"
+msgstr "Desviación"
+
+msgid "Opis grup"
+msgstr "Descripción de grupos"
+
+msgid "Opis każdej grupy depeszy"
+msgstr "Descripción de cada grupo del mensaje"
+
+msgid "Ortodroma"
+msgstr "Ortodrómica"
+
+msgid "Ortodroma, kursy, czas i paliwo"
+msgstr "Ortodrómica, rumbos, tiempo y combustible"
+
+msgid "PA, DA, TAS, odchyłka od ISA"
+msgstr "PA, DA, TAS, desviación ISA"
+
+msgid "PRZEKROCZONY"
+msgstr "EXCEDIDO"
+
+msgid "Paliwo na pokładzie"
+msgstr "Combustible a bordo"
+
+msgid "Pas lub kurs"
+msgstr "Pista o rumbo"
+
+msgid "Pasy lotniska"
+msgstr "Pistas del aeropuerto"
+
+msgid "Pełny okrąg"
+msgstr "Círculo completo"
+
+msgid "Planowanie"
+msgstr "Planificación"
+
+msgid "Podaj dwa kody ICAO lotnisk, np. EPWA i EGLL"
+msgstr "Introduce dos códigos OACI de aeropuerto, p. ej. EPWA y EGLL"
+
+msgid "Podejście i wznoszenie"
+msgstr "Aproximación y ascenso"
+
+msgid "Podstawa chmur, mgła, izoterma 0°"
+msgstr "Base de nubes, niebla, isoterma 0°"
+
+msgid "Poprawka"
+msgstr "Corrección"
+
+msgid "Porywy"
+msgstr "Ráfagas"
+
+msgid "Poziomy (reguła półkolowa)"
+msgstr "Niveles (regla semicircular)"
+
+msgid "Prawdziwe depesze znajdziesz na karcie Lotniska"
+msgstr "Los mensajes reales están en la pestaña Aeropuertos"
+
+msgid "Procedury odlotu (SID) podają minimalny gradient wznoszenia – zwykle 3,3 % albo więcej przy przeszkodach."
+msgstr "Los procedimientos de salida (SID) indican un gradiente mínimo de ascenso: normalmente 3,3 % o más con obstáculos."
+
+msgid "Promień w metrach"
+msgstr "Radio en metros"
+
+msgid "Promień zakrętu"
+msgstr "Radio de viraje"
+
+msgid "Przechylenie do zakrętu standardowego"
+msgstr "Alabeo para viraje estándar"
+
+msgid "Przechylenie, promień, przeciążenie"
+msgstr "Alabeo, radio, factor de carga"
+
+msgid "Przeliczniki i radio"
+msgstr "Conversores y radio"
+
+msgid "Przelot, rezerwa, zasięg"
+msgstr "Trayecto, reserva, autonomía"
+
+msgid "Prędkość dźwięku"
+msgstr "Velocidad del sonido"
+
+msgid "Prędkość kątowa"
+msgstr "Régimen de viraje"
+
+msgid "Prędkość pionowa wg GS"
+msgstr "Velocidad vertical según GS"
+
+msgid "Reguła 3:1"
+msgstr "Regla 3:1"
+
+msgid "Rozkład"
+msgstr "Diferencia"
+
+msgid "Składowe wiatru, porywy, wszystkie pasy lotniska"
+msgstr "Componentes del viento, ráfagas, todas las pistas"
+
+msgid "TOD, prędkość pionowa, profil"
+msgstr "TOD, velocidad vertical, perfil"
+
+msgid "Tabela ISA"
+msgstr "Tabla ISA"
+
+msgid "Tabela V/S i wysokości jak na karcie"
+msgstr "Tabla de V/S y altitudes como en la carta"
+
+msgid "Tekst lub znak wywoławczy"
+msgstr "Texto o indicativo"
+
+msgid "Temperatura ISA"
+msgstr "Temperatura ISA"
+
+msgid "Temperatura i ciśnienie ISA"
+msgstr "Temperatura y presión ISA"
+
+msgid "Tor zakrętu"
+msgstr "Trayectoria del viraje"
+
+msgid "Trasa między lotniskami"
+msgstr "Ruta entre aeropuertos"
+
+msgid "Trójkąt prędkości"
+msgstr "Triángulo de velocidades"
+
+msgid "Utrata łączności radiowej"
+msgstr "Fallo de comunicaciones"
+
+msgid "W NORMIE"
+msgstr "DENTRO DEL LÍMITE"
+
+msgid "W jednostce"
+msgstr "En la unidad"
+
+msgid "W kilometrach"
+msgstr "En kilómetros"
+
+msgid "Wiatr z danych powyżej. Podświetlony – najkorzystniejszy kierunek, przygaszone – z wiatrem tylnym."
+msgstr "Viento de los datos de arriba. Resaltado: la dirección más favorable; atenuado: con viento de cola."
+
+msgid "Wpisz bieżące wartości z symulatora"
+msgstr "Rellenar con los valores actuales del simulador"
+
+msgid "Wpisz dwie wartości, a trzecią zostaw pustą – zostanie policzona."
+msgstr "Introduce dos valores y deja vacío el tercero: se calculará."
+
+msgid "Wszystkie jednostki naraz"
+msgstr "Todas las unidades a la vez"
+
+msgid "Wymagane wznoszenie"
+msgstr "Ascenso necesario"
+
+msgid "Wymóg SID w ft/NM i ft/min"
+msgstr "Requisito SID en ft/NM y ft/min"
+
+msgid "Wyprzedzenie zakrętu o 90°"
+msgstr "Anticipación de viraje de 90°"
+
+msgid "Wysoka wysokość gęstościowa wydłuża rozbieg i osłabia wznoszenie – samolot „czuje się” jak wyżej."
+msgstr "Una altitud de densidad alta alarga la carrera de despegue y debilita el ascenso: el avión «se siente» más alto."
+
+msgid "Wysokość nad progiem"
+msgstr "Altura sobre el umbral"
+
+msgid "Wysokość nad progiem (TCH)"
+msgstr "Altura de cruce del umbral (TCH)"
+
+msgid "Wznoszenie wg GS"
+msgstr "Ascenso según GS"
+
+msgid "Wzrost prędkości przeciągnięcia"
+msgstr "Aumento de la velocidad de pérdida"
+
+msgid "Z symulatora"
+msgstr "Del simulador"
+
+msgid "Zakręt standardowy (rate 1) to 3°/s – pełny okrąg w 2 minuty. Przybliżenie pamięciowe: TAS / 10 + 7."
+msgstr "Un viraje estándar (rate 1) es de 3°/s: un círculo completo en 2 minutos. Regla práctica: TAS / 10 + 7."
+
+msgid "Zasięg w czasie"
+msgstr "Autonomía en tiempo"
+
+msgid "Zasięg w milach"
+msgstr "Alcance en millas"
+
+msgid "Zostanie na celu"
+msgstr "Quedará en destino"
+
+msgid "brak"
+msgstr "ninguna"
+
+msgid "dźwięk kt"
+msgstr "sonido kt"
+
+msgid "na pokładzie"
+msgstr "a bordo"
+
+msgid "nieparzyste (na wschód)"
+msgstr "impares (hacia el este)"
+
+msgid "odległość do końca zniżania → wysokość"
+msgstr "distancia al final del descenso → altitud"
+
+msgid "opcjonalnie"
+msgstr "opcional"
+
+msgid "pamięciowo: GS / 60"
+msgstr "regla práctica: GS / 60"
+
+msgid "parzyste (na zachód)"
+msgstr "pares (hacia el oeste)"
+
+msgid "przy ziemi"
+msgstr "en superficie"
+
+msgid "rezerwa"
+msgstr "reserva"
+
+msgid "starczy z rezerwą"
+msgstr "suficiente con reserva"
+
+msgid "tropopauza 36 089 ft, powyżej −56,5 °C"
+msgstr "tropopausa 36 089 ft, por encima −56,5 °C"
+
+msgid "za mało paliwa na przelot z rezerwą"
+msgstr "combustible insuficiente para el trayecto con reserva"
+
+msgid "Ścieżka podejścia"
+msgstr "Senda de aproximación"

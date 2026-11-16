@@ -260,6 +260,10 @@ pub fn clear() {
 }
 
 /// Trasa planu do mapy: (szer., dł., wysokość ft, nazwa punktu).
+pub fn plan() -> Option<Plan> {
+    PLAN.with(|x| x.borrow().clone())
+}
+
 pub fn route() -> Vec<(f64, f64, i32, String)> {
     PLAN.with(|x| x.borrow().as_ref().map(|p| p.fixes.iter().map(|f| (f.lat, f.lon, f.alt_ft, f.ident.clone())).collect()).unwrap_or_default())
 }
@@ -380,7 +384,16 @@ pub fn refresh() {
             v.fuel_ok = diff >= -plan_kg.max(1.0) * 0.03;
         }
     }
+    if p.ramp > 0.0 {
+        v.burn_frac = (p.burn / p.ramp).clamp(0.0, 1.0) as f32;
+        v.reserve_frac = (p.reserve / p.ramp).clamp(0.0, 1.0 - v.burn_frac as f64) as f32;
+        if let Some(s) = snap.as_ref() {
+            let ramp_kg = if p.lbs { p.ramp * 0.453_592 } else { p.ramp };
+            v.fuel_now_frac = (s.fuel.total_kg / ramp_kg.max(1.0)).clamp(0.0, 1.0) as f32;
+        }
+    }
     app.set_plan(v);
+    render_profile();
     let fixes: Vec<PlanFixV> = p
         .fixes
         .iter()
@@ -397,4 +410,107 @@ pub fn refresh() {
         })
         .collect();
     app.set_plan_fixes(ModelRc::new(VecModel::from(fixes)));
+}
+
+// ---------- profil trasy na Pulpicie ----------
+
+pub const PROFILE: i32 = 42;
+
+thread_local! {
+    static PSIZE: RefCell<(f32, f32)> = const { RefCell::new((0.0, 0.0)) };
+}
+
+pub fn size(w: f32, h: f32) {
+    let changed = PSIZE.with(|s| {
+        let old = *s.borrow();
+        *s.borrow_mut() = (w, h);
+        (old.0 - w).abs() > 0.5 || (old.1 - h).abs() > 0.5
+    });
+    if changed {
+        render_profile();
+    }
+}
+
+/// Profil pionowy planu: wysokość po trasie, planowane paliwo (oś po prawej), T/C, T/D i samolot na żywo.
+fn render_profile() {
+    use crate::avionics::gfx::*;
+    let Some(u) = ui() else { return };
+    let app = u.global::<App>();
+    let Some(p) = PLAN.with(|x| x.borrow().clone()) else { return };
+    let (w0, h0) = PSIZE.with(|s| *s.borrow());
+    let k = state().borrow().scale.max(1.0);
+    let (w, h) = ((w0 * k) as u32, (h0 * k) as u32);
+    if w < 32 || h < 32 || p.fixes.len() < 2 {
+        return;
+    }
+    let mut c = Canvas::new(w, h);
+    let (wf, hf) = (w as f32, h as f32);
+    const BG: Argb = 0xFF0B1016;
+    const CY: Argb = 0xFF4FD8EB;
+    const DIM: Argb = 0xFF6F7C8A;
+    const FUEL: Argb = 0xFFFFB547;
+    c.rect(0.0, 0.0, wf, hf, BG);
+    let (l, r, t, b) = (52.0 * k, wf - 60.0 * k, 22.0 * k, hf - 22.0 * k);
+    let total = p.fixes.last().map(|f| f.cum_nm).unwrap_or(1.0).max(1.0);
+    let max_alt = p.fixes.iter().map(|f| f.alt_ft).max().unwrap_or(10_000).max(p.cruise_ft) as f32;
+    let top = (max_alt / 5000.0).ceil() * 5000.0 + 2000.0;
+    let x = |d: f64| l + (d / total) as f32 * (r - l);
+    let y = |a: f32| b - (a / top).clamp(0.0, 1.0) * (b - t);
+    let step = if top > 30_000.0 { 10_000 } else { 5000 };
+    let mut a = 0;
+    while a as f32 <= top {
+        c.dash_line(l, y(a as f32), r, y(a as f32), alpha(WHITE, 0x14), 1.0 * k, 3.0 * k, 5.0 * k);
+        c.text_f(&if a >= 10_000 { format!("FL{}", a / 100) } else { a.to_string() }, l - 6.0 * k, y(a as f32), 9.5 * k, DIM, Align::Right, Face::Mono);
+        a += step;
+    }
+    // paliwo planowane (prawa oś: 0 – paliwo na starcie)
+    let ramp = p.ramp.max(1.0);
+    let fy = |f: f64| b - (f / ramp).clamp(0.0, 1.0) as f32 * (b - t);
+    let fuel: Vec<f32> = p.fixes.iter().filter_map(|f| Some([x(f.cum_nm), fy(f.fuel?)])).flatten().collect();
+    if fuel.len() >= 4 {
+        c.polyline(alpha(FUEL, 0xB0), 1.6 * k, &fuel);
+        // czcionka wyświetlacza nie ma wąskiej spacji z formatu wag
+        let plain = |v: f64| weight(v, p.lbs).replace(['\u{202F}', '\u{00A0}', '\u{2009}'], " ").replace('\u{2212}', "-");
+        c.text_f(&plain(ramp), r + 6.0 * k, fy(ramp), 9.0 * k, FUEL, Align::Left, Face::Mono);
+        c.text_f(&plain(p.reserve), r + 6.0 * k, fy(p.reserve).min(b - 6.0 * k), 9.0 * k, alpha(FUEL, 0xB0), Align::Left, Face::Mono);
+    }
+    // wysokość
+    let mut poly = vec![x(0.0), b];
+    for f in &p.fixes {
+        poly.push(x(f.cum_nm));
+        poly.push(y(f.alt_ft as f32));
+    }
+    poly.push(x(total));
+    poly.push(b);
+    c.poly(alpha(CY, 0x22), 0, 0.0, &poly);
+    let line: Vec<f32> = p.fixes.iter().flat_map(|f| [x(f.cum_nm), y(f.alt_ft as f32)]).collect();
+    c.polyline(CY, 2.2 * k, &line);
+    let every = ((p.fixes.len() as f32 * 48.0 * k) / (r - l)).ceil().max(1.0) as usize;
+    for (i, f) in p.fixes.iter().enumerate() {
+        let (px, py) = (x(f.cum_nm), y(f.alt_ft as f32));
+        if f.ident == "TOC" || f.ident == "TOD" {
+            c.circle(px, py, 4.0 * k, 0xFF3CCF7A, 1.6 * k);
+            c.text_f(if f.ident == "TOC" { "T/C" } else { "T/D" }, px, py - 11.0 * k, 10.0 * k, 0xFF3CCF7A, Align::Center, Face::CondBold);
+            continue;
+        }
+        c.circle(px, py, 2.4 * k, CY, 0.0);
+        if i % every == 0 || i + 1 == p.fixes.len() {
+            c.text_f(&f.ident, px, b + 11.0 * k, 9.0 * k, DIM, Align::Center, Face::Mono);
+        }
+    }
+    // samolot na żywo
+    if let Some(s) = state().borrow().host.snapshot() {
+        if let Some((_, _, rem)) = progress(s.position.lat, s.position.lon) {
+            let d = (total - rem).clamp(0.0, total);
+            let (px, py) = (x(d), y(s.position.alt_ind_ft as f32));
+            c.line(px, t, px, b, alpha(WHITE, 0x50), 1.0 * k);
+            c.poly(WHITE, 0, 0.0, &[px + 8.0 * k, py, px - 6.0 * k, py - 5.0 * k, px - 6.0 * k, py + 5.0 * k]);
+            if let Some(f) = Some(s.fuel.total_kg).filter(|f| *f > 0.0) {
+                let fk = if p.lbs { f / 0.453_592 } else { f };
+                c.circle(px, fy(fk), 3.5 * k, FUEL, 0.0);
+            }
+        }
+    }
+    c.text_f(tr("PALIWO"), wf - 6.0 * k, 9.0 * k, 8.5 * k, alpha(FUEL, 0xC0), Align::Right, Face::CondBold);
+    app.set_plan_profile_sb(c.into_image());
 }

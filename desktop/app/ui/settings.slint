@@ -14,6 +14,7 @@ export component Section inherits Panel {
     VerticalLayout {
         padding: 14px;
         spacing: 10px;
+        alignment: start;
         Heading {
             text: root.title;
             icon: root.icon;
@@ -52,278 +53,298 @@ export component Option inherits HorizontalLayout {
     }
 }
 
-export component Settings inherits Rectangle {
+component SettingsLeft inherits VerticalLayout {
     property <[color]> accents: [#5b8cff, #3ccf7a, #ffb547, #ff5a5f, #d55cff, #2ec4d6, #f472b6, #a3a3a3];
-    sv := ScrollView {
+    horizontal-stretch: 1;
+    alignment: start;
+    spacing: 12px;
+    Section {
+        title: @tr("Wygląd");
+        icon: Icons.palette;
+        Option {
+            label: @tr("Motyw");
+            Segmented {
+                items: ["AMOLED", @tr("Grafitowy"), @tr("Jasny"), @tr("Granatowy"), @tr("Nocny kokpit"), @tr("Sepia")];
+                current: App.theme-mode;
+                picked(i) => {
+                    App.cmd("theme", i);
+                }
+            }
+        }
+        Option {
+            label: @tr("Kolor akcentu");
+            for c[i] in root.accents: Swatch {
+                swatch: c;
+                selected: Theme.accent == c;
+                size: 22px;
+                clicked => {
+                    App.cmd("accent", i);
+                }
+            }
+        }
+        Option {
+            label: @tr("Wielkość interfejsu");
+            Segmented {
+                items: ["90 %", "100 %", "110 %", "125 %"];
+                current: Theme.scale < 0.95 ? 0 : Theme.scale < 1.05 ? 1 : Theme.scale < 1.15 ? 2 : 3;
+                picked(i) => {
+                    App.cmd("scale", i);
+                }
+            }
+        }
+        Option {
+            label: @tr("Zaokrąglenia");
+            Segmented {
+                items: [@tr("Ostre"), @tr("Zwykłe"), @tr("Mocne")];
+                current: Theme.corners;
+                picked(i) => {
+                    App.cmd("corners", i);
+                }
+            }
+        }
+        Option {
+            label: @tr("Podkład mapy");
+            Segmented {
+                items: [@tr("Zgodny z motywem"), @tr("Ciemny"), @tr("Jasny"), "OpenStreetMap", @tr("Satelita")];
+                current: App.map-style;
+                picked(i) => {
+                    App.cmd("map-style", i);
+                }
+            }
+        }
+    }
+    Section {
+        title: @tr("Język i jednostki");
+        icon: Icons.languages;
+        Option {
+            label: @tr("Język");
+            hint: @tr("Zmiana po ponownym uruchomieniu programu");
+            for l[i] in App.languages: Button {
+                label: l.label;
+                primary: i == App.language-index;
+                clicked => {
+                    App.cmd("language", l.id);
+                }
+            }
+        }
+        Option {
+            label: @tr("Wysokość");
+            Segmented {
+                items: [@tr("stopy (ft)"), @tr("metry (m)")];
+                current: App.units-alt;
+                picked(i) => {
+                    App.cmd("units-alt", i);
+                }
+            }
+        }
+        Option {
+            label: @tr("Prędkość");
+            Segmented {
+                items: [@tr("węzły (kt)"), "km/h"];
+                current: App.units-speed;
+                picked(i) => {
+                    App.cmd("units-speed", i);
+                }
+            }
+        }
+    }
+    Section {
+        title: @tr("Zapis lotów");
+        icon: Icons.circle-dot;
+        Option {
+            label: @tr("Zapisuj loty na komputerze");
+            hint: @tr("Gdy MSFS działa na tym komputerze. Ten sam lot nagrany też w telefonie nie dubluje się po synchronizacji.");
+            Switch {
+                on: App.record-flights;
+                toggled => {
+                    App.cmd("record-flights", App.record-flights ? "0" : "1");
+                }
+            }
+        }
+        Option {
+            label: @tr("Częstotliwość zapisu ścieżki");
+            Segmented {
+                items: ["4/s", "2/s", "1/s", "1/2s", "1/5s"];
+                current: App.record-interval;
+                picked(i) => {
+                    App.cmd("record-interval", i);
+                }
+            }
+        }
+        Option {
+            label: @tr("Synchronizuj z telefonem");
+            hint: @tr("Po każdym połączeniu telefonu (OpenTakeoff 2.9 lub nowszy) loty wymieniają się w obie strony.");
+            Switch {
+                on: App.auto-sync;
+                toggled => {
+                    App.cmd("auto-sync", App.auto-sync ? "0" : "1");
+                }
+            }
+        }
+    }
+}
+
+component SettingsRight inherits VerticalLayout {
+    horizontal-stretch: 1;
+    alignment: start;
+    spacing: 12px;
+    Section {
+        title: @tr("Windows");
+        icon: Icons.monitor;
+        Option {
+            label: @tr("Uruchamiaj z Windows");
+            hint: @tr("Most do telefonu działa od razu po zalogowaniu");
+            Switch {
+                on: App.autostart;
+                toggled => {
+                    App.cmd("autostart", App.autostart ? "0" : "1");
+                }
+            }
+        }
+        Option {
+            label: @tr("Startuj w zasobniku");
+            hint: @tr("Bez otwierania okna – ikona przy zegarze");
+            Switch {
+                on: App.start-minimized;
+                toggled => {
+                    App.cmd("start-minimized", App.start-minimized ? "0" : "1");
+                }
+            }
+        }
+        Option {
+            label: @tr("Zamknięcie okna chowa do zasobnika");
+            hint: @tr("Telefony i zapis lotów działają dalej; wyjście z menu ikony w zasobniku");
+            Switch {
+                on: App.close-to-tray;
+                toggled => {
+                    App.cmd("close-to-tray", App.close-to-tray ? "0" : "1");
+                }
+            }
+        }
+    }
+    Section {
+        title: @tr("Dane");
+        icon: Icons.archive;
+        Pair {
+            k: @tr("Folder danych");
+            v: App.data-path;
+        }
+        Pair {
+            k: @tr("Dziennik lotów");
+            v: App.logbook-size;
+        }
+        Pair {
+            k: @tr("Baza lotnisk");
+            v: App.db-status;
+        }
         HorizontalLayout {
+            spacing: 6px;
+            alignment: start;
+            Button {
+                label: @tr("Otwórz folder");
+                icon: Icons.folder-open;
+                clicked => {
+                    App.cmd("open-data", "");
+                }
+            }
+            Button {
+                label: @tr("Kopia zapasowa");
+                icon: Icons.download;
+                clicked => {
+                    App.cmd("export-all", "");
+                }
+            }
+            Button {
+                label: @tr("Odśwież bazę lotnisk");
+                icon: Icons.cloud-download;
+                clicked => {
+                    App.cmd("db-refresh", "");
+                }
+            }
+        }
+    }
+    Section {
+        title: @tr("Program");
+        icon: Icons.info;
+        Text {
+            text: App.about;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            color: Theme.text-dim;
+            wrap: word-wrap;
+        }
+        Switch {
+            on: App.update-auto;
+            label: @tr("Sprawdzaj aktualizacje samoczynnie (po starcie i co 6 godzin)");
+            toggled => {
+                App.cmd("update-auto", App.update-auto ? "0" : "1");
+            }
+        }
+        Text {
+            text: App.update-text;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            color: App.update-ready ? Theme.accent : Theme.text-faint;
+            wrap: word-wrap;
+        }
+        HorizontalLayout {
+            spacing: 6px;
+            alignment: start;
+            Button {
+                label: App.update-ready ? @tr("Zainstaluj aktualizację") : @tr("Sprawdź aktualizacje");
+                primary: App.update-ready;
+                icon: Icons.refresh-cw;
+                clicked => {
+                    App.cmd(App.update-ready ? "update-install" : "update-check", "");
+                }
+            }
+            Button {
+                label: @tr("Zgłoś błąd lub sugestię");
+                icon: Icons.bug;
+                clicked => {
+                    App.cmd("feedback", "");
+                }
+            }
+            Button {
+                label: "redzikowski.com";
+                icon: Icons.external-link;
+                clicked => {
+                    App.cmd("open-url", "https://redzikowski.com/portfolio/opentakeoff");
+                }
+            }
+        }
+        Text {
+            text: @tr("Tylko do symulacji lotów. Nie używaj do rzeczywistej nawigacji.");
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            wrap: word-wrap;
+        }
+    }
+}
+
+/// Dwie kolumny na szerokim oknie, jedna pod drugą na węższym (bez przycinania).
+export component Settings inherits Rectangle {
+    sv := ScrollView {
+        if sv.visible-width >= 1320px: HorizontalLayout {
             width: sv.visible-width;
             padding: 14px;
             spacing: 12px;
-            VerticalLayout {
+            alignment: start;
+            SettingsLeft {
                 horizontal-stretch: 1;
-                spacing: 12px;
-                Section {
-                    title: @tr("Wygląd");
-                    icon: Icons.palette;
-                    Option {
-                        label: @tr("Motyw");
-                        Segmented {
-                            items: ["AMOLED", @tr("Grafitowy"), @tr("Jasny"), @tr("Granatowy"), @tr("Nocny kokpit"), @tr("Sepia")];
-                            current: App.theme-mode;
-                            picked(i) => {
-                                App.cmd("theme", i);
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Kolor akcentu");
-                        for c[i] in root.accents: Swatch {
-                            swatch: c;
-                            selected: Theme.accent == c;
-                            size: 22px;
-                            clicked => {
-                                App.cmd("accent", i);
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Wielkość interfejsu");
-                        Segmented {
-                            items: ["90 %", "100 %", "110 %", "125 %"];
-                            current: Theme.scale < 0.95 ? 0 : Theme.scale < 1.05 ? 1 : Theme.scale < 1.15 ? 2 : 3;
-                            picked(i) => {
-                                App.cmd("scale", i);
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Zaokrąglenia");
-                        Segmented {
-                            items: [@tr("Ostre"), @tr("Zwykłe"), @tr("Mocne")];
-                            current: Theme.corners;
-                            picked(i) => {
-                                App.cmd("corners", i);
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Podkład mapy");
-                        Segmented {
-                            items: [@tr("Zgodny z motywem"), @tr("Ciemny"), @tr("Jasny"), "OpenStreetMap", @tr("Satelita")];
-                            current: App.map-style;
-                            picked(i) => {
-                                App.cmd("map-style", i);
-                            }
-                        }
-                    }
-                }
-                Section {
-                    title: @tr("Język i jednostki");
-                    icon: Icons.languages;
-                    Option {
-                        label: @tr("Język");
-                        hint: @tr("Zmiana po ponownym uruchomieniu programu");
-                        for l[i] in App.languages: Button {
-                            label: l.label;
-                            primary: i == App.language-index;
-                            clicked => {
-                                App.cmd("language", l.id);
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Wysokość");
-                        Segmented {
-                            items: [@tr("stopy (ft)"), @tr("metry (m)")];
-                            current: App.units-alt;
-                            picked(i) => {
-                                App.cmd("units-alt", i);
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Prędkość");
-                        Segmented {
-                            items: [@tr("węzły (kt)"), "km/h"];
-                            current: App.units-speed;
-                            picked(i) => {
-                                App.cmd("units-speed", i);
-                            }
-                        }
-                    }
-                }
-                Section {
-                    title: @tr("Zapis lotów");
-                    icon: Icons.circle-dot;
-                    Option {
-                        label: @tr("Zapisuj loty na komputerze");
-                        hint: @tr("Gdy MSFS działa na tym komputerze. Ten sam lot nagrany też w telefonie nie dubluje się po synchronizacji.");
-                        Switch {
-                            on: App.record-flights;
-                            toggled => {
-                                App.cmd("record-flights", App.record-flights ? "0" : "1");
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Częstotliwość zapisu ścieżki");
-                        Segmented {
-                            items: ["4/s", "2/s", "1/s", "1/2s", "1/5s"];
-                            current: App.record-interval;
-                            picked(i) => {
-                                App.cmd("record-interval", i);
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Synchronizuj z telefonem");
-                        hint: @tr("Po każdym połączeniu telefonu (OpenTakeoff 2.9 lub nowszy) loty wymieniają się w obie strony.");
-                        Switch {
-                            on: App.auto-sync;
-                            toggled => {
-                                App.cmd("auto-sync", App.auto-sync ? "0" : "1");
-                            }
-                        }
-                    }
-                }
             }
-            VerticalLayout {
+            SettingsRight {
                 horizontal-stretch: 1;
-                spacing: 12px;
-                Section {
-                    title: @tr("Windows");
-                    icon: Icons.monitor;
-                    Option {
-                        label: @tr("Uruchamiaj z Windows");
-                        hint: @tr("Most do telefonu działa od razu po zalogowaniu");
-                        Switch {
-                            on: App.autostart;
-                            toggled => {
-                                App.cmd("autostart", App.autostart ? "0" : "1");
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Startuj w zasobniku");
-                        hint: @tr("Bez otwierania okna – ikona przy zegarze");
-                        Switch {
-                            on: App.start-minimized;
-                            toggled => {
-                                App.cmd("start-minimized", App.start-minimized ? "0" : "1");
-                            }
-                        }
-                    }
-                    Option {
-                        label: @tr("Zamknięcie okna chowa do zasobnika");
-                        hint: @tr("Telefony i zapis lotów działają dalej; wyjście z menu ikony w zasobniku");
-                        Switch {
-                            on: App.close-to-tray;
-                            toggled => {
-                                App.cmd("close-to-tray", App.close-to-tray ? "0" : "1");
-                            }
-                        }
-                    }
-                }
-                Section {
-                    title: @tr("Dane");
-                    icon: Icons.archive;
-                    Pair {
-                        k: @tr("Folder danych");
-                        v: App.data-path;
-                    }
-                    Pair {
-                        k: @tr("Dziennik lotów");
-                        v: App.logbook-size;
-                    }
-                    Pair {
-                        k: @tr("Baza lotnisk");
-                        v: App.db-status;
-                    }
-                    HorizontalLayout {
-                        spacing: 6px;
-                        alignment: start;
-                        Button {
-                            label: @tr("Otwórz folder");
-                            icon: Icons.folder-open;
-                            clicked => {
-                                App.cmd("open-data", "");
-                            }
-                        }
-                        Button {
-                            label: @tr("Kopia zapasowa");
-                            icon: Icons.download;
-                            clicked => {
-                                App.cmd("export-all", "");
-                            }
-                        }
-                        Button {
-                            label: @tr("Odśwież bazę lotnisk");
-                            icon: Icons.cloud-download;
-                            clicked => {
-                                App.cmd("db-refresh", "");
-                            }
-                        }
-                    }
-                }
-                Section {
-                    title: @tr("Program");
-                    icon: Icons.info;
-                    Text {
-                        text: App.about;
-                        font-family: Theme.font;
-                        font-size: Theme.fs;
-                        color: Theme.text-dim;
-                        wrap: word-wrap;
-                    }
-                    Switch {
-                        on: App.update-auto;
-                        label: @tr("Sprawdzaj aktualizacje samoczynnie (po starcie i co 6 godzin)");
-                        toggled => {
-                            App.cmd("update-auto", App.update-auto ? "0" : "1");
-                        }
-                    }
-                    Text {
-                        text: App.update-text;
-                        font-family: Theme.font;
-                        font-size: Theme.fs;
-                        color: App.update-ready ? Theme.accent : Theme.text-faint;
-                        wrap: word-wrap;
-                    }
-                    HorizontalLayout {
-                        spacing: 6px;
-                        alignment: start;
-                        Button {
-                            label: App.update-ready ? @tr("Zainstaluj aktualizację") : @tr("Sprawdź aktualizacje");
-                            primary: App.update-ready;
-                            icon: Icons.refresh-cw;
-                            clicked => {
-                                App.cmd(App.update-ready ? "update-install" : "update-check", "");
-                            }
-                        }
-                        Button {
-                            label: @tr("Zgłoś błąd lub sugestię");
-                            icon: Icons.bug;
-                            clicked => {
-                                App.cmd("feedback", "");
-                            }
-                        }
-                        Button {
-                            label: "redzikowski.com";
-                            icon: Icons.external-link;
-                            clicked => {
-                                App.cmd("open-url", "https://redzikowski.com/portfolio/opentakeoff");
-                            }
-                        }
-                    }
-                    Text {
-                        text: @tr("Tylko do symulacji lotów. Nie używaj do rzeczywistej nawigacji.");
-                        font-family: Theme.font;
-                        font-size: Theme.fs-small;
-                        color: Theme.text-faint;
-                        wrap: word-wrap;
-                    }
-                }
             }
+        }
+        if sv.visible-width < 1320px: VerticalLayout {
+            width: sv.visible-width;
+            padding: 14px;
+            spacing: 12px;
+            alignment: start;
+            SettingsLeft { }
+            SettingsRight { }
         }
     }
 }

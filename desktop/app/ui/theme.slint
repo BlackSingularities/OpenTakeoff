@@ -53,8 +53,10 @@ export global Theme {
     out property <length> fs-small: 11px * scale;
     out property <length> fs-big: 15px * scale;
     out property <length> row: (dense ? 26px : 30px) * scale;
-    // Pasek narzędzi pod kartami: jeden rząd przycisków jak w OpenAudioPower.
-    out property <length> ribbon-h: (dense ? 40px : 44px) * scale;
+    // Wstążka pod kartami jak w Wordzie: duże przyciski (ikona nad podpisem) i podpis grupy na dole.
+    // Na wąskim oknie (poziom 2+) podpisy znikają i wstążka robi się niższa.
+    out property <length> ribbon-title-h: ribbon-level >= 2 ? 0px : 15px * scale;
+    out property <length> ribbon-h: ribbon-level >= 2 ? (dense ? 40px : 44px) * scale : (dense ? 74px : 80px) * scale;
     // Pasek tytułu z kartami.
     out property <length> title-h: (dense ? 40px : 44px) * scale;
     // Panel boczny (stan lotu): widoczność i szerokość.
@@ -66,4 +68,6 @@ export global Theme {
     // Zwężanie wstążki na wąskim oknie (jak w Wordzie): 0 – pełna, 1 – małe przyciski bez podpisów,
     // 2 – także duże bez podpisów i węższa galeria stylów, 3 – ukryte grupy mniej ważne.
     in-out property <int> ribbon-level;
+    // Karty u góry: 0 – pełne podpisy, 1 – mniejsze (bez nazwy aplikacji), 2 – same ikony, podpis tylko otwartej karty.
+    in-out property <int> tabs-level;
 }

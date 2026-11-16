@@ -46,9 +46,24 @@ pub fn dark_title(ui: &AppWindow, dark: bool) {
 }
 
 /// Polecenia okna bez ramki: przeciąganie, minimalizacja, maksymalizacja, zamknięcie, zmiana rozmiaru.
+/// Wąskie okno: zmniejsz cały interfejs (współczynnik skali okna, jak zoom), zamiast go przycinać.
+/// Liczone z rozmiaru fizycznego i skali systemu, więc zmiana skali nie zapętla przeliczania.
+pub fn fit_scale(ui: &AppWindow) {
+    const DESIGN_W: f32 = 1320.0;
+    let w = ui.window();
+    let size = w.size();
+    let os = w.with_winit_window(|ww| ww.scale_factor() as f32).unwrap_or(1.0).max(0.5);
+    let k = (size.width as f32 / os / DESIGN_W).clamp(0.72, 1.0);
+    let want = os * k;
+    if size.width > 0 && (w.scale_factor() - want).abs() > 0.01 {
+        w.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: want });
+    }
+}
+
 pub fn action(ui: &AppWindow, a: i32) {
     use slint::winit_030::winit::window::ResizeDirection;
     match a {
+        100 => fit_scale(ui),
         0 => {
             ui.window().with_winit_window(|w| {
                 let _ = w.drag_window();
@@ -92,7 +107,7 @@ pub fn bring_to_front(ui: &AppWindow) {
     }
 }
 
-const MUTEX: &str = "Local\\OpenTakeoff-Windows-single-instance";
+pub const MUTEX: &str = "Local\\OpenTakeoff-Windows-single-instance";
 const SHOW_EVENT: &str = "Local\\OpenTakeoff-Windows-show";
 
 struct SendHandle(HANDLE);

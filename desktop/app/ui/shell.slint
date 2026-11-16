@@ -22,10 +22,11 @@ export component NavTab inherits Rectangle {
     border-width: root.sel ? 1px : 0;
     border-color: Theme.accent.with-alpha(0.35);
     animate background { duration: 120ms; }
+    property <bool> labeled: Theme.tabs-level < 2 || root.sel;
     hl := HorizontalLayout {
-        padding-left: 10px * Theme.scale;
-        padding-right: Theme.ribbon-level < 2 ? 12px * Theme.scale : 10px * Theme.scale;
-        spacing: 7px * Theme.scale;
+        padding-left: (Theme.tabs-level == 0 ? 10px : 8px) * Theme.scale;
+        padding-right: (Theme.tabs-level == 0 ? 12px : 8px) * Theme.scale;
+        spacing: (Theme.tabs-level == 0 ? 7px : 5px) * Theme.scale;
         Image {
             source: root.icon;
             width: 15px * Theme.scale;
@@ -33,17 +34,17 @@ export component NavTab inherits Rectangle {
             y: (parent.height - self.height) / 2;
             colorize: root.sel ? Theme.accent : ta.has-hover ? Theme.text : Theme.text-dim;
         }
-        if Theme.ribbon-level < 2: Text {
+        if root.labeled: Text {
             text: root.label;
             font-family: Theme.font;
-            font-size: Theme.fs;
+            font-size: Theme.tabs-level == 0 ? Theme.fs : Theme.fs-small + 0.5px;
             font-weight: root.sel ? 600 : 400;
             color: root.sel ? Theme.text : ta.has-hover ? Theme.text : Theme.text-dim;
             vertical-alignment: center;
         }
     }
     ta := TipArea {
-        tip: Theme.ribbon-level < 2 ? root.tip : root.label + " – " + root.tip;
+        tip: root.labeled ? root.tip : root.label + " – " + root.tip;
         clicked => {
             App.tab = root.index;
             App.cmd("tab", root.index);
@@ -177,6 +178,11 @@ export component RecordButton inherits Rectangle {
 }
 
 /// Sekcja panelu bocznego: tytuł krojem IBM Plex Sans Condensed, opcjonalny przycisk i treść.
+/// Kolory jak na wyświetlaczach w kabinie (na jasnym motywie ciemniejsze odcienie).
+global Avi {
+    out property <color> cyan: Theme.mode == 2 || Theme.mode == 5 ? #0a8fa3 : #4fd8eb;
+}
+
 component SideSection inherits VerticalLayout {
     in property <string> title;
     in property <image> icon;
@@ -193,20 +199,29 @@ component SideSection inherits VerticalLayout {
         height: 20px * Theme.scale;
         Image {
             source: root.icon;
-            width: 14px * Theme.scale;
-            height: 14px * Theme.scale;
+            width: 13px * Theme.scale;
+            height: 13px * Theme.scale;
             y: (parent.height - self.height) / 2;
-            colorize: Theme.accent;
+            colorize: Avi.cyan;
         }
         Text {
-            text: root.title;
+            text: root.title.to-uppercase();
             font-family: Theme.cond;
-            font-size: 13px * Theme.scale;
+            font-size: 11.5px * Theme.scale;
             font-weight: 700;
-            color: Theme.text;
+            letter-spacing: 1.2px;
+            color: Theme.text-dim;
             vertical-alignment: center;
-            horizontal-stretch: 1;
             overflow: elide;
+        }
+        // linia jak podział panelu w kabinie
+        Rectangle {
+            horizontal-stretch: 1;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                height: 1px;
+                background: Theme.line;
+            }
         }
         if root.action-tip != "": IconButton {
             size: 22px * Theme.scale;
@@ -231,12 +246,14 @@ component SidePair inherits HorizontalLayout {
     spacing: 8px;
     height: 20px * Theme.scale;
     Text {
-        text: root.k;
-        font-family: Theme.font;
-        font-size: Theme.fs-small;
-        color: Theme.text-dim;
+        text: root.k.to-uppercase();
+        font-family: Theme.cond;
+        font-size: 10.5px * Theme.scale;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        color: Avi.cyan;
         vertical-alignment: center;
-        width: 64px * Theme.scale;
+        width: 70px * Theme.scale;
         overflow: elide;
     }
     Text {
@@ -255,17 +272,18 @@ component SidePair inherits HorizontalLayout {
 component Chip inherits Rectangle {
     in property <string> text;
     in property <color> tone: Theme.text-dim;
-    width: ct.preferred-width + 14px;
-    height: 20px * Theme.scale;
-    border-radius: self.height / 2;
+    width: ct.preferred-width + 12px;
+    height: 19px * Theme.scale;
+    border-radius: min(3px, Theme.r-small);
     background: root.tone.with-alpha(0.12);
     border-width: 1px;
-    border-color: root.tone.with-alpha(0.4);
+    border-color: root.tone.with-alpha(0.45);
     ct := Text {
-        text: root.text;
-        font-family: Theme.font;
+        text: root.text.to-uppercase();
+        font-family: Theme.cond;
         font-size: 10.5px * Theme.scale;
-        font-weight: 600;
+        font-weight: 700;
+        letter-spacing: 0.6px;
         color: root.tone;
     }
 }
@@ -287,7 +305,7 @@ component ApCell inherits Rectangle {
             font-family: Theme.mono;
             font-size: 12px * Theme.scale;
             font-weight: 700;
-            color: #4fd8eb;
+            color: Avi.cyan;
             horizontal-alignment: center;
             overflow: elide;
         }
@@ -301,6 +319,108 @@ component ApCell inherits Rectangle {
     }
 }
 
+/// Duży odczyt na ciemnym wyświetlaczu: skrót cyjanem, wartość mono, jednostka.
+component DataCell inherits VerticalLayout {
+    in property <string> k;
+    in property <string> v;
+    in property <string> unit;
+    in property <color> tone: #e8f6f8;
+    horizontal-stretch: 1;
+    min-width: 0;
+    spacing: 0;
+    Text {
+        text: root.k;
+        font-family: Theme.cond;
+        font-size: 10px * Theme.scale;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        color: #4fd8eb;
+    }
+    HorizontalLayout {
+        spacing: 3px;
+        alignment: start;
+        Text {
+            text: root.v == "" ? "–" : root.v;
+            font-family: Theme.mono;
+            font-size: 17px * Theme.scale;
+            font-weight: 700;
+            color: root.tone;
+            overflow: elide;
+        }
+        Text {
+            text: root.unit;
+            font-family: Theme.mono;
+            font-size: 9.5px * Theme.scale;
+            color: #6f7c8a;
+            vertical-alignment: bottom;
+        }
+    }
+}
+
+/// Mały odczyt pod blokiem danych.
+component MiniCell inherits VerticalLayout {
+    in property <string> k;
+    in property <string> v;
+    horizontal-stretch: 1;
+    min-width: 0;
+    spacing: 0;
+    Text {
+        text: root.k;
+        font-family: Theme.cond;
+        font-size: 9px * Theme.scale;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        color: #6f7c8a;
+        horizontal-alignment: center;
+    }
+    Text {
+        text: root.v == "" ? "–" : root.v;
+        font-family: Theme.mono;
+        font-size: 11px * Theme.scale;
+        color: #e8f6f8;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+}
+
+/// Lampka systemu: zielona przy włączonym (bursztynowa dla hamulca), przygaszona przy wyłączonym.
+component Lamp inherits Rectangle {
+    in property <string> k;
+    in property <string> v;
+    in property <bool> on;
+    in property <bool> warn;
+    property <color> tone: root.warn ? #ffb547 : #3ee07a;
+    horizontal-stretch: 1;
+    min-width: 0;
+    height: 34px * Theme.scale;
+    border-radius: min(4px, Theme.r-small);
+    background: root.on ? root.tone.with-alpha(0.12) : #0b1016;
+    border-width: 1px;
+    border-color: root.on ? root.tone.with-alpha(0.55) : #ffffff14;
+    clip: true;
+    VerticalLayout {
+        alignment: center;
+        spacing: 0;
+        Text {
+            text: root.k;
+            font-family: Theme.cond;
+            font-size: 9px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            color: root.on ? root.tone : #6f7c8a;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: root.v == "" ? "–" : root.v;
+            font-family: Theme.mono;
+            font-size: 10.5px * Theme.scale;
+            color: root.on ? #e8f6f8 : #6f7c8a;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
 component SideLine inherits Rectangle {
     height: 1px;
     background: Theme.line;
@@ -310,13 +430,51 @@ component SideLine inherits Rectangle {
 export component Sidebar inherits Rectangle {
     background: Theme.chrome;
     property <bool> has: App.live.has-data;
+    VerticalLayout {
+    // Pasek panelu: nazwa wersalikami i przycisk chowania (też Ctrl+B i przycisk na pasku stanu)
+    Rectangle {
+        height: 30px * Theme.scale;
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 6px;
+            spacing: 6px;
+            Text {
+                text: @tr("Panel lotu").to-uppercase();
+                font-family: Theme.cond;
+                font-size: 10.5px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 1.6px;
+                color: Theme.text-faint;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+            IconButton {
+                y: (parent.height - self.height) / 2;
+                size: 22px * Theme.scale;
+                icon-size: 13px * Theme.scale;
+                icon: Icons.panel-left;
+                tint: Theme.text-dim;
+                tip: @tr("Ukryj panel lotu (Ctrl+B)");
+                clicked => {
+                    Theme.sidebar = false;
+                }
+            }
+        }
+        Rectangle {
+            y: parent.height - 1px;
+            height: 1px;
+            background: Theme.line;
+        }
+    }
     sv := ScrollView {
+        vertical-stretch: 1;
         VerticalLayout {
             width: sv.visible-width;
+            padding-right: 4px;
             alignment: start;
-            // Samolot
-            SideSection {
-                title: root.has ? @tr("Bieżący lot") : @tr("Symulator");
+            // Samolot (tylko w locie – stan połączenia jest w pasku stanu na dole)
+            if root.has: SideSection {
+                title: @tr("Bieżący lot");
                 icon: Icons.plane;
                 action-icon: Icons.gauge;
                 action-tip: @tr("Otwórz podgląd na żywo");
@@ -324,88 +482,116 @@ export component Sidebar inherits Rectangle {
                     App.tab = 1;
                     App.cmd("tab", 1);
                 }
+                // Nagłówek: samolot, faza (jedna etykieta, reszta w podpowiedzi), najbliższe lotnisko
                 Rectangle {
                     border-radius: Theme.r;
                     background: Theme.raised;
                     border-width: 1px;
                     border-color: Theme.line;
                     height: cv.preferred-height;
+                    clip: true;
                     cv := VerticalLayout {
                         padding: 10px;
-                        spacing: 6px;
-                        HorizontalLayout {
-                            spacing: 8px;
-                            Dot {
-                                state: App.sim-connected ? 2 : 1;
-                                y: (parent.height - self.height) / 2;
-                            }
-                            Text {
-                                text: root.has ? App.live.title : App.sim-connected ? App.sim-name : @tr("Czekam na symulator");
-                                font-family: Theme.font;
-                                font-size: Theme.fs;
-                                font-weight: 600;
-                                color: Theme.text;
-                                vertical-alignment: center;
-                                overflow: elide;
-                                horizontal-stretch: 1;
-                            }
-                        }
-                        if !root.has: Text {
-                            text: App.sim-status;
+                        spacing: 5px;
+                        Text {
+                            text: App.live.title;
                             font-family: Theme.font;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            wrap: word-wrap;
+                            font-size: Theme.fs;
+                            font-weight: 600;
+                            color: Theme.text;
+                            overflow: elide;
                         }
-                        if root.has: HorizontalLayout {
+                        HorizontalLayout {
                             spacing: 5px;
                             alignment: start;
                             if App.live.phase != "": Chip {
-                                text: App.live.phase;
-                                tone: Theme.accent;
+                                text: App.live.paused ? @tr("Pauza") : App.live.phase;
+                                tone: App.live.paused ? Colors.warn : Theme.accent;
                             }
-                            if App.live.paused: Chip {
-                                text: @tr("Pauza");
-                                tone: Colors.warn;
-                            }
-                            if App.live.category != "": Chip {
-                                text: App.live.category;
-                            }
-                            if App.simulation: Chip {
-                                text: @tr("Symulacja");
-                                tone: Colors.gs;
+                            Text {
+                                horizontal-stretch: 1;
+                                text: App.live.category + (App.simulation ? " · " + @tr("symulacja") : "");
+                                font-family: Theme.cond;
+                                font-size: 10.5px * Theme.scale;
+                                font-weight: 600;
+                                letter-spacing: 0.6px;
+                                color: Theme.text-faint;
+                                vertical-alignment: center;
+                                overflow: elide;
                             }
                         }
-                        if root.has && App.live.nearest != "": Text {
+                        if App.live.nearest != "": Text {
                             text: App.live.nearest;
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
                             color: Theme.text-dim;
                             overflow: elide;
                         }
-                        if root.has: Text {
-                            text: App.live.position;
-                            font-family: Theme.mono;
-                            font-size: 10px * Theme.scale;
-                            color: Theme.text-faint;
-                            overflow: elide;
+                    }
+                }
+                // Blok danych jak na wyświetlaczu: duże odczyty w dwóch kolumnach
+                Rectangle {
+                    border-radius: Theme.r-small;
+                    background: #0b1016;
+                    height: dg.preferred-height;
+                    clip: true;
+                    dg := VerticalLayout {
+                        padding: 8px;
+                        spacing: 6px;
+                        HorizontalLayout {
+                            spacing: 6px;
+                            DataCell {
+                                k: "ALT";
+                                v: App.live.alt;
+                                unit: App.live.alt-unit;
+                            }
+                            DataCell {
+                                k: "IAS";
+                                v: App.live.ias;
+                                unit: "kt";
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            DataCell {
+                                k: "V/S";
+                                v: (App.live.vs-value > 50 ? "▲ " : App.live.vs-value < -50 ? "▼ " : "") + App.live.vs;
+                                unit: "fpm";
+                                tone: App.live.vs-value > 50 ? #3ee07a : App.live.vs-value < -50 ? #ffb547 : #e8f6f8;
+                            }
+                            DataCell {
+                                k: "HDG";
+                                v: App.live.hdg + "°";
+                                unit: "";
+                            }
+                        }
+                        Rectangle {
+                            height: 1px;
+                            background: #ffffff14;
+                        }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            MiniCell {
+                                k: "GS";
+                                v: App.live.gs;
+                            }
+                            MiniCell {
+                                k: "TAS";
+                                v: App.live.tas;
+                            }
+                            MiniCell {
+                                k: "TRK";
+                                v: App.live.trk + "°";
+                            }
+                            MiniCell {
+                                k: "AGL";
+                                v: App.live.agl;
+                            }
                         }
                     }
                 }
-                if root.has: VerticalLayout {
+                VerticalLayout {
                     spacing: 0;
-                    SidePair {
-                        k: "AGL";
-                        v: App.live.agl;
-                    }
-                    SidePair {
-                        k: "TAS";
-                        v: App.live.tas + " kt" + (App.live.mach != "" ? "  M" + App.live.mach : "");
-                    }
-                    SidePair {
-                        k: "TRK";
-                        v: App.live.trk + "°";
-                    }
                     SidePair {
                         k: @tr("Wiatr");
                         v: App.live.wind;
@@ -414,15 +600,64 @@ export component Sidebar inherits Rectangle {
                         k: "OAT · QNH";
                         v: App.live.oat + "  " + App.live.qnh;
                     }
-                    SidePair {
-                        k: @tr("Paliwo");
-                        v: App.live.fuel;
-                        tone: App.live.fuel-level < 0.15 ? Colors.warn : Theme.text;
+                    if App.live.mach != "": SidePair {
+                        k: "MACH";
+                        v: App.live.mach;
+                    }
+                }
+                // Paliwo z paskiem
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        Text {
+                            text: @tr("Paliwo").to-uppercase();
+                            font-family: Theme.cond;
+                            font-size: 10.5px * Theme.scale;
+                            font-weight: 600;
+                            letter-spacing: 0.6px;
+                            color: Avi.cyan;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: App.live.fuel;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: App.live.fuel-level < 0.15 ? Colors.warn : Theme.text;
+                        }
+                    }
+                    Bar {
+                        value: App.live.fuel-level;
+                        tone: App.live.fuel-level < 0.15 ? Colors.warn : Avi.cyan;
+                    }
+                }
+                // Lampki systemów: podwozie, klapy, spojlery, hamulec
+                HorizontalLayout {
+                    spacing: 4px;
+                    Lamp {
+                        k: "GEAR";
+                        v: App.live.gear-short;
+                        on: App.live.gear-on;
+                    }
+                    Lamp {
+                        k: "FLAPS";
+                        v: App.live.flaps-short;
+                        on: App.live.flaps-short != "UP" && App.live.flaps-short != "";
+                    }
+                    Lamp {
+                        k: "SPLR";
+                        v: App.live.spoilers-short;
+                        on: App.live.spoilers-on;
+                    }
+                    Lamp {
+                        k: "BRK";
+                        v: App.live.brake ? "SET" : "OFF";
+                        on: App.live.brake;
+                        warn: true;
                     }
                 }
             }
             // Plan lotu z SimBrief
-            if App.plan.loaded: SideLine { }
+            if App.plan.loaded && root.has: SideLine { }
             if App.plan.loaded: SideSection {
                 title: @tr("Plan lotu");
                 icon: Icons.route;
@@ -575,7 +810,7 @@ export component Sidebar inherits Rectangle {
                     }
                 }
             }
-            SideLine { }
+            if root.has || App.plan.loaded: SideLine { }
             // Obserwowane lotniska
             SideSection {
                 title: @tr("Pogoda");
@@ -633,8 +868,8 @@ export component Sidebar inherits Rectangle {
                             Text {
                                 text: w.qnh;
                                 font-family: Theme.mono;
-                                font-size: 10px * Theme.scale;
-                                color: Theme.text-faint;
+                                font-size: 11px * Theme.scale;
+                                color: Avi.cyan;
                                 vertical-alignment: center;
                             }
                         }
@@ -773,5 +1008,6 @@ export component Sidebar inherits Rectangle {
                 }
             }
         }
+    }
     }
 }

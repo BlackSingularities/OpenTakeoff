@@ -632,7 +632,7 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
         (b.s.nav_plan, b.s.nav_shots)
     };
     if nav_plan {
-        let pts = crate::simbrief::route();
+        let pts = crate::flightplan::active_route();
         if pts.len() > 1 {
             ov.tracks.push(Track { pts: pts.iter().map(|p| (p.0, p.1, p.2)).collect(), color: Some([79, 216, 235, 230]), width: 2.5 });
             if v.zoom > 5.0 {
@@ -1037,6 +1037,7 @@ fn render_3d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
         .map(|a| vec![(a.gps.prev_lat, a.gps.prev_lon), (a.gps.next_lat, a.gps.next_lon)])
         .unwrap_or_default();
     let pts: Vec<(f64, f64, i32)> = track.iter().map(|p| (p.lat, p.lon, p.alt)).collect();
+    let plan = if state().borrow().s.nav_plan { crate::flightplan::active_route() } else { Vec::new() };
     let hud = match snap {
         Some(s) => vec![
             if s.aircraft.title.is_empty() { "OpenTakeoff 3D".to_string() } else { s.aircraft.title.clone() },
@@ -1064,6 +1065,7 @@ fn render_3d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
         runways: &runways,
         points: &points,
         route: &route,
+        plan: &plan,
         hud,
         compass: lay & NAV_ROSE != 0,
         curtain: lay & NAV_CURTAIN != 0,

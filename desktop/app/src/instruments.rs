@@ -9,17 +9,21 @@ use opentakeoff_core::proto::FlightState;
 use slint::{ComponentHandle, SharedString};
 
 use crate::app::{state, ui};
-use crate::avionics::{self, gauges, nd, DisplayStyle, FlightData};
+use crate::avionics::{self, nd, DisplayStyle, FlightData};
 use crate::settings::ND_RANGES;
 use crate::*;
 
 /// Identyfikatory obszarów (App.map-event): 10 PFD, 11 ND, 12 zegary, 13 silniki, 14 PFD na karcie Na żywo, 15 SD Airbusa.
 pub const PFD: i32 = 10;
 pub const ND: i32 = 11;
-pub const PANEL: i32 = 12;
 pub const ENGINES: i32 = 13;
 pub const LIVE_PFD: i32 = 14;
 pub const SD: i32 = 15;
+pub const CHARTS: i32 = 16;
+
+thread_local! {
+    static CHART_KEY: std::cell::Cell<(u64, u32, u32)> = const { std::cell::Cell::new((0, 0, 0)) };
+}
 
 thread_local! {
     static SIZES: RefCell<HashMap<i32, (f32, f32)>> = RefCell::new(HashMap::new());
@@ -161,22 +165,40 @@ pub fn refresh() {
             app.set_instr_nd(avionics::render_nd(style, &d, w, h, range, set.nd_rose, &route, &fixes, layers));
         }
     }
-    if layout != 0 {
-        if let Some((w, h)) = px(PANEL) {
-            let kind = match style {
-                DisplayStyle::Heli => gauges::Kind::Heli,
-                DisplayStyle::Glider => gauges::Kind::Glider,
-                _ => gauges::Kind::Cessna,
-            };
-            app.set_instr_panel(avionics::render_panel(kind, &d, w, h));
+    if layout != 1 {
+        if let Some((w, h)) = px(ENGINES) {
+            app.set_instr_engines(avionics::render_engines(style, &d, w, h));
         }
     }
-    if let Some((w, h)) = px(ENGINES) {
-        app.set_instr_engines(avionics::render_engines(style, &d, w, h));
-    }
-    if layout == 0 && avionics::eicas::has_square(style) {
+    if layout != 1 && avionics::eicas::has_square(style) {
         if let Some((w, h)) = px(SD) {
             app.set_instr_sd(avionics::render_sd(style, &d, w, h));
+        }
+    }
+    if layout != 0 {
+        let groups: Vec<ParamGroupV> = snap
+            .as_ref()
+            .map(|s| {
+                crate::params::groups(s)
+                    .into_iter()
+                    .map(|g| ParamGroupV {
+                        title: crate::params::title(g.title).into(),
+                        items: slint::ModelRc::new(slint::VecModel::from(g.items.into_iter().map(|(k, v, tone)| ParamV { k: k.into(), v: v.into(), tone }).collect::<Vec<_>>())),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        app.set_params(slint::ModelRc::new(slint::VecModel::from(groups)));
+        // wykresy: tylko gdy przybyła próbka albo zmienił się rozmiar
+        if let Some((w, h)) = px(CHARTS) {
+            let gen = crate::params::generation();
+            let key = (gen, w, h);
+            if CHART_KEY.with(|c| c.replace(key)) != key {
+                let mut c = avionics::gfx::Canvas::new(w, h);
+                let k = state().borrow().scale.max(1.0);
+                crate::params::draw_charts(&mut c, w as f32, h as f32, k);
+                app.set_params_charts(c.into_image());
+            }
         }
     }
 }

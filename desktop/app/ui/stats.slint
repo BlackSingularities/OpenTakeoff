@@ -1,152 +1,1107 @@
-// Karta Statystyki: sumy, wyzwania tygodnia i osiągnięcia, loty w miesiącach, rozkład ocen lądowań,
-// samoloty, lotniska, trasy, rekordy i mapa wszystkich tras.
+// Karta Statystyki w stylu dziennika pilota: karta pilota ze stopniem i pagonem, sumy jak w rubrykach
+// dziennika, wybór okresu, kalendarz aktywności, profil czasu w fazach lotu, lądowania (ocena na
+// zegarze, stopnie, opadanie przy przyziemieniu, ostatnie lądowania), rozkłady (miesiące, godziny,
+// dni, poziomy przelotu), tablica odlotów z trasami i lotniskami, hangar, rekordy jak karty
+// pokładowe, wyzwania tygodnia, osiągnięcia i mapa wszystkich lotów.
 
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, BarV, RowV, BadgeV, ChallengeV } from "state.slint";
 import { Segmented, TipArea, Button } from "widgets.slint";
-import { Panel, Heading, Metric, Bar, MapView, ListRow, Colors } from "parts.slint";
+import { Panel, Bar, MapView, ListRow, Colors } from "parts.slint";
 
-component Bars inherits Rectangle {
-    in property <[BarV]> bars;
-    in property <bool> scores;
-    min-height: 170px * Theme.scale;
-    HorizontalLayout {
-        spacing: 3px;
-        alignment: stretch;
-        for b[i] in root.bars: VerticalLayout {
-            horizontal-stretch: 1;
-            spacing: 3px;
+/// Kolory „lotnicze”: złoto pagonów, żółć tablicy odlotów, tło wyświetlaczy.
+global Av {
+    out property <color> gold: #e2b84e;
+    out property <color> navy: #141c2a;
+    out property <color> board: #0c0e11;
+    out property <color> flap: #16191e;
+    out property <color> amber: #ffc93c;
+    out property <color> screen: #0b1016;
+    out property <color> edge: #ffffff17;
+    out property <color> cyan: Theme.dark ? #4fd8eb : #0a8fa3;
+    out property <color> climb: #3ee07a;
+    out property <color> cruise: #4fd8eb;
+    out property <color> descent: #ffb547;
+    out property <color> ground: #8a94a3;
+}
+
+/// Sekcja: tytuł wersalikami, linia podziału, opcjonalny dopisek i miejsce na przełącznik.
+component Section inherits Panel {
+    in property <string> title;
+    in property <image> icon;
+    in property <string> note;
+    VerticalLayout {
+        padding: 14px;
+        padding-top: 11px;
+        spacing: 10px;
+        HorizontalLayout {
+            spacing: 8px;
+            height: 22px * Theme.scale;
+            Image {
+                source: root.icon;
+                width: 14px * Theme.scale;
+                height: 14px * Theme.scale;
+                y: (parent.height - self.height) / 2;
+                colorize: Av.cyan;
+            }
             Text {
-                text: b.text;
-                font-family: Theme.mono;
-                font-size: 10px;
-                color: Theme.text-faint;
-                horizontal-alignment: center;
-                overflow: elide;
+                text: root.title.to-uppercase();
+                font-family: Theme.cond;
+                font-size: 12px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 1.3px;
+                color: Theme.text-dim;
+                vertical-alignment: center;
             }
             Rectangle {
-                vertical-stretch: 1;
+                horizontal-stretch: 1;
                 Rectangle {
-                    y: parent.height * (1 - max(0.0, min(1, b.value)));
-                    height: parent.height * max(0.0, min(1, b.value));
-                    border-radius: 3px;
-                    background: root.scores ? Colors.score(i * 10 + 5) : b.accent ? Theme.accent : Theme.accent.with-alpha(0.55);
+                    y: (parent.height - self.height) / 2;
+                    height: 1px;
+                    background: Theme.line;
+                }
+            }
+            if root.note != "": Text {
+                text: root.note;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+            }
+        }
+        @children
+    }
+}
+
+/// Podpis wersalikami (rubryka dziennika, oś wykresu).
+component Caps inherits Text {
+    font-family: Theme.cond;
+    font-size: 9.5px * Theme.scale;
+    font-weight: 700;
+    letter-spacing: 0.9px;
+    color: Theme.text-faint;
+    overflow: elide;
+}
+
+/// Wykres słupkowy z liniami pomocniczymi, wartością nad słupkiem i podpisem pod spodem.
+component Bars inherits Rectangle {
+    in property <[BarV]> bars;
+    in property <color> tone: Theme.accent;
+    // 1 – kolor wg oceny lądowania (wartość 0–1 = ocena / 100)
+    in property <int> mode;
+    in property <bool> values: true;
+    in property <length> chart-h: 130px * Theme.scale;
+    height: self.chart-h + 34px * Theme.scale;
+    // linie pomocnicze 0 / 50 / 100 %
+    for g in [0, 0.5, 1]: Rectangle {
+        x: 0;
+        y: 14px * Theme.scale + root.chart-h * (1 - g);
+        width: root.width;
+        height: 1px;
+        background: g == 0 ? Theme.line-strong : Theme.line;
+    }
+    HorizontalLayout {
+        spacing: root.bars.length > 20 ? 2px : 4px;
+        for b in root.bars: VerticalLayout {
+            horizontal-stretch: 1;
+            min-width: 0;
+            spacing: 2px;
+            Text {
+                height: 12px * Theme.scale;
+                text: root.values ? b.text : "";
+                font-family: Theme.mono;
+                font-size: 9.5px * Theme.scale;
+                color: Theme.text-dim;
+                horizontal-alignment: center;
+                overflow: clip;
+            }
+            Rectangle {
+                height: root.chart-h;
+                property <float> v: max(0, min(1, b.value));
+                Rectangle {
+                    y: parent.height * (1 - parent.v);
+                    height: parent.height * parent.v;
+                    border-radius: min(3px, self.width / 2);
+                    background: root.mode == 1 ? Colors.score(round(b.value * 100)) : b.accent ? root.tone : root.tone.with-alpha(0.6);
+                    animate height, y { duration: 450ms; easing: ease-out; }
                 }
                 TipArea {
-                    tip: b.label + ": " + b.text;
+                    tip: b.label + (b.text != "" ? ": " + b.text : "");
                 }
             }
             Text {
                 text: b.label;
-                font-family: Theme.font;
-                font-size: 10px;
+                font-family: Theme.mono;
+                font-size: 9.5px * Theme.scale;
                 color: Theme.text-dim;
                 horizontal-alignment: center;
+                overflow: clip;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Karta pilota
+
+/// Pagon z belkami (1–4) i guzikiem.
+component Epaulette inherits Rectangle {
+    in property <int> stripes;
+    width: 132px * Theme.scale;
+    height: 46px * Theme.scale;
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 132;
+        viewbox-height: 46;
+        fill: @linear-gradient(180deg, #1d2738 0%, #10161f 100%);
+        stroke: #ffffff26;
+        stroke-width: 1px;
+        commands: "M 4 2 L 112 2 Q 130 23 112 44 L 4 44 Q 1 44 1 41 L 1 5 Q 1 2 4 2 Z";
+    }
+    for i in root.stripes: Rectangle {
+        x: (14px + i * 17px) * Theme.scale;
+        y: 6px * Theme.scale;
+        width: 9px * Theme.scale;
+        height: parent.height - 12px * Theme.scale;
+        border-radius: 1px;
+        background: @linear-gradient(90deg, #a8812a 0%, Av.gold 45%, #f6dc8a 60%, #b98f33 100%);
+    }
+    Rectangle {
+        x: 104px * Theme.scale;
+        y: (parent.height - self.height) / 2;
+        width: 12px * Theme.scale;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: @radial-gradient(circle, #f6dc8a 0%, Av.gold 55%, #8f6a20 100%);
+    }
+}
+
+/// Rubryka dziennika: podpis wersalikami nad wartością w kroju mono.
+component Column inherits VerticalLayout {
+    in property <string> k;
+    in property <string> v;
+    in property <string> sub;
+    horizontal-stretch: 1;
+    min-width: 0;
+    spacing: 3px;
+    Rectangle {
+        height: 22px * Theme.scale;
+        background: Theme.dark ? #ffffff08 : #00000008;
+        border-radius: 2px;
+        Caps {
+            x: 8px;
+            width: parent.width - 12px;
+            text: root.k;
+            vertical-alignment: center;
+            color: Theme.text-dim;
+        }
+    }
+    Text {
+        text: root.v == "" ? "–" : root.v;
+        font-family: Theme.mono;
+        font-size: 22px * Theme.scale;
+        font-weight: 700;
+        color: Theme.text;
+        overflow: elide;
+    }
+    Text {
+        text: root.sub;
+        font-family: Theme.font;
+        font-size: Theme.fs-small;
+        color: Theme.text-faint;
+        overflow: elide;
+    }
+}
+
+component PilotCard inherits Panel {
+    VerticalLayout {
+        padding: 14px;
+        spacing: 14px;
+        HorizontalLayout {
+            spacing: 10px;
+            Image {
+                source: Icons.notebook-pen;
+                width: 16px * Theme.scale;
+                height: 16px * Theme.scale;
+                y: (parent.height - self.height) / 2;
+                colorize: Av.cyan;
+            }
+            Text {
+                text: @tr("Dziennik pilota").to-uppercase();
+                font-family: Theme.cond;
+                font-size: 13px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 2px;
+                color: Theme.text;
+                vertical-alignment: center;
+            }
+            Text {
+                text: "· " + App.stats.period;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-faint;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
                 overflow: elide;
             }
-        }
-    }
-}
-
-component RankList inherits Panel {
-    in property <string> title;
-    in property <image> icon;
-    in property <[RowV]> rows;
-    in property <string> open;
-    VerticalLayout {
-        padding: 10px;
-        spacing: 4px;
-        Heading {
-            text: root.title;
-            icon: root.icon;
-        }
-        if root.rows.length == 0: Text {
-            text: "—";
-            color: Theme.text-faint;
-        }
-        for r in root.rows: ListRow {
-            height: 34px * Theme.scale;
-            clicked => {
-                if (root.open != "") {
-                    App.cmd(root.open, r.name);
+            Segmented {
+                y: (parent.height - self.height) / 2;
+                items: [@tr("Całość"), @tr("12 mies."), @tr("30 dni"), @tr("Ten rok")];
+                current: App.stats-period;
+                tip: @tr("Okres statystyk (osiągnięcia i kalendarz liczą się zawsze z całego dziennika)");
+                picked(i) => {
+                    App.stats-period = i;
+                    App.cmd("stats-refresh", "");
                 }
             }
-            VerticalLayout {
-                padding-left: 6px;
-                padding-right: 6px;
-                alignment: center;
-                spacing: 3px;
-                HorizontalLayout {
-                    Text {
-                        text: r.name;
-                        font-family: Theme.font;
-                        font-size: Theme.fs;
-                        color: Theme.text;
-                        overflow: elide;
-                        horizontal-stretch: 1;
+        }
+        HorizontalLayout {
+            spacing: 14px;
+            // Legitymacja: pagon, stopień, postęp do następnego stopnia
+            Rectangle {
+                width: 300px * Theme.scale;
+                border-radius: Theme.r;
+                background: @linear-gradient(135deg, #18233a 0%, #0d1320 70%, #0a0f18 100%);
+                border-width: 1px;
+                border-color: Av.gold.with-alpha(0.35);
+                clip: true;
+                // znak wodny – skrzydełka
+                Image {
+                    x: parent.width - self.width + 18px;
+                    y: -10px;
+                    width: 120px;
+                    height: 120px;
+                    source: Icons.plane;
+                    colorize: #ffffff0a;
+                }
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 8px;
+                    HorizontalLayout {
+                        Text {
+                            text: @tr("Stopień").to-uppercase();
+                            font-family: Theme.cond;
+                            font-size: 9.5px * Theme.scale;
+                            font-weight: 700;
+                            letter-spacing: 1.4px;
+                            color: Av.gold;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: "OPENTAKEOFF";
+                            font-family: Theme.mono;
+                            font-size: 9px * Theme.scale;
+                            letter-spacing: 1px;
+                            color: #ffffff4d;
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 14px;
+                        Epaulette {
+                            stripes: App.stats.rank-stripes;
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 2px;
+                            Text {
+                                text: App.stats.rank;
+                                font-family: Theme.cond;
+                                font-size: 19px * Theme.scale;
+                                font-weight: 700;
+                                color: #ffffff;
+                                wrap: word-wrap;
+                            }
+                            Text {
+                                text: App.stats.hours + " " + @tr("nalotu");
+                                font-family: Theme.mono;
+                                font-size: 11px * Theme.scale;
+                                color: #ffffffa6;
+                            }
+                        }
+                    }
+                    Rectangle {
+                        height: 5px;
+                        border-radius: 2.5px;
+                        background: #ffffff17;
+                        Rectangle {
+                            x: 0;
+                            width: parent.width * App.stats.rank-progress;
+                            height: parent.height;
+                            border-radius: 2.5px;
+                            background: @linear-gradient(90deg, #b98f33 0%, Av.gold 60%, #f6dc8a 100%);
+                            animate width { duration: 600ms; easing: ease-out; }
+                        }
                     }
                     Text {
-                        text: r.a;
-                        font-family: Theme.font;
-                        font-size: Theme.fs;
-                        color: Theme.text;
-                    }
-                    Text {
-                        text: "  " + r.b;
+                        text: App.stats.rank-left;
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
-                        color: Theme.text-faint;
-                        vertical-alignment: center;
+                        color: #ffffff99;
+                        overflow: elide;
                     }
                 }
-                Bar {
-                    height: 4px;
-                    value: r.level;
+            }
+            // Sumy jak w rubrykach dziennika
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 6px;
+                    Column {
+                        k: @tr("Loty");
+                        v: App.stats.flights;
+                        sub: App.stats.since;
+                    }
+                    Column {
+                        k: @tr("Czas lotu");
+                        v: App.stats.hours;
+                        sub: App.stats.avg-flight != "" ? @tr("średnio") + " " + App.stats.avg-flight : "";
+                    }
+                    Column {
+                        k: @tr("Dystans");
+                        v: App.stats.distance;
+                        sub: App.stats.earth-laps;
+                    }
+                    Column {
+                        k: @tr("Lądowania");
+                        v: App.stats.landings;
+                        sub: App.stats.avg-vs;
+                    }
+                    Column {
+                        k: @tr("Lotniska");
+                        v: App.stats.airports;
+                    }
+                    Column {
+                        k: @tr("Typy");
+                        v: App.stats.aircraft;
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    for c in [
+                        { icon: Icons.ruler, t: App.stats.avg-dist != "" ? @tr("średni lot") + " " + App.stats.avg-dist : "" },
+                        { icon: Icons.sparkles, t: App.stats.streak },
+                        { icon: Icons.trophy, t: App.stats.streak-best },
+                    ]: Rectangle {
+                        visible: c.t != "";
+                        width: c.t == "" ? 0 : chl.preferred-width;
+                        height: 24px * Theme.scale;
+                        border-radius: 12px * Theme.scale;
+                        background: Theme.raised;
+                        border-width: 1px;
+                        border-color: Theme.line;
+                        chl := HorizontalLayout {
+                            padding-left: 9px;
+                            padding-right: 11px;
+                            spacing: 6px;
+                            Image {
+                                source: c.icon;
+                                width: 12px * Theme.scale;
+                                height: 12px * Theme.scale;
+                                y: (parent.height - self.height) / 2;
+                                colorize: Av.cyan;
+                            }
+                            Text {
+                                text: c.t;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-dim;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-component Record inherits ListRow {
-    in property <string> label;
-    in property <string> value;
-    in property <string> id;
-    height: 30px * Theme.scale;
-    clicked => {
-        if (root.id != "") {
-            App.tab = 2;
-            App.cmd("flight-open", root.id);
+// ---------------------------------------------------------------------------------------------
+// Aktywność i fazy lotu
+
+/// Kalendarz 26 tygodni: kolumny to tygodnie, wiersze dni od poniedziałku.
+component Heatmap inherits Rectangle {
+    property <length> label-w: 22px * Theme.scale;
+    property <length> gap: 3px;
+    property <length> cell: min(17px * Theme.scale, (self.width - self.label-w) / 26 - self.gap);
+    property <[string]> days: [@tr("Pn"), "", @tr("Śr"), "", @tr("Pt"), "", @tr("Nd")];
+    height: 16px * Theme.scale + 7 * (self.cell + self.gap) + 20px * Theme.scale;
+    for m[w] in App.stats-heat-months: Text {
+        x: root.label-w + w * (root.cell + root.gap);
+        y: 0;
+        text: m;
+        font-family: Theme.cond;
+        font-size: 9.5px * Theme.scale;
+        font-weight: 600;
+        color: Theme.text-faint;
+    }
+    for d[i] in root.days: Text {
+        x: 0;
+        y: 16px * Theme.scale + i * (root.cell + root.gap);
+        height: root.cell;
+        text: d;
+        font-family: Theme.cond;
+        font-size: 9px * Theme.scale;
+        color: Theme.text-faint;
+        vertical-alignment: center;
+    }
+    for c[i] in App.stats-heat: Rectangle {
+        property <int> wk: floor(i / 7);
+        x: root.label-w + self.wk * (root.cell + root.gap);
+        y: 16px * Theme.scale + (i - self.wk * 7) * (root.cell + root.gap);
+        width: root.cell;
+        height: root.cell;
+        visible: c.value >= 0;
+        border-radius: min(3px, root.cell / 4);
+        background: c.value <= 0 ? Theme.hover : Theme.accent.with-alpha(0.25 + 0.75 * c.value);
+        border-width: c.accent ? 1.5px : 0;
+        border-color: Theme.text;
+        TipArea {
+            tip: c.label + " – " + c.text;
+        }
+    }
+    // legenda
+    HorizontalLayout {
+        y: root.height - 14px * Theme.scale;
+        height: 12px * Theme.scale;
+        x: root.label-w;
+        spacing: 3px;
+        Caps {
+            text: @tr("mniej");
+            vertical-alignment: center;
+        }
+        for a in [0, 0.3, 0.55, 0.8, 1.0]: Rectangle {
+            width: 10px * Theme.scale;
+            height: 10px * Theme.scale;
+            y: 1px;
+            border-radius: 2px;
+            background: a == 0 ? Theme.hover : Theme.accent.with-alpha(0.25 + 0.75 * a);
+        }
+        Caps {
+            text: @tr("więcej");
+            vertical-alignment: center;
+        }
+    }
+}
+
+/// Profil lotu z szerokościami odcinków proporcjonalnymi do czasu w fazach.
+component PhaseProfile inherits VerticalLayout {
+    property <float> g: App.stats.f-ground;
+    property <float> c: App.stats.f-climb;
+    property <float> r: App.stats.f-cruise;
+    property <float> d: App.stats.f-descent;
+    property <bool> any: self.g + self.c + self.r + self.d > 0.01;
+    // punkty odcinków w polu 300 × 80
+    property <float> x1: self.any ? self.g / 2 * 300 : 30;
+    property <float> x2: self.any ? self.x1 + self.c * 300 : 90;
+    property <float> x3: self.any ? self.x2 + self.r * 300 : 210;
+    property <float> x4: self.any ? self.x3 + self.d * 300 : 270;
+    property <string> line: "M 0 70 L " + self.x1 + " 70 L " + self.x2 + " 14 L " + self.x3 + " 14 L " + self.x4 + " 70 L 300 70";
+    spacing: 8px;
+    Rectangle {
+        height: 110px * Theme.scale;
+        border-radius: Theme.r-small;
+        background: Av.screen;
+        border-width: 1px;
+        border-color: Av.edge;
+        clip: true;
+        // siatka wysokości
+        for f in [0.2, 0.45, 0.7]: Rectangle {
+            y: parent.height * f;
+            height: 1px;
+            background: #ffffff0d;
+        }
+        Path {
+            x: 8px;
+            y: 6px;
+            width: parent.width - 16px;
+            height: parent.height - 12px;
+            viewbox-width: 300;
+            viewbox-height: 80;
+            fill: @linear-gradient(180deg, Av.cruise.with-alpha(0.28) 0%, Av.cruise.with-alpha(0.02) 100%);
+            stroke: transparent;
+            commands: root.line + " L 300 80 L 0 80 Z";
+        }
+        Path {
+            x: 8px;
+            y: 6px;
+            width: parent.width - 16px;
+            height: parent.height - 12px;
+            viewbox-width: 300;
+            viewbox-height: 80;
+            fill: transparent;
+            stroke: Av.cruise;
+            stroke-width: 2px;
+            commands: root.line;
+        }
+        // samolot na początku przelotu
+        Image {
+            x: 8px + (parent.width - 16px) * root.x2 / 300 - self.width / 2;
+            y: 6px + (parent.height - 12px) * 14 / 80 - self.height - 2px;
+            width: 16px;
+            height: 16px;
+            source: Icons.plane;
+            colorize: Av.cruise;
+        }
+        if !root.any: Text {
+            text: @tr("Profil pojawi się po pierwszych lotach");
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: #ffffff66;
         }
     }
     HorizontalLayout {
-        padding-left: 6px;
-        padding-right: 6px;
-        Text {
-            text: root.label;
-            font-family: Theme.font;
-            font-size: Theme.fs;
-            color: Theme.text-dim;
-            vertical-alignment: center;
+        spacing: 8px;
+        for p in [
+            { k: @tr("Na ziemi"), v: App.stats.t-ground, f: root.g, c: Av.ground },
+            { k: @tr("Wznoszenie"), v: App.stats.t-climb, f: root.c, c: Av.climb },
+            { k: @tr("Przelot"), v: App.stats.t-cruise, f: root.r, c: Av.cruise },
+            { k: @tr("Zniżanie"), v: App.stats.t-descent, f: root.d, c: Av.descent },
+        ]: VerticalLayout {
             horizontal-stretch: 1;
-        }
-        Text {
-            text: root.value == "" ? "—" : root.value;
-            font-family: Theme.font;
-            font-size: Theme.fs;
-            font-weight: 600;
-            color: Theme.text;
-            vertical-alignment: center;
+            min-width: 0;
+            spacing: 3px;
+            Rectangle {
+                height: 4px;
+                border-radius: 2px;
+                background: p.c.with-alpha(0.2);
+                Rectangle {
+                    x: 0;
+                    width: parent.width * p.f;
+                    height: parent.height;
+                    border-radius: 2px;
+                    background: p.c;
+                }
+            }
+            Text {
+                text: p.v == "" ? "–" : p.v;
+                font-family: Theme.mono;
+                font-size: 13px * Theme.scale;
+                font-weight: 700;
+                color: Theme.text;
+                overflow: elide;
+            }
+            HorizontalLayout {
+                spacing: 4px;
+                Caps {
+                    text: p.k;
+                    horizontal-stretch: 1;
+                }
+                Caps {
+                    text: round(p.f * 100) + " %";
+                    color: Theme.text-dim;
+                }
+            }
         }
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// Lądowania
+
+/// Zegar średniej oceny: łuk 270° w kolorze oceny.
+component ScoreDial inherits Rectangle {
+    in property <int> score;
+    in property <string> grade;
+    property <float> f: max(0, min(1, root.score / 100));
+    property <angle> a1: 135deg + 270deg * self.f;
+    width: self.height;
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: Theme.line-strong;
+        stroke-width: 7px * Theme.scale;
+        fill: transparent;
+        commands: "M 21.72 78.28 A 40 40 0 1 1 78.28 78.28";
+    }
+    if root.score > 0: Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: Colors.score(root.score);
+        stroke-width: 7px * Theme.scale;
+        fill: transparent;
+        commands: "M 21.72 78.28 A 40 40 0 " + (270 * root.f > 180 ? "1" : "0") + " 1 " + (50 + 40 * cos(root.a1)) + " " + (50 + 40 * sin(root.a1));
+    }
+    VerticalLayout {
+        alignment: center;
+        spacing: 0;
+        Text {
+            text: root.score < 0 ? "–" : root.score;
+            font-family: Theme.mono;
+            font-size: root.height * 0.27;
+            font-weight: 700;
+            color: root.score < 0 ? Theme.text-faint : Colors.score(root.score);
+            horizontal-alignment: center;
+        }
+        Text {
+            text: root.grade != "" ? root.grade : @tr("brak lądowań");
+            font-family: Theme.cond;
+            font-size: 11px * Theme.scale;
+            font-weight: 600;
+            color: Theme.text-dim;
+            horizontal-alignment: center;
+        }
+        Caps {
+            text: @tr("średnia ocena");
+            horizontal-alignment: center;
+        }
+    }
+}
+
+/// Mała wartość lądowań: liczba i podpis.
+component Fact inherits Rectangle {
+    in property <string> k;
+    in property <string> v;
+    in property <string> tip;
+    min-width: 0;
+    horizontal-stretch: 1;
+    height: fl.preferred-height;
+    fl := VerticalLayout {
+        spacing: 1px;
+        Text {
+            text: root.v == "" ? "–" : root.v;
+            font-family: Theme.mono;
+            font-size: 14px * Theme.scale;
+            font-weight: 700;
+            color: Theme.text;
+            overflow: elide;
+        }
+        Caps {
+            text: root.k;
+        }
+    }
+    if root.tip != "": TipArea {
+        tip: root.tip;
+    }
+}
+
+component Landings inherits Section {
+    title: @tr("Lądowania");
+    icon: Icons.plane-landing;
+    note: App.stats.landings != "" && App.stats.landings != "0" ? App.stats.landings + " " + @tr("w okresie") : "";
+    HorizontalLayout {
+        spacing: 22px;
+        VerticalLayout {
+            spacing: 10px;
+            ScoreDial {
+                height: 140px * Theme.scale;
+                score: App.stats.score-value;
+                grade: App.stats.grade;
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                Fact {
+                    k: @tr("Masło");
+                    v: App.stats.butter;
+                    tip: @tr("Lądowania z opadaniem poniżej 60 ft/min");
+                }
+                Fact {
+                    k: @tr("Średnio G");
+                    v: App.stats.avg-g;
+                }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                Fact {
+                    k: @tr("Odbicia");
+                    v: App.stats.bounces;
+                    tip: @tr("Odsetek lądowań z odbiciem");
+                }
+                Fact {
+                    k: @tr("Od osi");
+                    v: App.stats.avg-cross;
+                    tip: @tr("Średnie odejście od osi pasa przy przyziemieniu");
+                }
+            }
+            Fact {
+                k: @tr("Najsilniejszy boczny wiatr");
+                v: App.stats.max-xwind;
+            }
+        }
+        // stopnie ocen
+        VerticalLayout {
+            horizontal-stretch: 2;
+            spacing: 6px;
+            Caps {
+                text: @tr("Oceny");
+            }
+            for g[i] in App.stats-grades: HorizontalLayout {
+                spacing: 8px;
+                height: 22px * Theme.scale;
+                Rectangle {
+                    width: 8px;
+                    height: 8px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 4px;
+                    background: Colors.score(95 - i * 18);
+                }
+                Text {
+                    text: g.name;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                    vertical-alignment: center;
+                    width: 96px * Theme.scale;
+                    overflow: elide;
+                }
+                Rectangle {
+                    horizontal-stretch: 1;
+                    Rectangle {
+                        x: 0;
+                        y: (parent.height - self.height) / 2;
+                        height: 8px * Theme.scale;
+                        width: max(2px, parent.width * g.level);
+                        border-radius: 2px;
+                        background: Colors.score(95 - i * 18).with-alpha(g.a == "0" ? 0.15 : 0.85);
+                        animate width { duration: 450ms; easing: ease-out; }
+                    }
+                }
+                Text {
+                    text: g.a;
+                    font-family: Theme.mono;
+                    font-size: Theme.fs-small;
+                    color: Theme.text;
+                    vertical-alignment: center;
+                    horizontal-alignment: right;
+                    width: 30px * Theme.scale;
+                }
+                Text {
+                    text: g.b;
+                    font-family: Theme.mono;
+                    font-size: 10px * Theme.scale;
+                    color: Theme.text-faint;
+                    vertical-alignment: center;
+                    horizontal-alignment: right;
+                    width: 38px * Theme.scale;
+                }
+            }
+            Rectangle {
+                height: 4px;
+            }
+            Caps {
+                text: @tr("Ostatnie lądowania (ocena)");
+            }
+            Bars {
+                bars: App.stats-recent;
+                mode: 1;
+                values: false;
+                chart-h: 54px * Theme.scale;
+            }
+        }
+        // opadanie przy przyziemieniu
+        VerticalLayout {
+            horizontal-stretch: 2;
+            spacing: 6px;
+            Caps {
+                text: @tr("Opadanie przy przyziemieniu (ft/min)");
+            }
+            Bars {
+                bars: App.stats-vs;
+                tone: Av.descent;
+                chart-h: 150px * Theme.scale;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Tablica odlotów, hangar i rekordy
+
+/// Komórka tablicy klapkowej: żółty tekst mono na ciemnej klapce przeciętej w połowie.
+component Flap inherits Rectangle {
+    in property <string> text;
+    in property <color> tone: Av.amber;
+    in property <TextHorizontalAlignment> align: left;
+    height: 24px * Theme.scale;
+    border-radius: 2px;
+    background: Av.flap;
+    clip: true;
+    Rectangle {
+        y: parent.height / 2;
+        height: 1px;
+        background: #00000099;
+    }
+    Text {
+        x: 6px;
+        width: parent.width - 12px;
+        text: root.text.to-uppercase();
+        font-family: Theme.mono;
+        font-size: 12px * Theme.scale;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: root.tone;
+        vertical-alignment: center;
+        horizontal-alignment: root.align;
+        overflow: elide;
+    }
+}
+
+component Board inherits Rectangle {
+    in property <string> title;
+    in property <string> col1;
+    in property <[RowV]> rows;
+    in property <string> open;
+    border-radius: Theme.r;
+    background: Av.board;
+    border-width: 1px;
+    border-color: #ffffff1f;
+    clip: true;
+    VerticalLayout {
+        padding: 12px;
+        spacing: 4px;
+        HorizontalLayout {
+            spacing: 8px;
+            height: 24px * Theme.scale;
+            Image {
+                source: Icons.plane-takeoff;
+                width: 16px * Theme.scale;
+                height: 16px * Theme.scale;
+                y: (parent.height - self.height) / 2;
+                colorize: Av.amber;
+            }
+            Text {
+                text: root.title.to-uppercase();
+                font-family: Theme.mono;
+                font-size: 13px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 2px;
+                color: Av.amber;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+        }
+        HorizontalLayout {
+            spacing: 4px;
+            height: 16px * Theme.scale;
+            Caps {
+                horizontal-stretch: 1;
+                text: root.col1.to-uppercase();
+                color: #ffffff73;
+            }
+            Caps {
+                width: 48px * Theme.scale;
+                text: @tr("Loty").to-uppercase();
+                color: #ffffff73;
+                horizontal-alignment: right;
+            }
+            Caps {
+                width: 70px * Theme.scale;
+                text: @tr("Czas").to-uppercase();
+                color: #ffffff73;
+                horizontal-alignment: right;
+            }
+        }
+        if root.rows.length == 0: Flap {
+            text: @tr("Brak lotów");
+            tone: #ffffff59;
+        }
+        for r[i] in root.rows: Rectangle {
+            height: 24px * Theme.scale;
+            HorizontalLayout {
+                spacing: 4px;
+                Flap {
+                    horizontal-stretch: 1;
+                    text: r.name;
+                }
+                Flap {
+                    width: 48px * Theme.scale;
+                    text: r.a;
+                    tone: #ffffff;
+                    align: right;
+                }
+                Flap {
+                    width: 70px * Theme.scale;
+                    text: r.b;
+                    tone: #8fe3f0;
+                    align: right;
+                }
+            }
+            TouchArea {
+                mouse-cursor: root.open != "" ? pointer : default;
+                clicked => {
+                    if (root.open != "") {
+                        App.cmd(root.open, r.name);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Hangar: samoloty z paskiem udziału w lotach.
+component Hangar inherits Section {
+    title: @tr("Hangar");
+    icon: Icons.plane;
+    if App.stats-aircraft.length == 0: Text {
+        text: "–";
+        color: Theme.text-faint;
+    }
+    for r[i] in App.stats-aircraft: HorizontalLayout {
+        spacing: 10px;
+        height: 40px * Theme.scale;
+        Rectangle {
+            width: 30px * Theme.scale;
+            height: self.width;
+            y: (parent.height - self.height) / 2;
+            border-radius: self.width / 2;
+            background: i == 0 ? Av.gold.with-alpha(0.18) : Theme.raised;
+            border-width: 1px;
+            border-color: i == 0 ? Av.gold.with-alpha(0.6) : Theme.line;
+            Image {
+                source: Icons.plane;
+                width: 15px * Theme.scale;
+                height: 15px * Theme.scale;
+                colorize: i == 0 ? Av.gold : Theme.text-dim;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+            horizontal-stretch: 1;
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: r.name;
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    font-weight: i == 0 ? 600 : 400;
+                    color: Theme.text;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+                Text {
+                    text: r.a + " · " + r.b;
+                    font-family: Theme.mono;
+                    font-size: 10.5px * Theme.scale;
+                    color: Theme.text-dim;
+                }
+            }
+            Bar {
+                height: 4px;
+                value: r.level;
+                tone: i == 0 ? Av.gold : Theme.accent;
+            }
+        }
+    }
+}
+
+/// Rekord jak karta pokładowa: część główna i odcinek z ikoną za perforacją.
+component Pass inherits Rectangle {
+    in property <string> k;
+    in property <string> v;
+    in property <string> id;
+    in property <image> icon;
+    min-width: 170px * Theme.scale;
+    height: 70px * Theme.scale;
+    border-radius: Theme.r;
+    background: ta.has-hover && root.id != "" ? Theme.higher : Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    HorizontalLayout {
+        VerticalLayout {
+            horizontal-stretch: 1;
+            min-width: 0;
+            padding: 10px;
+            padding-left: 12px;
+            alignment: center;
+            spacing: 3px;
+            Caps {
+                text: root.k;
+            }
+            Text {
+                text: root.v == "" ? "–" : root.v;
+                font-family: Theme.mono;
+                font-size: 16px * Theme.scale;
+                font-weight: 700;
+                color: Theme.text;
+                overflow: elide;
+            }
+        }
+        // perforacja
+        VerticalLayout {
+            width: 2px;
+            padding-top: 6px;
+            padding-bottom: 6px;
+            spacing: 4px;
+            for i in 8: Rectangle {
+                vertical-stretch: 1;
+                width: 2px;
+                border-radius: 1px;
+                background: Theme.line-strong;
+            }
+        }
+        Rectangle {
+            width: 44px * Theme.scale;
+            Image {
+                source: root.icon;
+                width: 18px * Theme.scale;
+                height: 18px * Theme.scale;
+                colorize: root.id != "" ? Theme.accent : Theme.text-faint;
+            }
+        }
+    }
+    // wycięcia karty na wysokości perforacji
+    for t in [0, 1]: Rectangle {
+        x: root.width - 46px * Theme.scale - self.width / 2;
+        y: t == 0 ? -self.height / 2 : root.height - self.height / 2;
+        width: 12px;
+        height: 12px;
+        border-radius: 6px;
+        background: Theme.panel;
+        border-width: 1px;
+        border-color: Theme.line;
+    }
+    ta := TouchArea {
+        mouse-cursor: root.id != "" ? pointer : default;
+        clicked => {
+            if (root.id != "") {
+                App.tab = 2;
+                App.cmd("flight-open", root.id);
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Osiągnięcia i wyzwania
 
 // Ikona osiągnięcia (kolejność jak w achievements::Icon).
 component AchIcon inherits Image {
     in property <int> kind;
     source: kind == 0 ? Icons.plane : kind == 1 ? Icons.clock : kind == 2 ? Icons.route : kind == 3 ? Icons.plane-landing : kind == 4 ? Icons.map-pin : kind == 5 ? Icons.globe : kind == 6 ? Icons.gauge : kind == 7 ? Icons.sparkles : kind == 8 ? Icons.star : kind == 9 ? Icons.activity : kind == 10 ? Icons.wind : kind == 11 ? Icons.timer : kind == 12 ? Icons.mountain : kind == 13 ? Icons.ruler : kind == 14 ? Icons.moon : kind == 15 ? Icons.rotate-cw : kind == 16 ? Icons.crosshair : kind == 17 ? Icons.scan : Icons.trophy;
+}
+
+/// Odznaka jak naszywka: sześciokąt z ikoną, złoty przy pełnym poziomie.
+component Patch inherits Rectangle {
+    in property <int> kind;
+    in property <bool> got;
+    in property <bool> full;
+    width: 44px * Theme.scale;
+    height: self.width;
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        fill: root.full ? Av.gold.with-alpha(0.2) : root.got ? Theme.accent-soft : Theme.hover;
+        stroke: root.full ? Av.gold : root.got ? Theme.accent.with-alpha(0.7) : Theme.line-strong;
+        stroke-width: 1.5px;
+        commands: "M 50 3 L 91 26 L 91 74 L 50 97 L 9 74 L 9 26 Z";
+    }
+    AchIcon {
+        kind: root.kind;
+        width: parent.width * 0.45;
+        height: self.width;
+        colorize: root.full ? Av.gold : root.got ? Theme.accent : Theme.text-faint;
+    }
 }
 
 component BadgeTile inherits Rectangle {
@@ -156,7 +1111,7 @@ component BadgeTile inherits Rectangle {
     border-radius: Theme.r;
     background: Theme.raised;
     border-width: 1px;
-    border-color: full ? Theme.accent.with-alpha(0.55) : Theme.line;
+    border-color: full ? Av.gold.with-alpha(0.5) : Theme.line;
     TipArea {
         tip: b.desc;
     }
@@ -165,17 +1120,10 @@ component BadgeTile inherits Rectangle {
         spacing: 10px;
         VerticalLayout {
             alignment: center;
-            Rectangle {
-                width: 38px * Theme.scale;
-                height: self.width;
-                border-radius: self.width / 2;
-                background: got ? Theme.accent-soft : Theme.hover;
-                AchIcon {
-                    kind: b.icon;
-                    width: 20px * Theme.scale;
-                    height: self.width;
-                    colorize: got ? Theme.accent : Theme.text-faint;
-                }
+            Patch {
+                kind: b.icon;
+                got: root.got;
+                full: root.full;
             }
         }
         VerticalLayout {
@@ -192,19 +1140,16 @@ component BadgeTile inherits Rectangle {
                     overflow: elide;
                     horizontal-stretch: 1;
                 }
+                // poziomy jak gwiazdki na naszywce
                 HorizontalLayout {
-                    spacing: 3px;
+                    spacing: 2px;
                     alignment: end;
-                    for i in b.levels: VerticalLayout {
-                        alignment: center;
-                        Rectangle {
-                            width: 7px;
-                            height: 7px;
-                            border-radius: 3.5px;
-                            background: i < b.level ? Theme.accent : Theme.hover;
-                            border-width: i < b.level ? 0 : 1px;
-                            border-color: Theme.line;
-                        }
+                    for i in b.levels: Image {
+                        width: 10px;
+                        height: 10px;
+                        y: (parent.height - self.height) / 2;
+                        source: Icons.star;
+                        colorize: i < b.level ? (root.full ? Av.gold : Theme.accent) : Theme.line-strong;
                     }
                 }
             }
@@ -215,7 +1160,7 @@ component BadgeTile inherits Rectangle {
                     horizontal-stretch: 1;
                     Bar {
                         value: b.progress;
-                        tone: full ? Colors.vfr : Theme.accent;
+                        tone: full ? Av.gold : Theme.accent;
                     }
                 }
                 Text {
@@ -247,17 +1192,10 @@ component ChallengeCard inherits Rectangle {
         spacing: 12px;
         VerticalLayout {
             alignment: center;
-            Rectangle {
-                width: 44px * Theme.scale;
-                height: self.width;
-                border-radius: self.width / 2;
-                background: c.done ? Colors.vfr.with-alpha(0.2) : Theme.accent-soft;
-                AchIcon {
-                    kind: c.done ? 18 : c.icon;
-                    width: 22px * Theme.scale;
-                    height: self.width;
-                    colorize: c.done ? Colors.vfr : Theme.accent;
-                }
+            Patch {
+                kind: c.done ? 18 : c.icon;
+                got: true;
+                full: c.done;
             }
         }
         VerticalLayout {
@@ -320,224 +1258,195 @@ component ChallengeCard inherits Rectangle {
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+
 export component Stats inherits Rectangle {
     sv := ScrollView {
         VerticalLayout {
             width: sv.visible-width;
             padding: 14px;
             spacing: 12px;
-            HorizontalLayout {
-                spacing: 10px;
-                Metric {
-                    horizontal-stretch: 1;
-                    label: @tr("Loty");
-                    value: App.stats.flights;
-                    sub: App.stats.since;
-                }
-                Metric {
-                    horizontal-stretch: 1;
-                    label: @tr("Czas w powietrzu");
-                    value: App.stats.hours;
-                }
-                Metric {
-                    horizontal-stretch: 1;
-                    label: @tr("Dystans");
-                    value: App.stats.distance;
-                }
-                Metric {
-                    horizontal-stretch: 1;
-                    label: @tr("Lądowania");
-                    value: App.stats.landings;
-                    sub: App.stats.avg-vs;
-                }
-                Metric {
-                    horizontal-stretch: 1;
-                    label: @tr("Średnia ocena");
-                    value: App.stats.avg-score;
-                }
-                Metric {
-                    horizontal-stretch: 1;
-                    label: @tr("Lotniska / samoloty");
-                    value: App.stats.airports + " / " + App.stats.aircraft;
-                }
-            }
-            Panel {
-                VerticalLayout {
-                    padding: 12px;
-                    spacing: 10px;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        Heading {
-                            text: @tr("Wyzwania tygodnia");
-                            icon: Icons.trophy;
-                            horizontal-stretch: 1;
-                        }
-                        Text {
-                            text: App.ach-week-title + (App.ach-week-left != "" ? " · " + App.ach-week-left : "");
-                            font-family: Theme.font;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            vertical-alignment: center;
-                        }
-                    }
-                    HorizontalLayout {
-                        spacing: 10px;
-                        for c in App.ach-week: ChallengeCard {
-                            horizontal-stretch: 1;
-                            c: c;
-                        }
-                    }
-                }
-            }
-            Panel {
-                VerticalLayout {
-                    padding: 12px;
-                    spacing: 10px;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        Heading {
-                            text: @tr("Osiągnięcia");
-                            icon: Icons.medal;
-                            horizontal-stretch: 1;
-                        }
-                        Text {
-                            text: App.ach-count;
-                            font-family: Theme.font;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            vertical-alignment: center;
-                        }
-                    }
-                    grid := Rectangle {
-                        property <length> gap: 8px;
-                        property <length> tile-h: 84px * Theme.scale;
-                        property <int> cols: max(1, floor((self.width + self.gap) / (250px * Theme.scale + self.gap)));
-                        property <length> tile-w: (self.width - (self.cols - 1) * self.gap) / self.cols;
-                        height: ceil(App.ach-badges.length / self.cols) * (self.tile-h + self.gap) - self.gap;
-                        for b[i] in App.ach-badges: BadgeTile {
-                            x: mod(i, grid.cols) * (grid.tile-w + grid.gap);
-                            y: floor(i / grid.cols) * (grid.tile-h + grid.gap);
-                            width: grid.tile-w;
-                            height: grid.tile-h;
-                            b: b;
-                        }
-                    }
-                }
-            }
+            PilotCard { }
+            // Aktywność i fazy lotu
             HorizontalLayout {
                 spacing: 12px;
-                Panel {
+                Section {
                     horizontal-stretch: 3;
-                    VerticalLayout {
-                        padding: 12px;
-                        spacing: 8px;
-                        HorizontalLayout {
-                            Heading {
-                                text: @tr("W miesiącach");
-                                icon: Icons.chart-column;
-                                horizontal-stretch: 1;
+                    title: @tr("Aktywność");
+                    icon: Icons.calendar;
+                    note: @tr("ostatnie 26 tygodni");
+                    Heatmap { }
+                }
+                Section {
+                    horizontal-stretch: 2;
+                    title: @tr("Czas w fazach lotu");
+                    icon: Icons.chart-area;
+                    PhaseProfile { }
+                }
+            }
+            Landings { }
+            // Rozkłady
+            HorizontalLayout {
+                spacing: 12px;
+                Section {
+                    horizontal-stretch: 3;
+                    title: @tr("W miesiącach");
+                    icon: Icons.chart-column;
+                    HorizontalLayout {
+                        alignment: end;
+                        Segmented {
+                            items: [@tr("Loty"), @tr("Godziny"), @tr("Dystans")];
+                            current: App.stats-metric;
+                            picked(i) => {
+                                App.stats-metric = i;
+                                App.cmd("stats-refresh", "");
                             }
-                            Segmented {
-                                items: [@tr("Loty"), @tr("Godziny"), @tr("Dystans")];
-                                current: App.stats-metric;
-                                picked(i) => {
-                                    App.stats-metric = i;
-                                    App.cmd("stats-refresh", "");
-                                }
-                            }
-                        }
-                        Bars {
-                            bars: App.stats-months;
                         }
                     }
+                    Bars {
+                        bars: App.stats-months;
+                    }
                 }
-                Panel {
+                Section {
                     horizontal-stretch: 2;
-                    VerticalLayout {
-                        padding: 12px;
-                        spacing: 8px;
-                        Heading {
-                            text: @tr("Oceny lądowań");
-                            icon: Icons.plane-landing;
-                        }
-                        Bars {
-                            bars: App.stats-scores;
-                            scores: true;
-                        }
+                    title: @tr("Najwyższy poziom lotu");
+                    icon: Icons.mountain;
+                    Rectangle {
+                        height: 24px * Theme.scale;
+                    }
+                    Bars {
+                        bars: App.stats-levels;
+                        tone: Av.cruise;
                     }
                 }
             }
             HorizontalLayout {
                 spacing: 12px;
-                RankList {
-                    horizontal-stretch: 1;
-                    title: @tr("Samoloty");
-                    icon: Icons.plane;
-                    rows: App.stats-aircraft;
+                Section {
+                    horizontal-stretch: 3;
+                    title: @tr("Godzina startu");
+                    icon: Icons.clock;
+                    Bars {
+                        bars: App.stats-hours;
+                        chart-h: 90px * Theme.scale;
+                    }
                 }
-                RankList {
+                Section {
+                    horizontal-stretch: 2;
+                    title: @tr("Dzień tygodnia");
+                    icon: Icons.calendar;
+                    Bars {
+                        bars: App.stats-weekdays;
+                        chart-h: 90px * Theme.scale;
+                        tone: Av.climb;
+                    }
+                }
+            }
+            // Tablica odlotów i hangar
+            HorizontalLayout {
+                spacing: 12px;
+                Board {
+                    horizontal-stretch: 1;
+                    title: @tr("Trasy");
+                    col1: @tr("Trasa");
+                    rows: App.stats-routes;
+                }
+                Board {
                     horizontal-stretch: 1;
                     title: @tr("Lotniska");
-                    icon: Icons.map-pin;
+                    col1: @tr("Lotnisko");
                     rows: App.stats-airports;
                     open: "airport-open";
                 }
-                RankList {
+                Hangar {
                     horizontal-stretch: 1;
-                    title: @tr("Trasy");
-                    icon: Icons.route;
-                    rows: App.stats-routes;
                 }
-                Panel {
-                    horizontal-stretch: 1;
-                    VerticalLayout {
-                        padding: 10px;
-                        spacing: 2px;
-                        Heading {
-                            text: @tr("Rekordy");
-                            icon: Icons.trophy;
-                        }
-                        Record {
-                            label: @tr("Najdłuższy lot");
-                            value: App.stats.longest;
-                            id: App.stats.longest-id;
-                        }
-                        Record {
-                            label: @tr("Najdalszy lot");
-                            value: App.stats.farthest;
-                            id: App.stats.farthest-id;
-                        }
-                        Record {
-                            label: @tr("Najwyżej");
-                            value: App.stats.highest;
-                            id: App.stats.highest-id;
-                        }
-                        Record {
-                            label: @tr("Najmiększe lądowanie");
-                            value: App.stats.softest;
-                            id: App.stats.softest-id;
-                        }
-                        Record {
-                            label: @tr("Najlepsza ocena");
-                            value: App.stats.best;
-                            id: App.stats.best-id;
-                        }
+            }
+            // Rekordy
+            Section {
+                title: @tr("Rekordy");
+                icon: Icons.trophy;
+                note: @tr("kliknij, żeby otworzyć lot");
+                HorizontalLayout {
+                    spacing: 10px;
+                    Pass {
+                        horizontal-stretch: 1;
+                        k: @tr("Najdłuższy lot");
+                        v: App.stats.longest;
+                        id: App.stats.longest-id;
+                        icon: Icons.timer;
+                    }
+                    Pass {
+                        horizontal-stretch: 1;
+                        k: @tr("Najdalszy lot");
+                        v: App.stats.farthest;
+                        id: App.stats.farthest-id;
+                        icon: Icons.route;
+                    }
+                    Pass {
+                        horizontal-stretch: 1;
+                        k: @tr("Najwyżej");
+                        v: App.stats.highest;
+                        id: App.stats.highest-id;
+                        icon: Icons.mountain;
+                    }
+                    Pass {
+                        horizontal-stretch: 1;
+                        k: @tr("Najmiększe lądowanie");
+                        v: App.stats.softest;
+                        id: App.stats.softest-id;
+                        icon: Icons.plane-landing;
+                    }
+                    Pass {
+                        horizontal-stretch: 1;
+                        k: @tr("Najlepsza ocena");
+                        v: App.stats.best;
+                        id: App.stats.best-id;
+                        icon: Icons.star;
                     }
                 }
             }
-            Panel {
-                VerticalLayout {
-                    padding: 12px;
-                    spacing: 8px;
-                    Heading {
-                        text: @tr("Mapa wszystkich lotów");
-                        icon: Icons.globe;
+            // Wyzwania tygodnia
+            Section {
+                title: @tr("Wyzwania tygodnia");
+                icon: Icons.trophy;
+                note: App.ach-week-title + (App.ach-week-left != "" ? " · " + App.ach-week-left : "");
+                HorizontalLayout {
+                    spacing: 10px;
+                    for c in App.ach-week: ChallengeCard {
+                        horizontal-stretch: 1;
+                        c: c;
                     }
-                    MapView {
-                        id: 3;
-                        height: 420px * Theme.scale;
-                        source: App.map-stats;
+                }
+            }
+            // Osiągnięcia
+            Section {
+                title: @tr("Osiągnięcia");
+                icon: Icons.medal;
+                note: App.ach-count;
+                grid := Rectangle {
+                    property <length> gap: 8px;
+                    property <length> tile-h: 84px * Theme.scale;
+                    property <int> cols: max(1, floor((self.width + self.gap) / (250px * Theme.scale + self.gap)));
+                    property <length> tile-w: (self.width - (self.cols - 1) * self.gap) / self.cols;
+                    height: ceil(App.ach-badges.length / self.cols) * (self.tile-h + self.gap) - self.gap;
+                    for b[i] in App.ach-badges: BadgeTile {
+                        x: mod(i, grid.cols) * (grid.tile-w + grid.gap);
+                        y: floor(i / grid.cols) * (grid.tile-h + grid.gap);
+                        width: grid.tile-w;
+                        height: grid.tile-h;
+                        b: b;
                     }
+                }
+            }
+            Section {
+                title: @tr("Mapa lotów");
+                icon: Icons.globe;
+                note: App.stats.period;
+                MapView {
+                    id: 3;
+                    height: 420px * Theme.scale;
+                    source: App.map-stats;
                 }
             }
         }

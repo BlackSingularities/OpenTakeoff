@@ -1,5 +1,6 @@
 ; Instalator OpenTakeoff dla Windows – w Program Files, z uprawnieniami administratora.
-; Aktualizacje trafiają zawsze do tego samego folderu (stały AppId + /DIR z programu).
+; Aktualizacje trafiają zawsze do tego samego folderu: stały AppId, folder poprzedniej instalacji
+; z rejestru (sekcja [Code] – wygrywa nawet z innym /DIR) i /DIR z zainstalowanego programu.
 ; Wersję podaje workflow: ISCC /DAppVersion=1.2.3 desktop\installer\OpenTakeoff.iss
 
 #ifndef AppVersion
@@ -33,7 +34,8 @@ UninstallDisplayName=OpenTakeoff
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-CloseApplications=yes
+; force: także proces czuwania na symulator (bez okna), żeby aktualizacja mogła podmienić plik programu
+CloseApplications=force
 RestartApplications=yes
 VersionInfoVersion={#AppVersion}
 VersionInfoDescription=OpenTakeoff – dziennik lotów, briefing i most MSFS ↔ telefon
@@ -73,7 +75,48 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""O
 Filename: "{app}\OpenTakeoff.exe"; Description: "{cm:LaunchProgram,OpenTakeoff}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
+; Usuń OpenTakeoff z exe.xml MSFS (start razem z symulatorem)
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM OpenTakeoff.exe"; Flags: runhidden waituntilterminated; RunOnceId: "StopWatch"
+Filename: "{app}\OpenTakeoff.exe"; Parameters: "--sim-launch-off"; Flags: runhidden waituntilterminated; RunOnceId: "SimLaunchOff"
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""OpenTakeoff"""; Flags: runhidden; RunOnceId: "FirewallRule"
 
+[Code]
+// Aktualizacja zawsze do folderu poprzedniej instalacji – także gdy ktoś uruchomi instalator ręcznie
+// albo poda inny /DIR. Folder bierzemy z wpisu deinstalatora (64- i 32-bitowy widok rejestru, HKCU).
+const UninstKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{8C3E2A71-5B9D-4E6F-A1C4-7D2E9F0B3A58}_is1';
+
+function PreviousDir(): String;
+var
+  S: String;
+begin
+  Result := '';
+  if RegQueryStringValue(HKLM64, UninstKey, 'Inno Setup: App Path', S) or
+     RegQueryStringValue(HKLM32, UninstKey, 'Inno Setup: App Path', S) or
+     RegQueryStringValue(HKCU, UninstKey, 'Inno Setup: App Path', S) then
+    if FileExists(AddBackslash(S) + 'OpenTakeoff.exe') then
+      Result := RemoveBackslashUnlessRoot(S);
+end;
+
+procedure InitializeWizard();
+var
+  Dir: String;
+begin
+  Dir := PreviousDir();
+  if Dir <> '' then
+    WizardForm.DirEdit.Text := Dir;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  // Przy aktualizacji nie pytamy o folder.
+  Result := (PageID = wpSelectDir) and (PreviousDir() <> '');
+end;
+
+[Dirs]
+; Dane programu obok programu (ustawienia, dziennik lotów, pamięć podręczna) – zapis dla użytkowników
+; bez uprawnień administratora. Odinstalowanie zostawia dziennik i ustawienia.
+Name: "{app}\data"; Permissions: users-modify; Flags: uninsneveruninstall
+
 [UninstallDelete]
+Type: filesandordirs; Name: "{app}\data\cache"
 Type: filesandordirs; Name: "{localappdata}\OpenTakeoff\update"

@@ -3,7 +3,8 @@
 
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { App } from "state.slint";
+import { App, ParamGroupV } from "state.slint";
+import { ScrollView } from "std-widgets.slint";
 import { Dot } from "parts.slint";
 
 /// Ekran przyrządu: czarne tło, obraz z Rusta, rozmiar zgłaszany do Rusta.
@@ -49,6 +50,167 @@ export component Screen inherits Rectangle {
     }
 }
 
+/// Karta grupy parametrów: nagłówek wersalikami jak opis panelu w kabinie, wartości krojem mono.
+component ParamCard inherits Rectangle {
+    in property <ParamGroupV> group;
+    border-radius: Theme.r;
+    background: Theme.panel;
+    border-width: 1px;
+    border-color: Theme.line;
+    clip: true;
+    VerticalLayout {
+        padding: 10px;
+        padding-top: 8px;
+        spacing: 1px;
+        HorizontalLayout {
+            spacing: 7px;
+            height: 22px * Theme.scale;
+            Text {
+                text: root.group.title.to-uppercase();
+                font-family: Theme.cond;
+                font-size: 11.5px * Theme.scale;
+                font-weight: 700;
+                letter-spacing: 1.2px;
+                color: Theme.mode == 2 || Theme.mode == 5 ? #0a8fa3 : #4fd8eb;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    height: 1px;
+                    background: Theme.line;
+                }
+            }
+        }
+        for p in root.group.items: HorizontalLayout {
+            spacing: 8px;
+            height: 20px * Theme.scale;
+            Text {
+                text: p.k;
+                font-family: Theme.cond;
+                font-size: 11px * Theme.scale;
+                font-weight: 600;
+                letter-spacing: 0.4px;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+                overflow: elide;
+                min-width: 70px * Theme.scale;
+                horizontal-stretch: 0;
+            }
+            Text {
+                text: p.v == "" ? "–" : p.v;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: p.tone == 1 ? (Theme.mode == 2 || Theme.mode == 5 ? #1f9d55 : #3ee07a) : p.tone == 2 ? #ffb547 : p.tone == 3 ? Theme.text-faint : p.tone == 4 ? (Theme.mode == 2 || Theme.mode == 5 ? #0a8fa3 : #4fd8eb) : Theme.text;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+                horizontal-stretch: 1;
+                overflow: elide;
+            }
+        }
+    }
+}
+
+/// Kokpit: PFD | ND, pod spodem silniki. Odrzutowce i ATR: dwa kwadratowe ekrany jak w kabinie (np. E/WD i SD),
+/// gdy zmieszczą się co najmniej w 200 px; inaczej pasek silników na całą szerokość.
+component CockpitArea inherits Rectangle {
+    property <length> gap: 8px;
+    property <length> sq: min((self.height - self.gap) * 0.4, (self.width - self.gap) / 2);
+    property <bool> square: App.instr.square && self.sq >= 200px;
+    property <length> bottom: self.square ? self.sq : (self.height - self.gap) / 4;
+    HorizontalLayout {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height - root.bottom - root.gap;
+        spacing: root.gap;
+        Screen {
+            id: 10;
+            horizontal-stretch: 1;
+            source: App.instr-pfd;
+            caption: "PFD";
+        }
+        Screen {
+            id: 11;
+            horizontal-stretch: 1;
+            source: App.instr-nd;
+            caption: "ND";
+        }
+    }
+    if !root.square: Screen {
+        id: 13;
+        x: 0;
+        y: parent.height - root.bottom;
+        width: parent.width;
+        height: root.bottom;
+        source: App.instr-engines;
+    }
+    if root.square: Screen {
+        id: 13;
+        x: (parent.width - 2 * root.sq - root.gap) / 2;
+        y: parent.height - root.sq;
+        width: root.sq;
+        height: root.sq;
+        source: App.instr-engines;
+    }
+    if root.square: Screen {
+        id: 15;
+        x: (parent.width - 2 * root.sq - root.gap) / 2 + root.sq + root.gap;
+        y: parent.height - root.sq;
+        width: root.sq;
+        height: root.sq;
+        source: App.instr-sd;
+    }
+}
+
+/// Dane: wykresy z ostatnich minut i karty wszystkich parametrów w kolumnach dopasowanych do szerokości.
+component DataArea inherits VerticalLayout {
+    in property <length> charts-h: 200px * Theme.scale;
+    in property <length> min-card: 250px;
+    spacing: 8px;
+    Screen {
+        id: 16;
+        height: root.charts-h;
+        source: App.params-charts;
+    }
+    if App.params.length == 0: Rectangle {
+        vertical-stretch: 1;
+        Text {
+            text: @tr("Parametry pojawią się po połączeniu z symulatorem");
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            color: Theme.text-faint;
+        }
+    }
+    if App.params.length > 0: pv := ScrollView {
+        vertical-stretch: 1;
+        property <int> cols: max(1, min(6, floor((self.visible-width + 8px) / root.min-card)));
+        property <length> cw: (self.visible-width - (self.cols - 1) * 8px) / self.cols;
+        HorizontalLayout {
+            width: pv.visible-width;
+            spacing: 8px;
+            alignment: start;
+            for c in pv.cols: VerticalLayout {
+                width: pv.cw;
+                spacing: 0;
+                alignment: start;
+                // Karty innych kolumn mają zerową wysokość i nie zostawiają odstępu
+                for g[i] in App.params: Rectangle {
+                    property <bool> mine: mod(i, pv.cols) == c;
+                    visible: self.mine;
+                    height: self.mine ? card.preferred-height + 8px : 0;
+                    card := ParamCard {
+                        y: 0;
+                        height: parent.height - 8px;
+                        group: g;
+                    }
+                }
+            }
+        }
+    }
+}
+
 export component Instruments inherits Rectangle {
     VerticalLayout {
         padding: 10px;
@@ -56,12 +218,13 @@ export component Instruments inherits Rectangle {
         HorizontalLayout {
             spacing: 10px;
             height: 26px * Theme.scale;
-            Dot {
-                state: App.instr.has-data ? 2 : 0;
+            // Bez danych: pusto – stan połączenia jest tylko w pasku stanu na dole
+            if App.instr.has-data: Dot {
+                state: 2;
                 y: (parent.height - self.height) / 2;
             }
             Text {
-                text: App.instr.has-data ? App.instr.title : @tr("Czekam na dane z symulatora – przyrządy pokazują flagi awarii");
+                text: App.instr.has-data ? App.instr.title : "";
                 font-family: Theme.font;
                 font-size: Theme.fs-big;
                 font-weight: 600;
@@ -78,107 +241,25 @@ export component Instruments inherits Rectangle {
                 vertical-alignment: center;
             }
         }
-        // Kokpit: PFD | ND, pod spodem silniki. Odrzutowce i ATR: dwa kwadratowe ekrany jak w kabinie (np. E/WD i SD),
-        // gdy zmieszczą się co najmniej w 200 px; inaczej pasek silników na całą szerokość.
-        if App.instr.layout == 0: area := Rectangle {
+        // Kokpit: PFD, ND i ekrany silników
+        if App.instr.layout == 0: CockpitArea {
             vertical-stretch: 1;
-            property <length> gap: 8px;
-            property <length> sq: min((self.height - self.gap) * 0.4, (self.width - self.gap) / 2);
-            property <bool> square: App.instr.square && self.sq >= 200px;
-            property <length> bottom: self.square ? self.sq : (self.height - self.gap) / 4;
-            HorizontalLayout {
-                x: 0;
-                y: 0;
-                width: parent.width;
-                height: parent.height - area.bottom - area.gap;
-                spacing: area.gap;
-                Screen {
-                    id: 10;
-                    horizontal-stretch: 1;
-                    source: App.instr-pfd;
-                    caption: "PFD";
-                }
-                Screen {
-                    id: 11;
-                    horizontal-stretch: 1;
-                    source: App.instr-nd;
-                    caption: "ND";
-                }
-            }
-            if !area.square: Screen {
-                id: 13;
-                x: 0;
-                y: parent.height - area.bottom;
-                width: parent.width;
-                height: area.bottom;
-                source: App.instr-engines;
-            }
-            if area.square: Screen {
-                id: 13;
-                x: (parent.width - 2 * area.sq - area.gap) / 2;
-                y: parent.height - area.sq;
-                width: area.sq;
-                height: area.sq;
-                source: App.instr-engines;
-            }
-            if area.square: Screen {
-                id: 15;
-                x: (parent.width - 2 * area.sq - area.gap) / 2 + area.sq + area.gap;
-                y: parent.height - area.sq;
-                width: area.sq;
-                height: area.sq;
-                source: App.instr-sd;
-            }
         }
-        // Zegary analogowe + silniki
-        if App.instr.layout == 1: HorizontalLayout {
-            spacing: 8px;
+        // Dane: wykresy z ostatnich 10 minut i ściana parametrów
+        if App.instr.layout == 1: DataArea {
             vertical-stretch: 1;
-            Screen {
-                id: 12;
+        }
+        // Wszystko: pełny kokpit po lewej, wykresy i parametry po prawej
+        if App.instr.layout == 2: HorizontalLayout {
+            vertical-stretch: 1;
+            spacing: 8px;
+            CockpitArea {
                 horizontal-stretch: 3;
-                source: App.instr-panel;
             }
-            Screen {
-                id: 13;
-                horizontal-stretch: 1;
-                source: App.instr-engines;
-            }
-        }
-        // Wszystko: 2 × 2
-        if App.instr.layout == 2: VerticalLayout {
-            spacing: 8px;
-            vertical-stretch: 1;
-            HorizontalLayout {
-                spacing: 8px;
-                vertical-stretch: 1;
-                Screen {
-                    id: 10;
-                    horizontal-stretch: 1;
-                    source: App.instr-pfd;
-                    caption: "PFD";
-                }
-                Screen {
-                    id: 11;
-                    horizontal-stretch: 1;
-                    source: App.instr-nd;
-                    caption: "ND";
-                }
-            }
-            HorizontalLayout {
-                spacing: 8px;
-                vertical-stretch: 1;
-                Screen {
-                    id: 12;
-                    horizontal-stretch: 3;
-                    source: App.instr-panel;
-                }
-                Screen {
-                    id: 13;
-                    horizontal-stretch: 2;
-                    source: App.instr-engines;
-                    caption: @tr("SILNIKI");
-                }
+            DataArea {
+                horizontal-stretch: 2;
+                charts-h: 300px * Theme.scale;
+                min-card: 230px;
             }
         }
     }

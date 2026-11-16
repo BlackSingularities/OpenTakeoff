@@ -1,35 +1,62 @@
-// Karta Narzędzia: kalkulatory lotnicze (wiatr, trójkąt wiatru, wysokość gęstościowa, zniżanie, paliwo),
-// przelicznik jednostek i dekoder METAR/TAF. Wyniki liczy Rust (App.calc) na bieżąco.
+// Karta Narzędzia – komputer nawigacyjny w stylu E6B: po lewej spis narzędzi w grupach, po prawej obszar
+// roboczy z danymi, wynikami na ciemnym wyświetlaczu, diagramem i tabelami. Część narzędzi pobiera dane
+// z symulatora jednym przyciskiem. Wyniki liczy Rust (App.calc) na bieżąco.
 
 import { ScrollView, TextEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { App, GroupV } from "state.slint";
-import { Field, Segmented } from "widgets.slint";
-import { Panel, Heading, Pair } from "parts.slint";
+import { App } from "state.slint";
+import { Field, Segmented, Button, TipArea } from "widgets.slint";
+import { Panel, Colors } from "parts.slint";
 
+/// Kolory wyświetlaczy w kabinie.
+global Cab {
+    out property <color> screen: #0b1016;
+    out property <color> edge: #ffffff17;
+    out property <color> white: #e8f6f8;
+    out property <color> dim: #6f7c8a;
+    out property <color> cyan: #4fd8eb;
+    out property <color> green: #3ee07a;
+    out property <color> amber: #ffb547;
+    out property <color> red: #ff5a5f;
+    out property <color> magenta: #e07cff;
+    out property <color> label: Theme.dark ? #4fd8eb : #0a8fa3;
+}
+
+/// Podpis wersalikami.
+component Caps inherits Text {
+    font-family: Theme.cond;
+    font-size: 9.5px * Theme.scale;
+    font-weight: 700;
+    letter-spacing: 0.9px;
+    color: Theme.text-faint;
+    overflow: elide;
+}
+
+/// Pole danych: podpis wersalikami, pole krojem mono i jednostka.
 component In inherits VerticalLayout {
-    alignment: start;
     in property <string> label;
     in-out property <string> text;
     in property <string> unit;
+    in property <string> hint;
+    in property <length> w: 92px * Theme.scale;
+    alignment: start;
     spacing: 3px;
-    Text {
-        text: root.label;
-        font-family: Theme.font;
-        font-size: Theme.fs-small;
-        color: Theme.text-dim;
-        overflow: elide;
+    Caps {
+        text: root.label.to-uppercase();
+        color: Cab.label;
     }
     HorizontalLayout {
-        spacing: 4px;
+        spacing: 5px;
         Field {
-            w: 86px * Theme.scale;
+            w: root.w;
+            mono: true;
+            placeholder: root.hint;
             text <=> root.text;
         }
-        Text {
+        if root.unit != "": Text {
             text: root.unit;
-            font-family: Theme.font;
+            font-family: Theme.mono;
             font-size: Theme.fs-small;
             color: Theme.text-faint;
             vertical-alignment: center;
@@ -37,411 +64,1964 @@ component In inherits VerticalLayout {
     }
 }
 
-component Result inherits HorizontalLayout {
-    in property <string> label;
-    in property <string> value;
-    spacing: 8px;
-    height: 26px * Theme.scale;
-    Text {
-        text: root.label;
-        font-family: Theme.font;
-        font-size: Theme.fs;
-        color: Theme.text-dim;
-        vertical-alignment: center;
-        horizontal-stretch: 1;
-    }
-    Text {
-        text: root.value == "" ? "—" : root.value;
-        font-family: Theme.font;
-        font-size: Theme.fs-big;
-        font-weight: 700;
-        color: Theme.accent;
-        vertical-alignment: center;
+/// Wynik na ciemnym wyświetlaczu: podpis cyjanem, wartość mono.
+component Out inherits Rectangle {
+    in property <string> k;
+    in property <string> v;
+    in property <color> tone: Cab.white;
+    in property <bool> big;
+    horizontal-stretch: 1;
+    min-width: 0;
+    height: (root.big ? 62px : 50px) * Theme.scale;
+    border-radius: Theme.r-small;
+    background: Cab.screen;
+    border-width: 1px;
+    border-color: Cab.edge;
+    clip: true;
+    VerticalLayout {
+        padding-left: 10px;
+        padding-right: 8px;
+        alignment: center;
+        spacing: 1px;
+        Text {
+            text: root.k.to-uppercase();
+            font-family: Theme.cond;
+            font-size: 9.5px * Theme.scale;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: Cab.cyan;
+            overflow: elide;
+        }
+        Text {
+            text: root.v == "" ? "–" : root.v;
+            font-family: Theme.mono;
+            font-size: (root.big ? 22px : 16px) * Theme.scale;
+            font-weight: 700;
+            color: root.v == "" ? Cab.dim : root.tone;
+            overflow: elide;
+        }
     }
 }
 
-component Tool inherits Panel {
+/// Karta z podpisem wersalikami (dane, wyniki, diagram, tabela).
+component Card inherits Panel {
     in property <string> title;
-    in property <image> icon;
-    in property <string> hint;
-    min-width: 300px * Theme.scale;
+    in property <string> note;
     VerticalLayout {
-        alignment: start;
         padding: 12px;
-        spacing: 8px;
-        Heading {
-            text: root.title;
-            icon: root.icon;
+        padding-top: 10px;
+        spacing: 9px;
+        HorizontalLayout {
+            spacing: 8px;
+            height: 18px * Theme.scale;
+            Caps {
+                text: root.title.to-uppercase();
+                color: Theme.text-dim;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    height: 1px;
+                    background: Theme.line;
+                }
+            }
+            if root.note != "": Text {
+                text: root.note;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-faint;
+                vertical-alignment: center;
+            }
         }
         @children
-        if root.hint != "": Text {
-            text: root.hint;
-            font-family: Theme.font;
-            font-size: Theme.fs-small;
-            color: Theme.text-faint;
-            wrap: word-wrap;
+    }
+}
+
+/// Tabela z płaskiej listy tekstów: `cols` kolumn od indeksu `start`; opcjonalna kolumna znacznika
+/// (`flag` – indeks kolumny, której wartość „1” podświetla wiersz, a „-1” przygasza; nie jest wyświetlana).
+component Table inherits VerticalLayout {
+    in property <[string]> data;
+    in property <int> start;
+    in property <int> cols;
+    in property <int> rows;
+    in property <[string]> heads;
+    in property <int> flag: -1;
+    in property <int> shown: root.flag >= 0 ? root.cols - 1 : root.cols;
+    spacing: 0;
+    HorizontalLayout {
+        spacing: 6px;
+        padding-left: 8px;
+        padding-right: 8px;
+        height: 22px * Theme.scale;
+        for h[i] in root.heads: Caps {
+            horizontal-stretch: 1;
+            text: h.to-uppercase();
+            vertical-alignment: center;
+            horizontal-alignment: i == 0 ? left : right;
         }
     }
+    for r in root.rows: row := Rectangle {
+        property <string> f: root.flag >= 0 ? root.data[root.start + r * root.cols + root.flag] : "";
+        height: 24px * Theme.scale;
+        border-radius: Theme.r-small;
+        background: self.f == "1" ? Theme.accent-soft : mod(r, 2) == 0 ? (Theme.dark ? #ffffff06 : #00000006) : transparent;
+        HorizontalLayout {
+            spacing: 6px;
+            padding-left: 8px;
+            padding-right: 8px;
+            for c in root.shown: Text {
+                horizontal-stretch: 1;
+                text: root.data[root.start + r * root.cols + c];
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                font-weight: c == 0 || row.f == "1" ? 700 : 400;
+                color: row.f == "1" ? Theme.accent : row.f == "-1" ? Theme.text-faint : c == 0 ? Theme.text : Theme.text-dim;
+                vertical-alignment: center;
+                horizontal-alignment: c == 0 ? left : right;
+                overflow: elide;
+            }
+        }
+    }
+}
+
+/// Ciemne pole diagramu.
+component Scope inherits Rectangle {
+    border-radius: Theme.r-small;
+    background: Cab.screen;
+    border-width: 1px;
+    border-color: Cab.edge;
+    clip: true;
+}
+
+/// Podpis na diagramie.
+component Tag inherits Rectangle {
+    in property <string> text;
+    in property <color> tone: Cab.white;
+    width: tt.preferred-width + 10px;
+    height: tt.preferred-height + 4px;
+    border-radius: 3px;
+    background: #0b1016d0;
+    tt := Text {
+        text: root.text;
+        font-family: Theme.mono;
+        font-size: 10.5px * Theme.scale;
+        font-weight: 700;
+        color: root.tone;
+    }
+}
+
+/// Pozycja spisu narzędzi.
+struct ToolItem {
+    g: string,
+    t: string,
+    d: string,
+    i: image,
+    live: bool,
 }
 
 export component Tools inherits Rectangle {
+    property <[ToolItem]> items: [
+        { g: @tr("Nawigacja"), t: @tr("Wiatr na pasie"), d: @tr("Składowe wiatru, porywy, wszystkie pasy lotniska"), i: Icons.wind, live: true },
+        { g: @tr("Nawigacja"), t: @tr("Trójkąt wiatru"), d: @tr("Kurs do utrzymania, znoszenie, GS"), i: Icons.compass, live: true },
+        { g: @tr("Nawigacja"), t: @tr("Trasa między lotniskami"), d: @tr("Ortodroma, kursy, czas i paliwo"), i: Icons.route, live: false },
+        { g: @tr("Nawigacja"), t: @tr("Czas, prędkość, dystans"), d: @tr("Liczy brakującą wartość"), i: Icons.timer, live: true },
+        { g: @tr("Nawigacja"), t: @tr("Zakręt"), d: @tr("Przechylenie, promień, przeciążenie"), i: Icons.rotate-cw, live: true },
+        { g: @tr("Podejście i wznoszenie"), t: @tr("Plan zniżania"), d: @tr("TOD, prędkość pionowa, profil"), i: Icons.plane-landing, live: true },
+        { g: @tr("Podejście i wznoszenie"), t: @tr("Ścieżka podejścia"), d: @tr("Tabela V/S i wysokości jak na karcie"), i: Icons.crosshair, live: true },
+        { g: @tr("Podejście i wznoszenie"), t: @tr("Gradient wznoszenia"), d: @tr("Wymóg SID w ft/NM i ft/min"), i: Icons.plane-takeoff, live: true },
+        { g: @tr("Atmosfera"), t: @tr("Wysokość gęstościowa"), d: @tr("PA, DA, TAS, odchyłka od ISA"), i: Icons.thermometer, live: true },
+        { g: @tr("Atmosfera"), t: @tr("Atmosfera wzorcowa"), d: @tr("Temperatura i ciśnienie ISA"), i: Icons.layers, live: true },
+        { g: @tr("Atmosfera"), t: @tr("Chmury i wilgotność"), d: @tr("Podstawa chmur, mgła, izoterma 0°"), i: Icons.cloud-sun, live: true },
+        { g: @tr("Planowanie"), t: @tr("Paliwo"), d: @tr("Przelot, rezerwa, zasięg"), i: Icons.fuel, live: true },
+        { g: @tr("Przeliczniki i radio"), t: @tr("Jednostki"), d: @tr("Wszystkie jednostki naraz"), i: Icons.calculator, live: false },
+        { g: @tr("Przeliczniki i radio"), t: @tr("Alfabet i transponder"), d: @tr("Literowanie ICAO, kody specjalne"), i: Icons.radio, live: false },
+        { g: @tr("Przeliczniki i radio"), t: @tr("Dekoder METAR / TAF"), d: @tr("Opis każdej grupy depeszy"), i: Icons.text-quote, live: false },
+    ];
+    property <ToolItem> cur: root.items[App.tool];
+
     // Wiatr na pasie
     property <string> rw-dir: "270";
     property <string> rw-spd: "15";
-    property <string> rw-hdg: "290";
-    property <[string]> rw: App.calc("runway-wind", [rw-dir, rw-spd, rw-hdg]);
+    property <string> rw-gust: "25";
+    property <string> rw-rwy: "29";
+    property <string> rw-limit: "20";
+    property <string> rw-icao: "EPGD";
+    property <float> rw-h: root.rw-rwy.to-float() <= 36 ? root.rw-rwy.to-float() * 10 : root.rw-rwy.to-float();
+    property <[string]> rw: App.calc("runway-wind", [root.rw-dir, root.rw-spd, "" + root.rw-h]);
+    property <[string]> rwg: App.calc("runway-wind", [root.rw-dir, root.rw-gust, "" + root.rw-h]);
+    property <float> rw-x: abs(root.rw-spd.to-float() * sin((root.rw-dir.to-float() - root.rw-h) * 1deg));
+    property <float> rw-xg: root.rw-gust == "" ? 0 : abs(root.rw-gust.to-float() * sin((root.rw-dir.to-float() - root.rw-h) * 1deg));
+    property <[string]> aw: App.calc("airport-winds", [root.rw-icao, root.rw-dir, root.rw-spd]);
     // Trójkąt wiatru
     property <string> wt-crs: "90";
     property <string> wt-tas: "120";
     property <string> wt-dir: "360";
     property <string> wt-spd: "20";
-    property <[string]> wt: App.calc("wind-triangle", [wt-crs, wt-tas, wt-dir, wt-spd]);
-    // Wysokość gęstościowa
-    property <string> da-elev: "489";
-    property <string> da-qnh: "1013";
-    property <string> da-oat: "25";
-    property <string> da-ias: "120";
-    property <[string]> da: App.calc("density", [da-elev, da-qnh, da-oat, da-ias]);
+    property <[string]> wt: App.calc("wind-triangle", [root.wt-crs, root.wt-tas, root.wt-dir, root.wt-spd]);
+    // Trasa
+    property <string> ro-a: "EPWA";
+    property <string> ro-b: "EGLL";
+    property <string> ro-tas: "450";
+    property <string> ro-burn: "2500";
+    property <[string]> ro: App.calc("route", [root.ro-a, root.ro-b, root.ro-tas, root.ro-burn]);
+    // Czas, prędkość, dystans
+    property <string> ts-d: "180";
+    property <string> ts-s: "120";
+    property <string> ts-t: "";
+    property <[string]> ts: App.calc("tsd", [root.ts-d, root.ts-s, root.ts-t]);
+    // Zakręt
+    property <string> tu-tas: "250";
+    property <string> tu-bank: "25";
+    property <[string]> tu: App.calc("turn", [root.tu-tas, root.tu-bank]);
     // Zniżanie
     property <string> de-from: "35000";
     property <string> de-to: "3000";
     property <string> de-gs: "420";
     property <string> de-angle: "3";
-    property <[string]> de: App.calc("descent", [de-from, de-to, de-gs, de-angle]);
+    property <[string]> de: App.calc("descent", [root.de-from, root.de-to, root.de-gs, root.de-angle]);
+    // Podejście
+    property <string> ap-angle: "3";
+    property <string> ap-gs: "140";
+    property <string> ap-tch: "50";
+    property <[string]> ap: App.calc("approach", [root.ap-angle, root.ap-gs, root.ap-tch]);
+    // Wznoszenie
+    property <string> cl-gs: "180";
+    property <string> cl-grad: "5";
+    property <[string]> cl: App.calc("climb", [root.cl-gs, root.cl-grad]);
+    // Wysokość gęstościowa
+    property <string> da-elev: "489";
+    property <string> da-qnh: "1013";
+    property <string> da-oat: "25";
+    property <string> da-ias: "120";
+    property <[string]> da: App.calc("density", [root.da-elev, root.da-qnh, root.da-oat, root.da-ias]);
+    // ISA
+    property <string> is-alt: "35000";
+    property <[string]> is: App.calc("isa", [root.is-alt]);
+    // Chmury
+    property <string> cb-t: "18";
+    property <string> cb-td: "11";
+    property <[string]> cb: App.calc("cloudbase", [root.cb-t, root.cb-td]);
     // Paliwo
     property <string> fu-dist: "250";
     property <string> fu-gs: "420";
     property <string> fu-burn: "2400";
     property <string> fu-res: "45";
-    property <[string]> fu: App.calc("fuel", [fu-dist, fu-gs, fu-burn, fu-res]);
+    property <string> fu-fob: "3500";
+    property <[string]> fu: App.calc("fuel", [root.fu-dist, root.fu-gs, root.fu-burn, root.fu-res, root.fu-fob]);
     // Jednostki
     property <int> un-group: 0;
-    property <int> un-from: 0;
-    property <int> un-to: 1;
+    property <int> un-from: 1;
     property <string> un-value: "1000";
-    property <[string]> un-names: App.calc("unit-names", ["" + un-group]);
-    property <[string]> un: App.calc("convert", [un-value, "" + un-group, "" + un-from, "" + un-to]);
+    property <[string]> un-names: App.calc("unit-names", ["" + root.un-group]);
+    property <[string]> un: App.calc("units-all", [root.un-value, "" + root.un-group, "" + root.un-from]);
+    // Alfabet
+    property <string> ph-text: "SP-LRA 7700";
+    property <[string]> ph: App.calc("phonetic", [root.ph-text]);
     // Dekoder
     property <string> metar: "METAR EPGD 151230Z 29012G22KT 250V320 9999 -SHRA FEW014CB BKN030 12/08 Q1009 NOSIG";
-    property <[string]> decoded: App.calc("decode", [metar]);
-    // Chmury i wilgotność
-    property <string> cb-t: "18";
-    property <string> cb-td: "11";
-    property <[string]> cb: App.calc("cloudbase", [cb-t, cb-td]);
+    property <[string]> decoded: App.calc("decode", [root.metar]);
 
-    sv := ScrollView {
-        VerticalLayout {
-            width: sv.visible-width;
-            padding: 14px;
-            spacing: 12px;
-            HorizontalLayout {
-                spacing: 12px;
-                Tool {
-                    horizontal-stretch: 1;
-                    title: @tr("Wiatr na pasie");
-                    icon: Icons.wind;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        In {
-                            label: @tr("Kierunek wiatru");
-                            text <=> root.rw-dir;
-                            unit: "°";
+    /// Wypełnia dane bieżącego narzędzia wartościami z symulatora.
+    function fill() {
+        let l = App.calc("live", []);
+        if (l.length == 0) {
+            return;
+        }
+        if (App.tool == 0) {
+            root.rw-dir = l[0];
+            root.rw-spd = l[1];
+            root.rw-gust = "";
+            if (l[9] != "") {
+                root.rw-icao = l[9];
+            }
+        } else if (App.tool == 1) {
+            root.wt-crs = l[8];
+            root.wt-tas = l[3];
+            root.wt-dir = l[0];
+            root.wt-spd = l[1];
+        } else if (App.tool == 3) {
+            root.ts-s = l[4];
+        } else if (App.tool == 4) {
+            root.tu-tas = l[3];
+        } else if (App.tool == 5) {
+            root.de-from = l[5];
+            root.de-gs = l[4];
+        } else if (App.tool == 6) {
+            root.ap-gs = l[4];
+        } else if (App.tool == 7) {
+            root.cl-gs = l[4];
+        } else if (App.tool == 8) {
+            root.da-qnh = l[7];
+            root.da-oat = l[6];
+            if (l[10] != "") {
+                root.da-elev = l[10];
+            }
+        } else if (App.tool == 9) {
+            root.is-alt = l[5];
+        } else if (App.tool == 10) {
+            root.cb-t = l[6];
+        } else if (App.tool == 11) {
+            root.fu-gs = l[4];
+            root.fu-fob = l[11];
+            if (l[12] != "0") {
+                root.fu-burn = l[12];
+            }
+        }
+    }
+
+    HorizontalLayout {
+        // Spis narzędzi
+        Rectangle {
+            width: 232px * Theme.scale;
+            background: Theme.chrome;
+            rail := ScrollView {
+                VerticalLayout {
+                    width: rail.visible-width;
+                    padding: 8px;
+                    spacing: 2px;
+                    for it[i] in root.items: VerticalLayout {
+                        spacing: 2px;
+                        if i == 0 || root.items[i - 1].g != it.g: Caps {
+                            height: 26px * Theme.scale;
+                            text: it.g.to-uppercase();
+                            vertical-alignment: bottom;
+                            letter-spacing: 1.3px;
                         }
-                        In {
-                            label: @tr("Prędkość");
-                            text <=> root.rw-spd;
-                            unit: "kt";
+                        Rectangle {
+                            height: 44px * Theme.scale;
+                            border-radius: Theme.r-small;
+                            background: App.tool == i ? Theme.accent-soft : ta.has-hover ? Theme.hover : transparent;
+                            border-width: App.tool == i ? 1px : 0;
+                            border-color: Theme.accent.with-alpha(0.45);
+                            HorizontalLayout {
+                                padding-left: 8px;
+                                padding-right: 8px;
+                                spacing: 9px;
+                                Rectangle {
+                                    width: 26px * Theme.scale;
+                                    height: self.width;
+                                    y: (parent.height - self.height) / 2;
+                                    border-radius: Theme.r-small;
+                                    background: App.tool == i ? Theme.accent : Theme.raised;
+                                    Image {
+                                        source: it.i;
+                                        width: 14px * Theme.scale;
+                                        height: self.width;
+                                        colorize: App.tool == i ? Theme.accent-text : Cab.label;
+                                    }
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    spacing: 1px;
+                                    Text {
+                                        text: it.t;
+                                        font-family: Theme.font;
+                                        font-size: Theme.fs;
+                                        font-weight: App.tool == i ? 600 : 400;
+                                        color: Theme.text;
+                                        overflow: elide;
+                                    }
+                                    Text {
+                                        text: it.d;
+                                        font-family: Theme.font;
+                                        font-size: 10.5px * Theme.scale;
+                                        color: Theme.text-faint;
+                                        overflow: elide;
+                                    }
+                                }
+                            }
+                            ta := TouchArea {
+                                clicked => {
+                                    App.tool = i;
+                                }
+                            }
                         }
-                        In {
-                            label: @tr("Kurs pasa");
-                            text <=> root.rw-hdg;
-                            unit: "°";
-                        }
-                    }
-                    Result {
-                        label: @tr("Wiatr czołowy / tylny");
-                        value: root.rw[0];
-                    }
-                    Result {
-                        label: @tr("Wiatr boczny");
-                        value: root.rw[1];
-                    }
-                }
-                Tool {
-                    horizontal-stretch: 1;
-                    title: @tr("Trójkąt wiatru");
-                    icon: Icons.compass;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        In {
-                            label: @tr("Kurs drogi");
-                            text <=> root.wt-crs;
-                            unit: "°";
-                        }
-                        In {
-                            label: "TAS";
-                            text <=> root.wt-tas;
-                            unit: "kt";
-                        }
-                    }
-                    HorizontalLayout {
-                        spacing: 8px;
-                        In {
-                            label: @tr("Wiatr z");
-                            text <=> root.wt-dir;
-                            unit: "°";
-                        }
-                        In {
-                            label: @tr("Prędkość wiatru");
-                            text <=> root.wt-spd;
-                            unit: "kt";
-                        }
-                    }
-                    Result {
-                        label: @tr("Kurs do utrzymania");
-                        value: root.wt[0];
-                    }
-                    Result {
-                        label: @tr("Poprawka na wiatr");
-                        value: root.wt[1];
-                    }
-                    Result {
-                        label: @tr("Prędkość nad ziemią");
-                        value: root.wt[2];
-                    }
-                }
-                Tool {
-                    horizontal-stretch: 1;
-                    title: @tr("Wysokość gęstościowa");
-                    icon: Icons.thermometer;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        In {
-                            label: @tr("Elewacja");
-                            text <=> root.da-elev;
-                            unit: "ft";
-                        }
-                        In {
-                            label: "QNH";
-                            text <=> root.da-qnh;
-                            unit: "hPa";
-                        }
-                    }
-                    HorizontalLayout {
-                        spacing: 8px;
-                        In {
-                            label: @tr("Temperatura");
-                            text <=> root.da-oat;
-                            unit: "°C";
-                        }
-                        In {
-                            label: "IAS";
-                            text <=> root.da-ias;
-                            unit: "kt";
-                        }
-                    }
-                    Result {
-                        label: @tr("Wysokość ciśnieniowa");
-                        value: root.da[0];
-                    }
-                    Result {
-                        label: @tr("Wysokość gęstościowa");
-                        value: root.da[1];
-                    }
-                    Result {
-                        label: "TAS";
-                        value: root.da[2];
                     }
                 }
             }
-            HorizontalLayout {
+        }
+        Rectangle {
+            width: 1px;
+            background: Theme.line;
+        }
+        // Obszar roboczy
+        sv := ScrollView {
+            horizontal-stretch: 1;
+            VerticalLayout {
+                width: sv.visible-width;
+                padding: 14px;
                 spacing: 12px;
-                Tool {
-                    horizontal-stretch: 1;
-                    title: @tr("Plan zniżania");
-                    icon: Icons.plane-landing;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        In {
-                            label: @tr("Z wysokości");
-                            text <=> root.de-from;
-                            unit: "ft";
-                        }
-                        In {
-                            label: @tr("Do wysokości");
-                            text <=> root.de-to;
-                            unit: "ft";
-                        }
-                    }
-                    HorizontalLayout {
-                        spacing: 8px;
-                        In {
-                            label: "GS";
-                            text <=> root.de-gs;
-                            unit: "kt";
-                        }
-                        In {
-                            label: @tr("Kąt ścieżki");
-                            text <=> root.de-angle;
-                            unit: "°";
+                // Nagłówek narzędzia
+                HorizontalLayout {
+                    spacing: 12px;
+                    height: 48px * Theme.scale;
+                    Rectangle {
+                        width: 44px * Theme.scale;
+                        height: self.width;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: Theme.r;
+                        background: Cab.screen;
+                        border-width: 1px;
+                        border-color: Cab.edge;
+                        Image {
+                            source: root.cur.i;
+                            width: 22px * Theme.scale;
+                            height: self.width;
+                            colorize: Cab.cyan;
                         }
                     }
-                    Result {
-                        label: @tr("Początek zniżania (TOD)");
-                        value: root.de[0];
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 2px;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: root.cur.t;
+                            font-family: Theme.cond;
+                            font-size: 20px * Theme.scale;
+                            font-weight: 700;
+                            color: Theme.text;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: root.cur.g.to-uppercase() + " · " + root.cur.d;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            overflow: elide;
+                        }
                     }
-                    Result {
-                        label: @tr("Prędkość pionowa");
-                        value: root.de[1];
-                    }
-                    Result {
-                        label: @tr("Czas zniżania");
-                        value: root.de[2];
+                    if root.cur.live: VerticalLayout {
+                        alignment: center;
+                        Button {
+                            label: @tr("Z symulatora");
+                            icon: Icons.download;
+                            enabled: App.live.has-data;
+                            tip: App.live.has-data ? @tr("Wpisz bieżące wartości z symulatora") : @tr("Brak danych z symulatora");
+                            clicked => {
+                                root.fill();
+                            }
+                        }
                     }
                 }
-                Tool {
-                    horizontal-stretch: 1;
-                    title: @tr("Paliwo");
-                    icon: Icons.fuel;
+
+                // ---------- 0: Wiatr na pasie ----------
+                if App.tool == 0: VerticalLayout {
+                    spacing: 12px;
                     HorizontalLayout {
+                        spacing: 12px;
+                        Card {
+                            title: @tr("Dane");
+                            width: 300px * Theme.scale;
+                            HorizontalLayout {
+                                spacing: 10px;
+                                In {
+                                    label: @tr("Wiatr z");
+                                    text <=> root.rw-dir;
+                                    unit: "°";
+                                }
+                                In {
+                                    label: @tr("Prędkość");
+                                    text <=> root.rw-spd;
+                                    unit: "kt";
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 10px;
+                                In {
+                                    label: @tr("Porywy");
+                                    text <=> root.rw-gust;
+                                    unit: "kt";
+                                    hint: @tr("brak");
+                                }
+                                In {
+                                    label: @tr("Pas lub kurs");
+                                    text <=> root.rw-rwy;
+                                    hint: "29 / 290";
+                                }
+                            }
+                            In {
+                                label: @tr("Limit wiatru bocznego");
+                                text <=> root.rw-limit;
+                                unit: "kt";
+                            }
+                            Text {
+                                text: @tr("Numer pasa (np. 29) albo kurs w stopniach. Limit to największy wiatr boczny, przy jakim lądujesz danym samolotem.");
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-faint;
+                                wrap: word-wrap;
+                            }
+                        }
+                        Card {
+                            title: @tr("Pas") + " " + round(root.rw-h / 10);
+                            horizontal-stretch: 1;
+                            HorizontalLayout {
+                                spacing: 12px;
+                                // Diagram: pas zawsze w górę, wiatr wieje od krawędzi do środka
+                                rwsc := Scope {
+                                    width: self.height;
+                                    height: 210px * Theme.scale;
+                                    property <angle> a: (root.rw-dir.to-float() - root.rw-h) * 1deg;
+                                    Path {
+                                        width: parent.width;
+                                        height: parent.height;
+                                        viewbox-width: 100;
+                                        viewbox-height: 100;
+                                        stroke: #ffffff26;
+                                        stroke-width: 1px;
+                                        fill: transparent;
+                                        commands: "M 50 4 A 46 46 0 1 1 49.9 4 M 50 4 L 50 9 M 96 50 L 91 50 M 50 96 L 50 91 M 4 50 L 9 50";
+                                    }
+                                    // pas
+                                    Rectangle {
+                                        x: parent.width * 0.42;
+                                        y: parent.height * 0.14;
+                                        width: parent.width * 0.16;
+                                        height: parent.height * 0.72;
+                                        border-radius: 2px;
+                                        background: #2a3038;
+                                        border-width: 1px;
+                                        border-color: #ffffff40;
+                                        Path {
+                                            width: parent.width;
+                                            height: parent.height;
+                                            viewbox-width: 10;
+                                            viewbox-height: 100;
+                                            stroke: #ffffffa0;
+                                            stroke-width: 1px;
+                                            fill: transparent;
+                                            commands: "M 5 18 L 5 26 M 5 32 L 5 40 M 5 46 L 5 54 M 5 60 L 5 68 M 5 74 L 5 82";
+                                        }
+                                        Text {
+                                            y: parent.height - self.height - 3px;
+                                            text: round(root.rw-h / 10) < 10 ? "0" + round(root.rw-h / 10) : "" + round(root.rw-h / 10);
+                                            font-family: Theme.mono;
+                                            font-size: 10px * Theme.scale;
+                                            font-weight: 700;
+                                            color: #ffffff;
+                                        }
+                                    }
+                                    // strzałka wiatru
+                                    Path {
+                                        width: parent.width;
+                                        height: parent.height;
+                                        viewbox-width: 100;
+                                        viewbox-height: 100;
+                                        stroke: Cab.cyan;
+                                        stroke-width: 3px;
+                                        fill: transparent;
+                                        MoveTo {
+                                            x: 50 + 46 * sin(rwsc.a);
+                                            y: 50 - 46 * cos(rwsc.a);
+                                        }
+                                        LineTo {
+                                            x: 50 + 22 * sin(rwsc.a);
+                                            y: 50 - 22 * cos(rwsc.a);
+                                        }
+                                        MoveTo {
+                                            x: 50 + 30 * sin(rwsc.a - 12deg);
+                                            y: 50 - 30 * cos(rwsc.a - 12deg);
+                                        }
+                                        LineTo {
+                                            x: 50 + 22 * sin(rwsc.a);
+                                            y: 50 - 22 * cos(rwsc.a);
+                                        }
+                                        LineTo {
+                                            x: 50 + 30 * sin(rwsc.a + 12deg);
+                                            y: 50 - 30 * cos(rwsc.a + 12deg);
+                                        }
+                                    }
+                                    Tag {
+                                        x: 6px;
+                                        y: 6px;
+                                        text: root.rw-dir + "° / " + root.rw-spd + (root.rw-gust != "" ? "G" + root.rw-gust : "") + " kt";
+                                        tone: Cab.cyan;
+                                    }
+                                }
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    spacing: 8px;
+                                    Out {
+                                        big: true;
+                                        k: @tr("Wiatr czołowy / tylny");
+                                        v: root.rw[0];
+                                        tone: cos((root.rw-dir.to-float() - root.rw-h) * 1deg) < -0.02 ? Cab.amber : Cab.green;
+                                    }
+                                    Out {
+                                        big: true;
+                                        k: @tr("Wiatr boczny");
+                                        v: root.rw[1];
+                                        tone: root.rw-x > root.rw-limit.to-float() ? Cab.red : root.rw-x > root.rw-limit.to-float() * 0.75 ? Cab.amber : Cab.green;
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Out {
+                                            k: @tr("Boczny w porywach");
+                                            v: root.rw-gust != "" ? root.rwg[1] : "";
+                                            tone: root.rw-xg > root.rw-limit.to-float() ? Cab.red : Cab.white;
+                                        }
+                                        Out {
+                                            k: @tr("Limit");
+                                            v: max(root.rw-x, root.rw-xg) > root.rw-limit.to-float() ? @tr("PRZEKROCZONY") : @tr("W NORMIE");
+                                            tone: max(root.rw-x, root.rw-xg) > root.rw-limit.to-float() ? Cab.red : Cab.green;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Card {
+                        title: @tr("Pasy lotniska");
+                        note: root.aw.length > 0 ? root.aw[0] : "";
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: "ICAO";
+                                text <=> root.rw-icao;
+                                w: 80px * Theme.scale;
+                            }
+                            Text {
+                                text: @tr("Wiatr z danych powyżej. Podświetlony – najkorzystniejszy kierunek, przygaszone – z wiatrem tylnym.");
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-faint;
+                                wrap: word-wrap;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                            }
+                        }
+                        if root.aw.length > 1: Table {
+                            data: root.aw;
+                            start: 1;
+                            cols: 6;
+                            flag: 5;
+                            rows: (root.aw.length - 1) / 6;
+                            heads: [@tr("Pas"), @tr("Kurs"), @tr("Czołowy (kt)"), @tr("Boczny (kt)"), @tr("Długość")];
+                        }
+                        if root.aw.length > 0 && root.aw[0] == "": Text {
+                            text: @tr("Nie znaleziono lotniska o tym kodzie.");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                        }
+                    }
+                }
+
+                // ---------- 1: Trójkąt wiatru ----------
+                if App.tool == 1: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Dane");
+                        width: 300px * Theme.scale;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Kurs drogi");
+                                text <=> root.wt-crs;
+                                unit: "°";
+                            }
+                            In {
+                                label: "TAS";
+                                text <=> root.wt-tas;
+                                unit: "kt";
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Wiatr z");
+                                text <=> root.wt-dir;
+                                unit: "°";
+                            }
+                            In {
+                                label: @tr("Prędkość wiatru");
+                                text <=> root.wt-spd;
+                                unit: "kt";
+                            }
+                        }
+                        Out {
+                            big: true;
+                            k: @tr("Kurs do utrzymania");
+                            v: root.wt[0];
+                            tone: Cab.green;
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Poprawka");
+                                v: root.wt[1];
+                            }
+                            Out {
+                                k: "GS";
+                                v: root.wt[2];
+                                tone: Cab.magenta;
+                            }
+                        }
+                        Out {
+                            k: @tr("GS wobec TAS");
+                            v: root.wt[6];
+                        }
+                    }
+                    Card {
+                        title: @tr("Trójkąt prędkości");
+                        horizontal-stretch: 1;
+                        Scope {
+                            height: 320px * Theme.scale;
+                            Path {
+                                property <length> s: min(parent.width, parent.height);
+                                x: (parent.width - self.s) / 2;
+                                width: self.s;
+                                height: self.s;
+                                viewbox-width: 100;
+                                viewbox-height: 100;
+                                stroke: Cab.white;
+                                stroke-width: 2.5px;
+                                fill: transparent;
+                                commands: root.wt[3];
+                            }
+                            Path {
+                                property <length> s: min(parent.width, parent.height);
+                                x: (parent.width - self.s) / 2;
+                                width: self.s;
+                                height: self.s;
+                                viewbox-width: 100;
+                                viewbox-height: 100;
+                                stroke: Cab.cyan;
+                                stroke-width: 2.5px;
+                                fill: transparent;
+                                commands: root.wt[4];
+                            }
+                            Path {
+                                property <length> s: min(parent.width, parent.height);
+                                x: (parent.width - self.s) / 2;
+                                width: self.s;
+                                height: self.s;
+                                viewbox-width: 100;
+                                viewbox-height: 100;
+                                stroke: Cab.magenta;
+                                stroke-width: 2.5px;
+                                fill: transparent;
+                                commands: root.wt[5];
+                            }
+                            Tag {
+                                x: 8px;
+                                y: 8px;
+                                text: "N ↑";
+                                tone: Cab.dim;
+                            }
+                            VerticalLayout {
+                                x: 8px;
+                                y: parent.height - self.preferred-height - 8px;
+                                spacing: 3px;
+                                Tag {
+                                    text: "HDG " + root.wt[0] + " · TAS " + root.wt-tas + " kt";
+                                    tone: Cab.white;
+                                }
+                                Tag {
+                                    text: @tr("WIATR") + " " + root.wt-dir + "° / " + root.wt-spd + " kt";
+                                    tone: Cab.cyan;
+                                }
+                                Tag {
+                                    text: "TRK " + root.wt-crs + "° · GS " + root.wt[2];
+                                    tone: Cab.magenta;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ---------- 2: Trasa między lotniskami ----------
+                if App.tool == 2: VerticalLayout {
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Card {
+                            title: @tr("Dane");
+                            width: 300px * Theme.scale;
+                            HorizontalLayout {
+                                spacing: 10px;
+                                In {
+                                    label: @tr("Z lotniska");
+                                    text <=> root.ro-a;
+                                    w: 80px * Theme.scale;
+                                }
+                                In {
+                                    label: @tr("Do lotniska");
+                                    text <=> root.ro-b;
+                                    w: 80px * Theme.scale;
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 10px;
+                                In {
+                                    label: "TAS";
+                                    text <=> root.ro-tas;
+                                    unit: "kt";
+                                }
+                                In {
+                                    label: @tr("Spalanie");
+                                    text <=> root.ro-burn;
+                                    unit: "kg/h";
+                                }
+                            }
+                            if root.ro[0] == "": Text {
+                                text: root.ro.length > 1 ? root.ro[1] : "";
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Colors.warn;
+                                wrap: word-wrap;
+                            }
+                        }
+                        Card {
+                            title: @tr("Ortodroma");
+                            horizontal-stretch: 1;
+                            Scope {
+                                height: 150px * Theme.scale;
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: 300;
+                                    viewbox-height: 100;
+                                    stroke: Cab.magenta;
+                                    stroke-width: 2.5px;
+                                    fill: transparent;
+                                    commands: "M 30 75 Q 150 5 270 75";
+                                }
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: 300;
+                                    viewbox-height: 100;
+                                    stroke: #ffffff30;
+                                    stroke-width: 1px;
+                                    fill: transparent;
+                                    commands: "M 30 75 L 270 75";
+                                }
+                                for e in [{ x: 0.1, t: root.ro-a }, { x: 0.9, t: root.ro-b }]: Rectangle {
+                                    x: parent.width * e.x - 7px;
+                                    y: parent.height * 0.75 - 7px;
+                                    width: 14px;
+                                    height: 14px;
+                                    border-radius: 7px;
+                                    background: Cab.screen;
+                                    border-width: 2.5px;
+                                    border-color: Cab.cyan;
+                                    Text {
+                                        y: 18px;
+                                        text: e.t.to-uppercase();
+                                        font-family: Theme.mono;
+                                        font-size: 13px * Theme.scale;
+                                        font-weight: 700;
+                                        color: Cab.white;
+                                    }
+                                }
+                                Image {
+                                    x: parent.width * 0.5 - 9px;
+                                    y: parent.height * 0.4 - 17px;
+                                    width: 18px;
+                                    height: 18px;
+                                    source: Icons.plane;
+                                    colorize: Cab.magenta;
+                                }
+                                Tag {
+                                    x: (parent.width - self.width) / 2;
+                                    y: parent.height * 0.4 + 4px;
+                                    text: root.ro[0] == "1" ? root.ro[3] + " · " + root.ro[6] : "–";
+                                    tone: Cab.magenta;
+                                }
+                            }
+                            if root.ro[0] == "1": VerticalLayout {
+                                spacing: 2px;
+                                Text {
+                                    text: root.ro[1] + "  →  " + root.ro[2];
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs-small;
+                                    color: Theme.text-dim;
+                                    overflow: elide;
+                                }
+                            }
+                        }
+                    }
+                    if root.ro[0] == "1": HorizontalLayout {
                         spacing: 8px;
+                        Out {
+                            big: true;
+                            k: @tr("Dystans");
+                            v: root.ro[3];
+                            tone: Cab.magenta;
+                        }
+                        Out {
+                            big: true;
+                            k: @tr("Czas lotu");
+                            v: root.ro[6];
+                            tone: Cab.green;
+                        }
+                        Out {
+                            big: true;
+                            k: @tr("Paliwo na przelot");
+                            v: root.ro[10];
+                        }
+                    }
+                    if root.ro[0] == "1": HorizontalLayout {
+                        spacing: 8px;
+                        Out {
+                            k: @tr("Kurs początkowy (rzecz.)");
+                            v: root.ro[4];
+                        }
+                        Out {
+                            k: @tr("Kurs końcowy (rzecz.)");
+                            v: root.ro[5];
+                        }
+                        Out {
+                            k: @tr("W kilometrach");
+                            v: root.ro[9];
+                        }
+                        Out {
+                            k: @tr("Elewacje");
+                            v: root.ro[7] + " / " + root.ro[8];
+                        }
+                        Out {
+                            k: @tr("Poziomy (reguła półkolowa)");
+                            v: root.ro[11];
+                        }
+                    }
+                }
+
+                // ---------- 3: Czas, prędkość, dystans ----------
+                if App.tool == 3: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Dane");
+                        width: 300px * Theme.scale;
                         In {
                             label: @tr("Dystans");
-                            text <=> root.fu-dist;
+                            text <=> root.ts-d;
                             unit: "NM";
                         }
                         In {
-                            label: "GS";
-                            text <=> root.fu-gs;
+                            label: @tr("Prędkość nad ziemią");
+                            text <=> root.ts-s;
                             unit: "kt";
                         }
-                    }
-                    HorizontalLayout {
-                        spacing: 8px;
                         In {
-                            label: @tr("Spalanie");
-                            text <=> root.fu-burn;
-                            unit: "kg/h";
+                            label: @tr("Czas");
+                            text <=> root.ts-t;
+                            unit: "h:mm";
+                            hint: "1:30";
                         }
-                        In {
-                            label: @tr("Rezerwa");
-                            text <=> root.fu-res;
-                            unit: "min";
+                        Text {
+                            text: @tr("Wpisz dwie wartości, a trzecią zostaw pustą – zostanie policzona.");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
                         }
                     }
-                    Result {
-                        label: @tr("Czas lotu");
-                        value: root.fu[0];
-                    }
-                    Result {
-                        label: @tr("Paliwo na przelot");
-                        value: root.fu[1];
-                    }
-                    Result {
-                        label: @tr("Z rezerwą");
-                        value: root.fu[2];
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 12px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: @tr("Dystans");
+                                v: root.ts[0];
+                                tone: root.ts[3] == "0" ? Cab.green : Cab.white;
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Prędkość");
+                                v: root.ts[1];
+                                tone: root.ts[3] == "1" ? Cab.green : Cab.white;
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Czas");
+                                v: root.ts[2];
+                                tone: root.ts[3] == "2" ? Cab.green : Cab.white;
+                            }
+                        }
+                        Card {
+                            title: @tr("Mile na minutę");
+                            note: @tr("pamięciowo: GS / 60");
+                            HorizontalLayout {
+                                spacing: 6px;
+                                for s in [60, 90, 120, 180, 240, 300, 360, 420, 480]: Rectangle {
+                                    horizontal-stretch: 1;
+                                    height: 46px * Theme.scale;
+                                    border-radius: Theme.r-small;
+                                    background: Theme.raised;
+                                    border-width: 1px;
+                                    border-color: Theme.line;
+                                    VerticalLayout {
+                                        alignment: center;
+                                        Text {
+                                            text: s + " kt";
+                                            font-family: Theme.mono;
+                                            font-size: 10.5px * Theme.scale;
+                                            color: Theme.text-dim;
+                                            horizontal-alignment: center;
+                                        }
+                                        Text {
+                                            text: (s / 60) + " NM/min";
+                                            font-family: Theme.mono;
+                                            font-size: 12px * Theme.scale;
+                                            font-weight: 700;
+                                            color: Theme.text;
+                                            horizontal-alignment: center;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                Tool {
-                    horizontal-stretch: 1;
-                    title: @tr("Chmury i wilgotność");
-                    icon: Icons.cloud-sun;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        In {
-                            label: @tr("Temperatura");
-                            text <=> root.cb-t;
-                            unit: "°C";
+
+                // ---------- 4: Zakręt ----------
+                if App.tool == 4: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Dane");
+                        width: 300px * Theme.scale;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: "TAS";
+                                text <=> root.tu-tas;
+                                unit: "kt";
+                            }
+                            In {
+                                label: @tr("Przechylenie");
+                                text <=> root.tu-bank;
+                                unit: "°";
+                            }
                         }
-                        In {
-                            label: @tr("Punkt rosy");
-                            text <=> root.cb-td;
-                            unit: "°C";
+                        Out {
+                            big: true;
+                            k: @tr("Przechylenie do zakrętu standardowego");
+                            v: root.tu[0];
+                            tone: Cab.green;
+                        }
+                        Text {
+                            text: @tr("Zakręt standardowy (rate 1) to 3°/s – pełny okrąg w 2 minuty. Przybliżenie pamięciowe: TAS / 10 + 7.");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
                         }
                     }
-                    Result {
-                        label: @tr("Podstawa chmur (szacunkowo)");
-                        value: root.cb[0];
-                    }
-                    Result {
-                        label: @tr("Wilgotność względna");
-                        value: root.cb[1];
-                    }
-                    Result {
-                        label: @tr("Ryzyko mgły");
-                        value: root.cb[2];
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 12px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: @tr("Promień zakrętu");
+                                v: root.tu[1];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Prędkość kątowa");
+                                v: root.tu[2];
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Pełny okrąg");
+                                v: root.tu[3];
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Przeciążenie");
+                                v: root.tu[4];
+                                tone: Cab.amber;
+                            }
+                            Out {
+                                k: @tr("Wzrost prędkości przeciągnięcia");
+                                v: root.tu[5];
+                                tone: Cab.amber;
+                            }
+                            Out {
+                                k: @tr("Wyprzedzenie zakrętu o 90°");
+                                v: root.tu[6];
+                            }
+                            Out {
+                                k: @tr("Promień w metrach");
+                                v: root.tu[7];
+                            }
+                        }
+                        Card {
+                            title: @tr("Tor zakrętu");
+                            Scope {
+                                height: 170px * Theme.scale;
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: 300;
+                                    viewbox-height: 100;
+                                    stroke: #ffffff2e;
+                                    stroke-width: 1px;
+                                    fill: transparent;
+                                    commands: "M 110 50 A 40 40 0 1 1 190 50 A 40 40 0 1 1 110 50 M 150 50 L 190 50";
+                                }
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: 300;
+                                    viewbox-height: 100;
+                                    stroke: Cab.cyan;
+                                    stroke-width: 2.5px;
+                                    fill: transparent;
+                                    commands: "M 20 90 L 150 90 A 40 40 0 0 0 190 50 L 190 8 M 185 15 L 190 8 L 195 15";
+                                }
+                                Tag {
+                                    x: parent.width * 0.57;
+                                    y: parent.height * 0.42;
+                                    text: "R " + root.tu[1];
+                                    tone: Cab.cyan;
+                                }
+                                Tag {
+                                    x: 8px;
+                                    y: 8px;
+                                    text: root.tu-bank + "° · " + root.tu[4];
+                                    tone: Cab.amber;
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            HorizontalLayout {
-                spacing: 12px;
-                Tool {
-                    horizontal-stretch: 1;
-                    title: @tr("Przelicznik jednostek");
-                    icon: Icons.calculator;
-                    Segmented {
-                        items: [@tr("Długość"), @tr("Prędkość"), @tr("Masa"), @tr("Objętość"), @tr("Ciśnienie")];
-                        current: root.un-group;
-                        picked(i) => {
-                            root.un-group = i;
-                            root.un-from = 0;
-                            root.un-to = 1;
+
+                // ---------- 5: Plan zniżania ----------
+                if App.tool == 5: VerticalLayout {
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Card {
+                            title: @tr("Dane");
+                            width: 300px * Theme.scale;
+                            HorizontalLayout {
+                                spacing: 10px;
+                                In {
+                                    label: @tr("Z wysokości");
+                                    text <=> root.de-from;
+                                    unit: "ft";
+                                }
+                                In {
+                                    label: @tr("Do wysokości");
+                                    text <=> root.de-to;
+                                    unit: "ft";
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 10px;
+                                In {
+                                    label: "GS";
+                                    text <=> root.de-gs;
+                                    unit: "kt";
+                                }
+                                In {
+                                    label: @tr("Kąt ścieżki");
+                                    text <=> root.de-angle;
+                                    unit: "°";
+                                }
+                            }
+                        }
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 8px;
+                            HorizontalLayout {
+                                spacing: 8px;
+                                Out {
+                                    big: true;
+                                    k: @tr("Początek zniżania (TOD)");
+                                    v: root.de[0];
+                                    tone: Cab.green;
+                                }
+                                Out {
+                                    big: true;
+                                    k: @tr("Prędkość pionowa");
+                                    v: root.de[1];
+                                    tone: Cab.cyan;
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                Out {
+                                    k: @tr("Czas zniżania");
+                                    v: root.de[2];
+                                }
+                                Out {
+                                    k: @tr("Reguła 3:1");
+                                    v: root.de[3] != "" ? root.de[3] + " NM" : "";
+                                }
+                            }
+                            Scope {
+                                height: 110px * Theme.scale;
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: 300;
+                                    viewbox-height: 100;
+                                    stroke: Cab.green;
+                                    stroke-width: 2.5px;
+                                    fill: transparent;
+                                    commands: "M 0 20 L 70 20 L 290 85";
+                                }
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: 300;
+                                    viewbox-height: 100;
+                                    stroke: #ffffff26;
+                                    stroke-width: 1px;
+                                    fill: transparent;
+                                    commands: "M 70 10 L 70 95 M 0 85 L 300 85";
+                                }
+                                Tag {
+                                    x: parent.width * 70 / 300 + 6px;
+                                    y: 6px;
+                                    text: "TOD · " + root.de[0];
+                                    tone: Cab.green;
+                                }
+                                Tag {
+                                    x: 6px;
+                                    y: parent.height * 0.2 + 6px;
+                                    text: root.de-from + " ft";
+                                }
+                                Tag {
+                                    x: parent.width - self.width - 6px;
+                                    y: parent.height * 0.85 - self.height - 6px;
+                                    text: root.de-to + " ft";
+                                }
+                            }
+                        }
+                    }
+                    Card {
+                        title: @tr("Kontrola na ścieżce");
+                        note: @tr("odległość do końca zniżania → wysokość");
+                        Table {
+                            data: root.de;
+                            start: 4;
+                            cols: 2;
+                            rows: 9;
+                            heads: [@tr("Odległość"), @tr("Wysokość")];
+                        }
+                    }
+                }
+
+                // ---------- 6: Ścieżka podejścia ----------
+                if App.tool == 6: VerticalLayout {
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Card {
+                            title: @tr("Dane");
+                            width: 300px * Theme.scale;
+                            HorizontalLayout {
+                                spacing: 10px;
+                                In {
+                                    label: @tr("Kąt ścieżki");
+                                    text <=> root.ap-angle;
+                                    unit: "°";
+                                }
+                                In {
+                                    label: "GS";
+                                    text <=> root.ap-gs;
+                                    unit: "kt";
+                                }
+                            }
+                            In {
+                                label: @tr("Wysokość nad progiem (TCH)");
+                                text <=> root.ap-tch;
+                                unit: "ft";
+                            }
+                        }
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 8px;
+                            HorizontalLayout {
+                                spacing: 8px;
+                                Out {
+                                    big: true;
+                                    k: @tr("Prędkość pionowa");
+                                    v: root.ap[0];
+                                    tone: Cab.green;
+                                }
+                                Out {
+                                    big: true;
+                                    k: @tr("Gradient");
+                                    v: root.ap[1];
+                                }
+                                Out {
+                                    big: true;
+                                    k: @tr("Nachylenie");
+                                    v: root.ap[2];
+                                }
+                            }
+                            Scope {
+                                height: 100px * Theme.scale;
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: 300;
+                                    viewbox-height: 100;
+                                    stroke: Cab.magenta;
+                                    stroke-width: 2.5px;
+                                    fill: transparent;
+                                    commands: "M 10 15 L 260 82";
+                                }
+                                Path {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    viewbox-width: 300;
+                                    viewbox-height: 100;
+                                    stroke: #ffffff60;
+                                    stroke-width: 3px;
+                                    fill: transparent;
+                                    commands: "M 240 88 L 295 88";
+                                }
+                                Tag {
+                                    x: parent.width * 0.45;
+                                    y: parent.height * 0.3;
+                                    text: root.ap-angle + "° · " + root.ap[0];
+                                    tone: Cab.magenta;
+                                }
+                            }
                         }
                     }
                     HorizontalLayout {
+                        spacing: 12px;
+                        Card {
+                            horizontal-stretch: 1;
+                            title: @tr("Prędkość pionowa wg GS");
+                            Table {
+                                data: root.ap;
+                                start: 3;
+                                cols: 2;
+                                rows: 7;
+                                heads: ["GS", "ft/min"];
+                            }
+                        }
+                        Card {
+                            horizontal-stretch: 1;
+                            title: @tr("Wysokość nad progiem");
+                            Table {
+                                data: root.ap;
+                                start: 17;
+                                cols: 2;
+                                rows: 9;
+                                heads: [@tr("Odległość"), @tr("Wysokość")];
+                            }
+                        }
+                    }
+                }
+
+                // ---------- 7: Gradient wznoszenia ----------
+                if App.tool == 7: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Dane");
+                        width: 300px * Theme.scale;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: "GS";
+                                text <=> root.cl-gs;
+                                unit: "kt";
+                            }
+                            In {
+                                label: @tr("Gradient");
+                                text <=> root.cl-grad;
+                                unit: "%";
+                            }
+                        }
+                        Text {
+                            text: @tr("Procedury odlotu (SID) podają minimalny gradient wznoszenia – zwykle 3,3 % albo więcej przy przeszkodach.");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 12px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: @tr("Wymagane wznoszenie");
+                                v: root.cl[0];
+                                tone: Cab.green;
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Na milę");
+                                v: root.cl[1];
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Kąt");
+                                v: root.cl[2];
+                            }
+                        }
+                        Card {
+                            title: @tr("Wznoszenie wg GS") + " (" + root.cl-grad + " %)";
+                            Table {
+                                data: root.cl;
+                                start: 3;
+                                cols: 2;
+                                rows: 6;
+                                heads: ["GS", "ft/min"];
+                            }
+                        }
+                    }
+                }
+
+                // ---------- 8: Wysokość gęstościowa ----------
+                if App.tool == 8: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Dane");
+                        width: 300px * Theme.scale;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Elewacja");
+                                text <=> root.da-elev;
+                                unit: "ft";
+                            }
+                            In {
+                                label: "QNH";
+                                text <=> root.da-qnh;
+                                unit: "hPa";
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: "OAT";
+                                text <=> root.da-oat;
+                                unit: "°C";
+                            }
+                            In {
+                                label: "IAS";
+                                text <=> root.da-ias;
+                                unit: "kt";
+                            }
+                        }
+                        Text {
+                            text: @tr("Wysoka wysokość gęstościowa wydłuża rozbieg i osłabia wznoszenie – samolot „czuje się” jak wyżej.");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                    VerticalLayout {
+                        horizontal-stretch: 1;
                         spacing: 8px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: @tr("Wysokość ciśnieniowa");
+                                v: root.da[0];
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Wysokość gęstościowa");
+                                v: root.da[1];
+                                tone: root.da[1].to-float() > root.da-elev.to-float() + 2000 ? Cab.amber : Cab.green;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: "TAS";
+                                v: root.da[2];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                k: @tr("Temperatura ISA");
+                                v: root.da[3];
+                            }
+                            Out {
+                                k: @tr("Odchyłka");
+                                v: root.da[4];
+                            }
+                            Out {
+                                k: "Mach";
+                                v: root.da[5];
+                            }
+                        }
+                    }
+                }
+
+                // ---------- 9: Atmosfera wzorcowa ----------
+                if App.tool == 9: VerticalLayout {
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Card {
+                            title: @tr("Dane");
+                            width: 300px * Theme.scale;
+                            In {
+                                label: @tr("Wysokość");
+                                text <=> root.is-alt;
+                                unit: "ft";
+                            }
+                        }
+                        HorizontalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: @tr("Temperatura");
+                                v: root.is[0];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Ciśnienie");
+                                v: root.is[1];
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Gęstość względna");
+                                v: root.is[2];
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Prędkość dźwięku");
+                                v: root.is[3];
+                            }
+                        }
+                    }
+                    Card {
+                        title: @tr("Tabela ISA");
+                        note: @tr("tropopauza 36 089 ft, powyżej −56,5 °C");
+                        Table {
+                            data: root.is;
+                            start: 5;
+                            cols: 6;
+                            flag: 5;
+                            rows: 10;
+                            heads: [@tr("Wysokość"), "°C", "hPa", "σ", @tr("dźwięk kt")];
+                        }
+                    }
+                }
+
+                // ---------- 10: Chmury i wilgotność ----------
+                if App.tool == 10: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Dane");
+                        width: 300px * Theme.scale;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Temperatura");
+                                text <=> root.cb-t;
+                                unit: "°C";
+                            }
+                            In {
+                                label: @tr("Punkt rosy");
+                                text <=> root.cb-td;
+                                unit: "°C";
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Rozkład");
+                                v: root.cb[4];
+                            }
+                            Out {
+                                k: "°F";
+                                v: root.cb[5];
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 8px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: @tr("Podstawa chmur (szacunkowo)");
+                                v: root.cb[0];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Wilgotność względna");
+                                v: root.cb[1];
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Ryzyko mgły");
+                                v: root.cb[2];
+                                tone: root.cb-t.to-float() - root.cb-td.to-float() <= 2 ? Cab.red : root.cb-t.to-float() - root.cb-td.to-float() <= 4 ? Cab.amber : Cab.green;
+                            }
+                            Out {
+                                k: @tr("Izoterma 0 °C (szacunkowo)");
+                                v: root.cb[3];
+                            }
+                        }
+                        Scope {
+                            height: 120px * Theme.scale;
+                            property <float> base: max(0, min(1, (root.cb-t.to-float() - root.cb-td.to-float()) / 2.5 / 10));
+                            Rectangle {
+                                y: parent.height - 12px;
+                                height: 12px;
+                                background: #2f3b2a;
+                            }
+                            Rectangle {
+                                y: parent.height - 12px - (parent.height - 34px) * parent.base - 1px;
+                                height: 1px;
+                                background: Cab.cyan.with-alpha(0.6);
+                            }
+                            for c in [0.12, 0.35, 0.6, 0.82]: Image {
+                                x: parent.width * c - self.width / 2;
+                                y: parent.height - 12px - (parent.height - 34px) * parent.base - self.height + 4px;
+                                width: 34px;
+                                height: 34px;
+                                source: Icons.cloud-sun;
+                                colorize: #ffffffb0;
+                            }
+                            Tag {
+                                x: parent.width - self.width - 8px;
+                                y: 8px;
+                                text: root.cb[0];
+                                tone: Cab.cyan;
+                            }
+                        }
+                    }
+                }
+
+                // ---------- 11: Paliwo ----------
+                if App.tool == 11: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Dane");
+                        width: 300px * Theme.scale;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Dystans");
+                                text <=> root.fu-dist;
+                                unit: "NM";
+                            }
+                            In {
+                                label: "GS";
+                                text <=> root.fu-gs;
+                                unit: "kt";
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Spalanie");
+                                text <=> root.fu-burn;
+                                unit: "kg/h";
+                            }
+                            In {
+                                label: @tr("Rezerwa");
+                                text <=> root.fu-res;
+                                unit: "min";
+                            }
+                        }
+                        In {
+                            label: @tr("Paliwo na pokładzie");
+                            text <=> root.fu-fob;
+                            unit: "kg";
+                            hint: @tr("opcjonalnie");
+                        }
+                    }
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 8px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: @tr("Czas lotu");
+                                v: root.fu[0];
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Paliwo na przelot");
+                                v: root.fu[1];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Z rezerwą");
+                                v: root.fu[2];
+                                tone: Cab.green;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Zasięg w czasie");
+                                v: root.fu[3];
+                            }
+                            Out {
+                                k: @tr("Zasięg w milach");
+                                v: root.fu[6];
+                            }
+                            Out {
+                                k: @tr("Zostanie na celu");
+                                v: root.fu[4];
+                                tone: root.fu[3] == "" ? Cab.white : root.fu[5] == "1" ? Cab.green : Cab.red;
+                            }
+                        }
+                        if root.fu[3] != "": Card {
+                            title: @tr("Bilans paliwa");
+                            note: root.fu[5] == "1" ? @tr("starczy z rezerwą") : @tr("za mało paliwa na przelot z rezerwą");
+                            Rectangle {
+                                property <float> fob: max(1, root.fu-fob.to-float());
+                                property <float> trip: root.fu[1].to-float();
+                                property <float> total: root.fu[2].to-float();
+                                height: 26px * Theme.scale;
+                                border-radius: Theme.r-small;
+                                background: Cab.screen;
+                                border-width: 1px;
+                                border-color: Cab.edge;
+                                clip: true;
+                                Rectangle {
+                                    x: 0;
+                                    width: parent.width * min(1, parent.trip / max(parent.fob, parent.total));
+                                    background: Cab.cyan.with-alpha(0.7);
+                                }
+                                Rectangle {
+                                    x: parent.width * min(1, parent.trip / max(parent.fob, parent.total));
+                                    width: parent.width * min(1, (parent.total - parent.trip) / max(parent.fob, parent.total));
+                                    background: Cab.amber.with-alpha(0.7);
+                                }
+                                Rectangle {
+                                    x: parent.width * min(1, parent.fob / max(parent.fob, parent.total)) - 1px;
+                                    width: 2px;
+                                    background: #ffffff;
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 14px;
+                                for l in [{ c: Cab.cyan, t: @tr("przelot") }, { c: Cab.amber, t: @tr("rezerwa") }, { c: #ffffff, t: @tr("na pokładzie") }]: HorizontalLayout {
+                                    spacing: 5px;
+                                    Rectangle {
+                                        width: 9px;
+                                        height: 9px;
+                                        y: (parent.height - self.height) / 2;
+                                        border-radius: 2px;
+                                        background: l.c;
+                                    }
+                                    Caps {
+                                        text: l.t;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ---------- 12: Jednostki ----------
+                if App.tool == 12: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Dane");
+                        width: 360px * Theme.scale;
+                        Segmented {
+                            items: [@tr("Długość"), @tr("Prędkość"), @tr("Masa"), @tr("Objętość"), @tr("Ciśnienie")];
+                            current: root.un-group;
+                            picked(i) => {
+                                root.un-group = i;
+                                root.un-from = 0;
+                            }
+                        }
                         In {
                             label: @tr("Wartość");
                             text <=> root.un-value;
+                            w: 140px * Theme.scale;
+                        }
+                        Caps {
+                            text: @tr("W jednostce").to-uppercase();
+                            color: Cab.label;
+                        }
+                        Segmented {
+                            items: root.un-names;
+                            current: root.un-from;
+                            picked(i) => {
+                                root.un-from = i;
+                            }
                         }
                     }
-                    Text {
-                        text: @tr("Z jednostki");
-                        font-family: Theme.font;
-                        font-size: Theme.fs-small;
-                        color: Theme.text-dim;
-                    }
-                    Segmented {
-                        items: root.un-names;
-                        current: root.un-from;
-                        picked(i) => {
-                            root.un-from = i;
+                    Card {
+                        title: @tr("Wynik");
+                        horizontal-stretch: 1;
+                        for i in floor(root.un.length / 2): Out {
+                            k: root.un[i * 2];
+                            v: root.un[i * 2 + 1];
+                            tone: i == root.un-from ? Cab.green : Cab.white;
                         }
-                    }
-                    Text {
-                        text: @tr("Na jednostkę");
-                        font-family: Theme.font;
-                        font-size: Theme.fs-small;
-                        color: Theme.text-dim;
-                    }
-                    Segmented {
-                        items: root.un-names;
-                        current: root.un-to;
-                        picked(i) => {
-                            root.un-to = i;
-                        }
-                    }
-                    Result {
-                        label: @tr("Wynik");
-                        value: root.un[0];
                     }
                 }
-                Tool {
-                    horizontal-stretch: 2;
-                    title: @tr("Dekoder METAR / TAF");
-                    icon: Icons.text-quote;
-                    hint: @tr("Wklej depeszę – każda grupa dostanie opis. Prawdziwe depesze znajdziesz na karcie Lotniska.");
-                    TextEdit {
-                        height: 64px * Theme.scale;
-                        text <=> root.metar;
-                        font-size: Theme.fs;
+
+                // ---------- 13: Alfabet i transponder ----------
+                if App.tool == 13: VerticalLayout {
+                    spacing: 12px;
+                    Card {
+                        title: @tr("Literowanie ICAO");
+                        In {
+                            label: @tr("Tekst lub znak wywoławczy");
+                            text <=> root.ph-text;
+                            w: 220px * Theme.scale;
+                        }
+                        Rectangle {
+                            property <length> cw: 104px * Theme.scale;
+                            property <length> gap: 6px;
+                            property <int> cols: max(1, floor((self.width + self.gap) / (self.cw + self.gap)));
+                            property <int> n: floor(root.ph.length / 2);
+                            height: max(1, ceil(self.n / self.cols)) * (52px * Theme.scale + self.gap);
+                            for i in self.n: Rectangle {
+                                x: mod(i, parent.cols) * (parent.cw + parent.gap);
+                                y: floor(i / parent.cols) * (52px * Theme.scale + parent.gap);
+                                width: parent.cw;
+                                height: 52px * Theme.scale;
+                                border-radius: Theme.r-small;
+                                background: Cab.screen;
+                                border-width: 1px;
+                                border-color: Cab.edge;
+                                VerticalLayout {
+                                    alignment: center;
+                                    Text {
+                                        text: root.ph[i * 2];
+                                        font-family: Theme.mono;
+                                        font-size: 16px * Theme.scale;
+                                        font-weight: 700;
+                                        color: Cab.cyan;
+                                        horizontal-alignment: center;
+                                    }
+                                    Text {
+                                        text: root.ph[i * 2 + 1];
+                                        font-family: Theme.mono;
+                                        font-size: 11px * Theme.scale;
+                                        color: Cab.white;
+                                        horizontal-alignment: center;
+                                    }
+                                }
+                            }
+                        }
                     }
-                    for d[i] in root.decoded: Text {
-                        text: d;
-                        font-family: mod(i, 2) == 0 ? Theme.mono : Theme.font;
-                        font-size: Theme.fs-small;
-                        color: mod(i, 2) == 0 ? Theme.accent : Theme.text-dim;
-                        wrap: word-wrap;
+                    Card {
+                        title: @tr("Kody transpondera");
+                        for c in [
+                            { code: "7700", t: @tr("Niebezpieczeństwo (MAYDAY)"), tone: Cab.red },
+                            { code: "7600", t: @tr("Utrata łączności radiowej"), tone: Cab.amber },
+                            { code: "7500", t: @tr("Bezprawne zawładnięcie statkiem powietrznym"), tone: Cab.red },
+                            { code: "7000", t: @tr("Lot VFR bez przydzielonego kodu (Europa)"), tone: Cab.green },
+                            { code: "2000", t: @tr("Lot IFR bez przydzielonego kodu"), tone: Cab.green },
+                            { code: "1200", t: @tr("Lot VFR (USA, Kanada)"), tone: Cab.green },
+                            { code: "7001", t: @tr("Nagłe wejście w strefę z lotu na małej wysokości (Wielka Brytania)"), tone: Cab.cyan },
+                        ]: HorizontalLayout {
+                            spacing: 12px;
+                            height: 32px * Theme.scale;
+                            Rectangle {
+                                width: 70px * Theme.scale;
+                                border-radius: Theme.r-small;
+                                background: Cab.screen;
+                                border-width: 1px;
+                                border-color: c.tone.with-alpha(0.6);
+                                Text {
+                                    text: c.code;
+                                    font-family: Theme.mono;
+                                    font-size: 15px * Theme.scale;
+                                    font-weight: 700;
+                                    letter-spacing: 2px;
+                                    color: c.tone;
+                                }
+                            }
+                            Text {
+                                text: c.t;
+                                font-family: Theme.font;
+                                font-size: Theme.fs;
+                                color: Theme.text;
+                                vertical-alignment: center;
+                                horizontal-stretch: 1;
+                                overflow: elide;
+                            }
+                        }
+                    }
+                }
+
+                // ---------- 14: Dekoder METAR / TAF ----------
+                if App.tool == 14: VerticalLayout {
+                    spacing: 12px;
+                    Card {
+                        title: @tr("Depesza");
+                        note: @tr("Prawdziwe depesze znajdziesz na karcie Lotniska");
+                        TextEdit {
+                            height: 70px * Theme.scale;
+                            text <=> root.metar;
+                            font-size: Theme.fs;
+                        }
+                    }
+                    Card {
+                        title: @tr("Opis grup");
+                        if root.decoded.length == 0: Text {
+                            text: "–";
+                            color: Theme.text-faint;
+                        }
+                        for i in floor(root.decoded.length / 2): HorizontalLayout {
+                            spacing: 12px;
+                            Rectangle {
+                                width: 150px * Theme.scale;
+                                height: 28px * Theme.scale;
+                                border-radius: Theme.r-small;
+                                background: Cab.screen;
+                                border-width: 1px;
+                                border-color: Cab.edge;
+                                Text {
+                                    x: 8px;
+                                    width: parent.width - 16px;
+                                    text: root.decoded[i * 2];
+                                    font-family: Theme.mono;
+                                    font-size: 12px * Theme.scale;
+                                    font-weight: 700;
+                                    color: Cab.cyan;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                }
+                            }
+                            Text {
+                                text: root.decoded[i * 2 + 1];
+                                font-family: Theme.font;
+                                font-size: Theme.fs;
+                                color: Theme.text;
+                                vertical-alignment: center;
+                                wrap: word-wrap;
+                                horizontal-stretch: 1;
+                            }
+                        }
                     }
                 }
             }

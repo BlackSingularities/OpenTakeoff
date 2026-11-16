@@ -1,0 +1,557 @@
+// Karta Plan lotu: lotniska, wysokość przelotowa, trasa z tekstu, procedury SID / STAR / podejścia
+// (jak strony DEP/ARR w FMC), tabela punktów z edycją, mapa i profil pionowy.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, PlanRowV, PlanOptV, KV } from "state.slint";
+import { Button, IconButton, Field, Segmented, TipArea } from "widgets.slint";
+import { Panel, MapView, Colors } from "parts.slint";
+
+global PlanUi {
+    in-out property <string> insert;
+    in-out property <string> alt-edit;
+}
+
+component Caption inherits Text {
+    font-family: Theme.cond;
+    font-size: 10.5px * Theme.scale;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: Theme.text-faint;
+    vertical-alignment: center;
+}
+
+/// Pole z podpisem nad nim (jak okno w FMC).
+component LabeledField inherits VerticalLayout {
+    in property <string> label;
+    in-out property <string> text;
+    in property <string> placeholder;
+    in property <length> w: 90px;
+    callback accepted(string);
+    spacing: 3px;
+    Caption {
+        text: root.label.to-uppercase();
+    }
+    Field {
+        w: root.w;
+        mono: true;
+        text <=> root.text;
+        placeholder: root.placeholder;
+        accepted(t) => {
+            root.accepted(t);
+        }
+    }
+}
+
+/// Kolumna wyboru (pas, procedura, przejście) jak lista na stronie DEP/ARR w FMC.
+component OptColumn inherits Rectangle {
+    in property <string> title;
+    in property <[PlanOptV]> items;
+    in property <string> empty;
+    callback picked(string);
+    horizontal-stretch: 1;
+    border-radius: Theme.r-small;
+    background: Theme.raised;
+    VerticalLayout {
+        padding: 6px;
+        spacing: 4px;
+        Caption {
+            text: root.title.to-uppercase();
+        }
+        if root.items.length == 0: Text {
+            text: root.empty;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            wrap: word-wrap;
+        }
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                alignment: start;
+                spacing: 1px;
+                for o in root.items: Rectangle {
+                    height: 24px * Theme.scale;
+                    border-radius: 4px;
+                    background: o.selected ? Theme.accent.with-alpha(0.22) : ta.has-hover ? Theme.hover : transparent;
+                    border-width: o.selected ? 1px : 0;
+                    border-color: Theme.accent.with-alpha(0.7);
+                    HorizontalLayout {
+                        padding-left: 6px;
+                        padding-right: 6px;
+                        spacing: 6px;
+                        Text {
+                            text: o.name;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            font-weight: o.selected ? 700 : 400;
+                            color: o.selected ? Theme.text : Theme.text-dim;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            horizontal-stretch: 1;
+                            text: o.sub;
+                            font-family: Theme.font;
+                            font-size: 10px * Theme.scale;
+                            color: Theme.text-faint;
+                            vertical-alignment: center;
+                            horizontal-alignment: right;
+                            overflow: elide;
+                        }
+                    }
+                    ta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.picked(o.name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Wiersz tabeli punktów: segment trasy (kolor jak na ND), punkt, droga, ograniczenie, wysokość, kurs, odległości.
+component PlanRow inherits Rectangle {
+    in property <PlanRowV> r;
+    property <color> seg: r.seg == "SID" || r.seg == "STAR" ? #ff33e6 : r.seg == "APP" ? Colors.warn : r.seg == "ENR" ? #4fd8eb : Theme.text-dim;
+    height: (r.selected && r.editable ? 62px : 28px) * Theme.scale;
+    border-radius: Theme.r-small;
+    background: r.selected ? Theme.accent-soft : ta.has-hover ? Theme.hover : transparent;
+    ta := TouchArea {
+        clicked => {
+            App.cmd("plan-sel", root.r.idx);
+        }
+    }
+    VerticalLayout {
+        HorizontalLayout {
+            height: 28px * Theme.scale;
+            padding-left: 6px;
+            padding-right: 8px;
+            spacing: 8px;
+            Rectangle {
+                width: 4px;
+                height: 14px;
+                y: (parent.height - self.height) / 2;
+                border-radius: 2px;
+                background: root.seg;
+            }
+            Text {
+                width: 74px * Theme.scale;
+                text: root.r.ident;
+                font-family: Theme.mono;
+                font-size: Theme.fs;
+                font-weight: 700;
+                color: Theme.text;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            Text {
+                width: 64px * Theme.scale;
+                text: root.r.via;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: root.seg;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            Text {
+                width: 74px * Theme.scale;
+                text: root.r.constraint;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: Colors.warn;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            Text {
+                width: 58px * Theme.scale;
+                text: root.r.alt;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: #4fd8eb;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+            }
+            Text {
+                width: 44px * Theme.scale;
+                text: root.r.crs;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+            }
+            Text {
+                width: 40px * Theme.scale;
+                text: root.r.dist;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+            }
+            Text {
+                horizontal-stretch: 1;
+                text: root.r.cum;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: Theme.text;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+            }
+            Text {
+                width: 44px * Theme.scale;
+                text: root.r.ete;
+                font-family: Theme.mono;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+                horizontal-alignment: right;
+            }
+        }
+        // edycja zaznaczonego punktu trasy
+        if root.r.selected && root.r.editable: HorizontalLayout {
+            height: 32px * Theme.scale;
+            padding-left: 18px;
+            padding-right: 8px;
+            padding-bottom: 6px;
+            spacing: 6px;
+            Field {
+                w: 90px * Theme.scale;
+                mono: true;
+                text <=> PlanUi.alt-edit;
+                placeholder: @tr("FL/ft");
+                tip: @tr("Wysokość w punkcie (np. FL240 albo 9000); puste – bez ograniczenia");
+                accepted(t) => {
+                    App.cmd("plan-alt", root.r.idx + "|" + t);
+                    PlanUi.alt-edit = "";
+                }
+            }
+            Button {
+                label: @tr("Ustaw wysokość");
+                clicked => {
+                    App.cmd("plan-alt", root.r.idx + "|" + PlanUi.alt-edit);
+                    PlanUi.alt-edit = "";
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+            IconButton {
+                icon: Icons.arrow-up;
+                tip: @tr("Przesuń wyżej");
+                clicked => {
+                    App.cmd("plan-up", root.r.idx);
+                }
+            }
+            IconButton {
+                icon: Icons.arrow-down;
+                tip: @tr("Przesuń niżej");
+                clicked => {
+                    App.cmd("plan-down", root.r.idx);
+                }
+            }
+            IconButton {
+                icon: Icons.trash-2;
+                tip: @tr("Usuń punkt");
+                clicked => {
+                    App.cmd("plan-del", root.r.idx);
+                }
+            }
+        }
+    }
+}
+
+export component PlanView inherits Rectangle {
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        // lewa kolumna: dane planu, procedury, tabela
+        VerticalLayout {
+            width: min(640px * Theme.scale, root.width * 0.55);
+            spacing: 10px;
+            Panel {
+                height: top.preferred-height;
+                top := VerticalLayout {
+                    padding: 10px;
+                    spacing: 8px;
+                    HorizontalLayout {
+                        spacing: 10px;
+                        alignment: start;
+                        LabeledField {
+                            label: @tr("Start");
+                            text: App.plan-origin;
+                            placeholder: "EPWA";
+                            w: 80px * Theme.scale;
+                            accepted(t) => {
+                                App.cmd("plan-origin", t);
+                            }
+                        }
+                        LabeledField {
+                            label: @tr("Cel");
+                            text: App.plan-dest;
+                            placeholder: "EPKK";
+                            w: 80px * Theme.scale;
+                            accepted(t) => {
+                                App.cmd("plan-dest", t);
+                            }
+                        }
+                        LabeledField {
+                            label: @tr("Przelot");
+                            text: App.plan-cruise;
+                            placeholder: "FL240";
+                            w: 80px * Theme.scale;
+                            accepted(t) => {
+                                App.cmd("plan-cruise", t);
+                            }
+                        }
+                        LabeledField {
+                            label: "TAS kt";
+                            text: App.plan-tas;
+                            placeholder: "420";
+                            w: 64px * Theme.scale;
+                            accepted(t) => {
+                                App.cmd("plan-tas", t);
+                            }
+                        }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: 3px;
+                        Caption {
+                            text: @tr("Trasa").to-uppercase();
+                        }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            rf := Field {
+                                w: parent.width - 110px * Theme.scale;
+                                mono: true;
+                                text: App.plan-route-text;
+                                placeholder: @tr("EPWA SID PUNKT DROGA PUNKT … STAR EPKK");
+                                tip: @tr("Punkty, drogi lotnicze (z danymi X-Plane), DCT, współrzędne 5230N02000E; Enter – zastosuj");
+                                accepted(t) => {
+                                    App.cmd("plan-route", t);
+                                }
+                            }
+                            Button {
+                                label: @tr("Zastosuj");
+                                primary: true;
+                                clicked => {
+                                    App.cmd("plan-route", rf.text);
+                                }
+                            }
+                        }
+                    }
+                    Text {
+                        text: App.plan-source + (App.plan-status != "" ? "  ·  " + App.plan-status : "");
+                        font-family: Theme.font;
+                        font-size: 10.5px * Theme.scale;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+            // procedury
+            Panel {
+                height: 210px * Theme.scale;
+                VerticalLayout {
+                    padding: 10px;
+                    spacing: 8px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Segmented {
+                            items: [@tr("Odlot"), @tr("Przylot"), @tr("Podejście")];
+                            current: App.plan-proc-tab;
+                            picked(i) => {
+                                App.plan-proc-tab = i;
+                                App.cmd("plan-proc-tab", "");
+                            }
+                        }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+                    }
+                    HorizontalLayout {
+                        vertical-stretch: 1;
+                        spacing: 6px;
+                        OptColumn {
+                            title: App.plan-proc-tab == 0 ? @tr("Pas startowy") : App.plan-proc-tab == 1 ? "STAR" : @tr("Podejście");
+                            items: App.plan-opts-a;
+                            empty: App.plan-proc-tab == 0 ? @tr("Wpisz lotnisko startu") : @tr("Brak procedur – uruchom MSFS albo wskaż folder X-Plane");
+                            picked(n) => {
+                                App.cmd("plan-pick", "a|" + n);
+                            }
+                        }
+                        OptColumn {
+                            title: App.plan-proc-tab == 0 ? "SID" : @tr("Przejście");
+                            items: App.plan-opts-b;
+                            empty: App.plan-proc-tab == 0 ? @tr("Brak procedur – uruchom MSFS albo wskaż folder X-Plane") : @tr("Wybierz procedurę");
+                            picked(n) => {
+                                App.cmd("plan-pick", "b|" + n);
+                            }
+                        }
+                        if App.plan-proc-tab != 2: OptColumn {
+                            title: App.plan-proc-tab == 0 ? @tr("Przejście") : @tr("Pas do lądowania");
+                            items: App.plan-opts-c;
+                            empty: App.plan-proc-tab == 0 ? @tr("Wybierz SID") : @tr("Wpisz lotnisko celu");
+                            picked(n) => {
+                                App.cmd("plan-pick", "c|" + n);
+                            }
+                        }
+                    }
+                }
+            }
+            // tabela punktów
+            Panel {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    padding: 8px;
+                    spacing: 4px;
+                    HorizontalLayout {
+                        padding-left: 18px;
+                        padding-right: 8px;
+                        spacing: 8px;
+                        height: 18px * Theme.scale;
+                        Caption {
+                            width: 74px * Theme.scale;
+                            text: @tr("PUNKT");
+                        }
+                        Caption {
+                            width: 64px * Theme.scale;
+                            text: @tr("DROGA");
+                        }
+                        Caption {
+                            width: 74px * Theme.scale;
+                            text: @tr("OGRANICZ.");
+                        }
+                        Caption {
+                            width: 58px * Theme.scale;
+                            text: "ALT";
+                            horizontal-alignment: right;
+                        }
+                        Caption {
+                            width: 44px * Theme.scale;
+                            text: "CRS";
+                            horizontal-alignment: right;
+                        }
+                        Caption {
+                            width: 40px * Theme.scale;
+                            text: "NM";
+                            horizontal-alignment: right;
+                        }
+                        Caption {
+                            horizontal-stretch: 1;
+                            text: "Σ NM";
+                            horizontal-alignment: right;
+                        }
+                        Caption {
+                            width: 44px * Theme.scale;
+                            text: "ETE";
+                            horizontal-alignment: right;
+                        }
+                    }
+                    ScrollView {
+                        vertical-stretch: 1;
+                        VerticalLayout {
+                            alignment: start;
+                            spacing: 1px;
+                            for r in App.plan-rows: PlanRow {
+                                r: r;
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Field {
+                            w: 150px * Theme.scale;
+                            mono: true;
+                            text <=> PlanUi.insert;
+                            placeholder: @tr("Punkt, VOR, NDB…");
+                            tip: @tr("Dodaje punkt za zaznaczonym (albo na końcu trasy)");
+                            accepted(t) => {
+                                App.cmd("plan-insert", t);
+                                PlanUi.insert = "";
+                            }
+                        }
+                        Button {
+                            label: @tr("Dodaj punkt");
+                            icon: Icons.plus;
+                            clicked => {
+                                App.cmd("plan-insert", PlanUi.insert);
+                                PlanUi.insert = "";
+                            }
+                        }
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+                    }
+                }
+            }
+        }
+        // prawa kolumna: podsumowanie, mapa, profil
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 10px;
+            HorizontalLayout {
+                spacing: 8px;
+                for kv in App.plan-summary: Rectangle {
+                    horizontal-stretch: 1;
+                    height: sv.preferred-height;
+                    border-radius: Theme.r;
+                    background: Theme.raised;
+                    border-width: 1px;
+                    border-color: Theme.line;
+                    sv := VerticalLayout {
+                        padding: 8px;
+                        padding-left: 10px;
+                        spacing: 1px;
+                        Caption {
+                            text: kv.k.to-uppercase();
+                        }
+                        Text {
+                            text: kv.v;
+                            font-family: Theme.mono;
+                            font-size: 15px * Theme.scale;
+                            font-weight: 700;
+                            color: Theme.text;
+                            overflow: elide;
+                        }
+                    }
+                }
+            }
+            MapView {
+                id: 40;
+                vertical-stretch: 1;
+                source: App.plan-map;
+                labels: App.plan-map-labels;
+            }
+            Rectangle {
+                height: 190px * Theme.scale;
+                border-radius: Theme.r;
+                background: #0b1016;
+                clip: true;
+                changed width => {
+                    App.map-event(41, "size", self.width / 1px, self.height / 1px, 0, 0);
+                }
+                changed height => {
+                    App.map-event(41, "size", self.width / 1px, self.height / 1px, 0, 0);
+                }
+                init => {
+                    App.map-event(41, "size", self.width / 1px, self.height / 1px, 0, 0);
+                }
+                Image {
+                    x: 0;
+                    y: 0;
+                    width: parent.width;
+                    height: parent.height;
+                    source: App.plan-profile;
+                    image-fit: fill;
+                }
+            }
+        }
+    }
+}

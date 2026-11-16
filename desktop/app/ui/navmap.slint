@@ -251,6 +251,7 @@ export component NavMap inherits Rectangle {
             width: 310px * Theme.scale;
             VerticalLayout {
                 width: sv.visible-width - 4px;
+                alignment: start;
                 spacing: 10px;
                 Panel {
                     height: sl.preferred-height;
@@ -322,14 +323,17 @@ export component NavMap inherits Rectangle {
                         v: kv.v;
                     }
                 }
-                if App.nav-hover != "": Box {
+                // Zawsze na miejscu (stała wysokość), żeby panele niżej nie skakały przy ruchu myszy i zmianie mapy
+                Box {
                     title: @tr("Kursor");
                     icon: Icons.crosshair;
                     Text {
-                        text: App.nav-hover;
+                        height: 2 * Theme.fs-small * 1.45;
+                        vertical-alignment: top;
+                        text: App.nav-hover != "" ? App.nav-hover : @tr("Najedź na mapę");
+                        color: App.nav-hover != "" ? Theme.text : Theme.text-faint;
                         font-family: Theme.mono;
                         font-size: Theme.fs-small;
-                        color: Theme.text;
                         wrap: word-wrap;
                     }
                 }
