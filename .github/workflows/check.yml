@@ -1,0 +1,29 @@
+name: Sprawdzenie (Windows)
+
+# Ręczne sprawdzenie kompilacji wersji na Windows na dowolnej gałęzi – bez budowania instalatora
+# i bez wydania (wydanie robi release.yml po tagu vX.Y.Z).
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Rust
+        shell: bash
+        run: rustup toolchain install stable-x86_64-pc-windows-msvc --profile minimal
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+
+      - name: Kompilacja
+        run: cargo check --release -p opentakeoff --message-format short
+
+      - name: Testy
+        run: cargo test --release -p opentakeoff-core
