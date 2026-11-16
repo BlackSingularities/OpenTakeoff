@@ -295,6 +295,14 @@ pub const NAV_CURTAIN: u32 = 512;
 pub const NAV_RWY: u32 = 1024;
 pub const NAV_RADAR: u32 = 2048;
 pub const NAV_METAR: u32 = 4096;
+/// Pierścienie zasięgu paliwa i szybowania.
+pub const NAV_RANGE: u32 = 8192;
+/// Przedłużone osie pasów (2D) i ścieżki podejścia 3° (3D).
+pub const NAV_APPR: u32 = 16384;
+/// Granica dnia i nocy (z czasu symulatora).
+pub const NAV_NIGHT: u32 = 32768;
+/// Siatka współrzędnych.
+pub const NAV_GRID: u32 = 65536;
 pub const NAV_DEFAULT: u32 = NAV_APT | NAV_VOR | NAV_NDB | NAV_VOR_ROSE | NAV_ROSE | NAV_VECTOR | NAV_TRACK | NAV_ROUTE | NAV_CURTAIN | NAV_RWY;
 
 pub const UI_VERSION: i32 = 2;

@@ -485,6 +485,8 @@
   "flight_detail.analysis": "Análisis",
   "flight_detail.average_gs": "GS media",
   "flight_detail.bounces": "Rebotes",
+  "flight_detail.delete_confirm_text": "El vuelo {route} desaparecerá del libro en el teléfono y, en la próxima sincronización, también de OpenTakeoff en el ordenador. No se puede deshacer.",
+  "flight_detail.delete_confirm_title": "¿Eliminar este vuelo?",
   "flight_detail.delete_flight": "Eliminar vuelo",
   "flight_detail.export_track_to_gpx": "Exportar trayectoria a GPX",
   "flight_detail.flight_replay": "Repetición del vuelo",

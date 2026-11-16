@@ -990,6 +990,8 @@ fn render_flight_3d(f: &FlightLog, st: &State, dark: bool) -> slint::Image {
         hud,
         compass: false,
         curtain: true,
+        lines: &[],
+        sun: None,
     };
     scene3d::render(&sc, &st.replay_cam)
 }

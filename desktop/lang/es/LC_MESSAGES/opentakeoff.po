@@ -4121,3 +4121,123 @@ msgstr "combustible insuficiente para el trayecto con reserva"
 
 msgid "Ścieżka podejścia"
 msgstr "Senda de aproximación"
+
+msgid "Elewacja celu"
+msgstr "Elevación del destino"
+
+msgid "Granica dnia i nocy z czasu symulatora (ze zmierzchem)"
+msgstr "Límite día/noche según la hora del simulador (con crepúsculo)"
+
+msgid "Kamera sama okrąża samolot"
+msgstr "La cámara rodea el avión sola"
+
+msgid "Kliknij cel na mapie albo lotnisko na liście: kurs, czas, ETA, paliwo i zniżanie"
+msgstr "Haz clic en un destino en el mapa o en un aeropuerto de la lista: rumbo, tiempo, ETA, combustible y descenso"
+
+msgid "Kliknij lotnisko, pomoc nawigacyjną albo dowolny punkt na mapie"
+msgstr "Haz clic en un aeropuerto, radioayuda o cualquier punto del mapa"
+
+msgid "Kliknij lotnisko, żeby lecieć do niego (Direct To)"
+msgstr "Haz clic en un aeropuerto para volar a él (Direct To)"
+
+msgid "Kurs i czas pojawią się z danymi z symulatora"
+msgstr "El rumbo y el tiempo aparecen con datos del simulador"
+
+msgid "Noc"
+msgstr "Noche"
+
+msgid "Orbita"
+msgstr "Órbita"
+
+msgid "Orbita · kółko – odległość"
+msgstr "Órbita · rueda – distancia"
+
+msgid "Osie pasów"
+msgstr "Ejes de pista"
+
+msgid "Paliwo na miejscu"
+msgstr "Combustible a la llegada"
+
+msgid "Początek zniżania (3°)"
+msgstr "Inicio del descenso (3°)"
+
+msgid "Podkład"
+msgstr "Mapa base"
+
+msgid "Przeciągnij – rozglądanie się z kabiny"
+msgstr "Arrastra – mirar alrededor desde la cabina"
+
+msgid "Przedłużone osie pasów na 10 NM; w 3D ścieżki podejścia 3°"
+msgstr "Ejes de pista prolongados 10 NM; en 3D sendas de aproximación de 3°"
+
+msgid "Siatka"
+msgstr "Cuadrícula"
+
+msgid "Siatka współrzędnych z opisem"
+msgstr "Cuadrícula de coordenadas con etiquetas"
+
+msgid "Styl PFD i ND"
+msgstr "Estilo de PFD y ND"
+
+msgid "Słońce"
+msgstr "Sol"
+
+msgid "Wg motywu"
+msgstr "Según el tema"
+
+msgid "Widok z kabiny: z pochyleniem i przechyleniem samolotu (przeciągnij, żeby rozejrzeć się)"
+msgstr "Vista desde la cabina con el cabeceo y alabeo del avión (arrastra para mirar alrededor)"
+
+msgid "Wyświetlacze kabiny"
+msgstr "Pantallas de cabina"
+
+msgid "Zakończ Direct To"
+msgstr "Terminar Direct To"
+
+msgid "Zasięg na paliwie (także z rezerwą 45 min) i szybowania z obecnej wysokości"
+msgstr "Alcance con el combustible (también con reserva de 45 min) y de planeo desde la altura actual"
+
+msgid "Zegary analogowe"
+msgstr "Relojes analógicos"
+
+msgid "dzień"
+msgstr "día"
+
+msgid "już teraz"
+msgstr "ya"
+
+msgid "nisko nad horyzontem"
+msgstr "bajo sobre el horizonte"
+
+msgid "noc"
+msgstr "noche"
+
+msgid "paliwo"
+msgstr "combustible"
+
+msgid "szybowanie"
+msgstr "planeo"
+
+msgid "z rezerwą 45 min"
+msgstr "con reserva de 45 min"
+
+msgid "z samolotu"
+msgstr "del avión"
+
+msgid "za"
+msgstr "en"
+
+msgid "zegary szybowca"
+msgstr "relojes de planeador"
+
+msgid "zmierzch cywilny"
+msgstr "crepúsculo civil"
+
+msgid "zmierzch żeglarski"
+msgstr "crepúsculo náutico"
+
+msgid "śmigłowiec"
+msgstr "helicóptero"
+
+msgid "Import"
+msgstr "Importar"

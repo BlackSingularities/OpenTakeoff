@@ -166,7 +166,7 @@ component NavMapView inherits Rectangle {
         border-radius: 10px;
         background: #000000a0;
         ht := Text {
-            text: @tr("Przeciągnij – obrót kamery · kółko – odległość");
+            text: App.nav.cam == 3 ? @tr("Przeciągnij – rozglądanie się z kabiny") : App.nav.cam == 4 ? @tr("Orbita · kółko – odległość") : @tr("Przeciągnij – obrót kamery · kółko – odległość");
             font-family: Theme.font;
             font-size: 10px;
             color: #ffffffc0;
@@ -255,15 +255,23 @@ export component NavMap inherits Rectangle {
                 spacing: 10px;
                 Panel {
                     height: sl.preferred-height;
+                    clip: true;
                     sl := HorizontalLayout {
                         padding: 8px;
                         spacing: 6px;
-                        Field {
-                            w: 180px * Theme.scale;
-                            text <=> App.nav-query;
-                            placeholder: @tr("VOR, NDB, lotnisko (np. WAR, EPWA)");
-                            accepted(t) => {
-                                App.cmd("nav-find", t);
+                        // Pole zajmuje to, co zostaje obok przycisku (bez stałej szerokości, która wystawała)
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            min-width: 60px;
+                            height: 30px * Theme.scale;
+                            Field {
+                                y: (parent.height - self.height) / 2;
+                                w: parent.width;
+                                text <=> App.nav-query;
+                                placeholder: @tr("VOR, NDB, lotnisko (np. WAR, EPWA)");
+                                accepted(t) => {
+                                    App.cmd("nav-find", t);
+                                }
                             }
                         }
                         Button {
@@ -315,6 +323,25 @@ export component NavMap inherits Rectangle {
                         }
                     }
                 }
+                if App.nav.has-direct: Box {
+                    title: "Direct To";
+                    icon: Icons.navigation;
+                    for kv in App.nav-direct: Pair {
+                        k: kv.k;
+                        v: kv.v;
+                    }
+                    HorizontalLayout {
+                        padding-top: 4px;
+                        alignment: start;
+                        Button {
+                            label: @tr("Zakończ Direct To");
+                            icon: Icons.x;
+                            clicked => {
+                                App.cmd("nav-direct", "");
+                            }
+                        }
+                    }
+                }
                 if App.nav-info.length > 0: Box {
                     title: @tr("Samolot");
                     icon: Icons.plane;
@@ -357,10 +384,17 @@ export component NavMap inherits Rectangle {
                 Box {
                     title: @tr("Najbliższe lotniska");
                     icon: Icons.map-pin;
+                    Text {
+                        text: @tr("Kliknij lotnisko, żeby lecieć do niego (Direct To)");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
+                    }
                     for r in App.nav-airports: RowItem {
                         item: r;
                         clicked => {
-                            App.cmd("nav-find", r.id);
+                            App.cmd("nav-direct", r.id);
                         }
                     }
                 }

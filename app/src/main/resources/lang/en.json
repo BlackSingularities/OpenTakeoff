@@ -485,6 +485,8 @@
   "flight_detail.analysis": "Analysis",
   "flight_detail.average_gs": "Average GS",
   "flight_detail.bounces": "Bounces",
+  "flight_detail.delete_confirm_text": "The {route} flight will be removed from the logbook on the phone and, at the next sync, from OpenTakeoff on the computer too. This cannot be undone.",
+  "flight_detail.delete_confirm_title": "Delete this flight?",
   "flight_detail.delete_flight": "Delete flight",
   "flight_detail.export_track_to_gpx": "Export track to GPX",
   "flight_detail.flight_replay": "Flight replay",

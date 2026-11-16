@@ -6,7 +6,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV } from "state.slint";
-import { Tip, TipArea, IconButton, BigButton, Group, Col, Row, Button, Card, Segmented, Splitter } from "widgets.slint";
+import { Tip, TipArea, IconButton, BigButton, Group, Col, Row, Button, Card, Segmented, Splitter, MenuItem, MenuSep } from "widgets.slint";
 import { NavTab, Readout, RecordButton, Sidebar } from "shell.slint";
 import { Toast, Dot, Colors } from "parts.slint";
 import { Dashboard } from "dashboard.slint";
@@ -26,6 +26,134 @@ import { PlanView } from "plan.slint";
 import { LandingWindow, StreamWindow, OverlayWindow, StreamCell } from "overlays.slint";
 
 export { App, Theme, Icons, Tip, FeedbackWindow, LandingWindow, StreamWindow, OverlayWindow, StreamCell, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV }
+
+/// Podkład mapy: duży przycisk wstążki z menu (wg motywu, ciemny, jasny, OSM, satelita).
+component MapStyleButton inherits Rectangle {
+    property <[string]> names: [@tr("Wg motywu"), @tr("Ciemny"), @tr("Jasny"), "OpenStreetMap", @tr("Satelita")];
+    width: bb.min-width;
+    bb := BigButton {
+        width: parent.width;
+        icon: Icons.layers;
+        label: @tr("Podkład");
+        menu: true;
+        tip: @tr("Podkład mapy") + ": " + root.names[max(0, min(4, App.nav.style))];
+        clicked => {
+            pop.show();
+        }
+    }
+    pop := PopupWindow {
+        x: 0;
+        y: root.height + 4px;
+        width: 210px * Theme.scale;
+        close-policy: close-on-click-outside;
+        Card {
+            VerticalLayout {
+                padding: 6px;
+                spacing: 1px;
+                for n[i] in root.names: MenuItem {
+                    label: n;
+                    checked: App.nav.style == i;
+                    clicked => {
+                        App.cmd("nav-style", i);
+                        pop.close();
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Styl kabiny na karcie Przyrządy: duży przycisk wstążki z menu (Auto – rozpoznany z samolotu).
+component CabinStyleButton inherits Rectangle {
+    property <[string]> names: ["Auto", "A320", "737", "787", "ATR", "E190", "G1000", "C172", "R44", @tr("Szybowiec")];
+    property <[string]> hints: [
+        "",
+        "Airbus",
+        "Boeing 737",
+        "Boeing 787",
+        "ATR 72-600",
+        "Embraer E190",
+        "Garmin G1000",
+        "Cessna 172",
+        @tr("śmigłowiec"),
+        @tr("zegary szybowca"),
+    ];
+    width: bb.min-width;
+    bb := BigButton {
+        width: parent.width;
+        icon: Icons.gauge;
+        label: App.instr.style >= 0 && App.instr.style < root.names.length ? root.names[App.instr.style] : "Auto";
+        menu: true;
+        active: App.instr.style > 0;
+        tip: @tr("Styl PFD i ND") + " – " + App.instr.style-name;
+        clicked => {
+            pop.show();
+        }
+    }
+    pop := PopupWindow {
+        x: 0;
+        y: root.height + 4px;
+        width: 250px * Theme.scale;
+        close-policy: close-on-click-outside;
+        Card {
+            VerticalLayout {
+                padding: 6px;
+                spacing: 1px;
+                MenuItem {
+                    label: "Auto";
+                    hint: App.instr.style == 0 ? App.instr.style-name : @tr("z samolotu");
+                    checked: App.instr.style == 0;
+                    clicked => {
+                        App.cmd("instr-style", 0);
+                        pop.close();
+                    }
+                }
+                MenuSep { }
+                Text {
+                    x: 10px;
+                    height: 20px * Theme.scale;
+                    text: @tr("Wyświetlacze kabiny").to-uppercase();
+                    font-family: Theme.cond;
+                    font-size: 9.5px * Theme.scale;
+                    font-weight: 700;
+                    letter-spacing: 0.9px;
+                    color: Theme.text-faint;
+                    vertical-alignment: center;
+                }
+                for n[i] in [1, 2, 3, 4, 5, 6]: MenuItem {
+                    label: root.names[n];
+                    hint: root.hints[n];
+                    checked: App.instr.style == n;
+                    clicked => {
+                        App.cmd("instr-style", n);
+                        pop.close();
+                    }
+                }
+                MenuSep { }
+                Text {
+                    x: 10px;
+                    height: 20px * Theme.scale;
+                    text: @tr("Zegary analogowe").to-uppercase();
+                    font-family: Theme.cond;
+                    font-size: 9.5px * Theme.scale;
+                    font-weight: 700;
+                    letter-spacing: 0.9px;
+                    color: Theme.text-faint;
+                    vertical-alignment: center;
+                }
+                for n[i] in [7, 8, 9]: MenuItem {
+                    label: root.names[n];
+                    hint: root.hints[n];
+                    checked: App.instr.style == n;
+                    clicked => {
+                        App.cmd("instr-style", n);
+                        pop.close();
+                    }
+                }
+            }
+        }
+    }
+}
 
 component WinButton inherits Rectangle {
     in property <int> kind;
@@ -601,27 +729,7 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 8: Group {
             title: @tr("Styl kabiny");
-            HorizontalLayout {
-                padding-left: 4px;
-                padding-right: 4px;
-                spacing: 6px;
-                Segmented {
-                    items: ["Auto", "A320", "737", "787", "ATR", "E190", "G1000"];
-                    current: App.instr.style <= 6 ? App.instr.style : -1;
-                    tip: @tr("Styl PFD i ND; Auto – rozpoznany z samolotu w symulatorze");
-                    picked(i) => {
-                        App.cmd("instr-style", i);
-                    }
-                }
-                Segmented {
-                    items: ["C172", "R44", @tr("Szybowiec")];
-                    current: App.instr.style - 7;
-                    tip: @tr("Zegary analogowe: Cessna 172, śmigłowiec, szybowiec");
-                    picked(i) => {
-                        App.cmd("instr-style", i + 7);
-                    }
-                }
-            }
+            CabinStyleButton { }
         }
         if App.tab == 8: Group {
             title: "ND";
@@ -736,6 +844,56 @@ component Ribbon inherits Rectangle {
                     App.map-event(4, "follow", App.follow ? 1 : 0, 0, 0, 0);
                 }
             }
+            MapStyleButton { }
+        }
+        if App.tab == 9: Group {
+            title: @tr("Nakładki");
+            Col {
+                Row {
+                    if !App.nav.view3d: BigButton {
+                        slim: true;
+                        icon: Icons.fuel;
+                        label: @tr("Zasięg");
+                        active: App.nav.range;
+                        tip: @tr("Zasięg na paliwie (także z rezerwą 45 min) i szybowania z obecnej wysokości");
+                        clicked => {
+                            App.cmd("nav-layer", "range");
+                        }
+                    }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.plane-landing;
+                        label: @tr("Osie pasów");
+                        active: App.nav.appr;
+                        tip: @tr("Przedłużone osie pasów na 10 NM; w 3D ścieżki podejścia 3°");
+                        clicked => {
+                            App.cmd("nav-layer", "appr");
+                        }
+                    }
+                }
+                Row {
+                    if !App.nav.view3d: BigButton {
+                        slim: true;
+                        icon: Icons.moon;
+                        label: @tr("Noc");
+                        active: App.nav.night;
+                        tip: @tr("Granica dnia i nocy z czasu symulatora (ze zmierzchem)");
+                        clicked => {
+                            App.cmd("nav-layer", "night");
+                        }
+                    }
+                    if !App.nav.view3d: BigButton {
+                        slim: true;
+                        icon: Icons.grid-3x3;
+                        label: @tr("Siatka");
+                        active: App.nav.grid;
+                        tip: @tr("Siatka współrzędnych z opisem");
+                        clicked => {
+                            App.cmd("nav-layer", "grid");
+                        }
+                    }
+                }
+            }
         }
         if App.tab == 9 && App.nav.view3d: Group {
             title: @tr("Kamera");
@@ -761,6 +919,24 @@ component Ribbon inherits Rectangle {
                 active: App.nav.cam == 2;
                 clicked => {
                     App.cmd("nav-cam", "2");
+                }
+            }
+            BigButton {
+                icon: Icons.eye;
+                label: @tr("Kokpit");
+                active: App.nav.cam == 3;
+                tip: @tr("Widok z kabiny: z pochyleniem i przechyleniem samolotu (przeciągnij, żeby rozejrzeć się)");
+                clicked => {
+                    App.cmd("nav-cam", "3");
+                }
+            }
+            BigButton {
+                icon: Icons.refresh-ccw;
+                label: @tr("Orbita");
+                active: App.nav.cam == 4;
+                tip: @tr("Kamera sama okrąża samolot");
+                clicked => {
+                    App.cmd("nav-cam", "4");
                 }
             }
             BigButton {
@@ -898,6 +1074,19 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
+                icon: Icons.navigation;
+                label: "Direct To";
+                active: App.nav.tool == 3 || App.nav.has-direct;
+                tip: @tr("Kliknij cel na mapie albo lotnisko na liście: kurs, czas, ETA, paliwo i zniżanie");
+                clicked => {
+                    if (App.nav.has-direct && App.nav.tool != 3) {
+                        App.cmd("nav-direct", "");
+                    } else {
+                        App.cmd("nav-tool", "3");
+                    }
+                }
+            }
+            BigButton {
                 icon: Icons.eraser;
                 label: @tr("Wyczyść");
                 clicked => {
@@ -906,7 +1095,7 @@ component Ribbon inherits Rectangle {
             }
         }
         if App.tab == 2: Group {
-            title: @tr("Plik");
+            title: @tr("Import");
             BigButton {
                 icon: Icons.import;
                 label: @tr("Importuj");
@@ -915,6 +1104,9 @@ component Ribbon inherits Rectangle {
                     App.cmd("import", "");
                 }
             }
+        }
+        if App.tab == 2: Group {
+            title: @tr("Eksport");
             BigButton {
                 icon: Icons.map;
                 label: "GPX";

@@ -485,6 +485,8 @@
   "flight_detail.analysis": "Analiza",
   "flight_detail.average_gs": "Średnia GS",
   "flight_detail.bounces": "Odbicia",
+  "flight_detail.delete_confirm_text": "Lot {route} zniknie z dziennika na telefonie, a przy następnej synchronizacji także z OpenTakeoff na komputerze. Tego nie da się cofnąć.",
+  "flight_detail.delete_confirm_title": "Usunąć ten lot?",
   "flight_detail.delete_flight": "Usuń lot",
   "flight_detail.export_track_to_gpx": "Eksportuj tor do GPX",
   "flight_detail.flight_replay": "Odtworzenie lotu",

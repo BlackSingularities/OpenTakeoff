@@ -18,6 +18,10 @@ pub enum CamMode {
     Free,
     /// Z góry (rzut prawie pionowy).
     Top,
+    /// Z kabiny: oko pilota, kierunek wzdłuż kursu z pochyleniem i przechyleniem samolotu.
+    Cockpit,
+    /// Orbita: kamera sama okrąża samolot (kąt przesuwa mapa przy każdej klatce).
+    Orbit,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -40,8 +44,11 @@ impl Default for Camera {
 impl Camera {
     pub fn drag(&mut self, dx: f64, dy: f64) {
         self.yaw = (self.yaw + dx * 0.35).rem_euclid(360.0);
-        if self.mode != CamMode::Top {
-            self.pitch = (self.pitch + dy * 0.25).clamp(2.0, 89.0);
+        match self.mode {
+            CamMode::Top => {}
+            // z kabiny można spojrzeć także w górę
+            CamMode::Cockpit => self.pitch = (self.pitch + dy * 0.25).clamp(-50.0, 70.0),
+            _ => self.pitch = (self.pitch + dy * 0.25).clamp(2.0, 89.0),
         }
     }
     pub fn zoom(&mut self, wheel: f64) {
@@ -84,6 +91,11 @@ pub struct Scene<'a> {
     pub hud: Vec<String>,
     pub compass: bool,
     pub curtain: bool,
+    /// Dodatkowe linie w przestrzeni: (punkty szer., dł., wysokość m MSL; kolor; przerywana) –
+    /// Direct To, ścieżki podejścia 3°.
+    pub lines: &'a [(Vec<(f64, f64, f64)>, Argb, bool)],
+    /// Wysokość Słońca nad horyzontem w miejscu samolotu (°); None – kolory wg motywu.
+    pub sun: Option<f64>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -232,38 +244,90 @@ pub fn draw(c: &mut Canvas, sc: &Scene, cam: &Camera) {
     let kx = 111_320.0 * lat0.to_radians().cos();
     let ky = 110_574.0;
     let target_alt = (sc.alt_ft * FT).max(ground + 1.0);
+    let cockpit = cam.mode == CamMode::Cockpit;
     let (yaw, pitch) = match cam.mode {
         CamMode::Chase => ((sc.hdg + cam.yaw).rem_euclid(360.0), cam.pitch),
-        CamMode::Free => (cam.yaw, cam.pitch),
+        CamMode::Free | CamMode::Orbit => (cam.yaw, cam.pitch),
         CamMode::Top => (cam.yaw, 88.5),
+        // z kabiny: pochylenie kamery w dół = nastawa kamery minus pochylenie samolotu
+        CamMode::Cockpit => ((sc.hdg + cam.yaw).rem_euclid(360.0), (cam.pitch - sc.pitch).clamp(-60.0, 80.0)),
     };
     let (yr, pr) = (yaw.to_radians(), pitch.to_radians());
     let f = V3::new(yr.sin() * pr.cos(), yr.cos() * pr.cos(), -pr.sin());
     let target = V3::new(0.0, 0.0, target_alt);
-    let mut cam_pos = target.sub(f.mul(cam.dist));
-    if cam_pos.z < ground + 8.0 {
-        cam_pos.z = ground + 8.0;
+    let mut cam_pos = if cockpit { target.add(V3::new(0.0, 0.0, 3.0)) } else { target.sub(f.mul(cam.dist)) };
+    if cam_pos.z < ground + if cockpit { 2.0 } else { 8.0 } {
+        cam_pos.z = ground + if cockpit { 2.0 } else { 8.0 };
     }
-    let r = V3::new(yr.cos(), -yr.sin(), 0.0);
-    let u = r.cross(f).norm();
-    let fov = 55f64.to_radians();
+    let mut r = V3::new(yr.cos(), -yr.sin(), 0.0);
+    let mut u = r.cross(f).norm();
+    if cockpit && cam.yaw.abs() < 0.5 {
+        // przechylenie samolotu: kamera obraca się razem z kabiną (prawe skrzydło w dół – horyzont w lewo)
+        let b = sc.bank.to_radians();
+        let (r0, u0) = (r, u);
+        r = r0.mul(b.cos()).sub(u0.mul(b.sin()));
+        u = u0.mul(b.cos()).add(r0.mul(b.sin()));
+    }
+    let fov = if cockpit { 70f64 } else { 55f64 }.to_radians();
     let p = Proj { lat0, lon0, kx, ky, cam: cam_pos, f, r, u, focal: (h / 2.0) / (fov / 2.0).tan(), cx: w / 2.0, cy: h / 2.0 };
 
     // ---------- niebo ----------
-    let horizon = {
-        let dir = V3::new(yr.sin(), yr.cos(), 0.0);
-        let dz = dir.dot(f);
-        if dz > 1e-6 {
-            (p.cy - p.focal * dir.dot(u) / dz) as f32
+    // Punkt horyzontu w kierunku patrzenia (dla przechylonej kamery – w dwóch miejscach ekranu)
+    let hor_at = |dyaw: f64| -> Option<(f32, f32)> {
+        let a = (yaw + dyaw).to_radians();
+        let dir = V3::new(a.sin(), a.cos(), 0.0);
+        let (x, y, z) = (dir.dot(r), dir.dot(u), dir.dot(f));
+        if z > 1e-6 {
+            Some(((p.cx + p.focal * x / z) as f32, (p.cy - p.focal * y / z) as f32))
         } else {
-            -1.0e4
+            None
         }
     };
-    let (sky_top, sky_hor, haze, ground_col) = if sc.dark { (0xFF060B16, 0xFF2A3A55, 0xFF33405A, 0xFF1A1F26) } else { (0xFF2C6BC4, 0xFFB9D3EE, 0xFFC8D8EA, 0xFF7F8C7A) };
+    let tilted = cockpit && sc.bank.abs() > 0.5 && cam.yaw.abs() < 0.5;
+    // Przy przechyleniu horyzont nie jest poziomy – filtry „poniżej horyzontu” są wtedy wyłączone
+    let horizon = if tilted { -1.0e4 } else { hor_at(0.0).map(|h| h.1).unwrap_or(-1.0e4) };
+    let (sky_top, sky_hor, haze, ground_col) = match sc.sun {
+        Some(e) => sky_palette(e),
+        None => {
+            if sc.dark {
+                (0xFF060B16, 0xFF2A3A55, 0xFF33405A, 0xFF1A1F26)
+            } else {
+                (0xFF2C6BC4, 0xFFB9D3EE, 0xFFC8D8EA, 0xFF7F8C7A)
+            }
+        }
+    };
     let (wf, hf) = (w as f32, h as f32);
     c.rect(0.0, 0.0, wf, hf, ground_col);
-    if horizon > 0.0 {
+    if tilted {
+        // niebo jako wielokąt nad linią horyzontu obróconą o przechylenie
+        if let (Some(a), Some(b)) = (hor_at(-20.0), hor_at(20.0)) {
+            let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+            let k = 4.0 * (wf + hf) / (dx * dx + dy * dy).sqrt().max(1.0);
+            let (l, rr) = ((a.0 - dx * k, a.1 - dy * k), (b.0 + dx * k, b.1 + dy * k));
+            // strona nieba: w górę ekranu względem linii (normalna obrócona)
+            let (nx, ny) = (dy, -dx);
+            let n = (nx * nx + ny * ny).sqrt().max(1.0);
+            let (nx, ny) = (nx / n * 4.0 * (wf + hf), ny / n * 4.0 * (wf + hf));
+            let (nx, ny) = if ny > 0.0 { (-nx, -ny) } else { (nx, ny) };
+            c.poly(sky_hor, 0, 0.0, &[l.0, l.1, rr.0, rr.1, rr.0 + nx, rr.1 + ny, l.0 + nx, l.1 + ny]);
+        }
+    } else if horizon > 0.0 {
         c.rect_vgrad(0.0, 0.0, wf, horizon.min(hf), 0.0, sky_top, horizon.max(1.0), sky_hor);
+    }
+    // Gwiazdy w nocy
+    if let Some(e) = sc.sun {
+        if e < -8.0 && horizon > 0.0 && !tilted {
+            let a = (((-8.0 - e) / 10.0).clamp(0.0, 1.0) * 200.0) as u8;
+            let mut seed: u32 = 0x9E37_79B9;
+            for _ in 0..140 {
+                seed ^= seed << 13;
+                seed ^= seed >> 17;
+                seed ^= seed << 5;
+                let x = (seed % 10_000) as f32 / 10_000.0 * wf;
+                let y = ((seed / 10_000) % 10_000) as f32 / 10_000.0 * horizon.min(hf) * 0.92;
+                c.circle(x, y, (0.6 + (seed % 3) as f32 * 0.35) * s, alpha(0xFFFFFFFF, a), 0.0);
+            }
+        }
     }
 
     // ---------- teren z kafelków ----------
@@ -331,8 +395,15 @@ pub fn draw(c: &mut Canvas, sc: &Scene, cam: &Camera) {
             }
         }
     }
+    // Teren o zmroku i w nocy ciemniejszy
+    if let Some(e) = sc.sun {
+        let k = ((2.0 - e) / 14.0).clamp(0.0, 0.72);
+        if k > 0.01 && !tilted {
+            c.rect(0.0, horizon.max(0.0), wf, hf, alpha(0xFF050A18, (k * 255.0) as u8));
+        }
+    }
     // Mgła przy horyzoncie
-    if horizon > -hf && horizon < hf {
+    if horizon > -hf && horizon < hf && !tilted {
         let band = hf * 0.22;
         c.rect_vgrad(0.0, horizon - 2.0, wf, horizon + band, horizon, alpha(haze, 0xE6), horizon + band, alpha(haze, 0));
         c.rect_vgrad(0.0, horizon - hf * 0.08, wf, horizon + 1.0, horizon - hf * 0.08, alpha(sky_hor, 0), horizon, alpha(haze, 0xFF));
@@ -405,6 +476,32 @@ pub fn draw(c: &mut Canvas, sc: &Scene, cam: &Camera) {
             let b = p.enu(wseg[1].0, wseg[1].1, ground + 2.0);
             if let Some((p0, p1)) = p.segment(a, b) {
                 c.dash_line(p0.0, p0.1, p1.0, p1.1, 0xE6FF33E6, 2.4 * s, 10.0 * s, 7.0 * s);
+            }
+        }
+    }
+
+    // ---------- linie dodatkowe: Direct To, ścieżki podejścia ----------
+    for (pts, col, dashed) in sc.lines {
+        for wseg in pts.windows(2) {
+            let a = p.enu(wseg[0].0, wseg[0].1, wseg[0].2.max(ground + 1.0));
+            let b = p.enu(wseg[1].0, wseg[1].1, wseg[1].2.max(ground + 1.0));
+            if let Some((p0, p1)) = p.segment(a, b) {
+                if *dashed {
+                    c.dash_line(p0.0, p0.1, p1.0, p1.1, *col, 2.2 * s, 9.0 * s, 6.0 * s);
+                } else {
+                    c.line(p0.0, p0.1, p1.0, p1.1, 0x90000000, 4.6 * s);
+                    c.line(p0.0, p0.1, p1.0, p1.1, *col, 2.4 * s);
+                }
+            }
+        }
+        // znaczniki punktów (co milę na ścieżkach podejścia)
+        if !*dashed {
+            for q in pts.iter().skip(1) {
+                if let Some((x, y, z)) = p.project(p.enu(q.0, q.1, q.2.max(ground + 1.0))) {
+                    if z < cam.dist * 20.0 + 30_000.0 {
+                        c.circle(x, y, 2.4 * s, *col, 0.0);
+                    }
+                }
             }
         }
     }
@@ -506,10 +603,23 @@ pub fn draw(c: &mut Canvas, sc: &Scene, cam: &Camera) {
     }
 
     // ---------- samolot ----------
-    if sc.show_aircraft {
+    if sc.show_aircraft && !cockpit {
         let half_len_px = 0.06 * h;
         let scale = (half_len_px * cam.dist / (p.focal * 18.0)).max(1.0);
         aircraft(c, &p, sc, scale, ground, target_alt);
+    }
+
+    // ---------- znacznik kabiny: symbol samolotu na środku ----------
+    if cockpit {
+        let (mx, my) = (wf / 2.0, hf / 2.0);
+        let gc = 0xFF3EE07A;
+        c.line(mx - 60.0 * s, my, mx - 18.0 * s, my, 0xA0000000, 4.0 * s);
+        c.line(mx + 18.0 * s, my, mx + 60.0 * s, my, 0xA0000000, 4.0 * s);
+        c.line(mx - 60.0 * s, my, mx - 18.0 * s, my, gc, 2.0 * s);
+        c.line(mx + 18.0 * s, my, mx + 60.0 * s, my, gc, 2.0 * s);
+        c.line(mx - 18.0 * s, my, mx, my + 10.0 * s, gc, 2.0 * s);
+        c.line(mx + 18.0 * s, my, mx, my + 10.0 * s, gc, 2.0 * s);
+        c.circle(mx, my, 2.0 * s, gc, 0.0);
     }
 
     // ---------- HUD ----------
@@ -534,6 +644,23 @@ pub fn draw(c: &mut Canvas, sc: &Scene, cam: &Camera) {
         c.poly(0xFFE8E8E8, 0, 0.0, &[nx, ny + nr * 0.8, nx - nr * 0.3, ny, nx + nr * 0.3, ny]);
         c.text_halo("N", nx, ny - nr * 1.25, 10.0 * s, 0xFFFFFFFF, 0xA0000000, Align::Center, true);
         c.restore();
+    }
+}
+
+/// Kolory nieba i terenu wg wysokości Słońca: (góra nieba, horyzont, mgła, teren bez kafelków).
+fn sky_palette(e: f64) -> (Argb, Argb, Argb, Argb) {
+    let day = (0xFF2C6BC4, 0xFFB9D3EE, 0xFFC8D8EA, 0xFF7F8C7A);
+    let dusk = (0xFF2B3566, 0xFFF29A5B, 0xFFD9927A, 0xFF4A4A50);
+    let night = (0xFF03060E, 0xFF14203A, 0xFF1A2440, 0xFF0E1218);
+    let lerp = |a: (Argb, Argb, Argb, Argb), b: (Argb, Argb, Argb, Argb), t: f32| (mix(a.0, b.0, t), mix(a.1, b.1, t), mix(a.2, b.2, t), mix(a.3, b.3, t));
+    if e >= 8.0 {
+        day
+    } else if e >= 0.0 {
+        lerp(dusk, day, (e / 8.0) as f32)
+    } else if e >= -10.0 {
+        lerp(night, dusk, ((e + 10.0) / 10.0) as f32)
+    } else {
+        night
     }
 }
 
@@ -695,6 +822,8 @@ mod tests {
                 hud: vec!["SP-LWA · B738".into(), "ALT 7960 ft · GS 210 kt".into()],
                 compass: true,
                 curtain: true,
+                lines: &[],
+                sun: None,
             };
             for _ in 0..40 {
                 let mut c = Canvas::new(1, 1);

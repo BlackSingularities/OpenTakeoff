@@ -5,7 +5,10 @@
 //! odległości, wektor przewidywanego toru (1, 2, 5 min, z bieżącym zakrętem), ślad i trasa z GPS.
 //! Narzędzia: radiale od punktu (jak w telefonie: radial i odległość samolotu, wybrany radial IN/OUT
 //! z kursem przechwycenia i poprawką na wiatr) oraz pomiar odległości i namiaru.
-//! 3D: [`crate::scene3d`] – kamera za samolotem, swobodna albo z góry.
+//! Dodatkowo: Direct To (linia, kurs z poprawką na wiatr, czas, ETA, paliwo, zniżanie), pierścienie zasięgu
+//! paliwa i szybowania, przedłużone osie pasów, granica dnia i nocy z czasu symulatora, siatka współrzędnych.
+//! 3D: [`crate::scene3d`] – kamera za samolotem, swobodna, z góry, z kabiny albo po orbicie; niebo wg pory dnia,
+//! ścieżki podejścia 3° i linia Direct To.
 
 use std::cell::RefCell;
 use std::time::Instant;
@@ -33,7 +36,17 @@ struct RefPt {
     var: f64,
 }
 
+/// Cel Direct To: punkt, nazwa i elewacja (lotnisko).
+#[derive(Clone, Debug)]
+struct Direct {
+    lat: f64,
+    lon: f64,
+    name: String,
+    elev: Option<f64>,
+}
+
 struct Nav {
+    direct: Option<Direct>,
     view: View,
     cam: Camera,
     tool: i32,
@@ -48,6 +61,7 @@ struct Nav {
 
 thread_local! {
     static NAV: RefCell<Nav> = RefCell::new(Nav {
+        direct: None,
         view: View { zoom: 8.0, ..Default::default() },
         cam: Camera::default(),
         tool: 0,
@@ -150,6 +164,110 @@ fn origin(n: &Nav, s: Option<&FlightState>) -> (f64, f64, bool) {
     }
 }
 
+// ---------- Słońce i czas ----------
+
+/// Czas symulatora (s od 1970, UTC); bez symulatora – zegar komputera.
+fn sim_unix(s: Option<&FlightState>) -> f64 {
+    s.and_then(|s| s.sim_time_utc.as_deref())
+        .and_then(|t| chrono::DateTime::parse_from_rfc3339(t).ok().map(|d| d.timestamp()).or_else(|| chrono::NaiveDateTime::parse_from_str(t.trim_end_matches('Z'), "%Y-%m-%dT%H:%M:%S").ok().map(|n| n.and_utc().timestamp())))
+        .unwrap_or_else(|| chrono::Utc::now().timestamp()) as f64
+}
+
+/// Punkt podsłoneczny: (deklinacja °, długość geograficzna °) – przybliżenie dokładne do ok. 1°.
+fn subsolar(unix: f64) -> (f64, f64) {
+    let n = unix / 86_400.0 + 2_440_587.5 - 2_451_545.0;
+    let l = (280.460 + 0.985_647_4 * n).rem_euclid(360.0);
+    let g = (357.528 + 0.985_600_3 * n).rem_euclid(360.0).to_radians();
+    let lam = (l + 1.915 * g.sin() + 0.020 * (2.0 * g).sin()).to_radians();
+    let eps = (23.439 - 0.000_000_4 * n).to_radians();
+    let dec = (eps.sin() * lam.sin()).asin();
+    let ra = (eps.cos() * lam.sin()).atan2(lam.cos()).to_degrees();
+    let gmst = (280.460_618_37 + 360.985_647_366_29 * n).rem_euclid(360.0);
+    (dec.to_degrees(), norm180(ra - gmst))
+}
+
+/// Wysokość Słońca nad horyzontem (°) w punkcie.
+fn sun_elev(lat: f64, lon: f64, sub: (f64, f64)) -> f64 {
+    let (la, de) = (lat.to_radians(), sub.0.to_radians());
+    let h = (lon - sub.1).to_radians();
+    (la.sin() * de.sin() + la.cos() * de.cos() * h.cos()).clamp(-1.0, 1.0).asin().to_degrees()
+}
+
+fn sun_word(e: f64) -> String {
+    if e > 6.0 {
+        tr("dzień").to_string()
+    } else if e > -0.8 {
+        tr("nisko nad horyzontem").to_string()
+    } else if e > -6.0 {
+        tr("zmierzch cywilny").to_string()
+    } else if e > -12.0 {
+        tr("zmierzch żeglarski").to_string()
+    } else {
+        tr("noc").to_string()
+    }
+}
+
+/// Doskonałość szybowania wg rodzaju napędu (przybliżenie do pierścienia zasięgu).
+fn glide_ratio(s: &FlightState) -> f64 {
+    match s.aircraft.engine_type.as_str() {
+        "jet" => 17.0,
+        "turboprop" => 14.0,
+        "piston" => 9.0,
+        "helicopter" => 4.0,
+        _ if s.aircraft.category == "helicopter" => 4.0,
+        _ => 35.0,
+    }
+}
+
+/// Wiersze karty Direct To.
+fn direct_rows(s: Option<&FlightState>, d: &Direct) -> Vec<(String, String)> {
+    let mut rows = vec![(tr("Cel").to_string(), d.name.clone())];
+    let Some(s) = s else {
+        rows.push((tr("Uwaga").to_string(), tr("Kurs i czas pojawią się z danymi z symulatora").to_string()));
+        return rows;
+    };
+    let var = mag_var(Some(s));
+    let (la, lo) = (s.position.lat, s.position.lon);
+    let brg = bearing_deg(la, lo, d.lat, d.lon);
+    let dist = distance_nm(la, lo, d.lat, d.lon);
+    let tas = s.speed.tas_kt;
+    let wfrom = s.environment.wind_dir_deg;
+    let wca = if tas > 40.0 { ((s.environment.wind_spd_kt * (wfrom - brg).to_radians().sin()) / tas).clamp(-1.0, 1.0).asin().to_degrees() } else { 0.0 };
+    let gs_est = if tas > 40.0 { tas * wca.to_radians().cos() - s.environment.wind_spd_kt * (wfrom - brg).to_radians().cos() } else { s.speed.gs_kt };
+    let gs = if s.speed.gs_kt > 40.0 && !s.aircraft.on_ground { gs_est.max(30.0) } else { gs_est.max(s.speed.gs_kt).max(1.0) };
+    rows.push((tr("Namiar").to_string(), format!("{}°M · {:.1} NM", deg3(brg - var), dist)));
+    if tas > 40.0 {
+        rows.push((tr("Kurs z poprawką na wiatr").to_string(), format!("{}°M (WCA {:+.0}°)", deg3(brg - var + wca), wca)));
+    }
+    if gs > 30.0 {
+        let ete = dist / gs * 3600.0;
+        rows.push((tr("Czas lotu").to_string(), crate::fmt::ete(ete)));
+        let eta = sim_unix(Some(s)) + ete;
+        if let Some(t) = chrono::DateTime::from_timestamp(eta as i64, 0) {
+            rows.push(("ETA".to_string(), t.format("%H:%MZ").to_string()));
+        }
+        let ff: f64 = s.engines.iter().map(|e| e.fuel_flow_kg_h).sum();
+        if ff > 1.0 {
+            let left = s.fuel.total_kg - ff * ete / 3600.0;
+            rows.push((tr("Paliwo na miejscu").to_string(), format!("{:.0} kg", left.max(0.0))));
+        }
+    }
+    if let Some(elev) = d.elev {
+        let above = s.position.alt_ind_ft - (elev + 1500.0);
+        if above > 300.0 && !s.aircraft.on_ground {
+            let tod = above / 318.0;
+            rows.push((tr("Elewacja celu").to_string(), format!("{elev:.0} ft")));
+            if tod >= dist {
+                let vs = if gs > 30.0 { above / (dist / gs * 60.0).max(0.1) } else { 0.0 };
+                rows.push((tr("Zniżanie").to_string(), format!("{} · {:.0} ft/min", tr("już teraz"), vs)));
+            } else {
+                rows.push((tr("Początek zniżania (3°)").to_string(), format!("{} {:.0} NM", tr("za"), dist - tod)));
+            }
+        }
+    }
+    rows
+}
+
 // ---------- zdarzenia ----------
 
 pub fn event(kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
@@ -234,6 +352,13 @@ pub fn event(kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
                         } else if let Some(r) = n.ref_pt.clone() {
                             n.sel_radial = Some(radial_of(bearing_deg(r.lat, r.lon, lat, lon) - r.var));
                         }
+                    }
+                    3 => {
+                        let (la, lo, name) = snap.map(|s| (s.0, s.1, s.2)).unwrap_or((lat, lon, dms(lat, lon)));
+                        let ident = name.split_whitespace().next().unwrap_or("").to_string();
+                        let elev = airports::db().and_then(|db| db.get(&ident).and_then(|a| a.elev_ft)).map(|e| e as f64);
+                        n.direct = Some(Direct { lat: la, lon: lo, name, elev });
+                        n.tool = 0;
                     }
                     2 => {
                         let p = snap.map(|s| (s.0, s.1)).unwrap_or((lat, lon));
@@ -437,6 +562,10 @@ pub fn cmd(id: &str, arg: &str) -> bool {
         "rwy" => NAV_RWY,
         "radar" => NAV_RADAR,
         "metar" => NAV_METAR,
+        "range" => NAV_RANGE,
+        "appr" => NAV_APPR,
+        "night" => NAV_NIGHT,
+        "grid" => NAV_GRID,
         _ => 0,
     };
     match id {
@@ -462,14 +591,18 @@ pub fn cmd(id: &str, arg: &str) -> bool {
             state().borrow().s.save();
             NAV.with(|n| {
                 let mut n = n.borrow_mut();
-                n.cam.mode = match m {
-                    1 => CamMode::Free,
-                    2 => CamMode::Top,
-                    _ => CamMode::Chase,
-                };
+                n.cam.mode = cam_mode(m);
                 n.cam.yaw = 0.0;
-                if m == 2 {
-                    n.cam.dist = n.cam.dist.max(8000.0);
+                match m {
+                    2 => n.cam.dist = n.cam.dist.max(8000.0),
+                    // z kabiny: patrzymy prosto, lekko w dół
+                    3 => n.cam.pitch = 4.0,
+                    4 => n.cam.pitch = n.cam.pitch.max(16.0),
+                    _ => {
+                        if n.cam.pitch < 6.0 {
+                            n.cam.pitch = 18.0;
+                        }
+                    }
                 }
             });
         }
@@ -484,6 +617,35 @@ pub fn cmd(id: &str, arg: &str) -> bool {
                     n.sel_radial = None;
                 }
             });
+        }
+        "nav-style" => {
+            let st = state();
+            let mut s = st.borrow_mut();
+            s.s.map_style = arg.parse().unwrap_or(0);
+            s.s.save();
+        }
+        // Direct To: kod lotniska / pomocy nawigacyjnej albo pusty – koniec
+        "nav-direct" => {
+            let q = arg.trim().to_uppercase();
+            if q.is_empty() {
+                NAV.with(|n| n.borrow_mut().direct = None);
+            } else {
+                let found = airports::db()
+                    .and_then(|db| db.get(&q).map(|a| Direct { lat: a.lat, lon: a.lon, name: format!("{} {}", a.ident, a.name), elev: a.elev_ft.map(|e| e as f64) }))
+                    .or_else(|| {
+                        navaids::db().and_then(|db| {
+                            let snapshot = state().borrow().host.snapshot();
+                            let (la, lo) = snapshot.map(|s| (s.position.lat, s.position.lon)).unwrap_or_else(|| NAV.with(|n| (n.borrow().view.lat, n.borrow().view.lon)));
+                            let mut v = db.find(&q);
+                            v.sort_by(|a, b| distance_nm(la, lo, a.lat, a.lon).total_cmp(&distance_nm(la, lo, b.lat, b.lon)));
+                            v.first().map(|a| Direct { lat: a.lat, lon: a.lon, name: format!("{} {}", a.ident, a.kind.label()), elev: None })
+                        })
+                    });
+                match found {
+                    Some(d) => NAV.with(|n| n.borrow_mut().direct = Some(d)),
+                    None => app::toast(format!("{}: {q}", tr("Nie znaleziono"))),
+                }
+            }
         }
         "nav-clear" => NAV.with(|n| {
             let mut n = n.borrow_mut();
@@ -545,6 +707,16 @@ pub fn cmd(id: &str, arg: &str) -> bool {
     true
 }
 
+fn cam_mode(m: i32) -> CamMode {
+    match m {
+        1 => CamMode::Free,
+        2 => CamMode::Top,
+        3 => CamMode::Cockpit,
+        4 => CamMode::Orbit,
+        _ => CamMode::Chase,
+    }
+}
+
 // ---------- rysowanie ----------
 
 pub fn render(force: bool) {
@@ -568,11 +740,11 @@ pub fn render(force: bool) {
     let lay = set.nav_layers;
     NAV.with(|n| {
         let mut n = n.borrow_mut();
-        n.cam.mode = match set.nav_cam {
-            1 => CamMode::Free,
-            2 => CamMode::Top,
-            _ => CamMode::Chase,
-        };
+        n.cam.mode = cam_mode(set.nav_cam);
+        // Orbita: kamera sama okrąża samolot
+        if set.nav_3d && set.nav_cam == 4 {
+            n.cam.yaw = (n.cam.yaw + 1.2).rem_euclid(360.0);
+        }
         if let Some(s) = &snap {
             if n.view.follow {
                 n.view.lat = s.position.lat;
@@ -663,6 +835,100 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
     let (wpx, hpx) = (c.width(), c.height());
     let ink = if dark { 0xFFE8EEF6 } else { 0xFF1A2230 };
     let halo = if dark { 0xC0000000 } else { 0xD0FFFFFF };
+
+    // ---------- granica dnia i nocy ----------
+    if lay & NAV_NIGHT != 0 {
+        let sub = subsolar(sim_unix(snap.as_ref()));
+        let cell = 6.0f64;
+        let (gw, gh) = (((v.w / cell).ceil() as u32 + 1).max(2), ((v.h / cell).ceil() as u32 + 1).max(2));
+        if let Some(mut small) = tiny_skia::Pixmap::new(gw, gh) {
+            let px = small.pixels_mut();
+            for j in 0..gh {
+                for i in 0..gw {
+                    let (la, lo) = from_screen(&v, i as f64 * cell, j as f64 * cell);
+                    let e = sun_elev(la, lo, sub);
+                    // 0 w dzień, do 0,55 w pełnej nocy (−12°), płynnie przez zmierzch
+                    let k = ((0.5 - e) / 12.5).clamp(0.0, 1.0) * 0.55;
+                    let a = (k * 255.0) as u8;
+                    // granatowy, z przemnożoną przezroczystością
+                    let c0 = |ch: u8| ((ch as u16 * a as u16) / 255) as u8;
+                    px[(j * gw + i) as usize] = tiny_skia::PremultipliedColorU8::from_rgba(c0(6), c0(12), c0(32), a).unwrap_or(tiny_skia::PremultipliedColorU8::TRANSPARENT);
+                }
+            }
+            let paint = tiny_skia::PixmapPaint { quality: tiny_skia::FilterQuality::Bilinear, ..Default::default() };
+            let k = (cell * s as f64) as f32;
+            c.pm.draw_pixmap(0, 0, small.as_ref(), &paint, tiny_skia::Transform::from_scale(k, k), None);
+        }
+        // punkt podsłoneczny
+        let (sx, sy) = to(sub.0, sub.1);
+        if sx > 0.0 && sy > 0.0 && sx < wpx && sy < hpx {
+            c.circle(sx, sy, 9.0 * s, 0xFFFFD646, 0.0);
+            c.circle(sx, sy, 13.0 * s, 0x80FFD646, 1.5 * s);
+        }
+    }
+
+    // ---------- siatka współrzędnych ----------
+    if lay & NAV_GRID != 0 {
+        let (la0, lo0) = from_screen(&v, 0.0, v.h);
+        let (la1, lo1) = from_screen(&v, v.w, 0.0);
+        let span = (lo1 - lo0).abs().max((la1 - la0).abs());
+        let step = [30.0, 15.0, 10.0, 5.0, 2.0, 1.0, 0.5, 0.25, 1.0 / 6.0, 1.0 / 12.0].into_iter().find(|st| span / st >= 3.0).unwrap_or(1.0 / 12.0);
+        let gcol = if dark { 0x40FFFFFF } else { 0x50202836 };
+        let fmt_deg = |d: f64, pos: char, neg: char| {
+            let a = d.abs();
+            let (deg, min) = (a.trunc(), ((a.fract() * 60.0).round()));
+            if min == 0.0 {
+                format!("{deg:.0}°{}", if d >= 0.0 { pos } else { neg })
+            } else {
+                format!("{deg:.0}°{min:02.0}'{}", if d >= 0.0 { pos } else { neg })
+            }
+        };
+        let mut lo = (lo0 / step).floor() * step;
+        while lo <= lo1 {
+            let (x, _) = to(0.0, lo);
+            c.line(x, 0.0, x, hpx, gcol, 1.0);
+            c.text_halo(&fmt_deg(lo, 'E', 'W'), x + 3.0 * s, hpx - 30.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            lo += step;
+        }
+        let mut la = (la0 / step).floor() * step;
+        while la <= la1 {
+            let (_, y) = to(la, v.lon);
+            c.line(0.0, y, wpx, y, gcol, 1.0);
+            c.text_halo(&fmt_deg(la, 'N', 'S'), 70.0 * s, y - 6.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            la += step;
+        }
+    }
+
+    // ---------- przedłużone osie pasów (10 NM, kreska co milę) ----------
+    if lay & NAV_APPR != 0 && v.zoom > 8.0 {
+        if let Some(db) = airports::db() {
+            let col = if dark { 0xD0FF33E6 } else { 0xE0B0129E };
+            for (_, a) in db.within(v.lat, v.lon, view_radius.min(120.0), false).into_iter().filter(|(_, a)| a.kind <= 1 || v.zoom > 9.5).take(40) {
+                for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed && r.length_ft >= 2500) {
+                    for (id, th_la, th_lo, out) in [(&r.le, r.le_lat, r.le_lon, bearing_deg(r.he_lat, r.he_lon, r.le_lat, r.le_lon)), (&r.he, r.he_lat, r.he_lon, bearing_deg(r.le_lat, r.le_lon, r.he_lat, r.he_lon))] {
+                        let (tx, ty) = to(th_la, th_lo);
+                        let (e_la, e_lo) = dest(th_la, th_lo, out, 10.0);
+                        let (ex, ey) = to(e_la, e_lo);
+                        if (tx < 0.0 && ex < 0.0) || (ty < 0.0 && ey < 0.0) || (tx > wpx && ex > wpx) || (ty > hpx && ey > hpx) {
+                            continue;
+                        }
+                        c.dash_line(tx, ty, ex, ey, col, 1.4 * s, 7.0 * s, 5.0 * s);
+                        let t = (out as f32).to_radians();
+                        let (nx, ny) = (t.cos(), t.sin());
+                        for k in 1..=10 {
+                            let f = k as f32 / 10.0;
+                            let (mx, my) = (tx + (ex - tx) * f, ty + (ey - ty) * f);
+                            let len = if k % 5 == 0 { 7.0 } else { 3.5 } * s;
+                            c.line(mx - nx * len, my - ny * len, mx + nx * len, my + ny * len, col, 1.4 * s);
+                        }
+                        if px_per_nm * 10.0 > 60.0 * s {
+                            c.text_halo(&format!("{} {}", a.ident, id), ex, ey, 10.0 * s, col, halo, Align::Center, true);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // ---------- VOR / NDB ----------
     if lay & (NAV_VOR | NAV_NDB) != 0 && v.zoom > 5.5 {
@@ -811,6 +1077,30 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                 c.text_halo(&format!("{m}'"), x + 6.0 * s, y - 6.0 * s, 10.5 * s, 0xFF3CCF7A, halo, Align::Left, true);
             }
         }
+        if lay & NAV_RANGE != 0 {
+            // zasięg paliwa (GS × czas lotu na paliwie, także z rezerwą 45 min) i szybowania z wysokości AGL
+            let ff: f64 = st.engines.iter().map(|e| e.fuel_flow_kg_h).sum();
+            if ff > 1.0 && gs > 30.0 {
+                let hours = st.fuel.total_kg / ff;
+                for (h, lbl, col) in [(hours, tr("paliwo"), 0xD0FFB547u32), ((hours - 0.75).max(0.0), tr("z rezerwą 45 min"), 0xD03CCF7A)] {
+                    let r = (gs * h) as f32 * px_per_nm;
+                    if r > 8.0 * s && r < 40.0 * (wpx + hpx) {
+                        c.circle(ax, ay, r, alpha(col, 0x18), 0.0);
+                        c.dash_circle(ax, ay, r, col, 2.0 * s, 10.0 * s, 6.0 * s);
+                        c.text_halo(&format!("{} {:.0} NM", lbl, gs * h), ax, ay - r - 8.0 * s, 11.0 * s, col, halo, Align::Center, true);
+                    }
+                }
+            }
+            if !st.aircraft.on_ground && st.position.alt_agl_ft > 100.0 {
+                let nm = st.position.alt_agl_ft * glide_ratio(st) / 6076.12;
+                let r = nm as f32 * px_per_nm;
+                if r > 6.0 * s {
+                    c.circle(ax, ay, r, 0x184FD8EB, 0.0);
+                    c.circle(ax, ay, r, 0xE04FD8EB, 1.8 * s);
+                    c.text_halo(&format!("{} {:.1} NM", tr("szybowanie"), nm), ax, ay + r + 12.0 * s, 11.0 * s, 0xFF4FD8EB, halo, Align::Center, true);
+                }
+            }
+        }
         if lay & NAV_ROSE != 0 {
             let r = wpx.min(hpx) * 0.28;
             let rose_ink = if dark { 0xE6E8EEF6 } else { 0xE6202836 };
@@ -864,6 +1154,26 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                 }
             }
         }
+    }
+
+    // ---------- Direct To ----------
+    if let Some(d) = NAV.with(|n| n.borrow().direct.clone()) {
+        let (dx, dy) = to(d.lat, d.lon);
+        let col = 0xFFFF33E6;
+        if let Some(st) = snap {
+            let (ax, ay) = to(st.position.lat, st.position.lon);
+            c.line(ax, ay, dx, dy, 0xA0000000, 5.0 * s);
+            c.line(ax, ay, dx, dy, col, 2.6 * s);
+            let brg = bearing_deg(st.position.lat, st.position.lon, d.lat, d.lon);
+            let dist = distance_nm(st.position.lat, st.position.lon, d.lat, d.lon);
+            let (mx, my) = ((ax + dx) / 2.0, (ay + dy) / 2.0);
+            let ete = if st.speed.gs_kt > 30.0 { format!(" · {}", crate::fmt::ete(dist / st.speed.gs_kt * 3600.0)) } else { String::new() };
+            c.text_halo(&format!("DCT {}°M · {:.1} NM{}", deg3(brg - var), dist, ete), mx + 8.0 * s, my, 13.0 * s, col, halo, Align::Left, true);
+        }
+        c.circle(dx, dy, 9.0 * s, alpha(col, 0x40), 0.0);
+        c.circle(dx, dy, 9.0 * s, col, 2.2 * s);
+        c.circle(dx, dy, 2.5 * s, col, 0.0);
+        c.text_halo(&d.name, dx, dy + 20.0 * s, 12.0 * s, col, halo, Align::Center, true);
     }
 
     // ---------- narzędzie: radiale ----------
@@ -1038,7 +1348,10 @@ fn render_3d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
         .unwrap_or_default();
     let pts: Vec<(f64, f64, i32)> = track.iter().map(|p| (p.lat, p.lon, p.alt)).collect();
     let plan = if state().borrow().s.nav_plan { crate::flightplan::active_route() } else { Vec::new() };
-    let hud = match snap {
+    let sub = subsolar(sim_unix(snap.as_ref()));
+    let sun = snap.as_ref().map(|_| sun_elev(lat, lon, sub));
+    let direct = NAV.with(|n| n.borrow().direct.clone());
+    let mut hud = match snap {
         Some(s) => vec![
             if s.aircraft.title.is_empty() { "OpenTakeoff 3D".to_string() } else { s.aircraft.title.clone() },
             format!("ALT {:.0} ft · AGL {:.0} ft", s.position.alt_ind_ft, s.position.alt_agl_ft),
@@ -1046,6 +1359,39 @@ fn render_3d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
         ],
         None => vec![tr("Brak danych z symulatora – widok mapy").to_string()],
     };
+    if let (Some(s), Some(d)) = (snap, &direct) {
+        let var = mag_var(Some(s));
+        let dist = distance_nm(s.position.lat, s.position.lon, d.lat, d.lon);
+        hud.push(format!("DCT {} · {}°M · {:.1} NM", d.name.split_whitespace().next().unwrap_or(""), deg3(bearing_deg(s.position.lat, s.position.lon, d.lat, d.lon) - var), dist));
+    }
+    if let Some(e) = sun {
+        hud.push(format!("{} {:+.0}° · {}", tr("Słońce"), e, sun_word(e)));
+    }
+    // Linie w przestrzeni: Direct To (od samolotu do celu na 1500 ft nad lotniskiem) i ścieżki podejścia 3°
+    let mut lines: Vec<(Vec<(f64, f64, f64)>, u32, bool)> = Vec::new();
+    if let (Some(s), Some(d)) = (snap, &direct) {
+        let end = (d.elev.unwrap_or(ground) + 1500.0) * 0.3048;
+        lines.push((vec![(s.position.lat, s.position.lon, s.position.alt_msl_ft * 0.3048), (d.lat, d.lon, end)], 0xFFFF33E6, false));
+        lines.push((vec![(d.lat, d.lon, d.elev.unwrap_or(ground) * 0.3048), (d.lat, d.lon, end)], 0xC0FF33E6, true));
+    }
+    if lay & NAV_APPR != 0 {
+        if let Some(db) = airports::db() {
+            for (_, a) in db.within(lat, lon, 30.0, false).into_iter().filter(|(_, a)| a.kind <= 1).take(6) {
+                for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed && r.length_ft >= 3000) {
+                    for (th_la, th_lo, el, out) in [(r.le_lat, r.le_lon, r.le_elev, bearing_deg(r.he_lat, r.he_lon, r.le_lat, r.le_lon)), (r.he_lat, r.he_lon, r.he_elev, bearing_deg(r.le_lat, r.le_lon, r.he_lat, r.he_lon))] {
+                        let elev = el.or(a.elev_ft).map(|e| e as f64).unwrap_or(ground);
+                        let pts: Vec<(f64, f64, f64)> = (0..=10)
+                            .map(|k| {
+                                let (la, lo) = dest(th_la, th_lo, out, k as f64);
+                                (la, lo, (elev + 50.0 + k as f64 * 318.0) * 0.3048)
+                            })
+                            .collect();
+                        lines.push((pts, 0xE03EE07A, false));
+                    }
+                }
+            }
+        }
+    }
     let sc = scene3d::Scene {
         style,
         dark,
@@ -1069,6 +1415,8 @@ fn render_3d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
         hud,
         compass: lay & NAV_ROSE != 0,
         curtain: lay & NAV_CURTAIN != 0,
+        lines: &lines,
+        sun,
     };
     (scene3d::render(&sc, &cam), Vec::new())
 }
@@ -1107,6 +1455,8 @@ fn side_panel(snap: &Option<FlightState>, three_d: bool) {
         info.push(kv(&tr("Kurs / ścieżka"), format!("{}°M / {}°M", deg3(s.attitude.hdg_mag_deg), deg3(s.attitude.track_true_deg - var))));
         info.push(kv(&tr("Wiatr"), format!("{}° / {:.0} kt", deg3(s.environment.wind_dir_deg - var), s.environment.wind_spd_kt)));
         info.push(kv(&tr("Deklinacja"), format!("{:+.1}°", var)));
+        let e = sun_elev(s.position.lat, s.position.lon, subsolar(sim_unix(Some(s))));
+        info.push(kv(&tr("Słońce"), format!("{:+.0}° · {}", e, sun_word(e))));
     }
     app.set_nav_info(model(info));
 
@@ -1211,6 +1561,10 @@ fn side_panel(snap: &Option<FlightState>, three_d: bool) {
                     }
                 }
             }
+            3 => {
+                title = "Direct To".to_string();
+                rows.push((tr("Krok 1").to_string(), tr("Kliknij lotnisko, pomoc nawigacyjną albo dowolny punkt na mapie").to_string()));
+            }
             _ => {
                 if let Some(p) = &n.pick {
                     title = tr("Wskazany obiekt").to_string();
@@ -1220,6 +1574,8 @@ fn side_panel(snap: &Option<FlightState>, three_d: bool) {
         }
         (n.tool, title, rows)
     });
+    let direct = NAV.with(|n| n.borrow().direct.clone());
+    app.set_nav_direct(model(direct.as_ref().map(|d| direct_rows(snap.as_ref(), d)).unwrap_or_default().into_iter().map(|(k, v)| KV { k: ss(k), v: ss(v) }).collect()));
     app.set_nav_tool_title(ss(title));
     app.set_nav_tool(model(rows.into_iter().map(|(k, v)| KV { k: ss(k), v: ss(v) }).collect()));
     let lay = set.nav_layers;
@@ -1250,6 +1606,12 @@ fn side_panel(snap: &Option<FlightState>, three_d: bool) {
         shots: set.nav_shots,
         radar: lay & NAV_RADAR != 0,
         metar: lay & NAV_METAR != 0,
+        range: lay & NAV_RANGE != 0,
+        appr: lay & NAV_APPR != 0,
+        night: lay & NAV_NIGHT != 0,
+        grid: lay & NAV_GRID != 0,
+        style: set.map_style,
+        has_direct: direct.is_some(),
         wx: ss(if three_d { String::new() } else { wx_status(lay) }),
     });
 }

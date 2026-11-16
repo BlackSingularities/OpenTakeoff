@@ -328,6 +328,13 @@ export struct NavV {
     metar: bool,
     // podpis warstw pogody (czas radaru, liczba stacji METAR)
     wx: string,
+    range: bool,
+    appr: bool,
+    night: bool,
+    grid: bool,
+    // podkład mapy: 0 wg motywu, 1 ciemny, 2 jasny, 3 OSM, 4 satelita
+    style: int,
+    has-direct: bool,
 }
 
 /// Parametr na karcie Przyrządy → Parametry: tone 0 zwykły, 1 włączone, 2 ostrzeżenie, 3 wyłączone, 4 nastawa.
@@ -770,6 +777,7 @@ export global App {
     in property <[RowV]> nav-vors;
     in property <string> nav-tool-title;
     in property <[KV]> nav-tool;
+    in property <[KV]> nav-direct;
     in property <string> nav-hover;
     in-out property <string> nav-query;
     in-out property <bool> follow: true;

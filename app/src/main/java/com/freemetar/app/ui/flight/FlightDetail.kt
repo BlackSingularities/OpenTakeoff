@@ -33,10 +33,12 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.ViewInAr
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -105,6 +107,7 @@ fun FlightDetailScreen(vm: MainViewModel, id: String, onBack: () -> Unit, onShow
     val logs by vm.flightLogs.collectAsStateWithLifecycle()
     val f = logs.firstOrNull { it.id == id } ?: return
     val ctx = LocalContext.current
+    var confirmDelete by remember { mutableStateOf(false) }
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/gpx+xml")) { uri ->
         uri?.let { u -> vm.exportFlightGpx(ctx, f, u) }
     }
@@ -117,8 +120,16 @@ fun FlightDetailScreen(vm: MainViewModel, id: String, onBack: () -> Unit, onShow
                     style = MaterialTheme.typography.bodySmall, color = c.ink2, maxLines = 1)
             }
             IconButton({ exporter.launch("lot-${f.from ?: "x"}-${f.to ?: "y"}.gpx") }) { Icon(Icons.Outlined.FileDownload, loc("flight_detail.export_track_to_gpx"), tint = c.ink) }
-            IconButton({ vm.deleteFlightLog(f.id); onBack() }) { Icon(Icons.Outlined.Delete, loc("flight_detail.delete_flight"), tint = c.danger) }
+            IconButton({ confirmDelete = true }) { Icon(Icons.Outlined.Delete, loc("flight_detail.delete_flight"), tint = c.danger) }
         }
+        // Usunięcie lotu tylko po potwierdzeniu – lot znika też z komputera przy następnej synchronizacji
+        if (confirmDelete) AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(loc("flight_detail.delete_confirm_title")) },
+            text = { Text(loc("flight_detail.delete_confirm_text").replace("{route}", "${f.from ?: "?"} → ${f.to ?: "?"}")) },
+            confirmButton = { TextButton({ confirmDelete = false; vm.deleteFlightLog(f.id); onBack() }) { Text(loc("flight_detail.delete_flight"), color = c.danger) } },
+            dismissButton = { TextButton({ confirmDelete = false }) { Text(loc("common.cancel")) } },
+        )
         Rule()
         val analysis = remember(f, Lang.current) { FlightAnalysis.analyze(f) }
         val scenario = Scenario.of(f.scenario)

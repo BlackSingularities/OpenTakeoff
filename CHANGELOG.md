@@ -1,3 +1,13 @@
+## 3.6.0
+
+- Mapa: Direct To – kliknięcie celu na mapie albo lotniska na liście rysuje linię do celu, a panel pokazuje kurs z poprawką na wiatr, czas lotu, ETA, paliwo na przylocie i początek zniżania. Szybki wybór podkładu mapy (wg motywu, ciemny, jasny, OpenStreetMap, satelita).
+- Mapa: nowe nakładki – zasięg na paliwie (także z rezerwą 45 min) i zasięg szybowania z obecnej wysokości, przedłużone osie pasów na 10 NM, granica dnia i nocy z czasu symulatora (ze zmierzchem i punktem podsłonecznym), siatka współrzędnych. W panelu samolotu wysokość Słońca i pora dnia.
+- Widok 3D: kamera z kabiny (przechyla się i pochyla razem z samolotem, przeciąganiem można się rozglądać) i kamera po orbicie; niebo i teren zależne od pory dnia (zmierzch, noc z gwiazdami), ścieżki podejścia 3° z pasów pobliskich lotnisk i linia Direct To.
+- Przyrządy: styl kabiny wybiera się z jednego dużego przycisku z menu (domyślnie Auto, z rozpoznanym samolotem).
+- Dziennik: osobne grupy Import i Eksport na wstążce.
+- Pole wyszukiwania na mapie nie wystaje już poza panel na węższym oknie.
+- Android: usunięcie lotu w szczegółach lotu wymaga potwierdzenia (lot znika też z komputera przy synchronizacji).
+
 ## 3.5.0
 
 - Nowa karta Plan lotu: lotniska, wysokość przelotowa, trasa wpisana tekstem, procedury SID, STAR i podejścia jak na stronach DEP/ARR w FMC, tabela punktów z edycją, mapa i profil pionowy. Dane nawigacyjne z plików X-Plane (także AIRAC z Navigraph), z MSFS na żywo albo z OurAirports i SimBrief; eksport planu do MSFS (.pln) i X-Plane (.fms).

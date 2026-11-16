@@ -4121,3 +4121,123 @@ msgstr "not enough fuel for the trip with reserve"
 
 msgid "Ścieżka podejścia"
 msgstr "Approach path"
+
+msgid "Elewacja celu"
+msgstr "Destination elevation"
+
+msgid "Granica dnia i nocy z czasu symulatora (ze zmierzchem)"
+msgstr "Day/night boundary from simulator time (with twilight)"
+
+msgid "Kamera sama okrąża samolot"
+msgstr "The camera circles the aircraft by itself"
+
+msgid "Kliknij cel na mapie albo lotnisko na liście: kurs, czas, ETA, paliwo i zniżanie"
+msgstr "Click a destination on the map or an airport in the list: course, time, ETA, fuel and descent"
+
+msgid "Kliknij lotnisko, pomoc nawigacyjną albo dowolny punkt na mapie"
+msgstr "Click an airport, navaid or any point on the map"
+
+msgid "Kliknij lotnisko, żeby lecieć do niego (Direct To)"
+msgstr "Click an airport to fly to it (Direct To)"
+
+msgid "Kurs i czas pojawią się z danymi z symulatora"
+msgstr "Course and time appear with simulator data"
+
+msgid "Noc"
+msgstr "Night"
+
+msgid "Orbita"
+msgstr "Orbit"
+
+msgid "Orbita · kółko – odległość"
+msgstr "Orbit · wheel – distance"
+
+msgid "Osie pasów"
+msgstr "Runway centrelines"
+
+msgid "Paliwo na miejscu"
+msgstr "Fuel on arrival"
+
+msgid "Początek zniżania (3°)"
+msgstr "Top of descent (3°)"
+
+msgid "Podkład"
+msgstr "Base map"
+
+msgid "Przeciągnij – rozglądanie się z kabiny"
+msgstr "Drag – look around from the cockpit"
+
+msgid "Przedłużone osie pasów na 10 NM; w 3D ścieżki podejścia 3°"
+msgstr "Extended runway centrelines to 10 NM; 3° approach paths in 3D"
+
+msgid "Siatka"
+msgstr "Grid"
+
+msgid "Siatka współrzędnych z opisem"
+msgstr "Labelled coordinate grid"
+
+msgid "Styl PFD i ND"
+msgstr "PFD and ND style"
+
+msgid "Słońce"
+msgstr "Sun"
+
+msgid "Wg motywu"
+msgstr "Follow theme"
+
+msgid "Widok z kabiny: z pochyleniem i przechyleniem samolotu (przeciągnij, żeby rozejrzeć się)"
+msgstr "Cockpit view with the aircraft's pitch and bank (drag to look around)"
+
+msgid "Wyświetlacze kabiny"
+msgstr "Cockpit displays"
+
+msgid "Zakończ Direct To"
+msgstr "End Direct To"
+
+msgid "Zasięg na paliwie (także z rezerwą 45 min) i szybowania z obecnej wysokości"
+msgstr "Range on fuel (also with a 45 min reserve) and glide range from the current height"
+
+msgid "Zegary analogowe"
+msgstr "Analogue gauges"
+
+msgid "dzień"
+msgstr "day"
+
+msgid "już teraz"
+msgstr "now"
+
+msgid "nisko nad horyzontem"
+msgstr "low above the horizon"
+
+msgid "noc"
+msgstr "night"
+
+msgid "paliwo"
+msgstr "fuel"
+
+msgid "szybowanie"
+msgstr "glide"
+
+msgid "z rezerwą 45 min"
+msgstr "with 45 min reserve"
+
+msgid "z samolotu"
+msgstr "from the aircraft"
+
+msgid "za"
+msgstr "in"
+
+msgid "zegary szybowca"
+msgstr "glider gauges"
+
+msgid "zmierzch cywilny"
+msgstr "civil twilight"
+
+msgid "zmierzch żeglarski"
+msgstr "nautical twilight"
+
+msgid "śmigłowiec"
+msgstr "helicopter"
+
+msgid "Import"
+msgstr "Import"
