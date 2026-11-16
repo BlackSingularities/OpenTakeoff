@@ -36,6 +36,8 @@ fn apply_theme(ui: &AppWindow, s: &Settings) {
     t.set_accent(slint::Color::from_rgb_u8((c >> 16) as u8, (c >> 8) as u8, c as u8));
     t.set_scale(s.scale);
     t.set_corners(s.corners);
+    t.set_sidebar(s.sidebar);
+    t.set_sidebar_w(s.sidebar_w.clamp(230, 420) as f32);
     win::dark_title(ui, s.theme != 2 && s.theme != 5);
 }
 
@@ -704,8 +706,26 @@ fn main() {
                     (s.host.logbook.revision(), s.logbook_rev, s.stats_rev)
                 };
                 let tab = ui.global::<App>().get_tab();
-                if rev != cur && (tab == 2 || tab == 0) {
+                // Panel boczny pokazuje ostatnie loty na każdej karcie
+                let side = ui.global::<Theme>().get_sidebar();
+                if rev != cur && (tab == 2 || tab == 0 || side) {
                     app::refresh_logbook();
+                }
+                // Panel boczny: widoczność i szerokość zapamiętane w ustawieniach
+                if tick % 40 == 0 {
+                    let w = ui.global::<Theme>().get_sidebar_w().round() as i32;
+                    let changed = {
+                        let b = st.borrow();
+                        b.s.sidebar != side || b.s.sidebar_w != w
+                    };
+                    if changed {
+                        {
+                            let mut b = st.borrow_mut();
+                            b.s.sidebar = side;
+                            b.s.sidebar_w = w;
+                        }
+                        save();
+                    }
                 }
                 if rev != stats_rev && (tab == 3 || tab == 0) {
                     app::refresh_stats();

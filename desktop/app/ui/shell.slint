@@ -1,0 +1,722 @@
+// Powłoka okna w układzie OpenAudioPower: karty w pasku tytułu, odczyt lotu i przycisk zapisu
+// w pasku narzędzi oraz panel boczny ze stanem lotu, pogodą obserwowanych lotnisk i ostatnimi lotami.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { TipArea, IconButton } from "widgets.slint";
+import { CatBadge, Score, Dot, Bar, ListRow, Colors } from "parts.slint";
+
+/// Karta w pasku tytułu: pigułka z ikoną i podpisem, wybrana – tło w kolorze akcentu.
+export component NavTab inherits Rectangle {
+    in property <string> label;
+    in property <int> index;
+    in property <image> icon;
+    in property <string> tip;
+    property <bool> sel: App.tab == root.index;
+    height: 30px * Theme.scale;
+    width: hl.preferred-width;
+    border-radius: Theme.r-small + 1px;
+    background: root.sel ? Theme.accent-soft : ta.pressed ? Theme.press : ta.has-hover ? Theme.hover : transparent;
+    border-width: root.sel ? 1px : 0;
+    border-color: Theme.accent.with-alpha(0.35);
+    animate background { duration: 120ms; }
+    hl := HorizontalLayout {
+        padding-left: 10px * Theme.scale;
+        padding-right: Theme.ribbon-level < 2 ? 12px * Theme.scale : 10px * Theme.scale;
+        spacing: 7px * Theme.scale;
+        Image {
+            source: root.icon;
+            width: 15px * Theme.scale;
+            height: 15px * Theme.scale;
+            y: (parent.height - self.height) / 2;
+            colorize: root.sel ? Theme.accent : ta.has-hover ? Theme.text : Theme.text-dim;
+        }
+        if Theme.ribbon-level < 2: Text {
+            text: root.label;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            font-weight: root.sel ? 600 : 400;
+            color: root.sel ? Theme.text : ta.has-hover ? Theme.text : Theme.text-dim;
+            vertical-alignment: center;
+        }
+    }
+    ta := TipArea {
+        tip: Theme.ribbon-level < 2 ? root.tip : root.label + " – " + root.tip;
+        clicked => {
+            App.tab = root.index;
+            App.cmd("tab", root.index);
+        }
+    }
+}
+
+/// Jedna komórka odczytu lotu: wartość krojem B612 Mono, pod nią skrót i jednostka.
+component ReadCell inherits VerticalLayout {
+    in property <string> name;
+    in property <string> value;
+    in property <string> unit;
+    in property <color> tone: Theme.text;
+    alignment: center;
+    spacing: 0;
+    padding-left: 9px * Theme.scale;
+    padding-right: 9px * Theme.scale;
+    min-width: 58px * Theme.scale;
+    Text {
+        text: root.value == "" ? "–––" : root.value;
+        font-family: Theme.mono;
+        font-size: 15px * Theme.scale;
+        font-weight: 700;
+        color: root.value == "" ? Theme.text-faint : root.tone;
+        horizontal-alignment: right;
+    }
+    Text {
+        text: root.name + "  " + root.unit;
+        font-family: Theme.mono;
+        font-size: 9px * Theme.scale;
+        color: Theme.text-faint;
+        horizontal-alignment: right;
+    }
+}
+
+/// Odczyt bieżącego lotu w pasku narzędzi (jak licznik czasu w OpenAudioPower).
+export component Readout inherits Rectangle {
+    property <bool> has: App.live.has-data;
+    height: 34px * Theme.scale;
+    width: hl.preferred-width;
+    border-radius: Theme.r-small;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    hl := HorizontalLayout {
+        padding-left: 4px;
+        padding-right: 4px;
+        ReadCell {
+            name: "ALT";
+            unit: App.live.alt-unit;
+            value: root.has ? App.live.alt : "";
+            tone: Colors.alt;
+        }
+        if Theme.ribbon-level < 2: ReadCell {
+            name: "IAS";
+            unit: "kt";
+            value: root.has ? App.live.ias : "";
+            tone: Colors.spd;
+        }
+        ReadCell {
+            name: "GS";
+            unit: "kt";
+            value: root.has ? App.live.gs : "";
+        }
+        ReadCell {
+            name: "V/S";
+            unit: "fpm";
+            value: root.has ? App.live.vs : "";
+            tone: !root.has ? Theme.text : App.live.vs-value > 300 ? Theme.ok : App.live.vs-value < -1000 ? Colors.warn : Theme.text;
+        }
+        ReadCell {
+            name: "HDG";
+            unit: "°";
+            value: root.has ? App.live.hdg : "";
+        }
+    }
+    TipArea {
+        tip: root.has ? App.live.title + (App.live.phase != "" ? " – " + App.live.phase : "") : @tr("Brak danych lotu – uruchom MSFS albo tryb symulacji");
+        clicked => {
+            App.tab = 1;
+            App.cmd("tab", 1);
+        }
+    }
+}
+
+/// Główny przycisk paska narzędzi: zapis lotu (czerwony w trakcie nagrywania).
+export component RecordButton inherits Rectangle {
+    height: 34px * Theme.scale;
+    width: hl.preferred-width;
+    border-radius: Theme.r-small + 1px;
+    background: App.recording ? (ta.pressed ? Theme.rec.with-alpha(0.32) : ta.has-hover ? Theme.rec.with-alpha(0.24) : Theme.rec.with-alpha(0.16)) : (ta.pressed ? Theme.accent.darker(0.2) : ta.has-hover ? Theme.accent.brighter(0.12) : Theme.accent);
+    border-width: App.recording ? 1px : 0;
+    border-color: Theme.rec.with-alpha(0.7);
+    drop-shadow-blur: App.recording ? 0 : 14px;
+    drop-shadow-color: Theme.accent.with-alpha(0.35);
+    hl := HorizontalLayout {
+        padding-left: 12px * Theme.scale;
+        padding-right: 14px * Theme.scale;
+        spacing: 8px * Theme.scale;
+        if App.recording: Rectangle {
+            width: 10px * Theme.scale;
+            height: 10px * Theme.scale;
+            y: (parent.height - self.height) / 2;
+            border-radius: self.width / 2;
+            background: Theme.rec;
+            drop-shadow-blur: 8px;
+            drop-shadow-color: Theme.rec;
+        }
+        if !App.recording: Image {
+            source: Icons.play;
+            width: 15px * Theme.scale;
+            height: 15px * Theme.scale;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.accent-text;
+        }
+        if Theme.ribbon-level < 2: Text {
+            text: App.recording ? @tr("Zakończ zapis") : @tr("Wznów zapis");
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            font-weight: 600;
+            color: App.recording ? #ff8a94 : Theme.accent-text;
+            vertical-alignment: center;
+        }
+    }
+    ta := TipArea {
+        tip: App.recording ? @tr("Zakończ zapis teraz (następny zacznie się po wylądowaniu)") + "\n" + App.recording-text : @tr("Wznów automatyczny zapis");
+        clicked => {
+            App.cmd(App.recording ? "record-stop" : "record-resume", "");
+        }
+    }
+}
+
+/// Sekcja panelu bocznego: tytuł krojem IBM Plex Sans Condensed, opcjonalny przycisk i treść.
+component SideSection inherits VerticalLayout {
+    in property <string> title;
+    in property <image> icon;
+    in property <image> action-icon;
+    in property <string> action-tip;
+    callback go();
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    spacing: 8px;
+    HorizontalLayout {
+        spacing: 7px;
+        height: 20px * Theme.scale;
+        Image {
+            source: root.icon;
+            width: 14px * Theme.scale;
+            height: 14px * Theme.scale;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.accent;
+        }
+        Text {
+            text: root.title;
+            font-family: Theme.cond;
+            font-size: 13px * Theme.scale;
+            font-weight: 700;
+            color: Theme.text;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        if root.action-tip != "": IconButton {
+            size: 22px * Theme.scale;
+            icon-size: 13px * Theme.scale;
+            y: (parent.height - self.height) / 2;
+            icon: root.action-icon;
+            tint: Theme.text-dim;
+            tip: root.action-tip;
+            clicked => {
+                root.go();
+            }
+        }
+    }
+    @children
+}
+
+/// Wiersz „skrót – wartość” w panelu bocznym; wartość krojem B612 Mono.
+component SidePair inherits HorizontalLayout {
+    in property <string> k;
+    in property <string> v;
+    in property <color> tone: Theme.text;
+    spacing: 8px;
+    height: 20px * Theme.scale;
+    Text {
+        text: root.k;
+        font-family: Theme.font;
+        font-size: Theme.fs-small;
+        color: Theme.text-dim;
+        vertical-alignment: center;
+        width: 64px * Theme.scale;
+        overflow: elide;
+    }
+    Text {
+        text: root.v == "" ? "–" : root.v;
+        font-family: Theme.mono;
+        font-size: Theme.fs-small;
+        color: root.tone;
+        vertical-alignment: center;
+        horizontal-stretch: 1;
+        horizontal-alignment: right;
+        overflow: elide;
+    }
+}
+
+/// Mała pigułka z tekstem (faza lotu, kategoria, autopilot).
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <color> tone: Theme.text-dim;
+    width: ct.preferred-width + 14px;
+    height: 20px * Theme.scale;
+    border-radius: self.height / 2;
+    background: root.tone.with-alpha(0.12);
+    border-width: 1px;
+    border-color: root.tone.with-alpha(0.4);
+    ct := Text {
+        text: root.text;
+        font-family: Theme.font;
+        font-size: 10.5px * Theme.scale;
+        font-weight: 600;
+        color: root.tone;
+    }
+}
+
+/// Nastawa autopilota (SPD, HDG, ALT) w kolorze nastaw z kabiny.
+component ApCell inherits Rectangle {
+    in property <string> k;
+    in property <string> v;
+    horizontal-stretch: 1;
+    height: 38px * Theme.scale;
+    border-radius: Theme.r-small;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    VerticalLayout {
+        alignment: center;
+        Text {
+            text: root.v;
+            font-family: Theme.mono;
+            font-size: 12px * Theme.scale;
+            font-weight: 700;
+            color: #4fd8eb;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        Text {
+            text: root.k;
+            font-family: Theme.mono;
+            font-size: 9px * Theme.scale;
+            color: Theme.text-faint;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+component SideLine inherits Rectangle {
+    height: 1px;
+    background: Theme.line;
+}
+
+/// Panel boczny: stan lotu, autopilot, trasa, radio, obserwowane lotniska, ostatnie loty.
+export component Sidebar inherits Rectangle {
+    background: Theme.chrome;
+    property <bool> has: App.live.has-data;
+    sv := ScrollView {
+        VerticalLayout {
+            width: sv.visible-width;
+            alignment: start;
+            // Samolot
+            SideSection {
+                title: root.has ? @tr("Bieżący lot") : @tr("Symulator");
+                icon: Icons.plane;
+                action-icon: Icons.gauge;
+                action-tip: @tr("Otwórz podgląd na żywo");
+                go => {
+                    App.tab = 1;
+                    App.cmd("tab", 1);
+                }
+                Rectangle {
+                    border-radius: Theme.r;
+                    background: Theme.raised;
+                    border-width: 1px;
+                    border-color: Theme.line;
+                    height: cv.preferred-height;
+                    cv := VerticalLayout {
+                        padding: 10px;
+                        spacing: 6px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Dot {
+                                state: App.sim-connected ? 2 : 1;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            Text {
+                                text: root.has ? App.live.title : App.sim-connected ? App.sim-name : @tr("Czekam na symulator");
+                                font-family: Theme.font;
+                                font-size: Theme.fs;
+                                font-weight: 600;
+                                color: Theme.text;
+                                vertical-alignment: center;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                            }
+                        }
+                        if !root.has: Text {
+                            text: App.sim-status;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            wrap: word-wrap;
+                        }
+                        if root.has: HorizontalLayout {
+                            spacing: 5px;
+                            alignment: start;
+                            if App.live.phase != "": Chip {
+                                text: App.live.phase;
+                                tone: Theme.accent;
+                            }
+                            if App.live.paused: Chip {
+                                text: @tr("Pauza");
+                                tone: Colors.warn;
+                            }
+                            if App.live.category != "": Chip {
+                                text: App.live.category;
+                            }
+                            if App.simulation: Chip {
+                                text: @tr("Symulacja");
+                                tone: Colors.gs;
+                            }
+                        }
+                        if root.has && App.live.nearest != "": Text {
+                            text: App.live.nearest;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            overflow: elide;
+                        }
+                        if root.has: Text {
+                            text: App.live.position;
+                            font-family: Theme.mono;
+                            font-size: 10px * Theme.scale;
+                            color: Theme.text-faint;
+                            overflow: elide;
+                        }
+                    }
+                }
+                if root.has: VerticalLayout {
+                    spacing: 0;
+                    SidePair {
+                        k: "AGL";
+                        v: App.live.agl;
+                    }
+                    SidePair {
+                        k: "TAS";
+                        v: App.live.tas + " kt" + (App.live.mach != "" ? "  M" + App.live.mach : "");
+                    }
+                    SidePair {
+                        k: "TRK";
+                        v: App.live.trk + "°";
+                    }
+                    SidePair {
+                        k: @tr("Wiatr");
+                        v: App.live.wind;
+                    }
+                    SidePair {
+                        k: "OAT · QNH";
+                        v: App.live.oat + "  " + App.live.qnh;
+                    }
+                    SidePair {
+                        k: @tr("Paliwo");
+                        v: App.live.fuel;
+                        tone: App.live.fuel-level < 0.15 ? Colors.warn : Theme.text;
+                    }
+                }
+            }
+            if root.has: SideLine { }
+            // Autopilot i trasa
+            if root.has: SideSection {
+                title: @tr("Autopilot i trasa");
+                icon: Icons.route;
+                HorizontalLayout {
+                    spacing: 6px;
+                    alignment: start;
+                    Chip {
+                        text: App.live.ap-master ? "AP ON" : "AP OFF";
+                        tone: App.live.ap-master ? Theme.ok : Theme.text-faint;
+                    }
+                    Text {
+                        text: App.live.ap-line;
+                        font-family: Theme.mono;
+                        font-size: 10.5px * Theme.scale;
+                        color: Theme.ok;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+                }
+                if App.live.ap-master: HorizontalLayout {
+                    spacing: 4px;
+                    ApCell {
+                        k: "SPD";
+                        v: App.live.ap-spd;
+                    }
+                    ApCell {
+                        k: "HDG";
+                        v: App.live.ap-hdg;
+                    }
+                    ApCell {
+                        k: "ALT";
+                        v: App.live.ap-alt;
+                    }
+                }
+                VerticalLayout {
+                    spacing: 5px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Text {
+                            text: App.live.next-wp;
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            font-weight: 600;
+                            color: Theme.text;
+                            overflow: elide;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: App.live.next-dist;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                        }
+                    }
+                    Bar {
+                        value: App.live.wp-progress;
+                    }
+                    HorizontalLayout {
+                        Text {
+                            text: @tr("Do punktu ") + (App.live.next-ete == "" ? "–" : App.live.next-ete);
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: @tr("Do celu ") + (App.live.dest-ete == "" ? "–" : App.live.dest-ete);
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                        }
+                    }
+                }
+            }
+            if root.has: SideLine { }
+            // Radio
+            if root.has: SideSection {
+                title: @tr("Radio");
+                icon: Icons.radio;
+                VerticalLayout {
+                    spacing: 0;
+                    SidePair {
+                        k: "COM1";
+                        v: App.live.com1;
+                    }
+                    SidePair {
+                        k: "NAV1";
+                        v: App.live.nav1;
+                    }
+                    SidePair {
+                        k: "XPDR";
+                        v: App.live.xpdr;
+                    }
+                }
+            }
+            SideLine { }
+            // Obserwowane lotniska
+            SideSection {
+                title: @tr("Pogoda");
+                icon: Icons.cloud-sun;
+                action-icon: Icons.refresh-cw;
+                action-tip: @tr("Odśwież pogodę obserwowanych lotnisk");
+                go => {
+                    App.cmd("watch-refresh", "");
+                }
+                if App.watchlist.length == 0: Text {
+                    text: @tr("Oznacz lotnisko gwiazdką na karcie Lotniska, a jego METAR pojawi się tutaj.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                    wrap: word-wrap;
+                }
+                VerticalLayout {
+                    spacing: 2px;
+                    for w in App.watchlist: ListRow {
+                        height: 40px * Theme.scale;
+                        clicked => {
+                            App.cmd("airport-open", w.icao);
+                        }
+                        HorizontalLayout {
+                            padding-left: 6px;
+                            padding-right: 6px;
+                            spacing: 8px;
+                            VerticalLayout {
+                                alignment: center;
+                                horizontal-stretch: 1;
+                                HorizontalLayout {
+                                    spacing: 6px;
+                                    Text {
+                                        text: w.icao;
+                                        font-family: Theme.mono;
+                                        font-size: Theme.fs;
+                                        font-weight: 700;
+                                        color: Theme.text;
+                                    }
+                                    CatBadge {
+                                        cat: w.cat;
+                                    }
+                                    Rectangle {
+                                        horizontal-stretch: 1;
+                                    }
+                                }
+                                Text {
+                                    text: w.wind + "  " + w.temp;
+                                    font-family: Theme.mono;
+                                    font-size: 10px * Theme.scale;
+                                    color: Theme.text-dim;
+                                    overflow: elide;
+                                }
+                            }
+                            Text {
+                                text: w.qnh;
+                                font-family: Theme.mono;
+                                font-size: 10px * Theme.scale;
+                                color: Theme.text-faint;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+            SideLine { }
+            // Ostatnie loty
+            SideSection {
+                title: @tr("Ostatnie loty");
+                icon: Icons.history;
+                action-icon: Icons.book-open;
+                action-tip: @tr("Otwórz dziennik lotów");
+                go => {
+                    App.tab = 2;
+                    App.cmd("tab", 2);
+                }
+                if App.flights.length == 0: Text {
+                    text: @tr("Loty zapisują się same po starcie w MSFS albo w telefonie.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                    wrap: word-wrap;
+                }
+                VerticalLayout {
+                    spacing: 0;
+                    for f[i] in App.flights: ListRow {
+                        visible: i < 7 && !f.header;
+                        height: (i < 7 && !f.header) ? 40px * Theme.scale : 0;
+                        clicked => {
+                            App.cmd("flight-open", f.id);
+                        }
+                        HorizontalLayout {
+                            padding-left: 6px;
+                            padding-right: 6px;
+                            spacing: 9px;
+                            Score {
+                                score: f.score;
+                                size: 26px * Theme.scale;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            VerticalLayout {
+                                alignment: center;
+                                horizontal-stretch: 1;
+                                Text {
+                                    text: f.from + " → " + f.to;
+                                    font-family: Theme.mono;
+                                    font-size: Theme.fs-small;
+                                    font-weight: 700;
+                                    color: Theme.text;
+                                    overflow: elide;
+                                }
+                                Text {
+                                    text: f.date + "  " + f.aircraft;
+                                    font-family: Theme.font;
+                                    font-size: 10.5px * Theme.scale;
+                                    color: Theme.text-dim;
+                                    overflow: elide;
+                                }
+                            }
+                            Text {
+                                text: f.duration;
+                                font-family: Theme.mono;
+                                font-size: 10.5px * Theme.scale;
+                                color: Theme.text-dim;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+            SideLine { }
+            // Telefony
+            SideSection {
+                title: @tr("Telefony");
+                icon: Icons.smartphone;
+                action-icon: Icons.chevron-right;
+                action-tip: @tr("Parowanie i urządzenia");
+                go => {
+                    App.tab = 6;
+                    App.cmd("tab", 6);
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Dot {
+                        state: App.phones > 0 ? 2 : 0;
+                        y: (parent.height - self.height) / 2;
+                    }
+                    Text {
+                        text: App.phones-text;
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-dim;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+                }
+                Rectangle {
+                    height: 44px * Theme.scale;
+                    border-radius: Theme.r;
+                    background: Theme.raised;
+                    border-width: 1px;
+                    border-color: Theme.line;
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 6px;
+                        spacing: 8px;
+                        VerticalLayout {
+                            alignment: center;
+                            horizontal-stretch: 1;
+                            Text {
+                                text: @tr("Kod parowania");
+                                font-family: Theme.font;
+                                font-size: 10px * Theme.scale;
+                                color: Theme.text-faint;
+                            }
+                            Text {
+                                text: App.pairing-code;
+                                font-family: Theme.mono;
+                                font-size: 16px * Theme.scale;
+                                font-weight: 700;
+                                letter-spacing: 2px;
+                                color: Theme.text;
+                            }
+                        }
+                        IconButton {
+                            y: (parent.height - self.height) / 2;
+                            icon: Icons.refresh-cw;
+                            tip: @tr("Nowy kod parowania (sparowane telefony zostają)");
+                            clicked => {
+                                App.cmd("pair-new-code", "");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,3 +1,11 @@
+## 3.1.0
+
+- OpenTakeoff na Windows w nowym wyglądzie, w układzie znanym z OpenAudioPower: karty w pasku tytułu okna, pod nimi jeden rząd narzędzi bieżącej karty, panel boczny i pasek stanu.
+- Domyślny motyw AMOLED – czysta czerń, powierzchnie oddzielone cienkimi liniami; przy pierwszym uruchomieniu nowej wersji motyw przełącza się na AMOLED (inny można wybrać w Ustawieniach).
+- Odczyt lotu w pasku narzędzi na każdej karcie: wysokość, prędkość przyrządowa i nad ziemią, prędkość pionowa i kurs; obok duży przycisk zapisu lotu.
+- Panel boczny ze stanem lotu: samolot, faza lotu, wiatr, temperatura, QNH, paliwo, autopilot z nastawami, następny punkt trasy z postępem, radio, pogoda obserwowanych lotnisk, ostatnie loty i kod parowania telefonu. Ctrl+B albo przycisk w pasku stanu chowa panel; szerokość zmienia się przeciąganiem i jest zapamiętywana.
+- Liczby lotu krojem B612 Mono (zaprojektowanym do kabin Airbusa), nagłówki krojem IBM Plex Sans Condensed.
+
 ## 3.0.0
 
 - Nowy OpenTakeoff na Windows (Rust) zamiast OpenTakeoff Link – robi wszystko to co Link (most MSFS ↔ telefon, sparowane telefony działają dalej), a do tego ma własne funkcje. Instalator OpenTakeoff-Setup na redzikowski.com.

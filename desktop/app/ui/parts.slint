@@ -31,7 +31,7 @@ export component Panel inherits Rectangle {
     border-color: Theme.line;
 }
 
-/// Nagłówek sekcji kapitalikami z opcjonalną ikoną.
+/// Nagłówek sekcji (IBM Plex Sans Condensed) z opcjonalną ikoną.
 export component Heading inherits HorizontalLayout {
     in property <string> text;
     in property <image> icon;
@@ -46,10 +46,10 @@ export component Heading inherits HorizontalLayout {
     }
     Text {
         text: root.text;
-        font-family: Theme.font;
-        font-size: Theme.fs-small;
-        font-weight: 600;
-        letter-spacing: 0.6px;
+        font-family: Theme.cond;
+        font-size: 12px * Theme.scale;
+        font-weight: 700;
+        letter-spacing: 0.5px;
         color: Theme.text-dim;
         vertical-alignment: center;
         overflow: elide;
@@ -87,9 +87,9 @@ export component Metric inherits Rectangle {
             alignment: start;
             Text {
                 text: root.value == "" ? "—" : root.value;
-                font-family: Theme.font;
-                font-size: root.big;
-                font-weight: 600;
+                font-family: Theme.mono;
+                font-size: root.big * 0.86;
+                font-weight: 700;
                 color: root.tone;
                 overflow: elide;
             }
@@ -99,7 +99,7 @@ export component Metric inherits Rectangle {
                 font-size: Theme.fs-small;
                 color: Theme.text-dim;
                 vertical-alignment: bottom;
-                height: root.big * 1.15;
+                height: root.big * 1.02;
             }
         }
         if root.sub != "": Text {

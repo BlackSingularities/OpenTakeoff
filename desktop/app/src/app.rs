@@ -269,9 +269,9 @@ pub fn refresh_live(force_map: bool) {
     let Some(ui) = ui() else { return };
     let app = ui.global::<App>();
     let tab = app.get_tab();
-    if tab != 0 && tab != 1 {
-        return;
-    }
+    // Dane lotu trafiają do paska narzędzi i panelu bocznego na każdej karcie; mapa i PFD tylko
+    // na Pulpicie i karcie Na żywo.
+    let with_map = tab == 0 || tab == 1;
     let st = state();
     let mut st = st.borrow_mut();
     let u = units(&st.s);
@@ -370,7 +370,7 @@ pub fn refresh_live(force_map: bool) {
         }
     }
     // Mapa: co 0,5 s albo od razu po zmianie widoku
-    if force_map || st.live_render.elapsed().as_millis() > 500 {
+    if with_map && (force_map || st.live_render.elapsed().as_millis() > 500) {
         st.live_render = Instant::now();
         let dark = ui.global::<Theme>().get_dark();
         let track = st.host.live_track();

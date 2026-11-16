@@ -1,10 +1,12 @@
-// Okno główne OpenTakeoff dla Windows: pasek tytułu, karty i wstążka z poleceniami (jak w OpenDTP),
-// strona karty, pasek stanu oraz nakładki (potwierdzenie, komunikat, praca w tle).
+// Okno główne OpenTakeoff dla Windows w układzie OpenAudioPower: pasek tytułu z kartami, jeden rząd
+// narzędzi z odczytem lotu i przyciskiem zapisu, panel boczny ze stanem lotu, strona karty, pasek
+// stanu oraz nakładki (potwierdzenie, komunikat, podpowiedzi).
 
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, KV, LogV, EngineV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV } from "state.slint";
-import { Tip, TipArea, IconButton, BigButton, Group, Button, Card, Segmented } from "widgets.slint";
+import { Tip, TipArea, IconButton, BigButton, Group, Button, Card, Segmented, Splitter } from "widgets.slint";
+import { NavTab, Readout, RecordButton, Sidebar } from "shell.slint";
 import { Toast, Dot, Colors } from "parts.slint";
 import { Dashboard } from "dashboard.slint";
 import { Live } from "live.slint";
@@ -43,137 +45,101 @@ component WinButton inherits Rectangle {
     }
 }
 
-component TabButton inherits Rectangle {
-    in property <string> label;
-    in property <int> index;
-    in property <image> icon;
-    in property <string> tip;
-    width: hl.preferred-width + 20px;
-    hl := HorizontalLayout {
-        x: 10px;
-        spacing: 6px;
-        Image {
-            source: root.icon;
-            width: 15px * Theme.scale;
-            height: 15px * Theme.scale;
-            y: (parent.height - self.height) / 2;
-            colorize: App.tab == root.index ? Theme.accent : Theme.text-dim;
-        }
-        if Theme.ribbon-level < 2: Text {
-            text: root.label;
-            font-family: Theme.font;
-            font-size: Theme.fs;
-            font-weight: App.tab == root.index ? 600 : 400;
-            color: App.tab == root.index ? Theme.text : tta.has-hover ? Theme.text : Theme.text-dim;
-            vertical-alignment: center;
-        }
-    }
-    Rectangle {
-        y: parent.height - 3px;
-        height: 2px;
-        width: App.tab == root.index ? parent.width - 14px : 0;
-        border-radius: 1px;
-        background: Theme.accent;
-        animate width { duration: 140ms; easing: ease-out; }
-    }
-    tta := TipArea {
-        tip: root.tip;
-        clicked => {
-            App.tab = root.index;
-            App.cmd("tab", root.index);
-        }
-    }
-}
-
 component Tabs inherits Rectangle {
     background: transparent;
     min-width: tl.preferred-width;
-    tl := HorizontalLayout {
-        padding-left: 8px;
-        spacing: 2px;
-        alignment: start;
-        TabButton {
-            index: 0;
-            label: @tr("Pulpit");
-            icon: Icons.layout-dashboard;
-            tip: @tr("Stan symulatora i telefonów, pogoda, ostatnie loty");
-        }
-        TabButton {
-            index: 1;
-            label: @tr("Na żywo");
-            icon: Icons.gauge;
-            tip: @tr("Podgląd bieżącego lotu: przyrządy, mapa, systemy");
-        }
-        TabButton {
-            index: 8;
-            label: @tr("Przyrządy");
-            icon: Icons.compass;
-            tip: @tr("PFD, ND, zegary i silniki w stylu kabiny samolotu");
-        }
-        TabButton {
-            index: 9;
-            label: @tr("Mapa");
-            icon: Icons.map;
-            tip: @tr("Mapa nawigacyjna z radialami i różami VOR oraz widok 3D");
-        }
-        TabButton {
-            index: 2;
-            label: @tr("Dziennik");
-            icon: Icons.book-open;
-            tip: @tr("Wszystkie loty z komputera i telefonu");
-        }
-        TabButton {
-            index: 3;
-            label: @tr("Statystyki");
-            icon: Icons.chart-column;
-            tip: @tr("Sumy, miesiące, samoloty, lotniska, rekordy");
-        }
-        TabButton {
-            index: 4;
-            label: @tr("Lotniska");
-            icon: Icons.map-pin;
-            tip: @tr("Briefing lotniska: pogoda, pasy, częstotliwości, procedury");
-        }
-        TabButton {
-            index: 5;
-            label: @tr("Narzędzia");
-            icon: Icons.calculator;
-            tip: @tr("Kalkulatory lotnicze i dekoder METAR");
-        }
-        TabButton {
-            index: 6;
-            label: @tr("Telefony");
-            icon: Icons.smartphone;
-            tip: @tr("Parowanie, urządzenia, źródło danych, aktywność");
-        }
-        TabButton {
-            index: 7;
-            label: @tr("Ustawienia");
-            icon: Icons.settings;
-            tip: @tr("Wygląd, język, zapis lotów, Windows, dane");
+    VerticalLayout {
+        alignment: center;
+        tl := HorizontalLayout {
+            padding-left: 6px;
+            spacing: 3px;
+            alignment: start;
+            NavTab {
+                index: 0;
+                label: @tr("Pulpit");
+                icon: Icons.layout-dashboard;
+                tip: @tr("Stan symulatora i telefonów, pogoda, ostatnie loty");
+            }
+            NavTab {
+                index: 1;
+                label: @tr("Na żywo");
+                icon: Icons.gauge;
+                tip: @tr("Podgląd bieżącego lotu: przyrządy, mapa, systemy");
+            }
+            NavTab {
+                index: 8;
+                label: @tr("Przyrządy");
+                icon: Icons.compass;
+                tip: @tr("PFD, ND, zegary i silniki w stylu kabiny samolotu");
+            }
+            NavTab {
+                index: 9;
+                label: @tr("Mapa");
+                icon: Icons.map;
+                tip: @tr("Mapa nawigacyjna z radialami i różami VOR oraz widok 3D");
+            }
+            NavTab {
+                index: 2;
+                label: @tr("Dziennik");
+                icon: Icons.book-open;
+                tip: @tr("Wszystkie loty z komputera i telefonu");
+            }
+            NavTab {
+                index: 3;
+                label: @tr("Statystyki");
+                icon: Icons.chart-column;
+                tip: @tr("Sumy, miesiące, samoloty, lotniska, rekordy");
+            }
+            NavTab {
+                index: 4;
+                label: @tr("Lotniska");
+                icon: Icons.map-pin;
+                tip: @tr("Briefing lotniska: pogoda, pasy, częstotliwości, procedury");
+            }
+            NavTab {
+                index: 5;
+                label: @tr("Narzędzia");
+                icon: Icons.calculator;
+                tip: @tr("Kalkulatory lotnicze i dekoder METAR");
+            }
+            NavTab {
+                index: 6;
+                label: @tr("Telefony");
+                icon: Icons.smartphone;
+                tip: @tr("Parowanie, urządzenia, źródło danych, aktywność");
+            }
+            NavTab {
+                index: 7;
+                label: @tr("Ustawienia");
+                icon: Icons.settings;
+                tip: @tr("Wygląd, język, zapis lotów, Windows, dane");
+            }
         }
     }
 }
 
 component TopBar inherits Rectangle {
-    height: 40px * Theme.scale;
-    background: Theme.panel;
+    height: Theme.title-h;
+    background: Theme.chrome;
     HorizontalLayout {
         padding-left: 12px;
         spacing: 8px;
         Image {
             source: @image-url("../icon.png");
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             y: (parent.height - self.height) / 2;
         }
         if Theme.ribbon-level < 1: Text {
             text: "OpenTakeoff";
-            font-family: Theme.font;
-            font-size: Theme.fs-big;
-            font-weight: 600;
+            font-family: Theme.cond;
+            font-size: 16px * Theme.scale;
+            font-weight: 700;
             color: Theme.text;
             vertical-alignment: center;
+        }
+        Rectangle {
+            width: 4px;
         }
         Tabs { }
         Rectangle {
@@ -192,40 +158,38 @@ component TopBar inherits Rectangle {
             HorizontalLayout {
                 alignment: end;
                 padding-right: 10px;
-                spacing: 8px;
-                Dot {
-                    state: App.sim-connected ? 2 : 1;
+                // Stan symulatora: pigułka z kropką
+                Rectangle {
                     y: (parent.height - self.height) / 2;
-                }
-                Text {
-                    text: App.sim-connected ? App.sim-name : App.sim-status;
-                    font-family: Theme.font;
-                    font-size: Theme.fs-small;
-                    color: Theme.text-dim;
-                    vertical-alignment: center;
-                    overflow: elide;
-                }
-                if App.recording: Rectangle {
-                    width: rt.preferred-width + 22px;
-                    height: 20px;
-                    y: (parent.height - self.height) / 2;
-                    border-radius: 10px;
-                    background: #ff4d5a26;
-                    Rectangle {
-                        x: 7px;
-                        width: 8px;
-                        height: 8px;
-                        border-radius: 4px;
-                        background: #ff4d5a;
+                    height: 24px * Theme.scale;
+                    width: min(sl.preferred-width, 260px);
+                    border-radius: self.height / 2;
+                    background: App.sim-connected ? Theme.ok.with-alpha(0.10) : Theme.raised;
+                    border-width: 1px;
+                    border-color: App.sim-connected ? Theme.ok.with-alpha(0.35) : Theme.line;
+                    sl := HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 12px;
+                        spacing: 7px;
+                        Dot {
+                            state: App.sim-connected ? 2 : 1;
+                            y: (parent.height - self.height) / 2;
+                        }
+                        Text {
+                            text: App.sim-connected ? App.sim-name : App.simulation ? @tr("Symulacja") : @tr("Brak symulatora");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: App.sim-connected ? Theme.text : Theme.text-dim;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
                     }
-                    rt := Text {
-                        x: 18px;
-                        text: @tr("Zapis lotu");
-                        font-family: Theme.font;
-                        font-size: Theme.fs-small;
-                        color: #ff7a84;
-                        vertical-alignment: center;
-                        height: parent.height;
+                    TipArea {
+                        tip: App.sim-status;
+                        clicked => {
+                            App.tab = 0;
+                            App.cmd("tab", 0);
+                        }
                     }
                 }
             }
@@ -245,14 +209,12 @@ component TopBar inherits Rectangle {
     }
 }
 
+/// Grupy poleceń bieżącej karty w jednym rzędzie.
 component Ribbon inherits Rectangle {
-    height: Theme.ribbon-h + 6px;
-    background: Theme.panel;
     HorizontalLayout {
-        padding-left: 8px;
-        padding-right: 8px;
-        padding-top: 2px;
+        padding-top: 4px;
         padding-bottom: 4px;
+        padding-left: 4px;
         spacing: 0;
         alignment: start;
         if App.tab == 0 || App.tab == 1 || App.tab == 6: Group {
@@ -306,14 +268,6 @@ component Ribbon inherits Rectangle {
                     App.cmd("record-mark", "");
                 }
             }
-            BigButton {
-                icon: App.recording ? Icons.circle-stop : Icons.play;
-                label: App.recording ? @tr("Zakończ") : @tr("Wznów");
-                tip: App.recording ? @tr("Zakończ zapis teraz (następny zacznie się po wylądowaniu)") : @tr("Wznów automatyczny zapis");
-                clicked => {
-                    App.cmd(App.recording ? "record-stop" : "record-resume", "");
-                }
-            }
         }
         if App.tab == 0: Group {
             title: @tr("Pogoda");
@@ -350,8 +304,7 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 8: Group {
             title: @tr("Styl kabiny");
-            VerticalLayout {
-                alignment: center;
+            HorizontalLayout {
                 padding-left: 4px;
                 padding-right: 4px;
                 spacing: 6px;
@@ -527,6 +480,7 @@ component Ribbon inherits Rectangle {
         if App.tab == 9: Group {
             title: @tr("Warstwy");
             BigButton {
+                slim: true;
                 icon: Icons.map-pin;
                 label: @tr("Lotniska");
                 active: App.nav.apt;
@@ -535,6 +489,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
+                slim: true;
                 icon: Icons.hexagon;
                 label: "VOR";
                 active: App.nav.vor;
@@ -543,6 +498,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
+                slim: true;
                 icon: Icons.circle-dot;
                 label: "NDB";
                 active: App.nav.ndb;
@@ -551,6 +507,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             if !App.nav.view3d: BigButton {
+                slim: true;
                 icon: Icons.radius;
                 label: @tr("Róże VOR");
                 active: App.nav.vor-rose;
@@ -560,6 +517,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
+                slim: true;
                 icon: Icons.compass;
                 label: @tr("Róża kursu");
                 active: App.nav.rose;
@@ -569,6 +527,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             if !App.nav.view3d: BigButton {
+                slim: true;
                 icon: Icons.circle;
                 label: @tr("Pierścienie");
                 active: App.nav.rings;
@@ -578,6 +537,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             if !App.nav.view3d: BigButton {
+                slim: true;
                 icon: Icons.spline;
                 label: @tr("Wektor");
                 active: App.nav.vector;
@@ -587,6 +547,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
+                slim: true;
                 icon: Icons.activity;
                 label: @tr("Ślad");
                 active: App.nav.track;
@@ -595,6 +556,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
+                slim: true;
                 icon: Icons.route;
                 label: @tr("Trasa");
                 active: App.nav.route;
@@ -604,6 +566,7 @@ component Ribbon inherits Rectangle {
                 }
             }
             BigButton {
+                slim: true;
                 icon: Icons.minus;
                 label: @tr("Pasy");
                 active: App.nav.rwy;
@@ -836,13 +799,51 @@ component Ribbon inherits Rectangle {
     }
 }
 
-component StatusBar inherits Rectangle {
-    height: 26px * Theme.scale;
+/// Pasek narzędzi: polecenia karty po lewej, odczyt lotu i zapis po prawej.
+component Toolbar inherits Rectangle {
+    height: Theme.ribbon-h + 8px;
     background: Theme.panel;
     HorizontalLayout {
-        padding-left: 12px;
+        padding-left: 6px;
+        padding-right: 10px;
+        spacing: 10px;
+        // Polecenia przycięte do dostępnego miejsca (nie poszerzają okna)
+        Rectangle {
+            horizontal-stretch: 1;
+            min-width: 0px;
+            clip: true;
+            Ribbon {
+                x: 0;
+                height: parent.height;
+            }
+        }
+        if Theme.ribbon-level < 3: Readout {
+            y: (parent.height - self.height) / 2;
+        }
+        RecordButton {
+            y: (parent.height - self.height) / 2;
+        }
+    }
+}
+
+component StatusBar inherits Rectangle {
+    height: 28px * Theme.scale;
+    background: Theme.chrome;
+    HorizontalLayout {
+        padding-left: 6px;
         padding-right: 12px;
-        spacing: 16px;
+        spacing: 14px;
+        IconButton {
+            y: (parent.height - self.height) / 2;
+            size: 22px * Theme.scale;
+            icon-size: 14px * Theme.scale;
+            icon: Icons.panel-left;
+            active: Theme.sidebar;
+            tip: Theme.sidebar ? @tr("Ukryj panel lotu (Ctrl+B)") : @tr("Pokaż panel lotu (Ctrl+B)");
+            clicked => {
+                Theme.sidebar = !Theme.sidebar;
+            }
+        }
         HorizontalLayout {
             spacing: 6px;
             Dot {
@@ -875,6 +876,24 @@ component StatusBar inherits Rectangle {
                 vertical-alignment: center;
             }
         }
+        if App.recording: HorizontalLayout {
+            spacing: 6px;
+            Rectangle {
+                width: 7px;
+                height: 7px;
+                y: (parent.height - self.height) / 2;
+                border-radius: 3.5px;
+                background: Theme.rec;
+            }
+            Text {
+                text: App.recording-text;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+        }
         if !App.link-ok: Text {
             text: @tr("Port 47810 zajęty – telefony nie połączą się (czy działa stary OpenTakeoff Link?)");
             font-family: Theme.font;
@@ -893,6 +912,13 @@ component StatusBar inherits Rectangle {
             color: Theme.accent;
             vertical-alignment: center;
         }
+        if App.live.has-data && App.live.sim-time != "": Text {
+            text: App.live.sim-time;
+            font-family: Theme.mono;
+            font-size: 10.5px * Theme.scale;
+            color: Theme.text-dim;
+            vertical-alignment: center;
+        }
         Text {
             text: App.db-status;
             font-family: Theme.font;
@@ -902,7 +928,7 @@ component StatusBar inherits Rectangle {
             overflow: elide;
         }
         Text {
-            text: "v" + App.version;
+            text: "OpenTakeoff " + App.version;
             font-family: Theme.font;
             font-size: Theme.fs-small;
             color: Theme.text-faint;
@@ -923,9 +949,10 @@ export component AppWindow inherits Window {
     default-font-family: Theme.font;
     callback key(string, bool, bool) -> bool;
     forward-focus: fs;
-    // Zwężanie paska kart i wstążki na wąskim oknie
+    // Zwężanie paska kart i paska narzędzi na wąskim oknie: 1 – bez nazwy aplikacji, 2 – karty i przyciski
+    // bez podpisów, 3 – bez odczytu lotu.
     function fit-ribbon() {
-        Theme.ribbon-level = self.width / Theme.scale < 1180px ? 2 : self.width / Theme.scale < 1360px ? 1 : 0;
+        Theme.ribbon-level = self.width / Theme.scale < 1080px ? 3 : self.width / Theme.scale < 1280px ? 2 : self.width / Theme.scale < 1500px ? 1 : 0;
     }
     changed width => {
         root.fit-ribbon();
@@ -935,6 +962,10 @@ export component AppWindow inherits Window {
     }
     fs := FocusScope {
         key-pressed(e) => {
+            if (e.modifiers.control && !e.modifiers.shift && (e.text == "b" || e.text == "B")) {
+                Theme.sidebar = !Theme.sidebar;
+                return accept;
+            }
             if (root.key(e.text, e.modifiers.control, e.modifiers.shift)) {
                 return accept;
             }
@@ -946,53 +977,67 @@ export component AppWindow inherits Window {
                 height: 1px;
                 background: Theme.line;
             }
-            Ribbon { }
+            Toolbar { }
             Rectangle {
                 height: 1px;
                 background: Theme.line;
             }
-            Rectangle {
+            HorizontalLayout {
                 vertical-stretch: 1;
-                background: Theme.desk;
-                if App.tab == 0: Dashboard {
-                    width: parent.width;
-                    height: parent.height;
+                if Theme.sidebar: Sidebar {
+                    width: Theme.sidebar-w;
                 }
-                if App.tab == 1: Live {
-                    width: parent.width;
-                    height: parent.height;
+                if Theme.sidebar: Splitter {
+                    side: 1;
+                    value <=> Theme.sidebar-w;
+                    min-w: 230px;
+                    max-w: 420px;
+                    reset: 276px;
+                    tip: @tr("Przeciągnij, żeby zmienić szerokość panelu; dwuklik przywraca domyślną");
                 }
-                if App.tab == 2: Logbook {
-                    width: parent.width;
-                    height: parent.height;
-                }
-                if App.tab == 3: Stats {
-                    width: parent.width;
-                    height: parent.height;
-                }
-                if App.tab == 4: Airports {
-                    width: parent.width;
-                    height: parent.height;
-                }
-                if App.tab == 5: Tools {
-                    width: parent.width;
-                    height: parent.height;
-                }
-                if App.tab == 6: Devices {
-                    width: parent.width;
-                    height: parent.height;
-                }
-                if App.tab == 7: Settings {
-                    width: parent.width;
-                    height: parent.height;
-                }
-                if App.tab == 8: Instruments {
-                    width: parent.width;
-                    height: parent.height;
-                }
-                if App.tab == 9: NavMap {
-                    width: parent.width;
-                    height: parent.height;
+                Rectangle {
+                    horizontal-stretch: 1;
+                    background: Theme.desk;
+                    if App.tab == 0: Dashboard {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 1: Live {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 2: Logbook {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 3: Stats {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 4: Airports {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 5: Tools {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 6: Devices {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 7: Settings {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 8: Instruments {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 9: NavMap {
+                        width: parent.width;
+                        height: parent.height;
+                    }
                 }
             }
             Rectangle {

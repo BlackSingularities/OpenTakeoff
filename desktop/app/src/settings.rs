@@ -45,12 +45,19 @@ pub struct Settings {
     pub nav_layers: u32,
     pub nav_3d: bool,
     pub nav_cam: i32,
+    /// Panel boczny ze stanem lotu: widoczny i jego szerokość w pikselach logicznych.
+    pub sidebar: bool,
+    pub sidebar_w: i32,
+    /// Wersja układu okna; przy przejściu na układ 3.1 (AMOLED, karty w pasku tytułu) motyw
+    /// przestawia się raz na AMOLED. Brak pola w starszym pliku = 0.
+    #[serde(default)]
+    pub ui_version: i32,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            theme: 1,
+            theme: 0,
             accent: 0,
             scale: 1.0,
             corners: 1,
@@ -79,6 +86,9 @@ impl Default for Settings {
             nav_layers: NAV_DEFAULT,
             nav_3d: false,
             nav_cam: 0,
+            sidebar: true,
+            sidebar_w: 276,
+            ui_version: UI_VERSION,
         }
     }
 }
@@ -98,6 +108,8 @@ pub const NAV_CURTAIN: u32 = 512;
 pub const NAV_RWY: u32 = 1024;
 pub const NAV_DEFAULT: u32 = NAV_APT | NAV_VOR | NAV_NDB | NAV_VOR_ROSE | NAV_ROSE | NAV_VECTOR | NAV_TRACK | NAV_ROUTE | NAV_CURTAIN | NAV_RWY;
 
+pub const UI_VERSION: i32 = 2;
+
 pub const ACCENTS: [u32; 8] = [0x5b8cff, 0x3ccf7a, 0xffb547, 0xff5a5f, 0xd55cff, 0x2ec4d6, 0xf472b6, 0xa3a3a3];
 pub const INTERVALS_MS: [i64; 5] = [250, 500, 1000, 2000, 5000];
 
@@ -108,6 +120,13 @@ fn path() -> std::path::PathBuf {
 impl Settings {
     pub fn load() -> Settings {
         let mut s: Settings = std::fs::read_to_string(path()).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default();
+        if s.ui_version < UI_VERSION {
+            // Nowy układ okna wygląda najlepiej w czerni AMOLED
+            s.theme = 0;
+            s.sidebar = true;
+            s.ui_version = UI_VERSION;
+            s.save();
+        }
         if !s.migrated_link {
             // Ustawienia dawnego OpenTakeoff Link (tryb symulacji, czułość rozglądania, język)
             if let Some(v) = std::fs::read_to_string(opentakeoff_core::paths::legacy_link().join("settings.json")).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok()) {

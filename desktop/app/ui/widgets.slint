@@ -99,7 +99,8 @@ export component IconButton inherits Rectangle {
     }
 }
 
-/// Duży przycisk wstążki: ikona nad podpisem.
+/// Przycisk paska narzędzi: ikona i podpis w jednym rzędzie (jak w OpenAudioPower). Na wąskim oknie
+/// i przy `slim` sama ikona – podpis zostaje w podpowiedzi.
 export component BigButton inherits Rectangle {
     in property <image> icon;
     in property <string> label;
@@ -107,52 +108,47 @@ export component BigButton inherits Rectangle {
     in property <bool> active;
     in property <bool> enabled: true;
     in property <bool> menu;
+    in property <bool> slim;
     in property <color> tint: Theme.text;
     callback clicked();
-    // Na wąskiej wstążce (poziom 2+) sama ikona – podpis zostaje w podpowiedzi.
-    property <bool> bare: Theme.ribbon-level >= 2;
-    min-width: root.bare ? 40px * Theme.scale : max(48px * Theme.scale, t.preferred-width + 12px);
-    height: 66px * Theme.scale;
+    property <bool> bare: root.slim || Theme.ribbon-level >= 2;
+    min-width: hl.preferred-width;
+    height: 30px * Theme.scale;
     border-radius: Theme.r-small;
     background: !enabled ? transparent : ta.pressed ? Theme.press : active ? Theme.accent-soft : ta.has-hover ? Theme.hover : transparent;
-    VerticalLayout {
-        padding-top: 6px * Theme.scale;
-        padding-bottom: 4px * Theme.scale;
-        spacing: 4px * Theme.scale;
-        alignment: start;
-        HorizontalLayout {
-            alignment: center;
-            Image {
-                source: root.icon;
-                width: 24px * Theme.scale;
-                height: 24px * Theme.scale;
-                colorize: !root.enabled ? Theme.text-faint : root.active ? Theme.accent : root.tint;
-            }
+    border-width: active && enabled ? 1px : 0;
+    border-color: Theme.accent.with-alpha(0.45);
+    hl := HorizontalLayout {
+        padding-left: root.bare ? 7px * Theme.scale : 8px * Theme.scale;
+        padding-right: root.bare ? 7px * Theme.scale : 10px * Theme.scale;
+        spacing: 6px * Theme.scale;
+        alignment: center;
+        Image {
+            source: root.icon;
+            width: 16px * Theme.scale;
+            height: 16px * Theme.scale;
+            y: (parent.height - self.height) / 2;
+            colorize: !root.enabled ? Theme.text-faint : root.active ? Theme.accent : root.tint;
         }
-        HorizontalLayout {
-            alignment: center;
-            spacing: 2px;
-            t := Text {
-                text: root.bare ? "" : root.label;
-                font-family: Theme.font;
-                font-size: Theme.fs-small;
-                color: root.enabled ? Theme.text : Theme.text-faint;
-                horizontal-alignment: center;
-                wrap: word-wrap;
-                max-width: 90px * Theme.scale;
-            }
-            if root.menu: Image {
-                source: Icons.chevron-down;
-                width: 10px;
-                height: 10px;
-                y: (parent.height - self.height) / 2;
-                colorize: Theme.text-dim;
-            }
+        if !root.bare: Text {
+            text: root.label;
+            font-family: Theme.font;
+            font-size: Theme.fs-small + 0.5px;
+            font-weight: root.active ? 600 : 400;
+            color: !root.enabled ? Theme.text-faint : root.active ? Theme.text : Theme.text-dim;
+            vertical-alignment: center;
+        }
+        if root.menu: Image {
+            source: Icons.chevron-down;
+            width: 10px;
+            height: 10px;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.text-dim;
         }
     }
     ta := TipArea {
         enabled: root.enabled;
-        tip: root.tip != "" ? root.tip : root.label;
+        tip: root.tip != "" ? (root.bare ? root.label + " – " + root.tip : root.tip) : root.label;
         clicked => {
             root.clicked();
         }
@@ -210,73 +206,55 @@ export component RowButton inherits Rectangle {
     }
 }
 
-/// Grupa wstążki: karta z lekkim tłem i obwódką, zawartość i podpis u dołu; odstęp od następnej.
+/// Grupa paska narzędzi: przyciski w rzędzie, za nią pionowa kreska oddzielająca od następnej.
+/// Tytuł nie jest rysowany (opis jest w podpowiedziach przycisków).
 export component Group inherits Rectangle {
     in property <string> title;
     in property <bool> last;
-    // Przycisk „wszystkie ustawienia” w prawym końcu nagłówka (jak w Wordzie); pusty tip = brak.
+    // Przycisk „wszystkie ustawienia” na końcu grupy; pusty tip = brak.
     in property <string> launcher-tip;
     in property <image> launcher-icon: Icons.sliders-horizontal;
     callback launch();
-    // Grupa mniej ważna – znika jako pierwsza, gdy wstążka się nie mieści (poziom 3).
+    // Grupa mniej ważna – znika jako pierwsza, gdy pasek się nie mieści (poziom 3).
     in property <bool> optional;
     property <bool> hidden: root.optional && Theme.ribbon-level >= 3;
     visible: !root.hidden;
     width: root.hidden ? 0px : self.preferred-width;
     clip: root.hidden;
-    // Każda grupa na pełną wysokość wstążki – ramki i nagłówki wszystkich grup równo u dołu.
     height: Theme.ribbon-h;
     HorizontalLayout {
         spacing: 0;
-        padding-top: 3px;
-        padding-bottom: 3px;
-        padding-right: root.last ? 0 : 6px;
-        Rectangle {
-            border-radius: Theme.r-small + 2px;
-            background: Theme.raised.with-alpha(0.45);
-            border-width: 1px;
-            border-color: Theme.line;
+        HorizontalLayout {
+            spacing: 2px;
+            alignment: start;
+            padding-left: 2px;
+            padding-right: 2px;
             VerticalLayout {
-                padding-left: 6px;
-                padding-right: 6px;
-                padding-top: 3px;
-                padding-bottom: 1px;
-                spacing: 2px;
+                alignment: center;
                 HorizontalLayout {
                     spacing: 2px;
                     alignment: start;
                     @children
                 }
-                // Wolne miejsce nad nagłówkiem – nagłówek zawsze przy dolnej krawędzi.
-                Rectangle {
-                    vertical-stretch: 1;
+            }
+            if root.launcher-tip != "": IconButton {
+                y: (parent.height - self.height) / 2;
+                size: 24px * Theme.scale;
+                icon-size: 13px * Theme.scale;
+                icon: root.launcher-icon;
+                tint: Theme.text-dim;
+                tip: root.launcher-tip;
+                clicked => {
+                    root.launch();
                 }
-                Rectangle {
-                    height: 14px * Theme.scale;
-                    Text {
-                        text: root.title;
-                        font-family: Theme.font;
-                        font-size: 10px * Theme.scale;
-                        letter-spacing: 0.4px;
-                        color: Theme.text-dim;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
-                        width: parent.width;
-                        height: parent.height;
-                    }
-                    if root.launcher-tip != "": IconButton {
-                        x: parent.width - self.width + 4px;
-                        y: (parent.height - self.height) / 2;
-                        size: 16px * Theme.scale;
-                        icon-size: 11px * Theme.scale;
-                        icon: root.launcher-icon;
-                        tint: Theme.text-dim;
-                        tip: root.launcher-tip;
-                        clicked => {
-                            root.launch();
-                        }
-                    }
-                }
+            }
+        }
+        if !root.last: Rectangle {
+            width: 13px;
+            Rectangle {
+                width: 1px;
+                height: parent.height * 0.5;
+                background: Theme.line-strong;
             }
         }
     }
@@ -871,8 +849,14 @@ export component Splitter inherits Rectangle {
     in property <length> reset: 300px;
     in property <string> tip;
     width: 5px;
-    background: ta.pressed || ta.has-hover ? Theme.accent.with-alpha(0.5) : Theme.line;
+    background: transparent;
     property <length> start;
+    // Widoczna jest tylko włoskowata linia; pod wskaźnikiem pogrubia się w kolorze akcentu.
+    Rectangle {
+        width: ta.pressed || ta.has-hover ? 3px : 1px;
+        background: ta.pressed || ta.has-hover ? Theme.accent.with-alpha(0.7) : Theme.line;
+        animate width { duration: 100ms; }
+    }
     ta := TipArea {
         tip: root.tip;
         mouse-cursor: ew-resize;
