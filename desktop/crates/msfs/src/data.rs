@@ -175,6 +175,14 @@ simvars! {
     rpm4: F = "GENERAL ENG RPM:4", "rpm";
     egt4: F = "GENERAL ENG EXHAUST GAS TEMPERATURE:4", "celsius";
     ff4: F = "ENG FUEL FLOW PPH:4", "pounds per hour";
+    tq1: F = "TURB ENG MAX TORQUE PERCENT:1", "percent";
+    tq2: F = "TURB ENG MAX TORQUE PERCENT:2", "percent";
+    tq3: F = "TURB ENG MAX TORQUE PERCENT:3", "percent";
+    tq4: F = "TURB ENG MAX TORQUE PERCENT:4", "percent";
+    prop_rpm1: F = "PROP RPM:1", "rpm";
+    prop_rpm2: F = "PROP RPM:2", "rpm";
+    prop_rpm3: F = "PROP RPM:3", "rpm";
+    prop_rpm4: F = "PROP RPM:4", "rpm";
     throttle2: F = "GENERAL ENG THROTTLE LEVER POSITION:2", "percent";
     throttle3: F = "GENERAL ENG THROTTLE LEVER POSITION:3", "percent";
     throttle4: F = "GENERAL ENG THROTTLE LEVER POSITION:4", "percent";
@@ -329,14 +337,23 @@ pub fn map(d: &MsfsData, paused: bool, axes_active: bool) -> FlightState {
     let lbs_per_gal = if d.fuel_lbs_per_gal > 0.0 { d.fuel_lbs_per_gal } else { 6.7 };
     let count = (d.engine_count as i64).clamp(0, 4) as usize;
     let raw = [
-        (d.n1_1, d.n2_1, d.rpm1, d.egt1, d.ff1, d.throttle1),
-        (d.n1_2, d.n2_2, d.rpm2, d.egt2, d.ff2, d.throttle2),
-        (d.n1_3, d.n2_3, d.rpm3, d.egt3, d.ff3, d.throttle3),
-        (d.n1_4, d.n2_4, d.rpm4, d.egt4, d.ff4, d.throttle4),
+        (d.n1_1, d.n2_1, d.rpm1, d.egt1, d.ff1, d.throttle1, d.tq1, d.prop_rpm1),
+        (d.n1_2, d.n2_2, d.rpm2, d.egt2, d.ff2, d.throttle2, d.tq2, d.prop_rpm2),
+        (d.n1_3, d.n2_3, d.rpm3, d.egt3, d.ff3, d.throttle3, d.tq3, d.prop_rpm3),
+        (d.n1_4, d.n2_4, d.rpm4, d.egt4, d.ff4, d.throttle4, d.tq4, d.prop_rpm4),
     ];
     let engines = raw[..count]
         .iter()
-        .map(|&(n1, n2, rpm, egt, ff, thr)| EngineData { n1_pct: r(n1, 1), n2_pct: r(n2, 1), rpm: r(rpm, 0), egt_c: r(egt, 0), fuel_flow_kg_h: r(ff * LBS_TO_KG, 0), throttle_pct: r(thr, 0) })
+        .map(|&(n1, n2, rpm, egt, ff, thr, tq, prop)| EngineData {
+            n1_pct: r(n1, 1),
+            n2_pct: r(n2, 1),
+            rpm: r(rpm, 0),
+            egt_c: r(egt, 0),
+            fuel_flow_kg_h: r(ff * LBS_TO_KG, 0),
+            throttle_pct: r(thr, 0),
+            torque_pct: r(tq, 1),
+            prop_rpm: r(prop, 0),
+        })
         .collect();
     let engine_type = engine_type_name(d.engine_type as i64).to_string();
     let (atc_model, atc_type) = (clean_atc_string(&d.atc_model), clean_atc_string(&d.atc_type));

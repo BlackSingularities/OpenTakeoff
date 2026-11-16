@@ -84,7 +84,7 @@ fn dial(c: &mut Canvas, p: &Pal, cx: f32, cy: f32, r: f32, v: f32, max: f32, end
 pub fn draw(c: &mut Canvas, d: &FlightData, style: DisplayStyle, w: f32, h: f32) {
     let p = pal(style);
     c.rect(0.0, 0.0, w, h, p.bg);
-    let engines: Vec<Engine> = if d.engines.is_empty() { vec![Engine { n1: f32::NAN, n2: f32::NAN, rpm: f32::NAN, egt: f32::NAN, ff: f32::NAN, thr: f32::NAN }; 2] } else { d.engines.iter().take(4).copied().collect() };
+    let engines: Vec<Engine> = if d.engines.is_empty() { vec![Engine::NAN; 2] } else { d.engines.iter().take(4).copied().collect() };
     let n = engines.len();
     let side = (w * 0.24).max(170.0).min(w * 0.4);
     let ew = w - side;
@@ -228,7 +228,7 @@ pub fn draw_ewd(c: &mut Canvas, d: &FlightData, w: f32, h: f32) {
     let x = |f: f32| ox + f * s;
     let y = |f: f32| oy + f * s;
     let p = pal(DisplayStyle::Airbus);
-    let nan = Engine { n1: f32::NAN, n2: f32::NAN, rpm: f32::NAN, egt: f32::NAN, ff: f32::NAN, thr: f32::NAN };
+    let nan = Engine::NAN;
     let engines: Vec<Engine> = if d.engines.is_empty() { vec![nan; 2] } else { d.engines.iter().take(2).copied().collect() };
     let cols: &[f32] = if engines.len() == 1 { &[0.33] } else { &[0.17, 0.49] };
     let mid = 0.33;

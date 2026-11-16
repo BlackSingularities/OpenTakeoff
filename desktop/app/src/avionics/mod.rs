@@ -9,6 +9,7 @@ pub mod boeing;
 pub mod data;
 pub mod e190;
 pub mod ecam;
+pub mod eicas;
 pub mod garmin;
 pub mod gauges;
 pub mod gfx;
@@ -126,11 +127,11 @@ pub fn render_nd(style: DisplayStyle, d: &FlightData, w: u32, h: u32, range_nm: 
 }
 
 /// Zegary silnika i systemów (każdy silnik: N1/RPM, EGT, przepływ paliwa) + paliwo, klapy, podwozie, trym.
-/// SD Airbusa (strona WHEEL) – obok kwadratowego E/WD.
-pub fn render_sd(d: &FlightData, w: u32, h: u32) -> slint::Image {
+/// Drugi kwadratowy ekran obok ekranu silników (SD Airbusa, prawa część EICAS/EWD pozostałych typów).
+pub fn render_sd(style: DisplayStyle, d: &FlightData, w: u32, h: u32) -> slint::Image {
     let mut c = Canvas::new(w, h);
     let (wf, hf) = (c.width(), c.height());
-    ecam::draw_sd(&mut c, d, wf, hf);
+    eicas::draw_secondary(&mut c, d, style, wf, hf);
     c.into_image()
 }
 
@@ -139,9 +140,9 @@ pub fn render_engines(style: DisplayStyle, d: &FlightData, w: u32, h: u32) -> sl
     let (wf, hf) = (c.width(), c.height());
     // Samoloty komunikacyjne: ekran silników w stylu kabiny (ECAM / EICAS)
     if matches!(style, DisplayStyle::Airbus | DisplayStyle::Boeing | DisplayStyle::B787 | DisplayStyle::Atr | DisplayStyle::Embraer) {
-        // Airbus w obszarze zbliżonym do kwadratu: E/WD jak w A320 (do dwóch silników)
-        if style == DisplayStyle::Airbus && d.engines.len() <= 2 && (0.75..=1.34).contains(&(wf / hf.max(1.0))) {
-            ecam::draw_ewd(&mut c, d, wf, hf);
+        // W obszarze zbliżonym do kwadratu: ekran silników jak w kabinie (do dwóch silników)
+        if eicas::has_square(style) && d.engines.len() <= 2 && (0.75..=1.34).contains(&(wf / hf.max(1.0))) {
+            eicas::draw_primary(&mut c, d, style, wf, hf);
         } else {
             ecam::draw(&mut c, d, style, wf, hf);
         }
@@ -150,7 +151,7 @@ pub fn render_engines(style: DisplayStyle, d: &FlightData, w: u32, h: u32) -> sl
     if let Some(p) = rect_path(0.0, 0.0, wf, hf) {
         c.fill_radial(&p, wf / 2.0, hf / 2.0, wf.max(hf) * 0.75, 0xFF2C2F33, 0xFF16171A);
     }
-    let engines: Vec<data::Engine> = if d.engines.is_empty() { vec![data::Engine { n1: f32::NAN, n2: f32::NAN, rpm: f32::NAN, egt: f32::NAN, ff: f32::NAN, thr: f32::NAN }] } else { d.engines.iter().take(4).copied().collect() };
+    let engines: Vec<data::Engine> = if d.engines.is_empty() { vec![data::Engine::NAN] } else { d.engines.iter().take(4).copied().collect() };
     let n = engines.len();
     let info_h = (hf * 0.16).clamp(34.0, 70.0);
     let area_h = hf - info_h;
@@ -255,7 +256,7 @@ mod tests {
         d.com1 = 118.3;
         d.nav1 = 110.3;
         d.squawk = Some("4721".into());
-        d.engines = vec![data::Engine { n1: 88.2, n2: 94.0, rpm: 2350.0, egt: 640.0, ff: 1450.0, thr: 85.0 }; 2];
+        d.engines = vec![data::Engine { n1: 88.2, n2: 94.0, rpm: 2350.0, egt: 640.0, ff: 1450.0, thr: 85.0, tq: 76.5, np: 980.0 }; 2];
         d.fuel_kg = 6400.0;
         d.flaps_index = Some(0);
         d.flaps_positions = Some(5);
@@ -306,6 +307,22 @@ mod tests {
             let mut c = Canvas::new(700, 700);
             ecam::draw_sd(&mut c, &d, 700.0, 700.0);
             c.pm.save_png(format!("{dir}/sd_a320.png")).unwrap();
+        }
+        let mut g = d.clone();
+        g.on_ground = true;
+        g.gear_down = Some(true);
+        g.parking_brake = Some(true);
+        g.flaps_index = Some(1);
+        g.fuel_tanks = Some((2100.0, 2200.0, 2100.0));
+        for (s, name) in [(DisplayStyle::Boeing, "b737"), (DisplayStyle::B787, "b787"), (DisplayStyle::Embraer, "e190"), (DisplayStyle::Atr, "atr72")] {
+            for (dd, sfx) in [(&d, "air"), (&g, "gnd")] {
+                let mut c = Canvas::new(700, 700);
+                eicas::draw_primary(&mut c, dd, s, 700.0, 700.0);
+                c.pm.save_png(format!("{dir}/eicas_{name}_{sfx}_1.png")).unwrap();
+                let mut c = Canvas::new(700, 700);
+                eicas::draw_secondary(&mut c, dd, s, 700.0, 700.0);
+                c.pm.save_png(format!("{dir}/eicas_{name}_{sfx}_2.png")).unwrap();
+            }
         }
     }
 }

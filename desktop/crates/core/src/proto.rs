@@ -260,6 +260,9 @@ pub struct EngineData {
     pub egt_c: f64,
     pub fuel_flow_kg_h: f64,
     pub throttle_pct: f64,
+    /// Turbośmigłowe: moment obrotowy (% maksymalnego) i obroty śmigła – 0, gdy symulator ich nie podaje.
+    pub torque_pct: f64,
+    pub prop_rpm: f64,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

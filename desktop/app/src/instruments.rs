@@ -148,7 +148,7 @@ pub fn refresh() {
         ndb: set.nd_layers & 4 != 0,
         has_data: snap.is_some(),
         title: SharedString::from(snap.as_ref().map(|s| s.aircraft.title.clone()).unwrap_or_default()),
-        airbus: style == DisplayStyle::Airbus && d.engines.len() <= 2,
+        square: avionics::eicas::has_square(style) && d.engines.len() <= 2,
     });
     // Kokpit: PFD + ND + silniki; Zegary: panel analogowy + silniki; Wszystko: PFD, ND, panel, silniki
     if layout != 1 {
@@ -174,9 +174,9 @@ pub fn refresh() {
     if let Some((w, h)) = px(ENGINES) {
         app.set_instr_engines(avionics::render_engines(style, &d, w, h));
     }
-    if layout == 0 && style == DisplayStyle::Airbus {
+    if layout == 0 && avionics::eicas::has_square(style) {
         if let Some((w, h)) = px(SD) {
-            app.set_instr_sd(avionics::render_sd(&d, w, h));
+            app.set_instr_sd(avionics::render_sd(style, &d, w, h));
         }
     }
 }

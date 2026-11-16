@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -65,23 +65,18 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: gradle :app:assembleRelease --no-daemon --stacktrace
 
-      - name: Publikuj release
-        if: github.ref_type == 'tag'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          cp app/build/outputs/apk/release/app-release.apk "OpenTakeoff-$APP_VERSION.apk"
-          NOTES=$(git log -1 --pretty=format:'%s%n%n%b')
-          gh release create "$GITHUB_REF_NAME" "OpenTakeoff-$APP_VERSION.apk" \
-            --title "OpenTakeoff $APP_VERSION" \
-            --notes "$NOTES" \
-            --verify-tag
+      - name: APK do publikacji
+        run: cp app/build/outputs/apk/release/app-release.apk "OpenTakeoff-$APP_VERSION.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: OpenTakeoff-*.apk
 
   # OpenTakeoff dla Windows (Rust): dziennik lotów, briefing i most MSFS ↔ telefon – dawny OpenTakeoff Link.
-  # Osobny job po APK: jego błąd nie blokuje wydania aplikacji. Instalator trafia do tego samego wydania,
-  # a redzikowski.com pokazuje go jako wersję na Windows.
+  # Buduje się równolegle z APK; wydanie powstaje dopiero z oboma plikami (job publish),
+  # a redzikowski.com pokazuje instalator jako wersję na Windows.
   windows:
-    needs: release
     runs-on: windows-latest
     defaults:
       run:
@@ -134,16 +129,34 @@ jobs:
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
           & $iscc "/DAppVersion=$env:APP_VERSION" installer/OpenTakeoff.iss
           if ($LASTEXITCODE -ne 0) { throw "Instalator nie powstał" }
-          Get-FileHash ../out/* -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } | Set-Content ../out/SHA256SUMS.txt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: OpenTakeoff-Windows-${{ env.APP_VERSION }}
-          path: out/*
+          name: windows
+          path: out/OpenTakeoff-Setup-*.exe
 
-      - name: Dołącz do release
-        if: github.ref_type == 'tag'
-        shell: bash
+  # Wydanie zawsze z kompletem: APK + instalator Windows + sumy kontrolne. Gdy któryś build padnie,
+  # wydania nie ma wcale (kanał aktualizacji zostaje na poprzedniej, pełnej wersji).
+  publish:
+    needs: [android, windows]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publikuj release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" ../out/* --clobber
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ls dist
+          test -f "dist/OpenTakeoff-$VERSION.apk" || { echo "::error::Brak APK"; exit 1; }
+          test -f "dist/OpenTakeoff-Setup-$VERSION.exe" || { echo "::error::Brak instalatora Windows"; exit 1; }
+          (cd dist && sha256sum OpenTakeoff-* > SHA256SUMS.txt)
+          NOTES=$(git log -1 --pretty=format:'%s%n%n%b')
+          gh release create "$GITHUB_REF_NAME" dist/* --title "OpenTakeoff $VERSION" --notes "$NOTES" --verify-tag

@@ -1,3 +1,9 @@
+## 3.4.2
+
+- Kwadratowe ekrany silników i systemów jak w kabinie także dla Boeinga 737, Boeinga 787, Embraera E190 i ATR 72-600 (dotąd tylko Airbus). 737: kolumna N1, EGT, N2 i przepływu paliwa z okrągłymi zegarami jak w EIS oraz prawy ekran z okrągłym wskaźnikiem klap, światłami podwozia i paliwem w zbiornikach. 787: kolumna silników EICAS i prawa część z komunikatami, taśmą klap, podwoziem, trymem i paliwem. E190: zegary N1 i ITT z polami cyfrowymi, N2 i FF oraz dolna część EICAS (paliwo, podwozie, sloty/klapy, trym). ATR 72-600: EWD z TQ, NP, ITT, NH i FF oraz trym, klapy, podwozie, paliwo i komunikaty.
+- Nowe dane z MSFS i X-Plane: moment obrotowy i obroty śmigła silników turbośmigłowych, paliwo w zbiornikach, hamulec postojowy i uzbrojenie spoilerów.
+- Wydanie powstaje dopiero, gdy gotowe są oba pliki – APK i instalator Windows – więc najnowsza wersja zawsze ma oba do pobrania.
+
 ## 3.4.1
 
 - Ekran silników Airbusa jak w A320: w układzie Kokpit, gdy jest miejsce, pod PFD i ND stoją dwa kwadratowe ekrany – E/WD (zegary N1 i EGT, N2 i przepływ paliwa cyfrowo, podpisy między silnikami, FOB, wskaźnik slotów i klap, pole komunikatów) i SD ze stroną WHEEL (spoilery, podwozie, trym, przeciążenie oraz dolny pasek SAT, UTC i FOB). W mniejszym oknie zostaje dotychczasowy pasek silników.

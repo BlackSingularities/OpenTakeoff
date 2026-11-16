@@ -99,6 +99,7 @@ const D: &[(&str, &str)] = &[
     ("taxi", "sim/cockpit2/switches/taxi_light_on"),
     ("fuel", "sim/flightmodel/weight/m_fuel_total"),
     ("engines", "sim/aircraft/engine/acf_num_engines"),
+    ("trq_max", "sim/aircraft/controls/acf_trq_max_eng"),
     ("en_type", "sim/aircraft/prop/acf_en_type[0]"),
     ("wind_dir", "sim/weather/wind_direction_degt"),
     // mimo nazwy: m/s
@@ -114,6 +115,8 @@ const ENGINE_REFS: &[(&str, &str)] = &[
     ("rpm", "sim/cockpit2/engine/indicators/engine_speed_rpm"),
     ("egt", "sim/cockpit2/engine/indicators/EGT_deg_C"),
     ("ff", "sim/cockpit2/engine/indicators/fuel_flow_kg_sec"),
+    ("trq", "sim/cockpit2/engine/indicators/torque_n_mtr"),
+    ("prop_rpm", "sim/cockpit2/engine/indicators/prop_speed_rpm"),
 ];
 
 const TITLE_REF: &str = "sim/aircraft/view/acf_ui_name";
@@ -496,6 +499,8 @@ impl Inner {
                     "n1Pct": round(v(&format!("n1{i}")), 1), "n2Pct": round(v(&format!("n2{i}")), 1), "rpm": v(&format!("rpm{i}")).round(),
                     "egtC": v(&format!("egt{i}")).round(), "fuelFlowKgH": round(v(&format!("ff{i}")) * 3600.0, 1),
                     "throttlePct": round(v(&format!("throttle{i}")) * 100.0, 1),
+                    "torquePct": if v("trq_max") > 1.0 { round(v(&format!("trq{i}")) / v("trq_max") * 100.0, 1) } else { 0.0 },
+                    "propRpm": v(&format!("prop_rpm{i}")).round(),
                 })
             })
             .collect();

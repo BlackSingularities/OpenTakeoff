@@ -176,8 +176,12 @@ pub struct FlightData {
     /// Silniki (do pasków EIS na MFD i zegarów silnika).
     pub engines: Vec<Engine>,
     pub fuel_kg: f32,
+    /// Paliwo w zbiornikach: lewy, środkowy, prawy (kg).
+    pub fuel_tanks: Option<(f32, f32, f32)>,
     pub piston: bool,
     pub trim_pct: f32,
+    pub parking_brake: Option<bool>,
+    pub spoilers_armed: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -188,6 +192,14 @@ pub struct Engine {
     pub egt: f32,
     pub ff: f32,
     pub thr: f32,
+    /// Moment obrotowy (%) i obroty śmigła – NaN, gdy symulator ich nie podaje.
+    pub tq: f32,
+    pub np: f32,
+}
+
+impl Engine {
+    /// Silnik bez danych (flagi XX na wyświetlaczach).
+    pub const NAN: Engine = Engine { n1: f32::NAN, n2: f32::NAN, rpm: f32::NAN, egt: f32::NAN, ff: f32::NAN, thr: f32::NAN, tq: f32::NAN, np: f32::NAN };
 }
 
 impl Default for FlightData {
@@ -268,6 +280,9 @@ impl Default for FlightData {
             sim_time: None,
             engines: Vec::new(),
             fuel_kg: NAN,
+            fuel_tanks: None,
+            parking_brake: None,
+            spoilers_armed: false,
             piston: false,
             trim_pct: NAN,
         }
@@ -499,8 +514,29 @@ impl FlightData {
             let hm = t.get(i + 1..i + 6)?;
             Some(format!("{}{}Z", &hm[0..2], &hm[3..5]))
         });
-        d.engines = s.engines.iter().map(|e| Engine { n1: e.n1_pct as f32, n2: e.n2_pct as f32, rpm: e.rpm as f32, egt: e.egt_c as f32, ff: e.fuel_flow_kg_h as f32, thr: e.throttle_pct as f32 }).collect();
+        let turboprop = s.aircraft.engine_type == "turboprop";
+        d.engines = s
+            .engines
+            .iter()
+            .map(|e| Engine {
+                n1: e.n1_pct as f32,
+                n2: e.n2_pct as f32,
+                rpm: e.rpm as f32,
+                egt: e.egt_c as f32,
+                ff: e.fuel_flow_kg_h as f32,
+                thr: e.throttle_pct as f32,
+                // 0 przy pracującym silniku = symulator nie podaje (np. starsza wersja mostu)
+                tq: if e.torque_pct > 0.0 || e.n1_pct < 30.0 { e.torque_pct as f32 } else { NAN },
+                np: if e.prop_rpm > 0.0 { e.prop_rpm as f32 } else if turboprop && e.rpm > 0.0 { e.rpm as f32 } else if e.n1_pct < 30.0 { 0.0 } else { NAN },
+            })
+            .collect();
         d.fuel_kg = s.fuel.total_kg as f32;
+        let t = &s.fuel.tanks;
+        if t.left_kg + t.center_kg + t.right_kg > 0.0 {
+            d.fuel_tanks = Some((t.left_kg as f32, t.center_kg as f32, t.right_kg as f32));
+        }
+        d.parking_brake = Some(s.controls.parking_brake);
+        d.spoilers_armed = s.controls.spoilers_armed;
         d.piston = s.aircraft.engine_type == "piston" || s.engines.iter().all(|e| e.n1_pct < 0.5);
         d.trim_pct = s.controls.elevator_trim_pct as f32;
         d

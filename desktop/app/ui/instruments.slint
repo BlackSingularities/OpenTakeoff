@@ -78,13 +78,13 @@ export component Instruments inherits Rectangle {
                 vertical-alignment: center;
             }
         }
-        // Kokpit: PFD | ND, pod spodem silniki. Airbus: dwa kwadratowe ekrany jak w A320 (E/WD i SD),
+        // Kokpit: PFD | ND, pod spodem silniki. Odrzutowce i ATR: dwa kwadratowe ekrany jak w kabinie (np. E/WD i SD),
         // gdy zmieszczą się co najmniej w 200 px; inaczej pasek silników na całą szerokość.
         if App.instr.layout == 0: area := Rectangle {
             vertical-stretch: 1;
             property <length> gap: 8px;
             property <length> sq: min((self.height - self.gap) * 0.4, (self.width - self.gap) / 2);
-            property <bool> square: App.instr.airbus && self.sq >= 200px;
+            property <bool> square: App.instr.square && self.sq >= 200px;
             property <length> bottom: self.square ? self.sq : (self.height - self.gap) / 4;
             HorizontalLayout {
                 x: 0;
