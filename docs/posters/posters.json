@@ -11,13 +11,61 @@
       "title": "Odprawa przed lotem *w kieszeni*",
       "lead": "Aktualna pogoda lotniskowa, pas w użyciu, planowanie trasy i checklisty, a po połączeniu z MSFS cały kokpit na telefonie.",
       "shots": [
-        { "src": "../screenshots/android/01-lotniska.png", "caption": "Lotniska" },
-        { "src": "../screenshots/android/02-odprawa.png", "caption": "METAR" },
-        { "src": "../screenshots/android/03-trasa.png", "caption": "Trasa" },
-        { "src": "../screenshots/android/04-checklista.png", "caption": "Checklisty" }
+        {
+          "src": "../screenshots/android/01-lotniska.png",
+          "caption": "Lotniska"
+        },
+        {
+          "src": "../screenshots/android/02-odprawa.png",
+          "caption": "METAR"
+        },
+        {
+          "src": "../screenshots/android/03-trasa.png",
+          "caption": "Trasa"
+        },
+        {
+          "src": "../screenshots/android/04-checklista.png",
+          "caption": "Checklisty"
+        }
       ],
-      "features": ["METAR, TAF i SIGMET", "ATIS czytany na głos", "pas wg wiatru", "kokpit dla MSFS 2024", "mapa 3D ze śladem lotu", "dziennik lotów"],
+      "features": [
+        "METAR, TAF i SIGMET",
+        "ATIS czytany na głos",
+        "pas wg wiatru",
+        "kokpit dla MSFS 2024",
+        "mapa 3D ze śladem lotu",
+        "dziennik lotów"
+      ],
       "meta": "Android 8 lub nowszy"
+    },
+    {
+      "platform": "windows",
+      "file": "windows.png",
+      "title": "Kabina, mapa i dziennik *na drugim ekranie*",
+      "lead": "Most między MSFS albo X-Plane a telefonem, a na komputerze przyrządy w stylu kabiny, mapa nawigacyjna z radarem i METAR-ami, analiza lądowania i odtwarzanie lotów w 3D.",
+      "shots": [
+        {
+          "src": "../screenshots/windows/01-mapa.png",
+          "caption": "Mapa z radarem i METAR"
+        },
+        {
+          "src": "../screenshots/windows/02-przyrzady.png",
+          "caption": "PFD i ND"
+        },
+        {
+          "src": "../screenshots/windows/04-statystyki.png",
+          "caption": "Osiągnięcia"
+        }
+      ],
+      "features": [
+        "MSFS 2024 i X-Plane 11/12",
+        "PFD, ND, ECAM/EICAS",
+        "radar opadów i METAR",
+        "analiza lądowania",
+        "odtwarzanie lotu w 3D",
+        "strony dla OBS"
+      ],
+      "meta": "Windows 10 i 11 · instalator z aktualizacjami"
     }
   ]
 }
