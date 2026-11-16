@@ -78,13 +78,20 @@ export component Instruments inherits Rectangle {
                 vertical-alignment: center;
             }
         }
-        // Kokpit: PFD | ND, pod spodem silniki
-        if App.instr.layout == 0: VerticalLayout {
-            spacing: 8px;
+        // Kokpit: PFD | ND, pod spodem silniki. Airbus: dwa kwadratowe ekrany jak w A320 (E/WD i SD),
+        // gdy zmieszczą się co najmniej w 200 px; inaczej pasek silników na całą szerokość.
+        if App.instr.layout == 0: area := Rectangle {
             vertical-stretch: 1;
+            property <length> gap: 8px;
+            property <length> sq: min((self.height - self.gap) * 0.4, (self.width - self.gap) / 2);
+            property <bool> square: App.instr.airbus && self.sq >= 200px;
+            property <length> bottom: self.square ? self.sq : (self.height - self.gap) / 4;
             HorizontalLayout {
-                spacing: 8px;
-                vertical-stretch: 3;
+                x: 0;
+                y: 0;
+                width: parent.width;
+                height: parent.height - area.bottom - area.gap;
+                spacing: area.gap;
                 Screen {
                     id: 10;
                     horizontal-stretch: 1;
@@ -98,10 +105,29 @@ export component Instruments inherits Rectangle {
                     caption: "ND";
                 }
             }
-            Screen {
+            if !area.square: Screen {
                 id: 13;
-                vertical-stretch: 1;
+                x: 0;
+                y: parent.height - area.bottom;
+                width: parent.width;
+                height: area.bottom;
                 source: App.instr-engines;
+            }
+            if area.square: Screen {
+                id: 13;
+                x: (parent.width - 2 * area.sq - area.gap) / 2;
+                y: parent.height - area.sq;
+                width: area.sq;
+                height: area.sq;
+                source: App.instr-engines;
+            }
+            if area.square: Screen {
+                id: 15;
+                x: (parent.width - 2 * area.sq - area.gap) / 2 + area.sq + area.gap;
+                y: parent.height - area.sq;
+                width: area.sq;
+                height: area.sq;
+                source: App.instr-sd;
             }
         }
         // Zegary analogowe + silniki

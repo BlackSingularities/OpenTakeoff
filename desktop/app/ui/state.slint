@@ -261,6 +261,8 @@ export struct InstrV {
     ndb: bool,
     has-data: bool,
     title: string,
+    // Airbus (do dwóch silników): kwadratowe E/WD i SD w układzie Kokpit
+    airbus: bool,
 }
 
 export struct RowV {
@@ -582,6 +584,7 @@ export global App {
     in property <image> instr-nd;
     in property <image> instr-panel;
     in property <image> instr-engines;
+    in property <image> instr-sd;
     // Mapa nawigacyjna i 3D
     in property <NavV> nav;
     in property <image> map-nav;

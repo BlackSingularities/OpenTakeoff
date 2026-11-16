@@ -126,12 +126,25 @@ pub fn render_nd(style: DisplayStyle, d: &FlightData, w: u32, h: u32, range_nm: 
 }
 
 /// Zegary silnika i systemów (każdy silnik: N1/RPM, EGT, przepływ paliwa) + paliwo, klapy, podwozie, trym.
+/// SD Airbusa (strona WHEEL) – obok kwadratowego E/WD.
+pub fn render_sd(d: &FlightData, w: u32, h: u32) -> slint::Image {
+    let mut c = Canvas::new(w, h);
+    let (wf, hf) = (c.width(), c.height());
+    ecam::draw_sd(&mut c, d, wf, hf);
+    c.into_image()
+}
+
 pub fn render_engines(style: DisplayStyle, d: &FlightData, w: u32, h: u32) -> slint::Image {
     let mut c = Canvas::new(w, h);
     let (wf, hf) = (c.width(), c.height());
     // Samoloty komunikacyjne: ekran silników w stylu kabiny (ECAM / EICAS)
     if matches!(style, DisplayStyle::Airbus | DisplayStyle::Boeing | DisplayStyle::B787 | DisplayStyle::Atr | DisplayStyle::Embraer) {
-        ecam::draw(&mut c, d, style, wf, hf);
+        // Airbus w obszarze zbliżonym do kwadratu: E/WD jak w A320 (do dwóch silników)
+        if style == DisplayStyle::Airbus && d.engines.len() <= 2 && (0.75..=1.34).contains(&(wf / hf.max(1.0))) {
+            ecam::draw_ewd(&mut c, d, wf, hf);
+        } else {
+            ecam::draw(&mut c, d, style, wf, hf);
+        }
         return c.into_image();
     }
     if let Some(p) = rect_path(0.0, 0.0, wf, hf) {
@@ -285,6 +298,14 @@ mod tests {
             let mut c = Canvas::new(900, 700);
             ecam::draw(&mut c, &d, s, 900.0, 700.0);
             c.pm.save_png(format!("{dir}/ecam_{name}.png")).unwrap();
+        }
+        {
+            let mut c = Canvas::new(700, 700);
+            ecam::draw_ewd(&mut c, &d, 700.0, 700.0);
+            c.pm.save_png(format!("{dir}/ewd_a320.png")).unwrap();
+            let mut c = Canvas::new(700, 700);
+            ecam::draw_sd(&mut c, &d, 700.0, 700.0);
+            c.pm.save_png(format!("{dir}/sd_a320.png")).unwrap();
         }
     }
 }

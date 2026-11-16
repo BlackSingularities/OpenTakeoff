@@ -13,12 +13,13 @@ use crate::avionics::{self, gauges, nd, DisplayStyle, FlightData};
 use crate::settings::ND_RANGES;
 use crate::*;
 
-/// Identyfikatory obszarów (App.map-event): 10 PFD, 11 ND, 12 zegary, 13 silniki, 14 PFD na karcie Na żywo.
+/// Identyfikatory obszarów (App.map-event): 10 PFD, 11 ND, 12 zegary, 13 silniki, 14 PFD na karcie Na żywo, 15 SD Airbusa.
 pub const PFD: i32 = 10;
 pub const ND: i32 = 11;
 pub const PANEL: i32 = 12;
 pub const ENGINES: i32 = 13;
 pub const LIVE_PFD: i32 = 14;
+pub const SD: i32 = 15;
 
 thread_local! {
     static SIZES: RefCell<HashMap<i32, (f32, f32)>> = RefCell::new(HashMap::new());
@@ -147,6 +148,7 @@ pub fn refresh() {
         ndb: set.nd_layers & 4 != 0,
         has_data: snap.is_some(),
         title: SharedString::from(snap.as_ref().map(|s| s.aircraft.title.clone()).unwrap_or_default()),
+        airbus: style == DisplayStyle::Airbus && d.engines.len() <= 2,
     });
     // Kokpit: PFD + ND + silniki; Zegary: panel analogowy + silniki; Wszystko: PFD, ND, panel, silniki
     if layout != 1 {
@@ -171,6 +173,11 @@ pub fn refresh() {
     }
     if let Some((w, h)) = px(ENGINES) {
         app.set_instr_engines(avionics::render_engines(style, &d, w, h));
+    }
+    if layout == 0 && style == DisplayStyle::Airbus {
+        if let Some((w, h)) = px(SD) {
+            app.set_instr_sd(avionics::render_sd(&d, w, h));
+        }
     }
 }
 

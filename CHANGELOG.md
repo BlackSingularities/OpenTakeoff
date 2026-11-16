@@ -1,3 +1,7 @@
+## 3.4.1
+
+- Ekran silników Airbusa jak w A320: w układzie Kokpit, gdy jest miejsce, pod PFD i ND stoją dwa kwadratowe ekrany – E/WD (zegary N1 i EGT, N2 i przepływ paliwa cyfrowo, podpisy między silnikami, FOB, wskaźnik slotów i klap, pole komunikatów) i SD ze stroną WHEEL (spoilery, podwozie, trym, przeciążenie oraz dolny pasek SAT, UTC i FOB). W mniejszym oknie zostaje dotychczasowy pasek silników.
+
 ## 3.4.0
 
 - Pogoda na mapie nawigacyjnej: radar opadów (RainViewer, odświeżany co 5 minut) i METAR-y lotnisk z widocznego obszaru – kółka w kolorze kategorii lotu (VFR, MVFR, IFR, LIFR) z chorągiewką wiatru, po kliknięciu stacji pełna depesza z rozkodowaniem w panelu bocznym; czas radaru i liczba stacji pod mapą.
