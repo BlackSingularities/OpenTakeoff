@@ -421,6 +421,61 @@ export component Sidebar inherits Rectangle {
                     }
                 }
             }
+            // Plan lotu z SimBrief
+            if App.plan.loaded: SideLine { }
+            if App.plan.loaded: SideSection {
+                title: @tr("Plan lotu");
+                icon: Icons.route;
+                action-icon: Icons.map;
+                action-tip: @tr("Pokaż trasę na mapie");
+                go => {
+                    App.cmd("plan-map", "");
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: App.plan.origin;
+                        font-family: Theme.mono;
+                        font-size: 15px * Theme.scale;
+                        font-weight: 700;
+                        color: Theme.text;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        Bar {
+                            value: App.plan.progress;
+                        }
+                    }
+                    Text {
+                        text: App.plan.dest;
+                        font-family: Theme.mono;
+                        font-size: 15px * Theme.scale;
+                        font-weight: 700;
+                        color: Theme.text;
+                    }
+                }
+                VerticalLayout {
+                    spacing: 0;
+                    if App.plan.live: SidePair {
+                        k: @tr("Następny");
+                        v: App.plan.next + "  " + App.plan.next-dist;
+                    }
+                    SidePair {
+                        k: @tr("Do celu");
+                        v: App.plan.live ? App.plan.remaining : App.plan.distance;
+                    }
+                    SidePair {
+                        k: @tr("Przelot");
+                        v: App.plan.cruise + (App.plan.ete != "" ? "  ·  " + App.plan.ete : "");
+                    }
+                    if App.plan.live && App.plan.fuel-plan != "": SidePair {
+                        k: @tr("Paliwo");
+                        v: App.plan.fuel-now + " (" + App.plan.fuel-diff + ")";
+                        tone: App.plan.fuel-ok ? Theme.ok : Colors.warn;
+                    }
+                }
+            }
             if root.has: SideLine { }
             // Autopilot i trasa
             if root.has: SideSection {

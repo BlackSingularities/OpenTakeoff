@@ -340,7 +340,7 @@ pub fn refresh_live(force_map: bool) {
         let lights: Vec<&str> = [(l.beacon, "BCN"), (l.strobe, "STRB"), (l.nav, "NAV"), (l.landing, "LDG"), (l.taxi, "TAXI"), (l.logo, "LOGO")].into_iter().filter(|x| x.0).map(|x| x.1).collect();
         live.lights = ss(if lights.is_empty() { tr("wyłączone").to_string() } else { lights.join(" ") });
         let g = &av.gps;
-        live.next_wp = ss(if g.next_id.is_empty() { tr("brak planu lotu w MSFS").to_string() } else { format!("{} ({:03.0}°)", g.next_id, g.next_bearing_mag_deg) });
+        live.next_wp = ss(if g.next_id.is_empty() { tr("brak planu lotu w symulatorze").to_string() } else { format!("{} ({:03.0}°)", g.next_id, g.next_bearing_mag_deg) });
         live.next_dist = ss(if g.next_id.is_empty() { String::new() } else { u.dist(g.next_dist_nm) });
         live.next_ete = ss(fmt::ete(g.next_ete_sec));
         live.dest_ete = ss(fmt::ete(g.dest_ete_sec));

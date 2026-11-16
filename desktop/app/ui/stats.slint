@@ -20,7 +20,7 @@ component Bars inherits Rectangle {
             spacing: 3px;
             Text {
                 text: b.text;
-                font-family: Theme.font;
+                font-family: Theme.mono;
                 font-size: 10px;
                 color: Theme.text-faint;
                 horizontal-alignment: center;
@@ -193,7 +193,7 @@ export component Stats inherits Rectangle {
                         spacing: 8px;
                         HorizontalLayout {
                             Heading {
-                                text: @tr("W MIESIĄCACH");
+                                text: @tr("W miesiącach");
                                 icon: Icons.chart-column;
                                 horizontal-stretch: 1;
                             }
@@ -217,7 +217,7 @@ export component Stats inherits Rectangle {
                         padding: 12px;
                         spacing: 8px;
                         Heading {
-                            text: @tr("OCENY LĄDOWAŃ");
+                            text: @tr("Oceny lądowań");
                             icon: Icons.plane-landing;
                         }
                         Bars {
@@ -231,20 +231,20 @@ export component Stats inherits Rectangle {
                 spacing: 12px;
                 RankList {
                     horizontal-stretch: 1;
-                    title: @tr("SAMOLOTY");
+                    title: @tr("Samoloty");
                     icon: Icons.plane;
                     rows: App.stats-aircraft;
                 }
                 RankList {
                     horizontal-stretch: 1;
-                    title: @tr("LOTNISKA");
+                    title: @tr("Lotniska");
                     icon: Icons.map-pin;
                     rows: App.stats-airports;
                     open: "airport-open";
                 }
                 RankList {
                     horizontal-stretch: 1;
-                    title: @tr("TRASY");
+                    title: @tr("Trasy");
                     icon: Icons.route;
                     rows: App.stats-routes;
                 }
@@ -254,7 +254,7 @@ export component Stats inherits Rectangle {
                         padding: 10px;
                         spacing: 2px;
                         Heading {
-                            text: @tr("REKORDY");
+                            text: @tr("Rekordy");
                             icon: Icons.trophy;
                         }
                         Record {
@@ -290,7 +290,7 @@ export component Stats inherits Rectangle {
                     padding: 12px;
                     spacing: 8px;
                     Heading {
-                        text: @tr("MAPA WSZYSTKICH LOTÓW");
+                        text: @tr("Mapa wszystkich lotów");
                         icon: Icons.globe;
                     }
                     MapView {

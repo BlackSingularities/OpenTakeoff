@@ -206,7 +206,7 @@ component RowItem inherits Rectangle {
             }
             Text {
                 text: root.item.a;
-                font-family: "Consolas";
+                font-family: Theme.mono;
                 font-size: Theme.fs-small;
                 color: Theme.accent;
             }
@@ -301,7 +301,7 @@ export component NavMap inherits Rectangle {
                     }
                 }
                 if App.nav-info.length > 0: Box {
-                    title: @tr("SAMOLOT");
+                    title: @tr("Samolot");
                     icon: Icons.plane;
                     for kv in App.nav-info: Pair {
                         k: kv.k;
@@ -309,18 +309,18 @@ export component NavMap inherits Rectangle {
                     }
                 }
                 if App.nav-hover != "": Box {
-                    title: @tr("KURSOR");
+                    title: @tr("Kursor");
                     icon: Icons.crosshair;
                     Text {
                         text: App.nav-hover;
-                        font-family: "Consolas";
+                        font-family: Theme.mono;
                         font-size: Theme.fs-small;
                         color: Theme.text;
                         wrap: word-wrap;
                     }
                 }
                 Box {
-                    title: @tr("NAJBLIŻSZE VOR / NDB");
+                    title: @tr("Najbliższe VOR / NDB");
                     icon: Icons.radio-tower;
                     if App.nav-vors.length == 0: Text {
                         text: @tr("Baza pomocy nawigacyjnych wczytuje się razem z bazą lotnisk.");
@@ -337,7 +337,7 @@ export component NavMap inherits Rectangle {
                     }
                 }
                 Box {
-                    title: @tr("NAJBLIŻSZE LOTNISKA");
+                    title: @tr("Najbliższe lotniska");
                     icon: Icons.map-pin;
                     for r in App.nav-airports: RowItem {
                         item: r;

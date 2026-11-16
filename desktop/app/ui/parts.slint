@@ -130,7 +130,7 @@ export component Pair inherits HorizontalLayout {
     }
     Text {
         text: root.v == "" ? "—" : root.v;
-        font-family: root.mono ? "Consolas" : Theme.font;
+        font-family: root.mono ? Theme.mono : Theme.font;
         font-size: Theme.fs;
         color: Theme.text;
         vertical-alignment: center;

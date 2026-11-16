@@ -191,6 +191,8 @@ export struct NavV {
     has-ref: bool,
     has-sel: bool,
     has-data: bool,
+    plan: bool,
+    shots: bool,
 }
 
 export struct InstrV {
@@ -312,8 +314,142 @@ export struct OptV {
     label: string,
 }
 
+
+export struct LandingCfgV {
+    enabled: bool,
+    monitor: int,
+    position: int,
+    size: int,
+    layout: int,
+    seconds: int,
+    opacity: float,
+    margin: int,
+    tone: int,
+    show-score: bool,
+    show-vs: bool,
+    show-g: bool,
+    show-speed: bool,
+    show-runway: bool,
+    show-offsets: bool,
+    show-bounces: bool,
+    show-wind: bool,
+    show-notes: bool,
+    show-airport: bool,
+    show-aircraft: bool,
+    show-scale: bool,
+    click-through: bool,
+}
+
+export struct StreamCfgV {
+    enabled: bool,
+    monitor: int,
+    edge: int,
+    width: float,
+    align: int,
+    size: int,
+    opacity: float,
+    style: int,
+    show-labels: bool,
+    show-logo: bool,
+    accent-line: bool,
+    click-through: bool,
+    title: string,
+}
+
+export struct OverlayCfgV {
+    enabled: bool,
+    monitor: int,
+    position: int,
+    content: int,
+    size: int,
+    opacity: float,
+    margin: int,
+    show-title: bool,
+    click-through: bool,
+}
+
+export struct StreamFieldV {
+    key: string,
+    label: string,
+    on: bool,
+}
+
+// Ostatnie lądowanie (Pulpit)
+export struct LastLandingV {
+    has: bool,
+    score: int,
+    grade: string,
+    vs: string,
+    g: string,
+    runway: string,
+    airport: string,
+    along: string,
+    time: string,
+}
+
+// Plan lotu z SimBrief
+export struct PlanV {
+    loaded: bool,
+    origin: string,
+    origin-name: string,
+    dest: string,
+    dest-name: string,
+    altn: string,
+    callsign: string,
+    aircraft: string,
+    route: string,
+    cruise: string,
+    distance: string,
+    ete: string,
+    ramp: string,
+    burn: string,
+    reserve: string,
+    zfw: string,
+    tow: string,
+    ci: string,
+    dep-rwy: string,
+    arr-rwy: string,
+    fetched: string,
+    // Postęp na żywo
+    live: bool,
+    next: string,
+    next-dist: string,
+    remaining: string,
+    progress: float,
+    fuel-plan: string,
+    fuel-now: string,
+    fuel-diff: string,
+    fuel-ok: bool,
+}
+
+export struct PlanFixV {
+    ident: string,
+    via: string,
+    alt: string,
+    dist: string,
+    fuel: string,
+    wind: string,
+    passed: bool,
+    next: bool,
+}
+
+// Zrzut ekranu z miejscem samolotu
+export struct ShotV {
+    id: string,
+    thumb: image,
+    time: string,
+    date: string,
+    place: string,
+    alt: string,
+    info: string,
+    coords: string,
+    aircraft: string,
+    has-pos: bool,
+}
+
 export global App {
-    // 0 Pulpit, 1 Na żywo, 2 Dziennik, 3 Statystyki, 4 Lotniska, 5 Narzędzia, 6 Telefony, 7 Ustawienia
+    // 0 Pulpit, 1 Na żywo, 2 Dziennik, 3 Statystyki, 4 Lotniska, 5 Narzędzia, 6 Telefony, 7 Ustawienia,
+    // 8 Przyrządy, 9 Mapa, 10 Nakładki, 11 Zrzuty
     in-out property <int> tab: 0;
     in-out property <bool> maximized;
     in property <string> version;
@@ -328,6 +464,9 @@ export global App {
     in property <string> sim-status;
     in property <string> sim-name;
     in property <bool> simulation;
+    // Symulator: 0 automatycznie (MSFS albo X-Plane), 1 MSFS, 2 X-Plane
+    in property <int> sim-kind;
+    in-out property <string> xplane-host;
     in property <int> phones;
     in property <string> phones-text;
     in property <bool> recording;
@@ -453,4 +592,27 @@ export global App {
     in property <string> data-path;
     in property <string> logbook-size;
     in property <string> about;
+
+    // Nakładki (karta lądowania, pasek do transmisji, okno zawsze na wierzchu)
+    in property <LandingCfgV> ovl-landing;
+    in property <StreamCfgV> ovl-stream;
+    in property <OverlayCfgV> ovl-window;
+    in property <[string]> monitors;
+    in property <[StreamFieldV]> stream-fields;
+    in property <LastLandingV> last-landing;
+
+    // Plan lotu z SimBrief
+    in-out property <string> simbrief-user;
+    in property <PlanV> plan;
+    in property <[PlanFixV]> plan-fixes;
+    in property <bool> plan-busy;
+
+    // Zrzuty ekranu
+    in property <[ShotV]> shots;
+    in property <ShotV> shot;
+    in property <image> shot-image;
+    in property <bool> has-shot;
+    in property <int> shot-monitor;
+    in property <int> shot-key;
+    in property <string> shots-dir;
 }

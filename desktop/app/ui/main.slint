@@ -19,8 +19,11 @@ import { Tools } from "tools.slint";
 import { Devices } from "devices.slint";
 import { Settings } from "settings.slint";
 import { FeedbackWindow } from "feedback.slint";
+import { Studio } from "studio.slint";
+import { Shots } from "shots.slint";
+import { LandingWindow, StreamWindow, OverlayWindow, StreamCell } from "overlays.slint";
 
-export { App, Theme, Icons, Tip, FeedbackWindow, KV, LogV, EngineV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV }
+export { App, Theme, Icons, Tip, FeedbackWindow, LandingWindow, StreamWindow, OverlayWindow, StreamCell, KV, LogV, EngineV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV }
 
 component WinButton inherits Rectangle {
     in property <int> kind;
@@ -91,6 +94,12 @@ component Tabs inherits Rectangle {
                 tip: @tr("Sumy, miesiące, samoloty, lotniska, rekordy");
             }
             NavTab {
+                index: 11;
+                label: @tr("Zrzuty");
+                icon: Icons.image;
+                tip: @tr("Zrzuty ekranu symulatora z miejscem samolotu");
+            }
+            NavTab {
                 index: 4;
                 label: @tr("Lotniska");
                 icon: Icons.map-pin;
@@ -101,6 +110,12 @@ component Tabs inherits Rectangle {
                 label: @tr("Narzędzia");
                 icon: Icons.calculator;
                 tip: @tr("Kalkulatory lotnicze i dekoder METAR");
+            }
+            NavTab {
+                index: 10;
+                label: @tr("Nakładki");
+                icon: Icons.monitor;
+                tip: @tr("Karta lądowania, pasek do transmisji, okno zawsze na wierzchu, zrzuty ekranu");
             }
             NavTab {
                 index: 6;
@@ -220,21 +235,39 @@ component Ribbon inherits Rectangle {
         if App.tab == 0 || App.tab == 1 || App.tab == 6: Group {
             title: @tr("Źródło danych");
             BigButton {
+                icon: Icons.sparkles;
+                label: "Auto";
+                active: !App.simulation && App.sim-kind == 0;
+                tip: @tr("MSFS albo X-Plane – ten, który działa");
+                clicked => {
+                    App.cmd("source", "auto");
+                }
+            }
+            BigButton {
                 icon: Icons.monitor;
                 label: "MSFS";
-                active: !App.simulation;
+                active: !App.simulation && App.sim-kind == 1;
                 tip: @tr("Dane z MSFS przez SimConnect");
                 clicked => {
-                    App.cmd("simulation", "0");
+                    App.cmd("source", "msfs");
+                }
+            }
+            BigButton {
+                icon: Icons.mountain;
+                label: "X-Plane";
+                active: !App.simulation && App.sim-kind == 2;
+                tip: @tr("Dane z X-Plane 11/12 przez UDP (bez wtyczek)");
+                clicked => {
+                    App.cmd("source", "xplane");
                 }
             }
             BigButton {
                 icon: Icons.plane;
                 label: @tr("Symulacja");
                 active: App.simulation;
-                tip: @tr("Lot testowy EPWA → EPGD bez MSFS");
+                tip: @tr("Lot testowy EPWA → EPGD bez symulatora");
                 clicked => {
-                    App.cmd("simulation", "1");
+                    App.cmd("source", "sim");
                 }
             }
         }
@@ -271,7 +304,6 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 0: Group {
             title: @tr("Pogoda");
-            last: true;
             BigButton {
                 icon: Icons.cloud-sun;
                 label: @tr("Odśwież");
@@ -283,7 +315,6 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 1: Group {
             title: @tr("Mapa");
-            last: true;
             BigButton {
                 icon: Icons.locate-fixed;
                 label: @tr("Śledź");
@@ -382,7 +413,6 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 8: Group {
             title: @tr("Układ");
-            last: true;
             BigButton {
                 icon: Icons.columns-2;
                 label: @tr("Kokpit");
@@ -577,7 +607,6 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 9 && !App.nav.view3d: Group {
             title: @tr("Narzędzia");
-            last: true;
             BigButton {
                 icon: Icons.radio-tower;
                 label: @tr("Radiale");
@@ -689,7 +718,6 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 2: Group {
             title: @tr("Widok");
-            last: true;
             BigButton {
                 icon: Icons.list-checks;
                 label: @tr("Zaznacz");
@@ -718,7 +746,6 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 3: Group {
             title: @tr("Eksport");
-            last: true;
             BigButton {
                 icon: Icons.table;
                 label: @tr("Lista CSV");
@@ -767,7 +794,6 @@ component Ribbon inherits Rectangle {
         }
         if App.tab == 4: Group {
             title: @tr("Baza");
-            last: true;
             BigButton {
                 icon: Icons.cloud-download;
                 label: @tr("Odśwież bazę");
@@ -777,9 +803,143 @@ component Ribbon inherits Rectangle {
                 }
             }
         }
-        if App.tab == 5 || App.tab == 7: Group {
+        if App.tab == 0: Group {
+            title: "SimBrief";
+            BigButton {
+                icon: Icons.cloud-download;
+                label: App.plan.loaded ? @tr("Nowy plan") : @tr("Pobierz plan");
+                enabled: !App.plan-busy;
+                tip: @tr("Pobierz najnowszy plan lotu z SimBrief");
+                clicked => {
+                    App.cmd("simbrief-fetch", App.simbrief-user);
+                }
+            }
+            BigButton {
+                icon: Icons.route;
+                label: @tr("Na mapie");
+                enabled: App.plan.loaded;
+                tip: @tr("Pokaż trasę planu na mapie");
+                clicked => {
+                    App.cmd("plan-map", "");
+                }
+            }
+        }
+        if App.tab == 0 || App.tab == 1 || App.tab == 9 || App.tab == 11: Group {
+            title: @tr("Zrzut ekranu");
+            BigButton {
+                icon: Icons.scan;
+                label: @tr("Zrzut");
+                tip: @tr("Zrzut ekranu symulatora z miejscem samolotu (skrót – karta Nakładki)");
+                clicked => {
+                    App.cmd("shot-take", "");
+                }
+            }
+        }
+        if App.tab == 9: Group {
+            title: @tr("Plan i zrzuty");
+            BigButton {
+                slim: true;
+                icon: Icons.route;
+                label: @tr("Plan SimBrief");
+                active: App.nav.plan;
+                tip: @tr("Trasa z SimBrief na mapie");
+                clicked => {
+                    App.cmd("nav-layer", "plan");
+                }
+            }
+            BigButton {
+                slim: true;
+                icon: Icons.image;
+                label: @tr("Zrzuty");
+                active: App.nav.shots;
+                tip: @tr("Miejsca zrzutów ekranu na mapie");
+                clicked => {
+                    App.cmd("nav-layer", "shots");
+                }
+            }
+        }
+        if App.tab == 10: Group {
+            title: @tr("Karta lądowania");
+            BigButton {
+                icon: Icons.eye;
+                label: @tr("Podgląd");
+                clicked => {
+                    App.cmd("ovl-landing-preview", "");
+                }
+            }
+            BigButton {
+                icon: Icons.eye-off;
+                label: @tr("Schowaj");
+                clicked => {
+                    App.cmd("ovl-landing-hide", "");
+                }
+            }
+        }
+        if App.tab == 10: Group {
+            title: @tr("Nakładki");
+            BigButton {
+                icon: Icons.radio-tower;
+                label: @tr("Pasek");
+                active: App.ovl-stream.enabled;
+                tip: @tr("Pasek do transmisji");
+                clicked => {
+                    App.cmd("ovl", "stream.enabled=" + (App.ovl-stream.enabled ? "0" : "1"));
+                }
+            }
+            BigButton {
+                icon: Icons.pin;
+                label: @tr("Okno");
+                active: App.ovl-window.enabled;
+                tip: @tr("Okno zawsze na wierzchu");
+                clicked => {
+                    App.cmd("ovl", "overlay.enabled=" + (App.ovl-window.enabled ? "0" : "1"));
+                }
+            }
+            BigButton {
+                icon: Icons.refresh-cw;
+                label: @tr("Ekrany");
+                tip: @tr("Wczytaj listę monitorów od nowa");
+                clicked => {
+                    App.cmd("ovl-monitors", "");
+                }
+            }
+        }
+        if App.tab == 11: Group {
+            title: @tr("Zrzut");
+            BigButton {
+                icon: Icons.map;
+                label: @tr("Na mapie");
+                enabled: App.shot.has-pos;
+                clicked => {
+                    App.cmd("shot-map", "");
+                }
+            }
+            BigButton {
+                icon: Icons.external-link;
+                label: @tr("Otwórz");
+                enabled: App.has-shot;
+                clicked => {
+                    App.cmd("shot-open", "");
+                }
+            }
+            BigButton {
+                icon: Icons.trash-2;
+                label: @tr("Usuń");
+                enabled: App.has-shot;
+                clicked => {
+                    App.cmd("shot-delete", "");
+                }
+            }
+            BigButton {
+                icon: Icons.folder-open;
+                label: @tr("Folder");
+                clicked => {
+                    App.cmd("shot-folder", "");
+                }
+            }
+        }
+        if App.tab == 5 || App.tab == 7 || App.tab == 10: Group {
             title: @tr("Pomoc");
-            last: true;
             BigButton {
                 icon: Icons.bug;
                 label: @tr("Zgłoś");
@@ -1035,6 +1195,14 @@ export component AppWindow inherits Window {
                         height: parent.height;
                     }
                     if App.tab == 9: NavMap {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 10: Studio {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 11: Shots {
                         width: parent.width;
                         height: parent.height;
                     }

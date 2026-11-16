@@ -176,6 +176,14 @@ impl AxisController {
         None
     }
 
+    /// Bieżący hamulec aerodynamiczny i hamulce kół bez zdejmowania flag (X-Plane w trybie
+    /// automatycznym, gdzie osie czyta też źródło MSFS): (speedbrake, hamulce 0–1).
+    pub fn peek_aux(&self, now: i64) -> (Option<f64>, f64) {
+        let mut s = self.st.lock();
+        self.expire_aux(&mut s, now);
+        (if s.aux_owner.is_some() { s.speedbrake } else { None }, if s.brake_held { s.brake } else { 0.0 })
+    }
+
     /// Bieżące wychylenia bez zdejmowania flagi neutralu (symulacja, podgląd).
     pub fn peek(&self, now: i64) -> AxisOutput {
         let mut s = self.st.lock();

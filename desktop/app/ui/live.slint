@@ -60,7 +60,7 @@ export component Live inherits Rectangle {
                 }
             }
             Box {
-                title: @tr("OTOCZENIE");
+                title: @tr("Otoczenie");
                 icon: Icons.wind;
                 Pair {
                     k: @tr("Wiatr");
@@ -89,7 +89,7 @@ export component Live inherits Rectangle {
             }
             Box {
                 vertical-stretch: 1;
-                title: @tr("PRZYZIEMIENIE");
+                title: @tr("Przyziemienie");
                 icon: Icons.plane-landing;
                 Text {
                     text: App.live.touchdown != "" ? App.live.touchdown : @tr("Ocena pojawi się po wylądowaniu.");
@@ -193,7 +193,7 @@ export component Live inherits Rectangle {
                 width: rsv.visible-width - 4px;
                 spacing: 10px;
                 Box {
-                    title: @tr("AUTOPILOT");
+                    title: @tr("Autopilot");
                     icon: Icons.navigation;
                     HorizontalLayout {
                         spacing: 8px;
@@ -203,7 +203,7 @@ export component Live inherits Rectangle {
                         }
                         Text {
                             text: App.live.ap-master ? "AP ON" : "AP OFF";
-                            font-family: "Consolas";
+                            font-family: Theme.mono;
                             font-size: Theme.fs-big;
                             font-weight: 700;
                             color: App.live.ap-master ? Theme.ok : Theme.text-dim;
@@ -231,7 +231,7 @@ export component Live inherits Rectangle {
                     }
                 }
                 Box {
-                    title: @tr("RADIA");
+                    title: @tr("Radia");
                     icon: Icons.radio;
                     Pair {
                         k: "COM 1";
@@ -260,7 +260,7 @@ export component Live inherits Rectangle {
                     }
                 }
                 Box {
-                    title: @tr("SYSTEMY");
+                    title: @tr("Systemy");
                     icon: Icons.sliders-horizontal;
                     Pair {
                         k: @tr("Podwozie");
@@ -284,7 +284,7 @@ export component Live inherits Rectangle {
                     }
                 }
                 Box {
-                    title: @tr("SILNIKI I PALIWO");
+                    title: @tr("Silniki i paliwo");
                     icon: Icons.fuel;
                     for e in App.engines: VerticalLayout {
                         spacing: 2px;
@@ -298,7 +298,7 @@ export component Live inherits Rectangle {
                             }
                             Text {
                                 text: e.main;
-                                font-family: "Consolas";
+                                font-family: Theme.mono;
                                 font-size: Theme.fs;
                                 color: Theme.text;
                             }
@@ -324,7 +324,7 @@ export component Live inherits Rectangle {
                     }
                 }
                 Box {
-                    title: @tr("ZAPIS LOTU");
+                    title: @tr("Zapis lotu");
                     icon: Icons.circle-dot;
                     Text {
                         text: App.recording ? App.recording-text : @tr("Zapis zacznie się sam po starcie (w powietrzu, prędkość nad ziemią > 40 kt).");
@@ -354,7 +354,7 @@ export component Live inherits Rectangle {
                     }
                 }
                 if App.live.controlled-by != "": Box {
-                    title: @tr("STERUJE");
+                    title: @tr("Steruje");
                     icon: Icons.smartphone;
                     Text {
                         text: App.live.controlled-by;

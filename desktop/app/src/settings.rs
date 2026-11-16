@@ -52,6 +52,163 @@ pub struct Settings {
     /// przestawia się raz na AMOLED. Brak pola w starszym pliku = 0.
     #[serde(default)]
     pub ui_version: i32,
+    /// Karta lądowania na ekranie symulatora.
+    pub landing_card: LandingCardCfg,
+    /// Pasek do transmisji (stream) na wybranym ekranie.
+    pub stream_bar: StreamBarCfg,
+    /// Okno nakładki zawsze na wierzchu (PFD, ND, odczyt lotu albo mapa).
+    pub overlay: OverlayCfg,
+    /// Nazwa użytkownika albo numer (Pilot ID) w SimBrief.
+    pub simbrief_user: String,
+    /// Zrzuty ekranu: ekran do zrzutu (0 – główny), klawisz (0 brak, 1–4 F9–F12, 5 Ctrl+Shift+S, 6 Ctrl+F12).
+    pub shot_monitor: i32,
+    pub shot_key: i32,
+    /// Warstwy mapy: plan z SimBrief i miejsca zrzutów ekranu.
+    pub nav_plan: bool,
+    pub nav_shots: bool,
+    /// Symulator: 0 automatycznie (MSFS albo X-Plane), 1 tylko MSFS, 2 tylko X-Plane.
+    pub sim_kind: i32,
+    /// Adres komputera z X-Plane (pusty – ten komputer).
+    pub xplane_host: String,
+}
+
+/// Położenie okna na ekranie: 0 środek, 1 u góry na środku, 2 u dołu na środku, 3 lewy górny róg,
+/// 4 prawy górny, 5 lewy dolny, 6 prawy dolny.
+pub const POSITIONS: i32 = 7;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct LandingCardCfg {
+    pub enabled: bool,
+    pub monitor: i32,
+    pub position: i32,
+    /// 0 mała, 1 średnia, 2 duża, 3 bardzo duża.
+    pub size: i32,
+    /// 0 pełna karta, 1 kompaktowa, 2 pasek.
+    pub layout: i32,
+    /// Czas na ekranie w sekundach; 0 – do kliknięcia.
+    pub seconds: i32,
+    /// Krycie tła w procentach (40–100).
+    pub opacity: i32,
+    /// Odstęp od krawędzi ekranu (px).
+    pub margin: i32,
+    /// Kolor: 0 według oceny, 1 kolor akcentu, 2 biel.
+    pub tone: i32,
+    pub show_score: bool,
+    pub show_vs: bool,
+    pub show_g: bool,
+    pub show_speed: bool,
+    pub show_runway: bool,
+    pub show_offsets: bool,
+    pub show_bounces: bool,
+    pub show_wind: bool,
+    pub show_notes: bool,
+    pub show_airport: bool,
+    pub show_aircraft: bool,
+    pub show_scale: bool,
+    pub click_through: bool,
+}
+
+impl Default for LandingCardCfg {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            monitor: 0,
+            position: 0,
+            size: 1,
+            layout: 0,
+            seconds: 15,
+            opacity: 92,
+            margin: 40,
+            tone: 0,
+            show_score: true,
+            show_vs: true,
+            show_g: true,
+            show_speed: true,
+            show_runway: true,
+            show_offsets: true,
+            show_bounces: true,
+            show_wind: true,
+            show_notes: true,
+            show_airport: true,
+            show_aircraft: true,
+            show_scale: true,
+            click_through: false,
+        }
+    }
+}
+
+/// Pola paska do transmisji (kolejność = kolejność na pasku).
+pub const STREAM_FIELDS: [&str; 22] = [
+    "route", "aircraft", "phase", "alt", "ias", "gs", "vs", "hdg", "wind", "oat", "qnh", "fuel", "next", "dest", "ap", "com1", "xpdr", "nearest", "utc", "flight", "landing", "title",
+];
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct StreamBarCfg {
+    pub enabled: bool,
+    pub monitor: i32,
+    /// 0 u góry, 1 u dołu.
+    pub edge: i32,
+    /// Szerokość w procentach szerokości ekranu (30–100); węższy pasek jest wyśrodkowany albo przy krawędzi.
+    pub width: i32,
+    /// 0 do lewej, 1 na środku, 2 do prawej.
+    pub align: i32,
+    /// 0 mały, 1 średni, 2 duży.
+    pub size: i32,
+    pub opacity: i32,
+    /// 0 czarny, 1 grafitowy, 2 w kolorze akcentu.
+    pub style: i32,
+    pub show_labels: bool,
+    pub show_logo: bool,
+    pub accent_line: bool,
+    pub click_through: bool,
+    /// Własny tekst (np. nazwa kanału) – pole „title”.
+    pub title: String,
+    pub fields: Vec<String>,
+}
+
+impl Default for StreamBarCfg {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            monitor: 0,
+            edge: 1,
+            width: 100,
+            align: 1,
+            size: 1,
+            opacity: 88,
+            style: 0,
+            show_labels: true,
+            show_logo: true,
+            accent_line: true,
+            click_through: true,
+            title: String::new(),
+            fields: ["route", "aircraft", "phase", "alt", "gs", "vs", "hdg", "wind", "dest", "landing"].iter().map(|s| s.to_string()).collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct OverlayCfg {
+    pub enabled: bool,
+    pub monitor: i32,
+    pub position: i32,
+    /// 0 PFD, 1 ND, 2 PFD i ND, 3 odczyt lotu, 4 mapa.
+    pub content: i32,
+    /// 0 mała, 1 średnia, 2 duża, 3 bardzo duża.
+    pub size: i32,
+    pub opacity: i32,
+    pub margin: i32,
+    pub show_title: bool,
+    pub click_through: bool,
+}
+
+impl Default for OverlayCfg {
+    fn default() -> Self {
+        Self { enabled: false, monitor: 0, position: 6, content: 0, size: 1, opacity: 100, margin: 24, show_title: true, click_through: false }
+    }
 }
 
 impl Default for Settings {
@@ -89,6 +246,16 @@ impl Default for Settings {
             sidebar: true,
             sidebar_w: 276,
             ui_version: UI_VERSION,
+            landing_card: LandingCardCfg::default(),
+            stream_bar: StreamBarCfg::default(),
+            overlay: OverlayCfg::default(),
+            simbrief_user: String::new(),
+            shot_monitor: 0,
+            shot_key: 4,
+            nav_plan: true,
+            nav_shots: true,
+            sim_kind: 0,
+            xplane_host: String::new(),
         }
     }
 }

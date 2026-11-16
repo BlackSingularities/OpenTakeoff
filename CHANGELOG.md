@@ -1,3 +1,15 @@
+## 3.2.0
+
+- X-Plane 11/12 w aplikacji na Windows: dane lotu, autopilot, radia, transponder, podwozie, klapy, światła, przepustnice, osie i hamulce z telefonu – przez wbudowany protokół UDP X-Plane, bez wtyczek. Osobny most w Pythonie (bridge-xplane) nie jest już potrzebny; jedna aplikacja obsługuje MSFS i X-Plane.
+- Wybór źródła danych: Automatycznie (MSFS albo X-Plane – ten, który działa), MSFS, X-Plane albo tryb symulacji; adres komputera z X-Plane, gdy symulator działa na innym komputerze w sieci.
+- Karta lądowania na ekranie symulatora: pokazuje się sama po przyziemieniu – ocena w pierścieniu, prędkość pionowa ze skalą od miękkiego do bardzo twardego, przeciążenie, prędkość, pas, odległość za progiem i od osi, odbicia, wiatr boczny i uwagi. Do wyboru ekran, miejsce (środek, góra, dół albo róg), trzy układy (pełna, kompaktowa, pasek), cztery wielkości, czas na ekranie, kolor, krycie tła, odstęp od krawędzi, każdy element osobno i przepuszczanie kliknięć. Karta nie zabiera symulatorowi klawiatury.
+- Pasek do transmisji (stream) przy górnej albo dolnej krawędzi wybranego ekranu: 22 pola do wyboru i ułożenia (trasa, samolot, faza lotu, wysokość, prędkości, kurs, wiatr, paliwo, następny punkt, odległość do celu, autopilot, radio, czas UTC, czas lotu, ostatnie lądowanie, własny tekst), szerokość, wyrównanie, wielkość, tło, krycie, podpisy, logo i linia akcentu.
+- Okno zawsze na wierzchu na wybranym ekranie: PFD, ND, oba naraz, duży odczyt lotu albo mapa z trasą.
+- Import planu lotu z SimBrief (nazwa użytkownika albo Pilot ID): trasa na mapie, w panelu bocznym i na pasku do transmisji; na żywo następny punkt, odległość do celu i paliwo względem planu; lista punktów trasy z wysokością, wiatrem i paliwem.
+- Zrzuty ekranu z miejscem samolotu: skrót działa też w symulatorze (F9–F12, Ctrl+Shift+S, Ctrl+F12), każdy zrzut zapamiętuje pozycję, wysokość, kurs, prędkość i najbliższe lotnisko; galeria, podgląd i miejsca zrzutów na mapie.
+- Nowy Pulpit: plan lotu na pierwszym planie, mapa bieżącego lotu, ostatnie lądowanie, szybkie włączniki nakładek, ostatnie zrzuty, pogoda obserwowanych lotnisk i podsumowanie dziennika. Dziennik i statystyki w nowym kroju liczb, nagłówki sekcji bez wersalików.
+- Pełne tłumaczenie wersji na Windows na angielski i hiszpański.
+
 ## 3.1.0
 
 - OpenTakeoff na Windows w nowym wyglądzie, w układzie znanym z OpenAudioPower: karty w pasku tytułu okna, pod nimi jeden rząd narzędzi bieżącej karty, panel boczny i pasek stanu.

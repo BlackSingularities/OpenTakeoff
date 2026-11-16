@@ -54,7 +54,7 @@ fn style_key(s: Option<&FlightState>, key: &str) -> DisplayStyle {
     DisplayStyle::from_key(key).unwrap_or_else(|| s.map(DisplayStyle::detect).unwrap_or(DisplayStyle::Garmin))
 }
 
-fn data(s: Option<&FlightState>) -> FlightData {
+pub(crate) fn data(s: Option<&FlightState>) -> FlightData {
     match s {
         Some(s) => {
             let tr = avionics::speed_trend(s.speed.ias_kt as f32);
@@ -71,7 +71,7 @@ pub fn live_pfd(s: Option<&FlightState>, scale: f32, key: &str) -> Option<slint:
     Some(avionics::render_pfd(style_key(s, key), &d, w, h))
 }
 
-fn nd_inputs(s: &FlightState, range: f32) -> (Vec<nd::RoutePt>, Vec<nd::NdFix>) {
+pub(crate) fn nd_inputs(s: &FlightState, range: f32) -> (Vec<nd::RoutePt>, Vec<nd::NdFix>) {
     let mut route = Vec::new();
     if let Some(av) = &s.avionics {
         let g = &av.gps;

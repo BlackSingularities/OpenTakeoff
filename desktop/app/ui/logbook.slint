@@ -18,13 +18,19 @@ component FlightRow inherits Rectangle {
     if f.header: Text {
         x: 8px;
         text: f.month;
-        font-family: Theme.font;
-        font-size: Theme.fs-small;
+        font-family: Theme.cond;
+        font-size: 13px * Theme.scale;
         font-weight: 700;
-        letter-spacing: 0.6px;
         color: Theme.text-dim;
         vertical-alignment: bottom;
-        height: parent.height - 4px;
+        height: parent.height - 6px;
+    }
+    if f.header: Rectangle {
+        x: 8px;
+        y: parent.height - 1px;
+        width: parent.width - 16px;
+        height: 1px;
+        background: Theme.line;
     }
     if !f.header: HorizontalLayout {
         padding-left: 8px;
@@ -43,9 +49,9 @@ component FlightRow inherits Rectangle {
                 spacing: 6px;
                 Text {
                     text: f.from + "  →  " + f.to;
-                    font-family: Theme.font;
-                    font-size: Theme.fs-big;
-                    font-weight: 600;
+                    font-family: Theme.mono;
+                    font-size: 14px * Theme.scale;
+                    font-weight: 700;
                     color: Theme.text;
                     overflow: elide;
                 }
@@ -83,14 +89,15 @@ component FlightRow inherits Rectangle {
             alignment: center;
             Text {
                 text: f.duration;
-                font-family: Theme.font;
+                font-family: Theme.mono;
                 font-size: Theme.fs;
+                font-weight: 700;
                 color: Theme.text;
                 horizontal-alignment: right;
             }
             Text {
                 text: f.distance;
-                font-family: Theme.font;
+                font-family: Theme.mono;
                 font-size: Theme.fs-small;
                 color: Theme.text-faint;
                 horizontal-alignment: right;
@@ -217,7 +224,7 @@ component Detail inherits ScrollView {
             }
             Text {
                 text: App.detail.cursor-info;
-                font-family: "Consolas";
+                font-family: Theme.mono;
                 font-size: Theme.fs-small;
                 color: Theme.text-dim;
                 vertical-alignment: center;
@@ -247,7 +254,7 @@ component Detail inherits ScrollView {
                 padding: 10px;
                 spacing: 6px;
                 Heading {
-                    text: @tr("LĄDOWANIA");
+                    text: @tr("Lądowania");
                     icon: Icons.plane-landing;
                 }
                 for l in App.detail-landings: HorizontalLayout {
@@ -298,7 +305,7 @@ component Detail inherits ScrollView {
                 padding: 10px;
                 spacing: 2px;
                 Heading {
-                    text: @tr("ZNACZNIKI");
+                    text: @tr("Znaczniki");
                     icon: Icons.bookmark;
                 }
                 for m in App.detail-markers: ListRow {
@@ -311,7 +318,7 @@ component Detail inherits ScrollView {
                         spacing: 10px;
                         Text {
                             text: m.time;
-                            font-family: "Consolas";
+                            font-family: Theme.mono;
                             font-size: Theme.fs;
                             color: Colors.warn;
                             vertical-alignment: center;
@@ -341,7 +348,7 @@ component Detail inherits ScrollView {
                 padding: 10px;
                 spacing: 8px;
                 Heading {
-                    text: @tr("OPIS LOTU");
+                    text: @tr("Opis lotu");
                     icon: Icons.notebook-pen;
                 }
                 HorizontalLayout {

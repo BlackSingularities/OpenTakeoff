@@ -13,8 +13,12 @@ mod host;
 mod instruments;
 mod map;
 mod navmap;
+mod overlays;
 mod scene3d;
+mod screen;
 mod settings;
+mod shots;
+mod simbrief;
 mod win;
 
 use std::sync::atomic::Ordering;
@@ -43,6 +47,8 @@ fn apply_theme(ui: &AppWindow, s: &Settings) {
 
 fn apply_settings(ui: &AppWindow, s: &Settings) {
     let app = ui.global::<App>();
+    app.set_sim_kind(s.sim_kind);
+    app.set_xplane_host(s.xplane_host.clone().into());
     app.set_theme_mode(s.theme);
     app.set_record_flights(s.record_flights);
     app.set_record_interval(s.record_interval);
@@ -102,7 +108,36 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
                 4 => app::render_airport_map(),
                 8 => instruments::refresh(),
                 9 => navmap::render(true),
+                10 => {
+                    overlays::refresh_monitors();
+                    overlays::push_settings();
+                }
+                11 => shots::refresh(),
                 _ => {}
+            }
+            if t == 0 {
+                simbrief::refresh();
+            }
+        }
+        "simbrief-fetch" => simbrief::fetch(arg),
+        "simbrief-clear" => simbrief::clear(),
+        "plan-map" => {
+            let pts: Vec<(f64, f64)> = simbrief::route().into_iter().map(|p| (p.0, p.1)).collect();
+            if pts.len() > 1 {
+                {
+                    let st = state();
+                    let mut b = st.borrow_mut();
+                    b.s.nav_plan = true;
+                    b.s.nav_3d = false;
+                }
+                navmap::fit_points(&pts);
+                app.set_tab(9);
+                navmap::render(true);
+            }
+        }
+        "shot-delete" => {
+            if let Some(id) = shots::selected_id() {
+                confirm(tr("Usunąć ten zrzut ekranu? Plik zniknie z dysku.").into(), tr("Usuń"), "shot-delete", vec![id]);
             }
         }
         "pair-new-code" => {
@@ -119,6 +154,40 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
                 let _ = c.set_text(text.clone());
             }
             toast(trf!("Skopiowano adres {text}"));
+        }
+        "source" | "xplane-host" => {
+            let (sim, kind, xp_host) = {
+                let st = state();
+                let mut b = st.borrow_mut();
+                if id == "xplane-host" {
+                    b.s.xplane_host = arg.trim().to_string();
+                } else {
+                    match arg {
+                        "sim" => b.s.simulation = true,
+                        other => {
+                            b.s.simulation = false;
+                            b.s.sim_kind = match other {
+                                "msfs" => 1,
+                                "xplane" => 2,
+                                _ => 0,
+                            };
+                        }
+                    }
+                }
+                (b.s.simulation, b.s.sim_kind, b.s.xplane_host.clone())
+            };
+            save();
+            if sim {
+                if !host.simulation.load(Ordering::SeqCst) {
+                    host.switch_source(true);
+                }
+            } else {
+                host.simulation.store(false, Ordering::SeqCst);
+                host.set_sim(kind as i64, &xp_host);
+            }
+            app.set_sim_kind(kind);
+            app.set_xplane_host(xp_host.into());
+            app::refresh_status();
         }
         "simulation" => {
             let sim = arg == "1";
@@ -314,6 +383,10 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
                     }
                     toast(tr("Telefon unieważniony"));
                 }
+                "shot-delete" => {
+                    shots::delete(&ids);
+                    toast(tr("Usunięto zrzut ekranu"));
+                }
                 _ => {}
             }
             app::refresh_status();
@@ -428,7 +501,7 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
         "update-install" => install_update(),
         "feedback" => feedback::open_form(),
         _ => {
-            if !instruments::cmd(id, arg) && !navmap::cmd(id, arg) {
+            if !instruments::cmd(id, arg) && !navmap::cmd(id, arg) && !overlays::cmd(id, arg) && !shots::cmd(id, arg) {
                 log::warn(&format!("Nieznane polecenie: {id} {arg}"));
             }
         }
@@ -558,7 +631,7 @@ fn main() {
 
     // Diagnostyka: OPENTAKEOFF_SIMULATION=1 – lot testowy bez zmiany ustawień
     let sim = settings.simulation || std::env::var("OPENTAKEOFF_SIMULATION").is_ok_and(|v| v == "1");
-    let host = host::Host::start(sim, settings.look_sensitivity, settings.record_flights, settings.interval_ms());
+    let host = host::Host::start(sim, settings.sim_kind as i64, &settings.xplane_host, settings.look_sensitivity, settings.record_flights, settings.interval_ms());
     host.set_sync_enabled(settings.auto_sync);
     let ui = AppWindow::new().expect("okno");
     let app = ui.global::<App>();
@@ -626,6 +699,14 @@ fn main() {
         });
     }
     ui.on_key(|_, _, _| false);
+    // Nakładki, plan z SimBrief i zrzuty – po pokazaniu okna (lista ekranów pochodzi z okna)
+    slint::Timer::single_shot(Duration::from_millis(700), || {
+        overlays::refresh_monitors();
+        overlays::push_settings();
+        simbrief::load_saved();
+        shots::refresh();
+        overlays::apply();
+    });
     {
         let w = ui.as_weak();
         ui.window().on_close_requested(move || {
@@ -688,6 +769,12 @@ fn main() {
             }
             if tick % 4 == 0 {
                 app::refresh_live(false);
+            }
+            // Nakładki (karta lądowania, pasek do transmisji, okno), skrót zrzutu ekranu, postęp planu
+            overlays::tick();
+            shots::poll_key();
+            if tick % 20 == 0 {
+                simbrief::refresh();
             }
             // Przyrządy płynniej (co 100 ms), mapa nawigacyjna sama ogranicza częstość
             let tab_now = ui.global::<App>().get_tab();
@@ -773,12 +860,42 @@ fn main() {
     if let Ok(dir) = std::env::var("OPENTAKEOFF_SNAPSHOT") {
         snapshots(&ui, std::path::PathBuf::from(dir));
     }
+    // Diagnostyka nakładek: OPENTAKEOFF_OVERLAY_TEST=<plik.png> – karta lądowania, pasek i okno na
+    // ekranie głównym, prawdziwy zrzut ekranu (z przezroczystością) i koniec.
+    if let Ok(file) = std::env::var("OPENTAKEOFF_OVERLAY_TEST") {
+        slint::Timer::single_shot(Duration::from_millis(2500), || {
+            cmd_by_name("ovl", "stream.enabled=1");
+            cmd_by_name("ovl", "overlay.content=3");
+            cmd_by_name("ovl", "overlay.enabled=1");
+            cmd_by_name("ovl-landing-preview", "");
+        });
+        slint::Timer::single_shot(Duration::from_millis(6000), move || {
+            if let Some(u) = app::ui() {
+                if let Some(m) = screen::monitors(u.window()).first() {
+                    if let Some(img) = screen::capture(m) {
+                        let _ = img.save(&file);
+                    }
+                }
+            }
+            cmd_by_name("ovl", "stream.enabled=0");
+            cmd_by_name("ovl", "overlay.enabled=0");
+            quit();
+        });
+    }
     slint::run_event_loop_until_quit().expect("pętla zdarzeń");
     state().borrow().host.shutdown();
     log::info("Koniec pracy");
 }
 
+/// Polecenie interfejsu wywołane z kodu (diagnostyka).
+fn cmd_by_name(id: &str, arg: &str) {
+    if let Some(u) = app::ui() {
+        cmd(&u, id, arg);
+    }
+}
+
 fn quit() {
+    overlays::close_all();
     save();
     state().borrow().host.shutdown();
     let _ = slint::quit_event_loop();
@@ -803,15 +920,15 @@ fn snapshots(ui: &AppWindow, dir: std::path::PathBuf) {
                 let _ = image::save_buffer(&path, buf.as_bytes(), buf.width(), buf.height(), image::ExtendedColorType::Rgba8);
             }
         }
-        // Karty 0–9, potem 10: Mapa w widoku 3D (OPENTAKEOFF_SNAPSHOT_TABS="1,8,9,10" – wybrane)
-        let order: Vec<i32> = std::env::var("OPENTAKEOFF_SNAPSHOT_TABS").ok().map(|t| t.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_else(|| (0..=10).collect());
+        // Karty 0–11, potem 12: Mapa w widoku 3D (OPENTAKEOFF_SNAPSHOT_TABS="1,8,9,12" – wybrane)
+        let order: Vec<i32> = std::env::var("OPENTAKEOFF_SNAPSHOT_TABS").ok().map(|t| t.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_else(|| (0..=12).collect());
         if i as usize >= order.len() {
             cmd(&ui, "nav-3d", "0");
             quit();
             return;
         }
         let tab = order[i as usize];
-        let three_d = tab == 10;
+        let three_d = tab == 12;
         let tab = if three_d { 9 } else { tab };
         if tab == 9 {
             cmd(&ui, "nav-3d", if three_d { "1" } else { "0" });

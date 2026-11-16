@@ -19,6 +19,7 @@ pub mod simulation;
 pub mod source;
 pub mod touchdown;
 pub mod update;
+pub mod xplane;
 
 /// Wersja programu (z tagu wydania; lokalnie z Cargo.toml).
 pub fn version() -> &'static str {

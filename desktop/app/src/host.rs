@@ -18,6 +18,7 @@ use opentakeoff_core::proto::{self, FlightState, WEBSOCKET_PORT};
 use opentakeoff_core::server::LinkServer;
 use opentakeoff_core::simulation::SimulationSource;
 use opentakeoff_core::source::{unix_ms, FlightSource};
+use opentakeoff_core::xplane::{AutoSource, XPlaneSource};
 use opentakeoff_core::{log, paths, trf};
 use opentakeoff_msfs::MsfsSource;
 use parking_lot::{Mutex, RwLock};
@@ -47,6 +48,9 @@ pub struct Host {
     source: RwLock<Arc<dyn FlightSource>>,
     msfs: Mutex<Option<Arc<MsfsSource>>>,
     pub simulation: AtomicBool,
+    /// Symulator: 0 automatycznie (MSFS albo X-Plane), 1 tylko MSFS, 2 tylko X-Plane.
+    pub sim_kind: AtomicI64,
+    xplane_host: Mutex<String>,
     _discovery: Mutex<Option<Discovery>>,
     recorder: Mutex<Recorder>,
     pub record_enabled: AtomicBool,
@@ -67,7 +71,7 @@ fn log_line(s: String) {
 }
 
 impl Host {
-    pub fn start(simulation: bool, look_sensitivity: i32, record: bool, interval_ms: i64) -> Arc<Host> {
+    pub fn start(simulation: bool, sim_kind: i64, xplane_host: &str, look_sensitivity: i32, record: bool, interval_ms: i64) -> Arc<Host> {
         let pairing = Arc::new(Pairing::new(Some(paths::config().join("devices.json"))));
         let axes = Arc::new(AxisController::default());
         let nav = Arc::new(NavDataService::new());
@@ -90,6 +94,8 @@ impl Host {
             source: RwLock::new(placeholder),
             msfs: Mutex::new(None),
             simulation: AtomicBool::new(simulation),
+            sim_kind: AtomicI64::new(sim_kind.clamp(0, 2)),
+            xplane_host: Mutex::new(xplane_host.to_string()),
             _discovery: Mutex::new(None),
             recorder: Mutex::new(rec),
             record_enabled: AtomicBool::new(record),
@@ -139,21 +145,49 @@ impl Host {
         let old = self.source.read().clone();
         old.stop();
         self.simulation.store(simulation, Ordering::SeqCst);
-        let src: Arc<dyn FlightSource> = if simulation {
-            *self.msfs.lock() = None;
-            Arc::new(SimulationSource::new(self.axes.clone()))
-        } else {
+        let kind = self.sim_kind.load(Ordering::SeqCst);
+        let msfs = || {
             let m = Arc::new(MsfsSource::new(self.axes.clone(), Arc::new(log_line)));
             m.set_look_counts_per_degree(8.0 * self.look.load(Ordering::SeqCst) as f64 / 100.0);
             *self.msfs.lock() = Some(m.clone());
             m
+        };
+        let src: Arc<dyn FlightSource> = if simulation {
+            *self.msfs.lock() = None;
+            Arc::new(SimulationSource::new(self.axes.clone()))
+        } else if kind == 2 {
+            *self.msfs.lock() = None;
+            Arc::new(XPlaneSource::new(self.axes.clone(), &self.xplane_host.lock()))
+        } else if kind == 1 {
+            msfs()
+        } else {
+            let m: Arc<dyn FlightSource> = msfs();
+            let x = Arc::new(XPlaneSource::new(self.axes.clone(), &self.xplane_host.lock()));
+            Arc::new(AutoSource::new(m, x))
         };
         src.start();
         *self.source.write() = src.clone();
         self.server.set_source(Some(src));
         self.nav.clear();
         self.live.lock().clear();
-        log::info(if simulation { tr("Tryb symulacji włączony") } else { tr("Tryb symulacji wyłączony – dane z MSFS") });
+        log::info(if simulation {
+            tr("Tryb symulacji włączony")
+        } else {
+            match kind {
+                1 => tr("Źródło danych: MSFS"),
+                2 => tr("Źródło danych: X-Plane"),
+                _ => tr("Źródło danych: MSFS albo X-Plane (automatycznie)"),
+            }
+        });
+    }
+
+    /// Wybór symulatora (0 auto, 1 MSFS, 2 X-Plane) i adres komputera z X-Plane; przełącza źródło.
+    pub fn set_sim(&self, kind: i64, xplane_host: &str) {
+        self.sim_kind.store(kind.clamp(0, 2), Ordering::SeqCst);
+        *self.xplane_host.lock() = xplane_host.to_string();
+        if !self.simulation.load(Ordering::SeqCst) {
+            self.switch_source(false);
+        }
     }
 
     pub fn set_look_sensitivity(&self, percent: i32) {

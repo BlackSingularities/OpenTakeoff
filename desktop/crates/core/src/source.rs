@@ -1,4 +1,4 @@
-//! Źródło stanu samolotu i odbiorca komend telefonu: MSFS (SimConnect) albo tryb symulacji.
+//! Źródło stanu samolotu i odbiorca komend telefonu: MSFS (SimConnect), X-Plane (UDP) albo tryb symulacji.
 
 use std::sync::Arc;
 
@@ -24,7 +24,7 @@ impl CommandResult {
 }
 
 pub trait FlightSource: Send + Sync {
-    /// "msfs" albo "simulation".
+    /// "msfs", "xplane" albo "simulation".
     fn kind(&self) -> &'static str;
     /// Czy są aktualne dane (MSFS: połączono i przyszła pierwsza paczka).
     fn is_connected(&self) -> bool;

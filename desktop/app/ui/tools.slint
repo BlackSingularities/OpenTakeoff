@@ -138,7 +138,7 @@ export component Tools inherits Rectangle {
                 spacing: 12px;
                 Tool {
                     horizontal-stretch: 1;
-                    title: @tr("WIATR NA PASIE");
+                    title: @tr("Wiatr na pasie");
                     icon: Icons.wind;
                     HorizontalLayout {
                         spacing: 8px;
@@ -169,7 +169,7 @@ export component Tools inherits Rectangle {
                 }
                 Tool {
                     horizontal-stretch: 1;
-                    title: @tr("TRÓJKĄT WIATRU");
+                    title: @tr("Trójkąt wiatru");
                     icon: Icons.compass;
                     HorizontalLayout {
                         spacing: 8px;
@@ -212,7 +212,7 @@ export component Tools inherits Rectangle {
                 }
                 Tool {
                     horizontal-stretch: 1;
-                    title: @tr("WYSOKOŚĆ GĘSTOŚCIOWA");
+                    title: @tr("Wysokość gęstościowa");
                     icon: Icons.thermometer;
                     HorizontalLayout {
                         spacing: 8px;
@@ -258,7 +258,7 @@ export component Tools inherits Rectangle {
                 spacing: 12px;
                 Tool {
                     horizontal-stretch: 1;
-                    title: @tr("PLAN ZNIŻANIA");
+                    title: @tr("Plan zniżania");
                     icon: Icons.plane-landing;
                     HorizontalLayout {
                         spacing: 8px;
@@ -301,7 +301,7 @@ export component Tools inherits Rectangle {
                 }
                 Tool {
                     horizontal-stretch: 1;
-                    title: @tr("PALIWO");
+                    title: @tr("Paliwo");
                     icon: Icons.fuel;
                     HorizontalLayout {
                         spacing: 8px;
@@ -344,7 +344,7 @@ export component Tools inherits Rectangle {
                 }
                 Tool {
                     horizontal-stretch: 1;
-                    title: @tr("CHMURY I WILGOTNOŚĆ");
+                    title: @tr("Chmury i wilgotność");
                     icon: Icons.cloud-sun;
                     HorizontalLayout {
                         spacing: 8px;
@@ -377,7 +377,7 @@ export component Tools inherits Rectangle {
                 spacing: 12px;
                 Tool {
                     horizontal-stretch: 1;
-                    title: @tr("PRZELICZNIK JEDNOSTEK");
+                    title: @tr("Przelicznik jednostek");
                     icon: Icons.calculator;
                     Segmented {
                         items: [@tr("Długość"), @tr("Prędkość"), @tr("Masa"), @tr("Objętość"), @tr("Ciśnienie")];
@@ -428,7 +428,7 @@ export component Tools inherits Rectangle {
                 }
                 Tool {
                     horizontal-stretch: 2;
-                    title: @tr("DEKODER METAR / TAF");
+                    title: @tr("Dekoder METAR / TAF");
                     icon: Icons.text-quote;
                     hint: @tr("Wklej depeszę – każda grupa dostanie opis. Prawdziwe depesze znajdziesz na karcie Lotniska.");
                     TextEdit {
@@ -438,7 +438,7 @@ export component Tools inherits Rectangle {
                     }
                     for d[i] in root.decoded: Text {
                         text: d;
-                        font-family: mod(i, 2) == 0 ? "Consolas" : Theme.font;
+                        font-family: mod(i, 2) == 0 ? Theme.mono : Theme.font;
                         font-size: Theme.fs-small;
                         color: mod(i, 2) == 0 ? Theme.accent : Theme.text-dim;
                         wrap: word-wrap;

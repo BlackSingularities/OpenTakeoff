@@ -18,7 +18,7 @@
 
 Aplikacja na Androida dla wirtualnych pilotów (MSFS, X-Plane, VATSIM, IVAO). Pogoda, dane lotnisk, plan lotu i kokpit na telefonie. Korzysta wyłącznie z darmowych, otwartych źródeł danych: nie wymaga kont ani kluczy API i nie ma reklam. Interfejs jest po polsku, angielsku i hiszpańsku (zgodnie z językiem systemu albo do wyboru w ustawieniach).
 
-Do sterowania samolotem i danych z symulatora służy **OpenTakeoff na Windows** (dawniej OpenTakeoff Link), który łączy telefon z MSFS 2024 w sieci lokalnej. Na komputerze ma też własne funkcje: przyrządy w stylu kabiny (PFD, ND, zegary, ECAM/EICAS), mapę nawigacyjną z radialami i różami VOR, widok 3D, dziennik lotów synchronizowany z telefonem, statystyki i briefing lotnisk. Instrukcja: [docs/link-setup.md](docs/link-setup.md).
+Do sterowania samolotem i danych z symulatora służy **OpenTakeoff na Windows** (dawniej OpenTakeoff Link), który łączy telefon z MSFS 2024 albo X-Plane 11/12 w sieci lokalnej (X-Plane bez wtyczek, przez UDP 49000). Na komputerze ma też własne funkcje: przyrządy w stylu kabiny (PFD, ND, zegary, ECAM/EICAS), mapę nawigacyjną z radialami i różami VOR, widok 3D, dziennik lotów synchronizowany z telefonem, statystyki i briefing lotnisk, a także kartę lądowania na ekranie symulatora, pasek do transmisji (stream), okno przyrządów zawsze na wierzchu, import planu z SimBrief i zrzuty ekranu z miejscem samolotu na mapie. Interfejs po polsku, angielsku i hiszpańsku. Instrukcja: [docs/link-setup.md](docs/link-setup.md).
 
 ### Funkcje
 
@@ -109,7 +109,7 @@ Bez sekretów APK jest podpisane kluczem debug. Żeby aktualizacje instalowały 
 
 An Android app for flight-sim pilots (MSFS, X-Plane, VATSIM, IVAO): weather, airport data, flight planning and a cockpit on your phone. It uses free and open data sources only, with no accounts, API keys or ads. The interface is in English, Polish and Spanish (follows the system language or can be set in Settings).
 
-To fly the aircraft and read live data from the simulator, run **OpenTakeoff for Windows** (formerly OpenTakeoff Link), which connects the phone to MSFS 2024 over your local network. On the PC it also offers cockpit-style instruments (PFD, ND, gauges, ECAM/EICAS), a navigation map with VOR radials and compass roses, a 3D view, a logbook synced with the phone, statistics and airport briefings. Setup: [docs/link-setup.md](docs/link-setup.md) (in Polish).
+To fly the aircraft and read live data from the simulator, run **OpenTakeoff for Windows** (formerly OpenTakeoff Link), which connects the phone to MSFS 2024 or X-Plane 11/12 over your local network (X-Plane without plugins, via UDP 49000). On the PC it also offers cockpit-style instruments (PFD, ND, gauges, ECAM/EICAS), a navigation map with VOR radials and compass roses, a 3D view, a logbook synced with the phone, statistics and airport briefings, plus a landing card on the simulator screen, a streaming bar, an always-on-top instrument window, SimBrief flight plan import and screenshots pinned to the aircraft position on the map. The interface is available in Polish, English and Spanish. Setup: [docs/link-setup.md](docs/link-setup.md) (in Polish).
 
 ### Features
 

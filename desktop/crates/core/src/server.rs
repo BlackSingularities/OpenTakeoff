@@ -210,7 +210,7 @@ fn source_name(inner: &Inner) -> &'static str {
 
 fn status_message(inner: &Inner) -> String {
     let src = inner.source.read().clone();
-    let sim_connected = src.as_ref().is_some_and(|s| s.kind() == "msfs" && s.is_connected());
+    let sim_connected = src.as_ref().is_some_and(|s| matches!(s.kind(), "msfs" | "xplane") && s.is_connected());
     let text = src.as_ref().map(|s| s.status_text()).unwrap_or_else(|| tr("Brak źródła danych").to_string());
     proto::status(source_name(inner), sim_connected, &text)
 }

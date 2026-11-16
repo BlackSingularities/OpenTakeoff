@@ -1,0 +1,193 @@
+// Karta Zrzuty: galeria zrzutów ekranu symulatora z miejscem samolotu; obok – duży podgląd,
+// pozycja, wysokość i przycisk pokazania miejsca na mapie.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { Button, TipArea } from "widgets.slint";
+import { Panel, Heading, Pair, Empty } from "parts.slint";
+
+export component Shots inherits Rectangle {
+    property <length> cell-w: 220px * Theme.scale;
+    property <length> cell-h: 168px * Theme.scale;
+    property <length> gap: 10px;
+    if App.shots.length == 0: Empty {
+        icon: Icons.image;
+        title: @tr("Brak zrzutów ekranu");
+        text: @tr("Naciśnij skrót (domyślnie F12) w symulatorze albo przycisk „Zrób zrzut”. Każdy zrzut zapamiętuje miejsce samolotu i pojawia się na mapie.");
+    }
+    if App.shots.length > 0: HorizontalLayout {
+        padding: 14px;
+        spacing: 12px;
+        // Siatka miniatur
+        Panel {
+            horizontal-stretch: 1;
+            sv := ScrollView {
+                property <int> cols: max(1, floor((sv.visible-width - 20px) / (root.cell-w + root.gap)));
+                content-height: ceil(App.shots.length / self.cols) * (root.cell-h + root.gap) + 20px;
+                content-width: sv.visible-width;
+                for s[i] in App.shots: Rectangle {
+                    property <bool> sel: s.id == App.shot.id;
+                    x: 10px + mod(i, sv.cols) * (root.cell-w + root.gap);
+                    y: 10px + floor(i / sv.cols) * (root.cell-h + root.gap);
+                    width: root.cell-w;
+                    height: root.cell-h;
+                    border-radius: Theme.r;
+                    background: self.sel ? Theme.accent-soft : ta.has-hover ? Theme.hover : Theme.raised;
+                    border-width: self.sel ? 2px : 1px;
+                    border-color: self.sel ? Theme.accent : Theme.line;
+                    VerticalLayout {
+                        padding: 6px;
+                        spacing: 5px;
+                        Rectangle {
+                            vertical-stretch: 1;
+                            border-radius: Theme.r-small;
+                            clip: true;
+                            background: #000000;
+                            Image {
+                                width: parent.width;
+                                height: parent.height;
+                                source: s.thumb;
+                                image-fit: cover;
+                            }
+                            if s.has-pos: Rectangle {
+                                x: 6px;
+                                y: 6px;
+                                width: 20px;
+                                height: 20px;
+                                border-radius: 10px;
+                                background: #000000aa;
+                                Image {
+                                    source: Icons.map-pin;
+                                    width: 12px;
+                                    height: 12px;
+                                    colorize: #ffb547;
+                                }
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            Text {
+                                text: s.place;
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                font-weight: 600;
+                                color: Theme.text;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                            }
+                            Text {
+                                text: s.time;
+                                font-family: Theme.mono;
+                                font-size: 10px * Theme.scale;
+                                color: Theme.text-faint;
+                            }
+                        }
+                    }
+                    ta := TouchArea {
+                        clicked => {
+                            App.cmd("shot-select", s.id);
+                        }
+                        double-clicked => {
+                            App.cmd("shot-select", s.id);
+                            App.cmd("shot-open", "");
+                        }
+                    }
+                }
+            }
+        }
+        // Podgląd i szczegóły
+        Panel {
+            width: 460px * Theme.scale;
+            VerticalLayout {
+                padding: 12px;
+                spacing: 10px;
+                Rectangle {
+                    height: 245px * Theme.scale;
+                    border-radius: Theme.r;
+                    background: #000000;
+                    clip: true;
+                    Image {
+                        width: parent.width;
+                        height: parent.height;
+                        source: App.shot-image;
+                        image-fit: contain;
+                    }
+                    TipArea {
+                        tip: @tr("Otwórz w przeglądarce zdjęć");
+                        double-clicked => {
+                            App.cmd("shot-open", "");
+                        }
+                    }
+                }
+                Text {
+                    text: App.shot.place;
+                    font-family: Theme.cond;
+                    font-size: 18px * Theme.scale;
+                    font-weight: 700;
+                    color: Theme.text;
+                    wrap: word-wrap;
+                }
+                Text {
+                    text: App.shot.date + "  " + App.shot.time + (App.shot.aircraft != "" ? "  ·  " + App.shot.aircraft : "");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                    wrap: word-wrap;
+                }
+                if App.shot.has-pos: VerticalLayout {
+                    spacing: 0;
+                    Pair {
+                        k: @tr("Wysokość");
+                        v: App.shot.alt;
+                        mono: true;
+                    }
+                    Pair {
+                        k: @tr("Pozycja");
+                        v: App.shot.coords;
+                        mono: true;
+                    }
+                }
+                Text {
+                    text: App.shot.info;
+                    font-family: Theme.mono;
+                    font-size: 10.5px * Theme.scale;
+                    color: Theme.text-dim;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    Button {
+                        icon: Icons.map;
+                        label: @tr("Pokaż na mapie");
+                        primary: true;
+                        enabled: App.shot.has-pos;
+                        clicked => {
+                            App.cmd("shot-map", "");
+                        }
+                    }
+                    Button {
+                        icon: Icons.external-link;
+                        label: @tr("Otwórz");
+                        clicked => {
+                            App.cmd("shot-open", "");
+                        }
+                    }
+                    Button {
+                        icon: Icons.copy;
+                        label: @tr("Kopiuj pozycję");
+                        enabled: App.shot.has-pos;
+                        clicked => {
+                            App.cmd("shot-copy-pos", "");
+                        }
+                    }
+                }
+                Rectangle {
+                    vertical-stretch: 1;
+                }
+            }
+        }
+    }
+}

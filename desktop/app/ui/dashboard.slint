@@ -1,60 +1,469 @@
-// Karta Pulpit: stan symulatora i telefonów, kod parowania, bieżący lot w skrócie, pogoda obserwowanych
-// lotnisk i ostatnie loty.
+// Karta Pulpit: plan lotu z SimBrief (trasa, paliwo, postęp na żywo), mapa bieżącego lotu, ostatnie
+// lądowanie, szybkie włączniki nakładek, ostatnie zrzuty ekranu, pogoda obserwowanych lotnisk,
+// podsumowanie dziennika i parowanie telefonu. Stan symulatora i lotu pokazuje panel boczny.
 
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Button, IconButton, TipArea } from "widgets.slint";
-import { Panel, Heading, Metric, Pair, CatBadge, Score, Dot, MapView, ListRow, Empty, Colors } from "parts.slint";
+import { Button, IconButton, TipArea, Switch, Field } from "widgets.slint";
+import { Panel, Heading, Metric, CatBadge, Score, MapView, ListRow, Colors } from "parts.slint";
 
-component StatusCard inherits Panel {
-    in property <image> icon;
-    in property <string> title;
-    in property <int> state;
-    in property <string> line1;
-    in property <string> line2;
-    min-height: 92px * Theme.scale;
-    VerticalLayout {
-        padding: 12px;
-        spacing: 6px;
+/// Duży kod lotniska z nazwą i pasem pod spodem.
+component Airport inherits VerticalLayout {
+    in property <string> code;
+    in property <string> name;
+    in property <string> rwy;
+    in property <bool> right;
+    spacing: 2px;
+    Text {
+        text: root.code;
+        font-family: Theme.mono;
+        font-size: 34px * Theme.scale;
+        font-weight: 700;
+        color: Theme.text;
+        horizontal-alignment: root.right ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+    }
+    Text {
+        text: root.name;
+        font-family: Theme.font;
+        font-size: Theme.fs-small;
+        color: Theme.text-dim;
+        overflow: elide;
+        horizontal-alignment: root.right ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+    }
+    if root.rwy != "": Text {
+        text: "RWY " + root.rwy;
+        font-family: Theme.mono;
+        font-size: 10.5px * Theme.scale;
+        color: Theme.text-faint;
+        horizontal-alignment: root.right ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
+    }
+}
+
+/// Wartość planu: liczba krojem B612 Mono, podpis pod spodem.
+component PlanStat inherits VerticalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <color> tone: Theme.text;
+    spacing: 1px;
+    horizontal-stretch: 1;
+    Text {
+        text: root.value == "" ? "–" : root.value;
+        font-family: Theme.mono;
+        font-size: 14px * Theme.scale;
+        font-weight: 700;
+        color: root.tone;
+        overflow: elide;
+    }
+    Text {
+        text: root.label;
+        font-family: Theme.font;
+        font-size: 10.5px * Theme.scale;
+        color: Theme.text-faint;
+        overflow: elide;
+    }
+}
+
+/// Plan lotu z SimBrief – główny element Pulpitu.
+component PlanHero inherits Panel {
+    hv := VerticalLayout {
+        padding: 16px;
+        spacing: 14px;
         HorizontalLayout {
-            spacing: 8px;
-            Image {
-                source: root.icon;
-                width: 18px * Theme.scale;
-                height: 18px * Theme.scale;
-                colorize: Theme.accent;
-            }
-            Text {
-                text: root.title;
-                font-family: Theme.font;
-                font-size: Theme.fs;
-                font-weight: 600;
-                color: Theme.text;
-                vertical-alignment: center;
+            spacing: 10px;
+            Heading {
+                text: App.plan.loaded ? @tr("Plan lotu") + (App.plan.callsign != "" ? "  " + App.plan.callsign : "") : @tr("Plan lotu");
+                icon: Icons.route;
                 horizontal-stretch: 1;
             }
-            Dot {
-                state: root.state;
-                y: (parent.height - self.height) / 2;
+            if App.plan.loaded: Text {
+                text: @tr("SimBrief, ") + App.plan.fetched;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-faint;
+                vertical-alignment: center;
+            }
+            if App.plan.loaded: IconButton {
+                icon: Icons.refresh-cw;
+                tip: @tr("Pobierz najnowszy plan z SimBrief");
+                enabled: !App.plan-busy;
+                clicked => {
+                    App.cmd("simbrief-fetch", App.simbrief-user);
+                }
+            }
+            if App.plan.loaded: IconButton {
+                icon: Icons.map;
+                tip: @tr("Pokaż trasę na mapie");
+                clicked => {
+                    App.cmd("plan-map", "");
+                }
+            }
+            if App.plan.loaded: IconButton {
+                icon: Icons.x;
+                tip: @tr("Usuń plan");
+                clicked => {
+                    App.cmd("simbrief-clear", "");
+                }
             }
         }
-        Text {
-            text: root.line1;
-            font-family: Theme.font;
-            font-size: Theme.fs-big;
-            color: Theme.text;
+        // Brak planu: pobranie z SimBrief
+        if !App.plan.loaded: HorizontalLayout {
+            spacing: 14px;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 4px;
+                alignment: center;
+                Text {
+                    text: @tr("Pobierz plan z SimBrief");
+                    font-family: Theme.cond;
+                    font-size: 22px * Theme.scale;
+                    font-weight: 700;
+                    color: Theme.text;
+                }
+                Text {
+                    text: @tr("Trasa pojawi się na mapie, w panelu bocznym i na pasku do transmisji, a w czasie lotu zobaczysz następny punkt, odległość do celu i paliwo względem planu.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.text-dim;
+                    wrap: word-wrap;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 6px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    Field {
+                        w: 200px;
+                        text <=> App.simbrief-user;
+                        placeholder: @tr("Użytkownik albo Pilot ID");
+                        accepted(t) => {
+                            App.cmd("simbrief-fetch", t);
+                        }
+                    }
+                    Button {
+                        icon: Icons.cloud-download;
+                        label: App.plan-busy ? @tr("Pobieranie…") : @tr("Pobierz plan");
+                        primary: true;
+                        enabled: !App.plan-busy;
+                        clicked => {
+                            App.cmd("simbrief-fetch", App.simbrief-user);
+                        }
+                    }
+                }
+                Text {
+                    text: @tr("Pilot ID znajdziesz w SimBrief w Account Settings.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                }
+            }
+        }
+        // Plan: start → cel z postępem
+        if App.plan.loaded: HorizontalLayout {
+            spacing: 18px;
+            Airport {
+                code: App.plan.origin;
+                name: App.plan.origin-name;
+                rwy: App.plan.dep-rwy;
+                width: 180px * Theme.scale;
+            }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                spacing: 8px;
+                Rectangle {
+                    height: 22px;
+                    Rectangle {
+                        height: 2px;
+                        background: Theme.line-strong;
+                    }
+                    Rectangle {
+                        x: 0;
+                        width: parent.width * App.plan.progress;
+                        height: 2px;
+                        background: Theme.accent;
+                    }
+                    Image {
+                        x: (parent.width - self.width) * App.plan.progress;
+                        source: Icons.plane;
+                        width: 20px;
+                        height: 20px;
+                        colorize: App.plan.live ? Theme.accent : Theme.text-faint;
+                        transform-rotation: 45deg;
+                    }
+                }
+                Text {
+                    text: App.plan.live ? @tr("Następny: ") + App.plan.next + "  " + App.plan.next-dist + "   ·   " + @tr("do celu ") + App.plan.remaining : App.plan.distance + "   ·   " + App.plan.ete + (App.plan.cruise != "" ? "   ·   " + App.plan.cruise : "");
+                    font-family: Theme.mono;
+                    font-size: 11.5px * Theme.scale;
+                    color: Theme.text-dim;
+                    horizontal-alignment: center;
+                }
+            }
+            Airport {
+                code: App.plan.dest;
+                name: App.plan.dest-name;
+                rwy: App.plan.arr-rwy;
+                right: true;
+                width: 180px * Theme.scale;
+            }
+        }
+        if App.plan.loaded: HorizontalLayout {
+            spacing: 12px;
+            PlanStat {
+                label: @tr("Dystans");
+                value: App.plan.distance;
+            }
+            PlanStat {
+                label: @tr("Czas lotu");
+                value: App.plan.ete;
+            }
+            PlanStat {
+                label: @tr("Przelot");
+                value: App.plan.cruise;
+            }
+            PlanStat {
+                label: @tr("Paliwo na starcie");
+                value: App.plan.ramp;
+            }
+            PlanStat {
+                label: @tr("Spalanie");
+                value: App.plan.burn;
+            }
+            PlanStat {
+                label: "ZFW";
+                value: App.plan.zfw;
+            }
+            PlanStat {
+                label: "TOW";
+                value: App.plan.tow;
+            }
+            PlanStat {
+                label: @tr("Zapasowe");
+                value: App.plan.altn;
+            }
+            if App.plan.live && App.plan.fuel-plan != "": PlanStat {
+                label: @tr("Paliwo: teraz / plan");
+                value: App.plan.fuel-diff;
+                tone: App.plan.fuel-ok ? Theme.ok : Colors.warn;
+            }
+        }
+        if App.plan.loaded && App.plan.route != "": Text {
+            text: App.plan.route;
+            font-family: Theme.mono;
+            font-size: 10.5px * Theme.scale;
+            color: Theme.text-faint;
             wrap: word-wrap;
         }
-        Text {
-            text: root.line2;
+        // Punkty trasy
+        if App.plan.loaded && App.plan-fixes.length > 0: Rectangle {
+            height: 170px * Theme.scale;
+            border-radius: Theme.r-small;
+            border-width: 1px;
+            border-color: Theme.line;
+            clip: true;
+            fsv := ScrollView {
+                VerticalLayout {
+                    width: fsv.visible-width;
+                    padding: 4px;
+                    spacing: 0;
+                    for f in App.plan-fixes: Rectangle {
+                        height: 24px * Theme.scale;
+                        border-radius: Theme.r-small;
+                        background: f.next ? Theme.accent-soft : transparent;
+                        HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            spacing: 10px;
+                            Text {
+                                text: f.ident;
+                                width: 90px * Theme.scale;
+                                font-family: Theme.mono;
+                                font-size: Theme.fs-small;
+                                font-weight: 700;
+                                color: f.passed ? Theme.text-faint : f.next ? Theme.accent : Theme.text;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                text: f.via;
+                                width: 70px * Theme.scale;
+                                font-family: Theme.mono;
+                                font-size: 10.5px * Theme.scale;
+                                color: Theme.text-faint;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: f.alt;
+                                width: 70px * Theme.scale;
+                                font-family: Theme.mono;
+                                font-size: 10.5px * Theme.scale;
+                                color: f.passed ? Theme.text-faint : Theme.text-dim;
+                                vertical-alignment: center;
+                                horizontal-alignment: right;
+                            }
+                            Text {
+                                text: f.dist + " NM";
+                                width: 70px * Theme.scale;
+                                font-family: Theme.mono;
+                                font-size: 10.5px * Theme.scale;
+                                color: f.passed ? Theme.text-faint : Theme.text-dim;
+                                vertical-alignment: center;
+                                horizontal-alignment: right;
+                            }
+                            Text {
+                                text: f.wind;
+                                width: 70px * Theme.scale;
+                                font-family: Theme.mono;
+                                font-size: 10.5px * Theme.scale;
+                                color: Theme.text-faint;
+                                vertical-alignment: center;
+                                horizontal-alignment: right;
+                            }
+                            Text {
+                                text: f.fuel;
+                                horizontal-stretch: 1;
+                                font-family: Theme.mono;
+                                font-size: 10.5px * Theme.scale;
+                                color: f.passed ? Theme.text-faint : Theme.text-dim;
+                                vertical-alignment: center;
+                                horizontal-alignment: right;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Ostatnie lądowanie z przyciskiem pokazania karty na ekranie symulatora.
+component LandingPanel inherits Panel {
+    lv := VerticalLayout {
+        padding: 14px;
+        spacing: 10px;
+        HorizontalLayout {
+            Heading {
+                text: @tr("Ostatnie lądowanie");
+                icon: Icons.plane-landing;
+                horizontal-stretch: 1;
+            }
+            IconButton {
+                icon: Icons.sliders-horizontal;
+                tip: @tr("Wygląd karty lądowania");
+                clicked => {
+                    App.tab = 10;
+                    App.cmd("tab", 10);
+                }
+            }
+        }
+        if !App.last-landing.has: Text {
+            text: @tr("Po przyziemieniu pojawi się tu ocena, a na ekranie symulatora – karta lądowania.");
             font-family: Theme.font;
-            font-size: Theme.fs-small;
-            color: Theme.text-dim;
+            font-size: Theme.fs;
+            color: Theme.text-faint;
             wrap: word-wrap;
         }
-        @children
+        if App.last-landing.has: HorizontalLayout {
+            spacing: 14px;
+            Score {
+                score: App.last-landing.score;
+                size: 58px * Theme.scale;
+                y: (parent.height - self.height) / 2;
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+                horizontal-stretch: 1;
+                Text {
+                    text: App.last-landing.grade;
+                    font-family: Theme.cond;
+                    font-size: 20px * Theme.scale;
+                    font-weight: 700;
+                    color: Colors.score(App.last-landing.score);
+                }
+                Text {
+                    text: App.last-landing.vs + (App.last-landing.g != "" ? "   " + App.last-landing.g : "");
+                    font-family: Theme.mono;
+                    font-size: Theme.fs;
+                    color: Theme.text;
+                }
+                Text {
+                    text: App.last-landing.airport + " " + App.last-landing.runway + (App.last-landing.along != "" ? "  ·  " + App.last-landing.along : "");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                    overflow: elide;
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                icon: Icons.eye;
+                label: App.last-landing.has ? @tr("Pokaż kartę") : @tr("Podgląd karty");
+                clicked => {
+                    App.cmd(App.last-landing.has ? "ovl-landing-last" : "ovl-landing-preview", "");
+                }
+            }
+        }
+    }
+}
+
+/// Szybkie włączniki nakładek i zrzut ekranu.
+component OverlayPanel inherits Panel {
+    ov := VerticalLayout {
+        padding: 14px;
+        spacing: 8px;
+        HorizontalLayout {
+            Heading {
+                text: @tr("Nakładki na ekranie symulatora");
+                icon: Icons.monitor;
+                horizontal-stretch: 1;
+            }
+            IconButton {
+                icon: Icons.sliders-horizontal;
+                tip: @tr("Wszystkie ustawienia nakładek");
+                clicked => {
+                    App.tab = 10;
+                    App.cmd("tab", 10);
+                }
+            }
+        }
+        Switch {
+            icon: Icons.plane-landing;
+            label: @tr("Karta lądowania");
+            on: App.ovl-landing.enabled;
+            toggled => {
+                App.cmd("ovl", "landing.enabled=" + (App.ovl-landing.enabled ? "0" : "1"));
+            }
+        }
+        Switch {
+            icon: Icons.radio-tower;
+            label: @tr("Pasek do transmisji");
+            on: App.ovl-stream.enabled;
+            toggled => {
+                App.cmd("ovl", "stream.enabled=" + (App.ovl-stream.enabled ? "0" : "1"));
+            }
+        }
+        Switch {
+            icon: Icons.pin;
+            label: @tr("Okno zawsze na wierzchu");
+            on: App.ovl-window.enabled;
+            toggled => {
+                App.cmd("ovl", "overlay.enabled=" + (App.ovl-window.enabled ? "0" : "1"));
+            }
+        }
+        Button {
+            icon: Icons.scan;
+            label: @tr("Zrób zrzut ekranu");
+            clicked => {
+                App.cmd("shot-take", "");
+            }
+        }
     }
 }
 
@@ -62,98 +471,244 @@ export component Dashboard inherits Rectangle {
     sv := ScrollView {
         VerticalLayout {
             width: sv.visible-width;
-            padding: 14px;
-            spacing: 12px;
+            padding: 16px;
+            spacing: 14px;
+            PlanHero { }
             HorizontalLayout {
-                spacing: 12px;
-                StatusCard {
-                    horizontal-stretch: 1;
-                    icon: Icons.monitor;
-                    title: App.simulation ? @tr("Tryb symulacji") : @tr("Symulator");
-                    state: App.sim-connected ? 2 : 1;
-                    line1: App.sim-connected ? App.sim-name : @tr("Brak połączenia");
-                    line2: App.sim-status;
-                }
-                StatusCard {
-                    horizontal-stretch: 1;
-                    icon: Icons.smartphone;
-                    title: @tr("Telefony");
-                    state: App.phones > 0 ? 2 : 0;
-                    line1: App.phones-text;
-                    line2: @tr("Kod parowania w aplikacji OpenTakeoff: ") + App.pairing-code;
-                }
-                StatusCard {
-                    horizontal-stretch: 1;
-                    icon: Icons.circle-dot;
-                    title: @tr("Zapis lotu");
-                    state: App.recording ? 2 : 0;
-                    line1: App.recording ? @tr("Nagrywanie") : @tr("Czeka na start");
-                    line2: App.recording-text;
-                }
-                StatusCard {
-                    horizontal-stretch: 1;
-                    icon: Icons.book-open;
-                    title: @tr("Dziennik lotów");
-                    state: 0;
-                    line1: App.stats.flights + " · " + App.stats.hours;
-                    line2: App.flights-summary;
-                }
-            }
-            HorizontalLayout {
-                spacing: 12px;
-                VerticalLayout {
+                spacing: 14px;
+                MapView {
+                    id: 0;
                     horizontal-stretch: 3;
-                    spacing: 12px;
-                    if App.live.has-data: HorizontalLayout {
-                        spacing: 10px;
-                        Metric {
-                            horizontal-stretch: 1;
-                            label: @tr("Wysokość");
-                            value: App.live.alt;
-                            unit: App.live.alt-unit;
-                            sub: "AGL " + App.live.agl;
-                        }
-                        Metric {
-                            horizontal-stretch: 1;
-                            label: @tr("Prędkość przyrządowa");
-                            value: App.live.ias;
-                            unit: "kt";
-                            sub: "GS " + App.live.gs + " kt";
-                        }
-                        Metric {
-                            horizontal-stretch: 1;
-                            label: @tr("Prędkość pionowa");
-                            value: App.live.vs;
-                            unit: "ft/min";
-                            tone: App.live.vs-value < -1500 ? Colors.warn : Theme.text;
-                        }
-                        Metric {
-                            horizontal-stretch: 1;
-                            label: @tr("Kurs");
-                            value: App.live.hdg;
-                            unit: "°";
-                            sub: App.live.nearest;
+                    min-height: 420px * Theme.scale;
+                    source: App.map-live;
+                    labels: App.map-live-labels;
+                    scale-text: App.map-live-scale;
+                    show-follow: true;
+                }
+                VerticalLayout {
+                    horizontal-stretch: 2;
+                    min-width: 320px * Theme.scale;
+                    spacing: 14px;
+                    LandingPanel { }
+                    OverlayPanel { }
+                    // Ostatnie zrzuty ekranu
+                    Panel {
+                        vertical-stretch: 1;
+                        min-height: 150px * Theme.scale;
+                        VerticalLayout {
+                            padding: 14px;
+                            spacing: 8px;
+                            HorizontalLayout {
+                                Heading {
+                                    text: @tr("Zrzuty ekranu");
+                                    icon: Icons.image;
+                                    horizontal-stretch: 1;
+                                }
+                                IconButton {
+                                    icon: Icons.chevron-right;
+                                    tip: @tr("Galeria zrzutów");
+                                    clicked => {
+                                        App.tab = 11;
+                                        App.cmd("tab", 11);
+                                    }
+                                }
+                            }
+                            if App.shots.length == 0: Text {
+                                text: @tr("Naciśnij F12 w symulatorze – zrzut zapamięta miejsce samolotu.");
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-faint;
+                                wrap: word-wrap;
+                            }
+                            HorizontalLayout {
+                                spacing: 6px;
+                                for s[i] in App.shots: Rectangle {
+                                    visible: i < 4;
+                                    width: i < 4 ? self.height * 16 / 9 : 0;
+                                    height: 64px * Theme.scale;
+                                    border-radius: Theme.r-small;
+                                    clip: true;
+                                    background: #000000;
+                                    Image {
+                                        width: parent.width;
+                                        height: parent.height;
+                                        source: s.thumb;
+                                        image-fit: cover;
+                                    }
+                                    TipArea {
+                                        tip: s.place + " · " + s.time;
+                                        clicked => {
+                                            App.cmd("shot-select", s.id);
+                                            App.tab = 11;
+                                            App.cmd("tab", 11);
+                                        }
+                                    }
+                                }
+                                Rectangle {
+                                    horizontal-stretch: 1;
+                                }
+                            }
                         }
                     }
-                    MapView {
-                        id: 0;
-                        min-height: 360px * Theme.scale;
-                        vertical-stretch: 1;
-                        source: App.map-live;
-                        labels: App.map-live-labels;
-                        scale-text: App.map-live-scale;
-                        show-follow: true;
+                }
+            }
+            // Pogoda obserwowanych lotnisk
+            HorizontalLayout {
+                spacing: 14px;
+                Panel {
+                    horizontal-stretch: 3;
+                    VerticalLayout {
+                        padding: 14px;
+                        spacing: 8px;
+                        HorizontalLayout {
+                            Heading {
+                                text: @tr("Pogoda – obserwowane lotniska");
+                                icon: Icons.cloud-sun;
+                                horizontal-stretch: 1;
+                            }
+                            IconButton {
+                                icon: Icons.refresh-cw;
+                                tip: @tr("Odśwież pogodę");
+                                clicked => {
+                                    App.cmd("watch-refresh", "");
+                                }
+                            }
+                        }
+                        if App.watchlist.length == 0: Text {
+                            text: @tr("Dodaj lotniska na karcie Lotniska (gwiazdka), żeby widzieć tu ich bieżącą pogodę.");
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                        for w in App.watchlist: ListRow {
+                            height: wl.preferred-height;
+                            clicked => {
+                                App.cmd("airport-open", w.icao);
+                            }
+                            wl := HorizontalLayout {
+                                padding: 6px;
+                                spacing: 12px;
+                                VerticalLayout {
+                                    width: 120px * Theme.scale;
+                                    alignment: center;
+                                    HorizontalLayout {
+                                        spacing: 6px;
+                                        Text {
+                                            text: w.icao;
+                                            font-family: Theme.mono;
+                                            font-size: Theme.fs-big;
+                                            font-weight: 700;
+                                            color: Theme.text;
+                                        }
+                                        CatBadge {
+                                            cat: w.cat;
+                                            y: (parent.height - self.height) / 2;
+                                        }
+                                    }
+                                    Text {
+                                        text: w.age;
+                                        font-family: Theme.font;
+                                        font-size: 10.5px * Theme.scale;
+                                        color: Theme.text-faint;
+                                    }
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    horizontal-stretch: 1;
+                                    spacing: 2px;
+                                    Text {
+                                        text: w.name;
+                                        font-family: Theme.font;
+                                        font-size: Theme.fs-small;
+                                        color: Theme.text-dim;
+                                        overflow: elide;
+                                    }
+                                    Text {
+                                        text: w.wind + "   " + w.vis + "   " + w.temp + "   " + w.qnh;
+                                        font-family: Theme.mono;
+                                        font-size: Theme.fs-small;
+                                        color: Theme.text;
+                                        overflow: elide;
+                                    }
+                                    Text {
+                                        text: w.raw;
+                                        font-family: Theme.mono;
+                                        font-size: 10px * Theme.scale;
+                                        color: Theme.text-faint;
+                                        wrap: word-wrap;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // Podsumowanie dziennika i telefon
+                VerticalLayout {
+                    horizontal-stretch: 2;
+                    min-width: 320px * Theme.scale;
+                    spacing: 14px;
+                    Panel {
+                        VerticalLayout {
+                            padding: 14px;
+                            spacing: 10px;
+                            HorizontalLayout {
+                                Heading {
+                                    text: @tr("Dziennik lotów");
+                                    icon: Icons.book-open;
+                                    horizontal-stretch: 1;
+                                }
+                                IconButton {
+                                    icon: Icons.chart-column;
+                                    tip: @tr("Statystyki");
+                                    clicked => {
+                                        App.tab = 3;
+                                        App.cmd("tab", 3);
+                                    }
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                Metric {
+                                    horizontal-stretch: 1;
+                                    label: @tr("Loty");
+                                    value: App.stats.flights;
+                                    big: 22px * Theme.scale;
+                                }
+                                Metric {
+                                    horizontal-stretch: 1;
+                                    label: @tr("Godziny");
+                                    value: App.stats.hours;
+                                    big: 22px * Theme.scale;
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                Metric {
+                                    horizontal-stretch: 1;
+                                    label: @tr("Lądowania");
+                                    value: App.stats.landings;
+                                    big: 22px * Theme.scale;
+                                }
+                                Metric {
+                                    horizontal-stretch: 1;
+                                    label: @tr("Średnia ocena");
+                                    value: App.stats.avg-score;
+                                    big: 22px * Theme.scale;
+                                }
+                            }
+                        }
                     }
                     Panel {
                         VerticalLayout {
-                            padding: 12px;
+                            padding: 14px;
                             spacing: 8px;
                             Heading {
-                                text: @tr("POŁĄCZENIE Z TELEFONEM");
+                                text: @tr("Połączenie z telefonem");
                                 icon: Icons.wifi;
                             }
                             HorizontalLayout {
-                                spacing: 18px;
+                                spacing: 14px;
                                 VerticalLayout {
                                     spacing: 2px;
                                     Text {
@@ -164,10 +719,10 @@ export component Dashboard inherits Rectangle {
                                     }
                                     Text {
                                         text: App.pairing-code;
-                                        font-family: "Consolas";
-                                        font-size: 34px * Theme.scale;
+                                        font-family: Theme.mono;
+                                        font-size: 28px * Theme.scale;
                                         font-weight: 700;
-                                        letter-spacing: 4px;
+                                        letter-spacing: 3px;
                                         color: Theme.accent;
                                     }
                                 }
@@ -178,182 +733,16 @@ export component Dashboard inherits Rectangle {
                                     Text {
                                         text: @tr("W aplikacji OpenTakeoff na telefonie otwórz Kokpit → Połącz. Telefon sam znajdzie ten komputer w sieci Wi-Fi; jeśli nie – wpisz adres ręcznie.");
                                         font-family: Theme.font;
-                                        font-size: Theme.fs;
+                                        font-size: Theme.fs-small;
                                         color: Theme.text-dim;
                                         wrap: word-wrap;
                                     }
                                     Text {
                                         text: @tr("Adres: ") + App.addresses + " · " + @tr("port ") + App.port;
-                                        font-family: Theme.font;
-                                        font-size: Theme.fs-small;
+                                        font-family: Theme.mono;
+                                        font-size: 10.5px * Theme.scale;
                                         color: Theme.text-faint;
                                         wrap: word-wrap;
-                                    }
-                                }
-                                Button {
-                                    label: @tr("Nowy kod");
-                                    icon: Icons.refresh-cw;
-                                    y: (parent.height - self.height) / 2;
-                                    clicked => {
-                                        App.cmd("pair-new-code", "");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                VerticalLayout {
-                    horizontal-stretch: 2;
-                    min-width: 300px;
-                    spacing: 12px;
-                    Panel {
-                        VerticalLayout {
-                            padding: 12px;
-                            spacing: 6px;
-                            HorizontalLayout {
-                                Heading {
-                                    text: @tr("POGODA – OBSERWOWANE LOTNISKA");
-                                    icon: Icons.cloud-sun;
-                                    horizontal-stretch: 1;
-                                }
-                                IconButton {
-                                    icon: Icons.refresh-cw;
-                                    tip: @tr("Odśwież pogodę");
-                                    clicked => {
-                                        App.cmd("watch-refresh", "");
-                                    }
-                                }
-                            }
-                            if App.watchlist.length == 0: Text {
-                                text: @tr("Dodaj lotniska na karcie Lotniska (gwiazdka), żeby widzieć tu ich bieżącą pogodę.");
-                                font-family: Theme.font;
-                                font-size: Theme.fs;
-                                color: Theme.text-faint;
-                                wrap: word-wrap;
-                            }
-                            for w in App.watchlist: ListRow {
-                                height: wl.preferred-height;
-                                clicked => {
-                                    App.cmd("airport-open", w.icao);
-                                }
-                                wl := VerticalLayout {
-                                    padding: 6px;
-                                    spacing: 3px;
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text {
-                                            text: w.icao;
-                                            font-family: Theme.font;
-                                            font-size: Theme.fs-big;
-                                            font-weight: 700;
-                                            color: Theme.text;
-                                        }
-                                        CatBadge {
-                                            cat: w.cat;
-                                            y: (parent.height - self.height) / 2;
-                                        }
-                                        Text {
-                                            text: w.name;
-                                            font-family: Theme.font;
-                                            font-size: Theme.fs-small;
-                                            color: Theme.text-dim;
-                                            vertical-alignment: center;
-                                            overflow: elide;
-                                            horizontal-stretch: 1;
-                                        }
-                                        Text {
-                                            text: w.age;
-                                            font-family: Theme.font;
-                                            font-size: Theme.fs-small;
-                                            color: Theme.text-faint;
-                                            vertical-alignment: center;
-                                        }
-                                    }
-                                    Text {
-                                        text: w.wind + "   " + w.vis + "   " + w.temp + "   " + w.qnh;
-                                        font-family: Theme.font;
-                                        font-size: Theme.fs;
-                                        color: Theme.text;
-                                        overflow: elide;
-                                    }
-                                    Text {
-                                        text: w.raw;
-                                        font-family: "Consolas";
-                                        font-size: Theme.fs-small;
-                                        color: Theme.text-faint;
-                                        wrap: word-wrap;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Panel {
-                        vertical-stretch: 1;
-                        VerticalLayout {
-                            padding: 12px;
-                            spacing: 4px;
-                            HorizontalLayout {
-                                Heading {
-                                    text: @tr("OSTATNIE LOTY");
-                                    icon: Icons.history;
-                                    horizontal-stretch: 1;
-                                }
-                                IconButton {
-                                    icon: Icons.chevron-right;
-                                    tip: @tr("Otwórz dziennik lotów");
-                                    clicked => {
-                                        App.tab = 2;
-                                    }
-                                }
-                            }
-                            if App.flights.length == 0: Text {
-                                text: @tr("Loty zapisują się same: tu, gdy MSFS działa na tym komputerze, i w telefonie. Po połączeniu telefonu dziennik synchronizuje się w obie strony.");
-                                font-family: Theme.font;
-                                font-size: Theme.fs;
-                                color: Theme.text-faint;
-                                wrap: word-wrap;
-                            }
-                            for f[i] in App.flights: ListRow {
-                                visible: i < 8 && !f.header;
-                                height: (i < 8 && !f.header) ? 44px * Theme.scale : 0;
-                                clicked => {
-                                    App.tab = 2;
-                                    App.cmd("flight-open", f.id);
-                                }
-                                HorizontalLayout {
-                                    padding-left: 6px;
-                                    padding-right: 6px;
-                                    spacing: 10px;
-                                    Score {
-                                        score: f.score;
-                                        size: 30px * Theme.scale;
-                                        y: (parent.height - self.height) / 2;
-                                    }
-                                    VerticalLayout {
-                                        alignment: center;
-                                        horizontal-stretch: 1;
-                                        Text {
-                                            text: f.from + " → " + f.to;
-                                            font-family: Theme.font;
-                                            font-size: Theme.fs;
-                                            font-weight: 600;
-                                            color: Theme.text;
-                                            overflow: elide;
-                                        }
-                                        Text {
-                                            text: f.date + " · " + f.aircraft;
-                                            font-family: Theme.font;
-                                            font-size: Theme.fs-small;
-                                            color: Theme.text-dim;
-                                            overflow: elide;
-                                        }
-                                    }
-                                    Text {
-                                        text: f.duration;
-                                        font-family: Theme.font;
-                                        font-size: Theme.fs;
-                                        color: Theme.text-dim;
-                                        vertical-alignment: center;
                                     }
                                 }
                             }

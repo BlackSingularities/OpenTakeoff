@@ -20,7 +20,7 @@ component Decoded inherits VerticalLayout {
             x: 8px;
             width: parent.width - 16px;
             text: root.raw == "" ? "—" : root.raw;
-            font-family: "Consolas";
+            font-family: Theme.mono;
             font-size: Theme.fs;
             color: Theme.text;
             wrap: word-wrap;
@@ -33,7 +33,7 @@ component Decoded inherits VerticalLayout {
         Text {
             width: 110px * Theme.scale;
             text: g.token;
-            font-family: "Consolas";
+            font-family: Theme.mono;
             font-size: Theme.fs-small;
             color: Theme.accent;
             overflow: elide;
@@ -159,7 +159,7 @@ component Briefing inherits ScrollView {
                         }
                         for m in App.metar-history: Text {
                             text: m;
-                            font-family: "Consolas";
+                            font-family: Theme.mono;
                             font-size: Theme.fs-small;
                             color: Theme.text-faint;
                             wrap: word-wrap;
@@ -186,7 +186,7 @@ component Briefing inherits ScrollView {
                     padding: 10px;
                     spacing: 2px;
                     Heading {
-                        text: @tr("INFORMACJE");
+                        text: @tr("Informacje");
                         icon: Icons.info;
                     }
                     for kv in App.airport-info: Pair {
@@ -203,7 +203,7 @@ component Briefing inherits ScrollView {
                     padding: 10px;
                     spacing: 4px;
                     Heading {
-                        text: @tr("PASY STARTOWE");
+                        text: @tr("Pasy startowe");
                         icon: Icons.plane-takeoff;
                     }
                     for r in App.airport-runways: Rectangle {
@@ -266,7 +266,7 @@ component Briefing inherits ScrollView {
                     padding: 10px;
                     spacing: 2px;
                     Heading {
-                        text: @tr("CZĘSTOTLIWOŚCI");
+                        text: @tr("Częstotliwości");
                         icon: Icons.radio;
                     }
                     if App.airport-freqs.length == 0: Text {
@@ -296,7 +296,7 @@ component Briefing inherits ScrollView {
                         }
                         Text {
                             text: f.mhz;
-                            font-family: "Consolas";
+                            font-family: Theme.mono;
                             font-size: Theme.fs;
                             color: Theme.text;
                             vertical-alignment: center;
@@ -313,7 +313,7 @@ component Briefing inherits ScrollView {
                     padding: 10px;
                     spacing: 4px;
                     Heading {
-                        text: @tr("PROCEDURY Z BAZY MSFS");
+                        text: @tr("Procedury z bazy MSFS");
                         icon: Icons.route;
                     }
                     Text {
@@ -361,7 +361,7 @@ component Briefing inherits ScrollView {
                     padding: 10px;
                     spacing: 4px;
                     Heading {
-                        text: App.procedure-title != "" ? App.procedure-title : @tr("ODCINKI PROCEDURY");
+                        text: App.procedure-title != "" ? App.procedure-title : @tr("Odcinki procedury");
                         icon: Icons.list-ordered;
                     }
                     if App.procedure-legs.length == 0: Text {
@@ -381,7 +381,7 @@ component Briefing inherits ScrollView {
                             Text {
                                 width: 70px * Theme.scale;
                                 text: l.fix;
-                                font-family: "Consolas";
+                                font-family: Theme.mono;
                                 font-size: Theme.fs;
                                 font-weight: 600;
                                 color: Theme.text;
@@ -390,7 +390,7 @@ component Briefing inherits ScrollView {
                             Text {
                                 width: 34px * Theme.scale;
                                 text: l.kind;
-                                font-family: "Consolas";
+                                font-family: Theme.mono;
                                 font-size: Theme.fs-small;
                                 color: Theme.accent;
                                 vertical-alignment: center;
@@ -437,7 +437,7 @@ component Briefing inherits ScrollView {
                 padding: 10px;
                 spacing: 2px;
                 Heading {
-                    text: @tr("LOTNISKA W POBLIŻU");
+                    text: @tr("Lotniska w pobliżu");
                     icon: Icons.map-pin;
                 }
                 for a in App.airport-nearby: ListRow {

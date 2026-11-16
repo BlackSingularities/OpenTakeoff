@@ -5,7 +5,7 @@ import { ListView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Button, IconButton, Switch, Slider } from "widgets.slint";
+import { Button, IconButton, Switch, Slider, Segmented, Field } from "widgets.slint";
 import { Panel, Heading, Pair, Dot, ListRow, Empty, Colors } from "parts.slint";
 
 export component Devices inherits Rectangle {
@@ -21,12 +21,12 @@ export component Devices inherits Rectangle {
                     padding: 14px;
                     spacing: 8px;
                     Heading {
-                        text: @tr("PAROWANIE");
+                        text: @tr("Parowanie");
                         icon: Icons.qr-code;
                     }
                     Text {
                         text: App.pairing-code;
-                        font-family: "Consolas";
+                        font-family: Theme.mono;
                         font-size: 44px * Theme.scale;
                         font-weight: 700;
                         letter-spacing: 6px;
@@ -74,25 +74,42 @@ export component Devices inherits Rectangle {
                     padding: 14px;
                     spacing: 8px;
                     Heading {
-                        text: @tr("ŹRÓDŁO DANYCH");
+                        text: @tr("Źródło danych");
                         icon: Icons.monitor;
                     }
-                    HorizontalLayout {
+                    Segmented {
+                        items: [@tr("Automatycznie"), "MSFS", "X-Plane", @tr("Tryb symulacji")];
+                        current: App.simulation ? 3 : App.sim-kind;
+                        tip: @tr("Automatycznie – dane z MSFS albo X-Plane, zależnie od tego, który działa");
+                        picked(i) => {
+                            App.cmd("source", i == 0 ? "auto" : i == 1 ? "msfs" : i == 2 ? "xplane" : "sim");
+                        }
+                    }
+                    if !App.simulation && App.sim-kind != 1: HorizontalLayout {
                         spacing: 8px;
-                        Switch {
-                            label: "MSFS (SimConnect)";
-                            on: !App.simulation;
-                            toggled => {
-                                App.cmd("simulation", "0");
+                        Text {
+                            text: @tr("Komputer z X-Plane");
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                        }
+                        Field {
+                            w: 180px;
+                            text <=> App.xplane-host;
+                            placeholder: @tr("ten komputer");
+                            tip: @tr("Adres IP komputera z X-Plane, gdy działa na innym komputerze w sieci; Enter zatwierdza");
+                            accepted(t) => {
+                                App.cmd("xplane-host", t);
                             }
                         }
-                        Switch {
-                            label: @tr("Tryb symulacji");
-                            on: App.simulation;
-                            toggled => {
-                                App.cmd("simulation", "1");
-                            }
-                        }
+                    }
+                    if !App.simulation && App.sim-kind != 1: Text {
+                        text: @tr("X-Plane 11/12 bez wtyczek: w X-Plane Settings → Network włącz przyjmowanie połączeń UDP (port 49000). Osobny most w Pythonie nie jest już potrzebny.");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
                     }
                     Text {
                         text: App.simulation ? @tr("Tryb symulacji: lot testowy EPWA → EPGD bez MSFS – do sprawdzenia telefonu i dziennika.") : App.sim-status;
@@ -133,7 +150,7 @@ export component Devices inherits Rectangle {
                     padding: 12px;
                     spacing: 6px;
                     Heading {
-                        text: @tr("SPAROWANE TELEFONY");
+                        text: @tr("Sparowane telefony");
                         icon: Icons.smartphone;
                     }
                     if App.devices.length == 0: Empty {
@@ -209,7 +226,7 @@ export component Devices inherits Rectangle {
                     spacing: 6px;
                     HorizontalLayout {
                         Heading {
-                            text: @tr("AKTYWNOŚĆ");
+                            text: @tr("Aktywność");
                             icon: Icons.activity;
                             horizontal-stretch: 1;
                         }
@@ -229,7 +246,7 @@ export component Devices inherits Rectangle {
                             Text {
                                 width: 64px;
                                 text: l.time;
-                                font-family: "Consolas";
+                                font-family: Theme.mono;
                                 font-size: Theme.fs-small;
                                 color: Theme.text-faint;
                             }

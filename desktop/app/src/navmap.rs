@@ -362,7 +362,11 @@ pub fn cmd(id: &str, arg: &str) -> bool {
         "nav-layer" => {
             let st = state();
             let mut s = st.borrow_mut();
-            s.s.nav_layers ^= bit(arg);
+            match arg {
+                "plan" => s.s.nav_plan = !s.s.nav_plan,
+                "shots" => s.s.nav_shots = !s.s.nav_shots,
+                _ => s.s.nav_layers ^= bit(arg),
+            }
             s.s.save();
         }
         "nav-3d" => {
@@ -537,6 +541,28 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                     }
                 }
             }
+        }
+    }
+    // Plan lotu z SimBrief i miejsca zrzutów ekranu
+    let (nav_plan, nav_shots) = {
+        let st = state();
+        let b = st.borrow();
+        (b.s.nav_plan, b.s.nav_shots)
+    };
+    if nav_plan {
+        let pts = crate::simbrief::route();
+        if pts.len() > 1 {
+            ov.tracks.push(Track { pts: pts.iter().map(|p| (p.0, p.1, p.2)).collect(), color: Some([79, 216, 235, 230]), width: 2.5 });
+            if v.zoom > 5.0 {
+                for p in &pts {
+                    ov.points.push(Point { lat: p.0, lon: p.1, label: p.3.clone(), kind: 1 });
+                }
+            }
+        }
+    }
+    if nav_shots {
+        for (lat, lon, label) in crate::shots::points() {
+            ov.points.push(Point { lat, lon, label, kind: 2 });
         }
     }
     let (pm, mut labels) = map::render_pm(&v, style, &ov, scale, dark);
@@ -1045,7 +1071,39 @@ fn side_panel(snap: &Option<FlightState>, three_d: bool) {
         has_ref,
         has_sel,
         has_data: snap.is_some(),
+        plan: set.nav_plan,
+        shots: set.nav_shots,
     });
+}
+
+/// Dopasowuje widok do punktów (trasa planu) – bez śledzenia samolotu.
+pub fn fit_points(pts: &[(f64, f64)]) {
+    if let Some(b) = map::bounds(pts.iter().copied()) {
+        NAV.with(|n| {
+            let mut n = n.borrow_mut();
+            n.view.fit(b);
+            n.view.follow = false;
+            n.view.user_moved = true;
+        });
+        if let Some(u) = ui() {
+            u.global::<App>().set_follow(false);
+        }
+    }
+}
+
+/// Pokazuje miejsce na mapie (zrzut ekranu, punkt planu) – bez śledzenia samolotu.
+pub fn show_at(lat: f64, lon: f64) {
+    NAV.with(|n| {
+        let mut n = n.borrow_mut();
+        n.view.lat = lat;
+        n.view.lon = lon;
+        n.view.zoom = n.view.zoom.max(11.0);
+        n.view.follow = false;
+        n.view.user_moved = true;
+    });
+    if let Some(u) = ui() {
+        u.global::<App>().set_follow(false);
+    }
 }
 
 /// Etykiety mapy z obrazu (nieużywane poza 2D).

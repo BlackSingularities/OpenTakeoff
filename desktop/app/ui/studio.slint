@@ -1,0 +1,769 @@
+// Karta Nakładki: karta lądowania na ekranie symulatora, pasek do transmisji (stream), okno
+// przyrządów zawsze na wierzchu i zrzuty ekranu. Każda zmiana działa od razu (App.cmd("ovl", …)).
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App, LandingCfgV, StreamCfgV, OverlayCfgV } from "state.slint";
+import { Button, Switch, Segmented, Slider, Field, IconButton, TipArea } from "widgets.slint";
+import { Panel } from "parts.slint";
+import { Section, Option } from "settings.slint";
+
+/// Wybór miejsca na ekranie: makieta monitora z siedmioma punktami.
+component PosPicker inherits Rectangle {
+    in property <int> current;
+    callback picked(int);
+    width: 168px * Theme.scale;
+    height: 96px * Theme.scale;
+    border-radius: Theme.r-small;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line-strong;
+    // kolumna i wiersz kolejnych położeń (0 środek, 1 góra, 2 dół, 3–6 rogi)
+    property <[int]> cols: [1, 1, 1, 0, 2, 0, 2];
+    property <[int]> rows: [1, 0, 2, 0, 0, 2, 2];
+    for c[i] in root.cols: Rectangle {
+        property <bool> sel: i == root.current;
+        x: 8px + (parent.width - 16px - self.width) * c / 2;
+        y: 8px + (parent.height - 16px - self.height) * root.rows[i] / 2;
+        width: (i == 0 ? 54px : 40px) * Theme.scale;
+        height: (i == 0 ? 30px : 18px) * Theme.scale;
+        border-radius: 4px;
+        background: self.sel ? Theme.accent : pta.has-hover ? Theme.accent.with-alpha(0.35) : Theme.higher;
+        border-width: 1px;
+        border-color: self.sel ? Theme.accent : Theme.line-strong;
+        pta := TipArea {
+            tip: [@tr("Środek ekranu"), @tr("U góry na środku"), @tr("U dołu na środku"), @tr("Lewy górny róg"), @tr("Prawy górny róg"), @tr("Lewy dolny róg"), @tr("Prawy dolny róg")][i];
+            clicked => {
+                root.picked(i);
+            }
+        }
+    }
+}
+
+/// Nagłówek sekcji z włącznikiem po prawej.
+component Head inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> sub;
+    in property <image> icon;
+    in property <bool> on;
+    in property <bool> has-switch: true;
+    callback toggled();
+    spacing: 10px;
+    Rectangle {
+        width: 34px * Theme.scale;
+        height: 34px * Theme.scale;
+        y: (parent.height - self.height) / 2;
+        border-radius: Theme.r;
+        background: root.on ? Theme.accent-soft : Theme.raised;
+        border-width: 1px;
+        border-color: root.on ? Theme.accent.with-alpha(0.5) : Theme.line;
+        Image {
+            source: root.icon;
+            width: 18px * Theme.scale;
+            height: 18px * Theme.scale;
+            colorize: root.on ? Theme.accent : Theme.text-dim;
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        horizontal-stretch: 1;
+        Text {
+            text: root.title;
+            font-family: Theme.cond;
+            font-size: 16px * Theme.scale;
+            font-weight: 700;
+            color: Theme.text;
+        }
+        Text {
+            text: root.sub;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-faint;
+            wrap: word-wrap;
+        }
+    }
+    if root.has-switch: Switch {
+        y: (parent.height - self.height) / 2;
+        on: root.on;
+        label: root.on ? @tr("Włączone") : @tr("Wyłączone");
+        toggled => {
+            root.toggled();
+        }
+    }
+}
+
+/// Włącznik elementu karty (siatka po trzy).
+component Item inherits Switch {
+    horizontal-stretch: 1;
+}
+
+component SliderRow inherits HorizontalLayout {
+    in property <float> value;
+    in property <string> text;
+    callback moved(float);
+    spacing: 10px;
+    Slider {
+        width: 200px * Theme.scale;
+        value: root.value;
+        moved(v) => {
+            root.moved(v);
+        }
+    }
+    Text {
+        text: root.text;
+        font-family: Theme.mono;
+        font-size: Theme.fs-small;
+        color: Theme.text-dim;
+        vertical-alignment: center;
+    }
+}
+
+export component Studio inherits Rectangle {
+    property <LandingCfgV> l: App.ovl-landing;
+    property <StreamCfgV> b: App.ovl-stream;
+    property <OverlayCfgV> w: App.ovl-window;
+    function flag(v: bool) -> string {
+        return v ? "1" : "0";
+    }
+    sv := ScrollView {
+        VerticalLayout {
+            width: sv.visible-width;
+            padding: 14px;
+            spacing: 12px;
+            // Wstęp
+            Rectangle {
+                height: il.preferred-height;
+                border-radius: Theme.r;
+                background: Theme.raised;
+                border-width: 1px;
+                border-color: Theme.line;
+                il := HorizontalLayout {
+                    padding: 12px;
+                    spacing: 12px;
+                    Image {
+                        source: Icons.monitor;
+                        width: 20px;
+                        height: 20px;
+                        y: (parent.height - self.height) / 2;
+                        colorize: Theme.accent;
+                    }
+                    Text {
+                        text: @tr("Nakładki pokazują się na wybranym ekranie nad symulatorem i nie zabierają mu klawiatury. Symulator musi działać w oknie albo w trybie pełnoekranowym bez ramki – w wyłącznym trybie pełnoekranowym Windows nie pokazuje innych okien.");
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        color: Theme.text-dim;
+                        wrap: word-wrap;
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                    }
+                    Button {
+                        y: (parent.height - self.height) / 2;
+                        icon: Icons.refresh-cw;
+                        label: @tr("Odśwież ekrany");
+                        tip: @tr("Wczytaj listę monitorów od nowa (po podłączeniu ekranu)");
+                        clicked => {
+                            App.cmd("ovl-monitors", "");
+                        }
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: stretch;
+                // ---------- Karta lądowania ----------
+                Panel {
+                    horizontal-stretch: 1;
+                    VerticalLayout {
+                        padding: 14px;
+                        spacing: 12px;
+                        alignment: start;
+                        Head {
+                            title: @tr("Karta lądowania");
+                            sub: @tr("Pokazuje się sama po przyziemieniu: ocena, prędkość pionowa, położenie na pasie i uwagi.");
+                            icon: Icons.plane-landing;
+                            on: root.l.enabled;
+                            toggled => {
+                                App.cmd("ovl", "landing.enabled=" + root.flag(!root.l.enabled));
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            Button {
+                                icon: Icons.eye;
+                                label: @tr("Podgląd");
+                                primary: true;
+                                tip: @tr("Pokaż przykładową kartę na wybranym ekranie");
+                                clicked => {
+                                    App.cmd("ovl-landing-preview", "");
+                                }
+                            }
+                            Button {
+                                icon: Icons.history;
+                                label: @tr("Ostatnie lądowanie");
+                                enabled: App.last-landing.has;
+                                clicked => {
+                                    App.cmd("ovl-landing-last", "");
+                                }
+                            }
+                            Button {
+                                icon: Icons.eye-off;
+                                label: @tr("Schowaj");
+                                clicked => {
+                                    App.cmd("ovl-landing-hide", "");
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Ekran");
+                            Segmented {
+                                items: App.monitors;
+                                current: root.l.monitor;
+                                picked(i) => {
+                                    App.cmd("ovl", "landing.monitor=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Miejsce");
+                            hint: @tr("Kliknij miejsce na makiecie ekranu");
+                            PosPicker {
+                                current: root.l.position;
+                                picked(i) => {
+                                    App.cmd("ovl", "landing.position=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Układ");
+                            Segmented {
+                                items: [@tr("Pełna karta"), @tr("Kompaktowa"), @tr("Pasek")];
+                                current: root.l.layout;
+                                picked(i) => {
+                                    App.cmd("ovl", "landing.layout=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Wielkość");
+                            Segmented {
+                                items: [@tr("Mała"), @tr("Średnia"), @tr("Duża"), @tr("Bardzo duża")];
+                                current: root.l.size;
+                                picked(i) => {
+                                    App.cmd("ovl", "landing.size=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Czas na ekranie");
+                            Segmented {
+                                items: [@tr("Do kliknięcia"), "5 s", "10 s", "15 s", "30 s", "60 s"];
+                                current: root.l.seconds == 0 ? 0 : root.l.seconds <= 5 ? 1 : root.l.seconds <= 10 ? 2 : root.l.seconds <= 15 ? 3 : root.l.seconds <= 30 ? 4 : 5;
+                                picked(i) => {
+                                    App.cmd("ovl", "landing.seconds=" + [0, 5, 10, 15, 30, 60][i]);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Kolor");
+                            Segmented {
+                                items: [@tr("Według oceny"), @tr("Kolor akcentu"), @tr("Biały")];
+                                current: root.l.tone;
+                                picked(i) => {
+                                    App.cmd("ovl", "landing.tone=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Krycie tła");
+                            SliderRow {
+                                value: (root.l.opacity - 0.3) / 0.7;
+                                text: round(root.l.opacity * 100) + " %";
+                                moved(v) => {
+                                    App.cmd("ovl", "landing.opacity=" + (0.3 + v * 0.7));
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Odstęp od krawędzi");
+                            Segmented {
+                                items: ["0", "20 px", "40 px", "80 px", "160 px"];
+                                current: root.l.margin <= 0 ? 0 : root.l.margin <= 20 ? 1 : root.l.margin <= 40 ? 2 : root.l.margin <= 80 ? 3 : 4;
+                                picked(i) => {
+                                    App.cmd("ovl", "landing.margin=" + [0, 20, 40, 80, 160][i]);
+                                }
+                            }
+                        }
+                        Text {
+                            text: @tr("Na karcie");
+                            font-family: Theme.cond;
+                            font-size: 13px * Theme.scale;
+                            font-weight: 700;
+                            color: Theme.text-dim;
+                        }
+                        GridLayout {
+                            spacing: 6px;
+                            Row {
+                                Item {
+                                    label: @tr("Ocena");
+                                    on: root.l.show-score;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-score=" + root.flag(!root.l.show-score));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Prędkość pionowa");
+                                    on: root.l.show-vs;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-vs=" + root.flag(!root.l.show-vs));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Skala V/S");
+                                    on: root.l.show-scale;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-scale=" + root.flag(!root.l.show-scale));
+                                    }
+                                }
+                            }
+                            Row {
+                                Item {
+                                    label: @tr("Przeciążenie");
+                                    on: root.l.show-g;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-g=" + root.flag(!root.l.show-g));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Prędkość");
+                                    on: root.l.show-speed;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-speed=" + root.flag(!root.l.show-speed));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Pas");
+                                    on: root.l.show-runway;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-runway=" + root.flag(!root.l.show-runway));
+                                    }
+                                }
+                            }
+                            Row {
+                                Item {
+                                    label: @tr("Położenie na pasie");
+                                    on: root.l.show-offsets;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-offsets=" + root.flag(!root.l.show-offsets));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Odbicia");
+                                    on: root.l.show-bounces;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-bounces=" + root.flag(!root.l.show-bounces));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Wiatr boczny");
+                                    on: root.l.show-wind;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-wind=" + root.flag(!root.l.show-wind));
+                                    }
+                                }
+                            }
+                            Row {
+                                Item {
+                                    label: @tr("Uwagi");
+                                    on: root.l.show-notes;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-notes=" + root.flag(!root.l.show-notes));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Lotnisko");
+                                    on: root.l.show-airport;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-airport=" + root.flag(!root.l.show-airport));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Samolot");
+                                    on: root.l.show-aircraft;
+                                    toggled => {
+                                        App.cmd("ovl", "landing.show-aircraft=" + root.flag(!root.l.show-aircraft));
+                                    }
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Przepuszczaj kliknięcia");
+                            hint: @tr("Kliknięcia trafiają do symulatora; karta znika po czasie");
+                            Switch {
+                                on: root.l.click-through;
+                                toggled => {
+                                    App.cmd("ovl", "landing.click-through=" + root.flag(!root.l.click-through));
+                                }
+                            }
+                        }
+                    }
+                }
+                // ---------- Pasek do transmisji ----------
+                Panel {
+                    horizontal-stretch: 1;
+                    VerticalLayout {
+                        padding: 14px;
+                        spacing: 12px;
+                        alignment: start;
+                        Head {
+                            title: @tr("Pasek do transmisji");
+                            sub: @tr("Dane lotu przy krawędzi ekranu – do przechwycenia w OBS albo dla widzów na żywo.");
+                            icon: Icons.radio-tower;
+                            on: root.b.enabled;
+                            toggled => {
+                                App.cmd("ovl", "stream.enabled=" + root.flag(!root.b.enabled));
+                            }
+                        }
+                        Option {
+                            label: @tr("Ekran");
+                            Segmented {
+                                items: App.monitors;
+                                current: root.b.monitor;
+                                picked(i) => {
+                                    App.cmd("ovl", "stream.monitor=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Krawędź");
+                            Segmented {
+                                items: [@tr("U góry"), @tr("U dołu")];
+                                current: root.b.edge;
+                                picked(i) => {
+                                    App.cmd("ovl", "stream.edge=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Szerokość");
+                            SliderRow {
+                                value: (root.b.width - 0.3) / 0.7;
+                                text: round(root.b.width * 100) + " %";
+                                moved(v) => {
+                                    App.cmd("ovl", "stream.width=" + (0.3 + v * 0.7));
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Wyrównanie");
+                            Segmented {
+                                items: [@tr("Do lewej"), @tr("Na środku"), @tr("Do prawej")];
+                                current: root.b.align;
+                                picked(i) => {
+                                    App.cmd("ovl", "stream.align=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Wielkość");
+                            Segmented {
+                                items: [@tr("Mały"), @tr("Średni"), @tr("Duży")];
+                                current: root.b.size;
+                                picked(i) => {
+                                    App.cmd("ovl", "stream.size=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Tło");
+                            Segmented {
+                                items: [@tr("Czarne"), @tr("Grafitowe"), @tr("W kolorze akcentu")];
+                                current: root.b.style;
+                                picked(i) => {
+                                    App.cmd("ovl", "stream.style=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Krycie tła");
+                            SliderRow {
+                                value: (root.b.opacity - 0.3) / 0.7;
+                                text: round(root.b.opacity * 100) + " %";
+                                moved(v) => {
+                                    App.cmd("ovl", "stream.opacity=" + (0.3 + v * 0.7));
+                                }
+                            }
+                        }
+                        GridLayout {
+                            spacing: 6px;
+                            Row {
+                                Item {
+                                    label: @tr("Podpisy pól");
+                                    on: root.b.show-labels;
+                                    toggled => {
+                                        App.cmd("ovl", "stream.show-labels=" + root.flag(!root.b.show-labels));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Logo");
+                                    on: root.b.show-logo;
+                                    toggled => {
+                                        App.cmd("ovl", "stream.show-logo=" + root.flag(!root.b.show-logo));
+                                    }
+                                }
+                            }
+                            Row {
+                                Item {
+                                    label: @tr("Linia akcentu");
+                                    on: root.b.accent-line;
+                                    toggled => {
+                                        App.cmd("ovl", "stream.accent-line=" + root.flag(!root.b.accent-line));
+                                    }
+                                }
+                                Item {
+                                    label: @tr("Przepuszczaj kliknięcia");
+                                    on: root.b.click-through;
+                                    toggled => {
+                                        App.cmd("ovl", "stream.click-through=" + root.flag(!root.b.click-through));
+                                    }
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Własny tekst");
+                            hint: @tr("Np. nazwa kanału albo numer lotu – pole „Własny tekst”");
+                            Field {
+                                w: 220px;
+                                text: root.b.title;
+                                placeholder: @tr("np. twitch.tv/mojkanal");
+                                accepted(t) => {
+                                    App.cmd("ovl", "stream.title=" + t);
+                                }
+                                edited(t) => {
+                                    App.cmd("ovl", "stream.title=" + t);
+                                }
+                            }
+                        }
+                        Text {
+                            text: @tr("Pola paska – włącz i ułóż strzałkami");
+                            font-family: Theme.cond;
+                            font-size: 13px * Theme.scale;
+                            font-weight: 700;
+                            color: Theme.text-dim;
+                        }
+                        VerticalLayout {
+                            spacing: 2px;
+                            for f[i] in App.stream-fields: Rectangle {
+                                height: 30px * Theme.scale;
+                                border-radius: Theme.r-small;
+                                background: f.on ? Theme.raised : transparent;
+                                HorizontalLayout {
+                                    padding-left: 4px;
+                                    padding-right: 4px;
+                                    spacing: 8px;
+                                    Switch {
+                                        y: (parent.height - self.height) / 2;
+                                        on: f.on;
+                                        label: f.label;
+                                        horizontal-stretch: 1;
+                                        toggled => {
+                                            App.cmd("stream-field", f.key);
+                                        }
+                                    }
+                                    if f.on: IconButton {
+                                        y: (parent.height - self.height) / 2;
+                                        size: 24px * Theme.scale;
+                                        icon-size: 14px * Theme.scale;
+                                        icon: Icons.chevron-up;
+                                        tip: @tr("Wcześniej na pasku");
+                                        clicked => {
+                                            App.cmd("stream-field-up", f.key);
+                                        }
+                                    }
+                                    if f.on: IconButton {
+                                        y: (parent.height - self.height) / 2;
+                                        size: 24px * Theme.scale;
+                                        icon-size: 14px * Theme.scale;
+                                        icon: Icons.chevron-down;
+                                        tip: @tr("Dalej na pasku");
+                                        clicked => {
+                                            App.cmd("stream-field-down", f.key);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                // ---------- Okno zawsze na wierzchu ----------
+                Panel {
+                    horizontal-stretch: 1;
+                    VerticalLayout {
+                        padding: 14px;
+                        spacing: 12px;
+                        alignment: start;
+                        Head {
+                            title: @tr("Okno zawsze na wierzchu");
+                            sub: @tr("PFD, ND, odczyt lotu albo mapa w małym oknie nad symulatorem.");
+                            icon: Icons.pin;
+                            on: root.w.enabled;
+                            toggled => {
+                                App.cmd("ovl", "overlay.enabled=" + root.flag(!root.w.enabled));
+                            }
+                        }
+                        Option {
+                            label: @tr("Ekran");
+                            Segmented {
+                                items: App.monitors;
+                                current: root.w.monitor;
+                                picked(i) => {
+                                    App.cmd("ovl", "overlay.monitor=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Miejsce");
+                            PosPicker {
+                                current: root.w.position;
+                                picked(i) => {
+                                    App.cmd("ovl", "overlay.position=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Treść");
+                            Segmented {
+                                items: ["PFD", "ND", "PFD + ND", @tr("Odczyt lotu"), @tr("Mapa")];
+                                current: root.w.content;
+                                picked(i) => {
+                                    App.cmd("ovl", "overlay.content=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Wielkość");
+                            Segmented {
+                                items: [@tr("Mała"), @tr("Średnia"), @tr("Duża"), @tr("Bardzo duża")];
+                                current: root.w.size;
+                                picked(i) => {
+                                    App.cmd("ovl", "overlay.size=" + i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Krycie tła");
+                            SliderRow {
+                                value: (root.w.opacity - 0.3) / 0.7;
+                                text: round(root.w.opacity * 100) + " %";
+                                moved(v) => {
+                                    App.cmd("ovl", "overlay.opacity=" + (0.3 + v * 0.7));
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Odstęp od krawędzi");
+                            Segmented {
+                                items: ["0", "12 px", "24 px", "48 px", "96 px"];
+                                current: root.w.margin <= 0 ? 0 : root.w.margin <= 12 ? 1 : root.w.margin <= 24 ? 2 : root.w.margin <= 48 ? 3 : 4;
+                                picked(i) => {
+                                    App.cmd("ovl", "overlay.margin=" + [0, 12, 24, 48, 96][i]);
+                                }
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 6px;
+                            Item {
+                                label: @tr("Tytuł okna");
+                                on: root.w.show-title;
+                                toggled => {
+                                    App.cmd("ovl", "overlay.show-title=" + root.flag(!root.w.show-title));
+                                }
+                            }
+                            Item {
+                                label: @tr("Przepuszczaj kliknięcia");
+                                on: root.w.click-through;
+                                toggled => {
+                                    App.cmd("ovl", "overlay.click-through=" + root.flag(!root.w.click-through));
+                                }
+                            }
+                        }
+                    }
+                }
+                // ---------- Zrzuty ekranu ----------
+                Panel {
+                    horizontal-stretch: 1;
+                    VerticalLayout {
+                        padding: 14px;
+                        spacing: 12px;
+                        alignment: start;
+                        Head {
+                            title: @tr("Zrzuty ekranu z miejscem samolotu");
+                            sub: @tr("Skrót działa też w symulatorze. Każdy zrzut zapamiętuje pozycję, wysokość i kurs – widać go na mapie.");
+                            icon: Icons.image;
+                            on: App.shot-key > 0;
+                            has-switch: false;
+                        }
+                        Option {
+                            label: @tr("Ekran do zrzutu");
+                            Segmented {
+                                items: App.monitors;
+                                current: App.shot-monitor;
+                                picked(i) => {
+                                    App.cmd("shot-monitor", i);
+                                }
+                            }
+                        }
+                        Option {
+                            label: @tr("Skrót klawiszowy");
+                            Segmented {
+                                items: [@tr("Brak"), "F9", "F10", "F11", "F12", "Ctrl+Shift+S", "Ctrl+F12"];
+                                current: App.shot-key;
+                                picked(i) => {
+                                    App.cmd("shot-key", i);
+                                }
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            Button {
+                                icon: Icons.scan;
+                                label: @tr("Zrób zrzut teraz");
+                                primary: true;
+                                clicked => {
+                                    App.cmd("shot-take", "");
+                                }
+                            }
+                            Button {
+                                icon: Icons.image;
+                                label: @tr("Galeria");
+                                clicked => {
+                                    App.tab = 11;
+                                    App.cmd("tab", 11);
+                                }
+                            }
+                            Button {
+                                icon: Icons.folder-open;
+                                label: @tr("Folder");
+                                clicked => {
+                                    App.cmd("shot-folder", "");
+                                }
+                            }
+                        }
+                        Text {
+                            text: App.shots-dir;
+                            font-family: Theme.mono;
+                            font-size: 10px * Theme.scale;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

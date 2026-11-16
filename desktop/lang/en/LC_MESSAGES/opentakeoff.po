@@ -8,3 +8,2660 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid " · zużyte paliwo {kg} kg"
+msgstr " · fuel used {kg} kg"
+
+msgid ", chmury burzowe Cumulonimbus"
+msgstr ", Cumulonimbus storm clouds"
+
+msgid ", w porywach {g} {unit}"
+msgstr ", gusting {g} {unit}"
+
+msgid ", wypiętrzone Cumulusy"
+msgstr ", towering Cumulus"
+
+msgid ", zostało {rem} ft pasa."
+msgstr ", {rem} ft of runway left."
+
+msgid "30 dni"
+msgstr "30 days"
+
+msgid "Adres IP komputera z X-Plane, gdy działa na innym komputerze w sieci; Enter zatwierdza"
+msgstr "IP address of the X-Plane computer when it runs on another computer on the network; Enter confirms"
+
+msgid "Adres komputera do ręcznego wpisania w telefonie"
+msgstr "Computer address to enter manually on the phone"
+
+msgid "Adres: "
+msgstr "Address: "
+
+msgid "Adresy komputera"
+msgstr "Computer addresses"
+
+msgid "Aktywność"
+msgstr "Activity"
+
+msgid "Anuluj"
+msgstr "Cancel"
+
+msgid "Archiwum .oab z telefonu albo ślad GPX"
+msgstr ".oab archive from the phone or a GPX track"
+
+msgid "Archiwum lotów (zaznaczone albo wszystkie) – do telefonu lub kopii zapasowej"
+msgstr "Flight archive (selected or all) – for the phone or a backup"
+
+msgid "Automatycznie"
+msgstr "Automatic"
+
+msgid "Automatycznie – dane z MSFS albo X-Plane, zależnie od tego, który działa"
+msgstr "Automatic – data from MSFS or X-Plane, whichever is running"
+
+msgid "Autopilot"
+msgstr "Autopilot"
+
+msgid "Autopilot i trasa"
+msgstr "Autopilot and route"
+
+msgid "Bardzo duża"
+msgstr "Extra large"
+
+msgid "Bardzo miękko ({v} ft/min) – uważaj na przeciąganie wyrównania."
+msgstr "Very soft ({v} ft/min) – watch out for a prolonged flare."
+
+msgid "Bardzo twarde"
+msgstr "Very hard"
+
+msgid "Bardzo twarde lądowanie: {v} ft/min – w realnym lotnictwie przegląd techniczny."
+msgstr "Very hard landing: {v} ft/min – in real aviation this means an inspection."
+
+msgid "Baza"
+msgstr "Database"
+
+msgid "Baza OurAirports: ponad 60 tysięcy lotnisk z pasami i częstotliwościami. Pogoda z aviationweather.gov."
+msgstr "OurAirports database: over 60,000 airports with runways and frequencies. Weather from aviationweather.gov."
+
+msgid "Baza lotnisk"
+msgstr "Airport database"
+
+msgid "Baza lotnisk jeszcze się wczytuje"
+msgstr "The airport database is still loading"
+
+msgid "Baza lotnisk niedostępna: {e}"
+msgstr "Airport database unavailable: {e}"
+
+msgid "Baza lotnisk: {n} · {d}"
+msgstr "Airport database: {n} · {d}"
+
+msgid "Baza nawigacyjna MSFS niedostępna: {e}"
+msgstr "MSFS navigation database unavailable: {e}"
+
+msgid "Baza pomocy nawigacyjnych wczytuje się razem z bazą lotnisk."
+msgstr "The navaid database loads together with the airport database."
+
+msgid "Bez danych lotu (symulator nie był połączony)"
+msgstr "No flight data (the simulator was not connected)"
+
+msgid "Bez istotnych zmian w ciągu 2 godzin"
+msgstr "No significant change within 2 hours"
+
+msgid "Bez otwierania okna – ikona przy zegarze"
+msgstr "Without opening the window – icon next to the clock"
+
+msgid "Bezchmurnie"
+msgstr "Clear sky"
+
+msgid "Biały"
+msgstr "White"
+
+msgid "Bieżący lot"
+msgstr "Current flight"
+
+msgid "Bieżący odcinek planu lotu z GPS symulatora"
+msgstr "Current flight plan leg from the simulator GPS"
+
+msgid "Brak"
+msgstr "None"
+
+msgid "Brak danych lotu"
+msgstr "No flight data"
+
+msgid "Brak danych lotu – uruchom MSFS albo tryb symulacji"
+msgstr "No flight data – start MSFS or simulation mode"
+
+msgid "Brak danych z symulatora – widok mapy"
+msgstr "No data from the simulator – map view"
+
+msgid "Brak istotnych chmur"
+msgstr "No significant clouds"
+
+msgid "Brak lotów"
+msgstr "No flights"
+
+msgid "Brak połączenia z MSFS"
+msgstr "No connection to MSFS"
+
+msgid "Brak połączenia z X-Plane"
+msgstr "No connection to X-Plane"
+
+msgid "Brak połączonych telefonów"
+msgstr "No phones connected"
+
+msgid "Brak sparowanych telefonów"
+msgstr "No paired phones"
+
+msgid "Brak symulatora"
+msgstr "No simulator"
+
+msgid "Brak zrzutów ekranu"
+msgstr "No screenshots"
+
+msgid "Brak źródła danych"
+msgstr "No data source"
+
+msgid "Briefing"
+msgstr "Briefing"
+
+msgid "Briefing lotniska: pogoda, pasy, częstotliwości, procedury"
+msgstr "Airport briefing: weather, runways, frequencies, procedures"
+
+msgid "Błąd przyjmowania połączenia: {e}"
+msgstr "Error accepting a connection: {e}"
+
+msgid "Błąd wysyłania osi do MSFS"
+msgstr "Error sending axes to MSFS"
+
+msgid "Chmury i wilgotność"
+msgstr "Clouds and humidity"
+
+msgid "Chmury {what} na {base} ft{kind}"
+msgstr "{what} clouds at {base} ft{kind}"
+
+msgid "Ciemny"
+msgstr "Dark"
+
+msgid "Cisza"
+msgstr "Calm"
+
+msgid "Ciśnienie"
+msgstr "Pressure"
+
+msgid "Ciśnienie QNH {h} hPa"
+msgstr "QNH {h} hPa"
+
+msgid "Ciśnienie {inhg:.2} inHg ({hpa} hPa)"
+msgstr "Pressure {inhg:.2} inHg ({hpa} hPa)"
+
+msgid "Ctrl+klik zaznacza kilka lotów (do eksportu albo usunięcia), Shift+klik – zakres."
+msgstr "Ctrl+click selects several flights (to export or delete), Shift+click selects a range."
+
+msgid "Czarne"
+msgstr "Black"
+
+msgid "Czas"
+msgstr "Time"
+
+msgid "Czas UTC w symulatorze"
+msgstr "Simulator UTC time"
+
+msgid "Czas do punktu"
+msgstr "Time to waypoint"
+
+msgid "Czas lotu"
+msgstr "Flight time"
+
+msgid "Czas na ekranie"
+msgstr "Time on screen"
+
+msgid "Czas przy obecnej GS"
+msgstr "Time at current GS"
+
+msgid "Czas symulatora"
+msgstr "Simulator time"
+
+msgid "Czas w powietrzu"
+msgstr "Airborne time"
+
+msgid "Czas zniżania"
+msgstr "Descent time"
+
+msgid "Czekam na MSFS"
+msgstr "Waiting for MSFS"
+
+msgid "Czekam na MSFS albo X-Plane"
+msgstr "Waiting for MSFS or X-Plane"
+
+msgid "Czekam na X-Plane (Settings → Network: UDP 49000)"
+msgstr "Waiting for X-Plane (Settings → Network: UDP 49000)"
+
+msgid "Czekam na dane z symulatora"
+msgstr "Waiting for simulator data"
+
+msgid "Czekam na dane z symulatora – przyrządy pokazują flagi awarii"
+msgstr "Waiting for simulator data – instruments show failure flags"
+
+msgid "Czekam na symulator"
+msgstr "Waiting for the simulator"
+
+msgid "Czujnik nie wykrył chmur"
+msgstr "The sensor detected no clouds"
+
+msgid "Czułość rozglądania z telefonu: "
+msgstr "Phone look-around sensitivity: "
+
+msgid "Częstotliwości"
+msgstr "Frequencies"
+
+msgid "Częstotliwość"
+msgstr "Frequency"
+
+msgid "Częstotliwość zapisu ścieżki"
+msgstr "Track recording rate"
+
+msgid "Dalej na pasku"
+msgstr "Later on the bar"
+
+msgid "Daleko od osi pasa: {ft} ft {side}."
+msgstr "Far from the runway centreline: {ft} ft {side}."
+
+msgid "Dane"
+msgstr "Data"
+
+msgid "Dane lotu przy krawędzi ekranu – do przechwycenia w OBS albo dla widzów na żywo."
+msgstr "Flight data along the edge of the screen – for OBS capture or for live viewers."
+
+msgid "Dane z MSFS przez SimConnect"
+msgstr "Data from MSFS via SimConnect"
+
+msgid "Dane z X-Plane 11/12 przez UDP (bez wtyczek)"
+msgstr "Data from X-Plane 11/12 over UDP (no plugins)"
+
+msgid "Data"
+msgstr "Date"
+
+msgid "Deklinacja"
+msgstr "Magnetic variation"
+
+msgid "Dekoder METAR / TAF"
+msgstr "METAR / TAF decoder"
+
+msgid "Depesza o bieżącej pogodzie na lotnisku"
+msgstr "Report of the current weather at the airport"
+
+msgid "Depesza poprawiona"
+msgstr "Corrected report"
+
+msgid "Depesza specjalna (nagła zmiana pogody)"
+msgstr "Special report (sudden weather change)"
+
+msgid "Do"
+msgstr "To"
+
+msgid "Do celu"
+msgstr "To destination"
+
+msgid "Do celu "
+msgstr "To destination "
+
+msgid "Do kliknięcia"
+msgstr "Until clicked"
+
+msgid "Do kosza"
+msgstr "To trash"
+
+msgid "Do lewej"
+msgstr "Left"
+
+msgid "Do lotniska"
+msgstr "To airport"
+
+msgid "Do prawej"
+msgstr "Right"
+
+msgid "Do punktu "
+msgstr "To waypoint "
+
+msgid "Do wysokości"
+msgstr "To altitude"
+
+msgid "Dobre"
+msgstr "Good"
+
+msgid "Dodaj lotniska na karcie Lotniska (gwiazdka), żeby widzieć tu ich bieżącą pogodę."
+msgstr "Add airports on the Airports tab (star) to see their current weather here."
+
+msgid "Dodano znacznik"
+msgstr "Marker added"
+
+msgid "Doskonałe"
+msgstr "Excellent"
+
+msgid "Dostępna nowa wersja OpenTakeoff {v} – Ustawienia → Program"
+msgstr "New OpenTakeoff version {v} available – Settings → Program"
+
+msgid "Dostępna wersja {v} – zainstaluj z tego miejsca."
+msgstr "Version {v} is available – install it from here."
+
+msgid "Duża"
+msgstr "Large"
+
+msgid "Duże pochylenie {deg}° – ryzyko uderzenia ogonem."
+msgstr "High pitch {deg}° – risk of a tail strike."
+
+msgid "Duże przechylenie przy przyziemieniu: {deg}°."
+msgstr "High bank at touchdown: {deg}°."
+
+msgid "Duży"
+msgstr "Large"
+
+msgid "Dystans"
+msgstr "Distance"
+
+msgid "Dziennik"
+msgstr "Logbook"
+
+msgid "Dziennik lotów"
+msgstr "Flight logbook"
+
+msgid "Długie lądowanie: {ft} ft za progiem"
+msgstr "Long landing: {ft} ft past the threshold"
+
+msgid "Długość"
+msgstr "Length"
+
+msgid "Ekran"
+msgstr "Screen"
+
+msgid "Ekran do zrzutu"
+msgstr "Screen to capture"
+
+msgid "Ekrany"
+msgstr "Screens"
+
+msgid "Eksport"
+msgstr "Export"
+
+msgid "Eksport ścieżki do GPX (wybrany lot albo zaznaczone)"
+msgstr "Export the track to GPX (selected flight or checked ones)"
+
+msgid "Elewacja"
+msgstr "Elevation"
+
+msgid "Faza lotu"
+msgstr "Flight phase"
+
+msgid "Folder"
+msgstr "Folder"
+
+msgid "Folder danych"
+msgstr "Data folder"
+
+msgid "Galeria"
+msgstr "Gallery"
+
+msgid "Galeria zrzutów"
+msgstr "Screenshot gallery"
+
+msgid "Gdy MSFS działa na tym komputerze. Ten sam lot nagrany też w telefonie nie dubluje się po synchronizacji."
+msgstr "When MSFS runs on this computer. The same flight recorded on the phone is not duplicated after syncing."
+
+msgid "Godziny"
+msgstr "Hours"
+
+msgid "Grafitowe"
+msgstr "Graphite"
+
+msgid "Grafitowy"
+msgstr "Graphite"
+
+msgid "Granatowy"
+msgstr "Navy"
+
+msgid "Hamulec postojowy"
+msgstr "Parking brake"
+
+msgid "ICAO, IATA, nazwa lub miasto…"
+msgstr "ICAO, IATA, name or city…"
+
+msgid "Importuj"
+msgstr "Import"
+
+msgid "Informacje"
+msgstr "Information"
+
+msgid "Instalacja anulowana albo brak uprawnień administratora"
+msgstr "Installation cancelled or no administrator rights"
+
+msgid "Jak szybko obraca się kamera MSFS przy rozglądaniu z telefonu"
+msgstr "How fast the MSFS camera turns when looking around from the phone"
+
+msgid "Jak w Windows"
+msgstr "Same as Windows"
+
+msgid "Jasny"
+msgstr "Light"
+
+msgid "Język"
+msgstr "Language"
+
+msgid "Język i jednostki"
+msgstr "Language and units"
+
+msgid "Język zmieni się po ponownym uruchomieniu programu"
+msgstr "The language will change after restarting the program"
+
+msgid "Kalkulatory lotnicze i dekoder METAR"
+msgstr "Aviation calculators and METAR decoder"
+
+msgid "Kamera"
+msgstr "Camera"
+
+msgid "Kamera domyślnie"
+msgstr "Default camera"
+
+msgid "Karta lądowania"
+msgstr "Landing card"
+
+msgid "Karta lądowania, pasek do transmisji, okno zawsze na wierzchu, zrzuty ekranu"
+msgstr "Landing card, streaming bar, always-on-top window, screenshots"
+
+msgid "Kategoria"
+msgstr "Category"
+
+msgid "Kierunek wiatru"
+msgstr "Wind direction"
+
+msgid "Kierunek wiatru zmienny między {a}° a {b}°"
+msgstr "Wind direction variable between {a}° and {b}°"
+
+msgid "Klapy"
+msgstr "Flaps"
+
+msgid "Kliknij VOR albo punkt: radial i odległość samolotu, przechwycenie wybranego radialu"
+msgstr "Click a VOR or a point: aircraft radial and distance, intercept of the selected radial"
+
+msgid "Kliknij VOR, lotnisko albo dowolny punkt na mapie"
+msgstr "Click a VOR, an airport or any point on the map"
+
+msgid "Kliknij miejsce na makiecie ekranu"
+msgstr "Click a spot on the screen mock-up"
+
+msgid "Kliknij na mapie, aby wybrać radial"
+msgstr "Click on the map to choose a radial"
+
+msgid "Kliknij punkt początkowy"
+msgstr "Click the starting point"
+
+msgid "Kliknięcia trafiają do symulatora; karta znika po czasie"
+msgstr "Clicks go to the simulator; the card disappears after its time"
+
+msgid "Kod ICAO / IATA"
+msgstr "ICAO / IATA code"
+
+msgid "Kod parowania"
+msgstr "Pairing code"
+
+msgid "Kokpit"
+msgstr "Cockpit"
+
+msgid "Kolor"
+msgstr "Colour"
+
+msgid "Kolor akcentu"
+msgstr "Accent colour"
+
+msgid "Kompaktowa"
+msgstr "Compact"
+
+msgid "Komputer z X-Plane"
+msgstr "X-Plane computer"
+
+msgid "Kopia zapasowa"
+msgstr "Backup"
+
+msgid "Kopiuj adres"
+msgstr "Copy address"
+
+msgid "Kopiuj pozycję"
+msgstr "Copy position"
+
+msgid "Kosz"
+msgstr "Trash"
+
+msgid "Kosz jest pusty"
+msgstr "The trash is empty"
+
+msgid "Krawędź"
+msgstr "Edge"
+
+msgid "Krok 1"
+msgstr "Step 1"
+
+msgid "Krok 2"
+msgstr "Step 2"
+
+msgid "Krycie tła"
+msgstr "Background opacity"
+
+msgid "Kurs"
+msgstr "Heading"
+
+msgid "Kurs / ścieżka"
+msgstr "Course / path"
+
+msgid "Kurs do punktu"
+msgstr "Course to waypoint"
+
+msgid "Kurs do utrzymania"
+msgstr "Heading to hold"
+
+msgid "Kurs drogi"
+msgstr "Course"
+
+msgid "Kurs pasa"
+msgstr "Runway heading"
+
+msgid "Kurs po radialu"
+msgstr "Course along the radial"
+
+msgid "Kurs z poprawką na wiatr"
+msgstr "Wind-corrected heading"
+
+msgid "Kursor"
+msgstr "Cursor"
+
+msgid "Kursor na radialu"
+msgstr "Cursor on radial"
+
+msgid "Kurtyna"
+msgstr "Curtain"
+
+msgid "Kąt przechwycenia"
+msgstr "Intercept angle"
+
+msgid "Kąt ścieżki"
+msgstr "Path angle"
+
+msgid "Lewy dolny róg"
+msgstr "Bottom left corner"
+
+msgid "Lewy górny róg"
+msgstr "Top left corner"
+
+msgid "Linia akcentu"
+msgstr "Accent line"
+
+msgid "Lista"
+msgstr "List"
+
+msgid "Lista CSV"
+msgstr "CSV list"
+
+msgid "Lista lotów (bez torów) do arkusza CSV"
+msgstr "Flight list (without tracks) for a CSV spreadsheet"
+
+msgid "Logo"
+msgstr "Logo"
+
+msgid "Lot"
+msgstr "Flight"
+
+msgid "Lot do punktu (IN) albo od punktu (OUT) po wybranym radialu"
+msgstr "Fly to the point (IN) or from the point (OUT) on the selected radial"
+
+msgid "Lot testowy EPWA → EPGD bez symulatora"
+msgstr "Test flight EPWA → EPGD without a simulator"
+
+msgid "Lot w koszu – przywróć go, żeby wrócił do dziennika i synchronizacji."
+msgstr "Flight in the trash – restore it to bring it back to the logbook and sync."
+
+msgid "Lot {route} zapisany w dzienniku"
+msgstr "Flight {route} saved in the logbook"
+
+msgid "Lotniska"
+msgstr "Airports"
+
+msgid "Lotniska / samoloty"
+msgstr "Airports / aircraft"
+
+msgid "Lotniska na ND"
+msgstr "Airports on ND"
+
+msgid "Lotniska w pobliżu"
+msgstr "Nearby airports"
+
+msgid "Lotnisko"
+msgstr "Airport"
+
+msgid "Lotnisko nie nadaje METAR-u"
+msgstr "The airport does not issue METAR"
+
+msgid "Lotnisko {t}"
+msgstr "Airport {t}"
+
+msgid "Loty"
+msgstr "Flights"
+
+msgid "Loty zapisują się same po starcie w MSFS albo w telefonie."
+msgstr "Flights are recorded automatically after takeoff in MSFS or on the phone."
+
+msgid "Loty zapisują się same podczas lotu w MSFS. Możesz też zaimportować archiwum .oab z telefonu albo ślad GPX."
+msgstr "Flights are recorded automatically while flying in MSFS. You can also import an .oab archive from the phone or a GPX track."
+
+msgid "Lądowania"
+msgstr "Landings"
+
+msgid "Lądowanie"
+msgstr "Landing"
+
+msgid "MSFS albo X-Plane – ten, który działa"
+msgstr "MSFS or X-Plane – whichever is running"
+
+msgid "MSFS działa jako administrator – uruchom OpenTakeoff także jako administrator, żeby rozglądać się z telefonu"
+msgstr "MSFS runs as administrator – run OpenTakeoff as administrator too to look around from the phone"
+
+msgid "MSFS nie przełączył na widok z kabiny"
+msgstr "MSFS did not switch to the cockpit view"
+
+msgid "MSFS nie przełączył na widok zewnętrzny"
+msgstr "MSFS did not switch to the external view"
+
+msgid "MSFS niedostępny: {e}"
+msgstr "MSFS unavailable: {e}"
+
+msgid "MSFS został zamknięty"
+msgstr "MSFS was closed"
+
+msgid "Maksymalizuj"
+msgstr "Maximize"
+
+msgid "Mapa"
+msgstr "Map"
+
+msgid "Mapa nawigacyjna"
+msgstr "Navigation map"
+
+msgid "Mapa nawigacyjna z radialami i różami VOR oraz widok 3D"
+msgstr "Navigation map with VOR radials and roses, plus 3D view"
+
+msgid "Mapa wszystkich lotów"
+msgstr "Map of all flights"
+
+msgid "Masa"
+msgstr "Mass"
+
+msgid "Masz najnowszą wersję ({v})."
+msgstr "You have the latest version ({v})."
+
+msgid "Mała"
+msgstr "Small"
+
+msgid "Mały"
+msgstr "Small"
+
+msgid "Miejsca zrzutów ekranu na mapie"
+msgstr "Screenshot locations on the map"
+
+msgid "Miejsce"
+msgstr "Position"
+
+msgid "Minimalizuj"
+msgstr "Minimize"
+
+msgid "Miękkie przyziemienie: {v} ft/min."
+msgstr "Soft touchdown: {v} ft/min."
+
+msgid "Mocne"
+msgstr "Strong"
+
+msgid "Most do telefonu działa od razu po zalogowaniu"
+msgstr "The phone bridge works right after signing in"
+
+msgid "Motyw"
+msgstr "Theme"
+
+msgid "NDB na ND"
+msgstr "NDB on ND"
+
+msgid "Na jednostkę"
+msgstr "To unit"
+
+msgid "Na karcie"
+msgstr "On the card"
+
+msgid "Na mapie"
+msgstr "On the map"
+
+msgid "Na radialu"
+msgstr "On the radial"
+
+msgid "Na środku"
+msgstr "Centre"
+
+msgid "Na żywo"
+msgstr "Live"
+
+msgid "Naciśnij F12 w symulatorze – zrzut zapamięta miejsce samolotu."
+msgstr "Press F12 in the simulator – the screenshot remembers where the aircraft was."
+
+msgid "Naciśnij skrót (domyślnie F12) w symulatorze albo przycisk „Zrób zrzut”. Każdy zrzut zapamiętuje miejsce samolotu i pojawia się na mapie."
+msgstr "Press the shortcut (F12 by default) in the simulator or the “Take screenshot” button. Each screenshot remembers the aircraft position and appears on the map."
+
+msgid "Nagrany na tym komputerze"
+msgstr "Recorded on this computer"
+
+msgid "Najbliższe VOR / NDB"
+msgstr "Nearest VOR / NDB"
+
+msgid "Najbliższe lotniska"
+msgstr "Nearest airports"
+
+msgid "Najbliższe lotnisko"
+msgstr "Nearest airport"
+
+msgid "Najbliższe lotnisko od samolotu"
+msgstr "Nearest airport to the aircraft"
+
+msgid "Najdalszy lot"
+msgstr "Longest distance"
+
+msgid "Najdłuższy lot"
+msgstr "Longest flight"
+
+msgid "Najdłuższy pas"
+msgstr "Longest runway"
+
+msgid "Najlepsza ocena"
+msgstr "Best score"
+
+msgid "Najmiększe lądowanie"
+msgstr "Softest landing"
+
+msgid "Najwyżej"
+msgstr "Highest"
+
+msgid "Nakładki"
+msgstr "Overlays"
+
+msgid "Nakładki na ekranie symulatora"
+msgstr "Overlays on the simulator screen"
+
+msgid "Nakładki pokazują się na wybranym ekranie nad symulatorem i nie zabierają mu klawiatury. Symulator musi działać w oknie albo w trybie pełnoekranowym bez ramki – w wyłącznym trybie pełnoekranowym Windows nie pokazuje innych okien."
+msgstr "Overlays appear on the chosen screen above the simulator and don't take its keyboard focus. The simulator must run in a window or borderless full screen – in exclusive full screen Windows doesn't show other windows."
+
+msgid "Namiar"
+msgstr "Bearing"
+
+msgid "Namiar odwrotny"
+msgstr "Reciprocal bearing"
+
+msgid "Narzędzia"
+msgstr "Tools"
+
+msgid "Następny"
+msgstr "Next"
+
+msgid "Następny punkt"
+msgstr "Next waypoint"
+
+msgid "Następny: "
+msgstr "Next: "
+
+msgid "Nazwa"
+msgstr "Name"
+
+msgid "Nie było jeszcze lądowania w tej sesji"
+msgstr "No landing yet in this session"
+
+msgid "Nie można wczytać SimConnect.dll: {e}"
+msgstr "Can't load SimConnect.dll: {e}"
+
+msgid "Nie udało się odczytać obrazu ekranu"
+msgstr "Couldn't read the screen image"
+
+msgid "Nie udało się przypisać zdarzenia {name} (0x{code})"
+msgstr "Couldn't map event {name} (0x{code})"
+
+msgid "Nie udało się sprawdzić aktualizacji: {e}"
+msgstr "Couldn't check for updates: {e}"
+
+msgid "Nie udało się zmienić autostartu: {e}"
+msgstr "Couldn't change autostart: {e}"
+
+msgid "Nie zapisano pliku: {e}"
+msgstr "File not saved: {e}"
+
+msgid "Nie znaleziono"
+msgstr "Not found"
+
+msgid "Nie znaleziono ekranu do zrzutu"
+msgstr "No screen found to capture"
+
+msgid "Nie znaleziono lotniska {ident}"
+msgstr "Airport {ident} not found"
+
+msgid "Nie znaleziono okna MSFS"
+msgstr "MSFS window not found"
+
+msgid "Nie znaleziono planu dla tego użytkownika"
+msgstr "No plan found for this user"
+
+msgid "Niedawno: {w}"
+msgstr "Recently: {w}"
+
+msgid "Niepołączony"
+msgstr "Not connected"
+
+msgid "Nocny kokpit"
+msgstr "Night cockpit"
+
+msgid "Notatki do lotu…"
+msgstr "Flight notes…"
+
+msgid "Nowy kod"
+msgstr "New code"
+
+msgid "Nowy kod parowania (sparowane telefony zostają)"
+msgstr "New pairing code (paired phones stay)"
+
+msgid "Nowy kod parowania: {c}"
+msgstr "New pairing code: {c}"
+
+msgid "Nowy plan"
+msgstr "New plan"
+
+msgid "Nowy punkt"
+msgstr "New point"
+
+msgid "Np. nazwa kanału albo numer lotu – pole „Własny tekst”"
+msgstr "E.g. channel name or flight number – the “Custom text” field"
+
+msgid "ODLOTY (SID)"
+msgstr "DEPARTURES (SID)"
+
+msgid "Objętość"
+msgstr "Volume"
+
+msgid "Obserwacja automatyczna (bez obserwatora)"
+msgstr "Automated observation (no observer)"
+
+msgid "Obserwacja {d}. dnia miesiąca o {h}:{m} UTC"
+msgstr "Observed on day {d} of the month at {h}:{m} UTC"
+
+msgid "Obserwowane"
+msgstr "Watched"
+
+msgid "Obserwuj"
+msgstr "Watch"
+
+msgid "Obserwuj (pogoda na Pulpicie)"
+msgstr "Watch (weather on the Dashboard)"
+
+msgid "Ocena"
+msgstr "Score"
+
+msgid "Ocena pojawi się po wylądowaniu."
+msgstr "The score will appear after landing."
+
+msgid "Oceny lądowań"
+msgstr "Landing scores"
+
+msgid "Od"
+msgstr "From"
+
+msgid "Od osi pasa"
+msgstr "From centreline"
+
+msgid "Od samolotu"
+msgstr "From aircraft"
+
+msgid "Od {d}. dnia {h}:{m} UTC"
+msgstr "From day {d} {h}:{m} UTC"
+
+msgid "Od {start} · {dur}"
+msgstr "Since {start} · {dur}"
+
+msgid "Odbicia"
+msgstr "Bounces"
+
+msgid "Odbicia: {n}."
+msgstr "Bounces: {n}."
+
+msgid "Odchylenie boczne"
+msgstr "Cross-track deviation"
+
+msgid "Odchylenie od osi: {ft} ft {side}."
+msgstr "Off the centreline: {ft} ft {side}."
+
+msgid "Odcinki procedury"
+msgstr "Procedure legs"
+
+msgid "Odczyt lotu"
+msgstr "Flight readout"
+
+msgid "Oddal"
+msgstr "Zoom out"
+
+msgid "Odległość"
+msgstr "Distance"
+
+msgid "Odległość i namiar między dwoma punktami"
+msgstr "Distance and bearing between two points"
+
+msgid "Odstęp od krawędzi"
+msgstr "Margin from edge"
+
+msgid "Odtwórz lot na mapie (×60)"
+msgstr "Replay the flight on the map (×60)"
+
+msgid "Odznacz"
+msgstr "Deselect"
+
+msgid "Odśwież"
+msgstr "Refresh"
+
+msgid "Odśwież METAR i TAF"
+msgstr "Refresh METAR and TAF"
+
+msgid "Odśwież bazę"
+msgstr "Refresh database"
+
+msgid "Odśwież bazę lotnisk"
+msgstr "Refresh airport database"
+
+msgid "Odśwież ekrany"
+msgstr "Refresh screens"
+
+msgid "Odśwież pogodę"
+msgstr "Refresh weather"
+
+msgid "Odśwież pogodę obserwowanych lotnisk"
+msgstr "Refresh weather of watched airports"
+
+msgid "Okno"
+msgstr "Window"
+
+msgid "Okno MSFS przestało być aktywne — rozglądanie przerwane"
+msgstr "The MSFS window is no longer active — looking around stopped"
+
+msgid "Okno zawsze na wierzchu"
+msgstr "Always-on-top window"
+
+msgid "Okolica"
+msgstr "Surroundings"
+
+msgid "Okresowo"
+msgstr "Temporarily"
+
+msgid "OpenTakeoff {v} dla Windows – dziennik lotów, briefing i most do telefonu. Pomysł i wykonanie: Adam Rędzikowski · redzikowski.com. Dane: OurAirports (domena publiczna), aviationweather.gov (NOAA), mapy © OpenStreetMap, © CARTO."
+msgstr "OpenTakeoff {v} for Windows – flight logbook, briefing and phone bridge. Idea and development: Adam Rędzikowski · redzikowski.com. Data: OurAirports (public domain), aviationweather.gov (NOAA), maps © OpenStreetMap, © CARTO."
+
+msgid "Opis lotu"
+msgstr "Flight description"
+
+msgid "Opróżnij"
+msgstr "Empty"
+
+msgid "Ostatnie loty"
+msgstr "Recent flights"
+
+msgid "Ostatnie lądowanie"
+msgstr "Last landing"
+
+msgid "Ostatnie lądowanie: {score} · {vs} ft/min"
+msgstr "Last landing: {score} · {vs} ft/min"
+
+msgid "Ostatnio: {t}"
+msgstr "Last: {t}"
+
+msgid "Ostre"
+msgstr "Sharp"
+
+msgid "Otoczenie"
+msgstr "Surroundings"
+
+msgid "Otwórz"
+msgstr "Open"
+
+msgid "Otwórz dziennik lotów"
+msgstr "Open the flight logbook"
+
+msgid "Otwórz folder"
+msgstr "Open folder"
+
+msgid "Otwórz folder z dziennikiem programu"
+msgstr "Open the folder with the program log"
+
+msgid "Otwórz podgląd na żywo"
+msgstr "Open the live view"
+
+msgid "Otwórz w przeglądarce zdjęć"
+msgstr "Open in the photo viewer"
+
+msgid "Oznacz lotnisko gwiazdką na karcie Lotniska, a jego METAR pojawi się tutaj."
+msgstr "Star an airport on the Airports tab and its METAR will appear here."
+
+msgid "PAUZA"
+msgstr "PAUSED"
+
+msgid "PFD i ND, pod nimi silniki"
+msgstr "PFD and ND, engines below"
+
+msgid "PFD, ND, odczyt lotu albo mapa w małym oknie nad symulatorem."
+msgstr "PFD, ND, flight readout or map in a small window above the simulator."
+
+msgid "PFD, ND, zegary i silniki naraz"
+msgstr "PFD, ND, gauges and engines at once"
+
+msgid "PFD, ND, zegary i silniki w stylu kabiny samolotu"
+msgstr "PFD, ND, gauges and engines in aircraft cockpit style"
+
+msgid "PODEJŚCIA"
+msgstr "APPROACHES"
+
+msgid "PRZYLOTY (STAR)"
+msgstr "ARRIVALS (STAR)"
+
+msgid "Paliwo"
+msgstr "Fuel"
+
+msgid "Paliwo na przelot"
+msgstr "Trip fuel"
+
+msgid "Paliwo na starcie"
+msgstr "Ramp fuel"
+
+msgid "Paliwo: teraz / plan"
+msgstr "Fuel: now / plan"
+
+msgid "Parowanie"
+msgstr "Pairing"
+
+msgid "Parowanie i urządzenia"
+msgstr "Pairing and devices"
+
+msgid "Parowanie, urządzenia, źródło danych, aktywność"
+msgstr "Pairing, devices, data source, activity"
+
+msgid "Pas"
+msgstr "Runway"
+
+msgid "Pasek"
+msgstr "Bar"
+
+msgid "Pasek do transmisji"
+msgstr "Streaming bar"
+
+msgid "Pasy"
+msgstr "Runways"
+
+msgid "Pasy i częstotliwości"
+msgstr "Runways and frequencies"
+
+msgid "Pasy startowe"
+msgstr "Runways"
+
+msgid "Pauza"
+msgstr "Pause"
+
+msgid "Pełna karta"
+msgstr "Full card"
+
+msgid "Pełna róża albo łuk przed samolotem"
+msgstr "Full rose or arc ahead of the aircraft"
+
+msgid "Pierwsze połączenie telefonu wymaga tego kodu. Kolejne – już nie: telefon zapamiętuje dostęp, dopóki go nie unieważnisz."
+msgstr "The first phone connection needs this code. Later ones don't: the phone keeps its access until you revoke it."
+
+msgid "Pierścienie"
+msgstr "Rings"
+
+msgid "Pierścienie odległości wokół samolotu"
+msgstr "Range rings around the aircraft"
+
+msgid "Pilot ID znajdziesz w SimBrief w Account Settings."
+msgstr "You'll find your Pilot ID in SimBrief under Account Settings."
+
+msgid "Pionowa kurtyna pod śladem do ziemi"
+msgstr "Vertical curtain below the track down to the ground"
+
+msgid "Plan SimBrief"
+msgstr "SimBrief plan"
+
+msgid "Plan i zrzuty"
+msgstr "Plan and screenshots"
+
+msgid "Plan lotu"
+msgstr "Flight plan"
+
+msgid "Plan zniżania"
+msgstr "Descent plan"
+
+msgid "Plan {a} → {b} pobrany z SimBrief"
+msgstr "Plan {a} → {b} downloaded from SimBrief"
+
+msgid "Plik"
+msgstr "File"
+
+msgid "Po każdym połączeniu telefonu (OpenTakeoff 2.9 lub nowszy) loty wymieniają się w obie strony."
+msgstr "After every phone connection (OpenTakeoff 2.9 or newer) flights are exchanged both ways."
+
+msgid "Po przyziemieniu pojawi się tu ocena, a na ekranie symulatora – karta lądowania."
+msgstr "After touchdown the score shows up here, and the landing card appears on the simulator screen."
+
+msgid "Pobieranie aktualizacji…"
+msgstr "Downloading update…"
+
+msgid "Pobieranie aktualizacji… {pct} %"
+msgstr "Downloading update… {pct} %"
+
+msgid "Pobieranie pogody…"
+msgstr "Fetching weather…"
+
+msgid "Pobieranie procedur z MSFS…"
+msgstr "Fetching procedures from MSFS…"
+
+msgid "Pobieranie {name}…"
+msgstr "Downloading {name}…"
+
+msgid "Pobieranie…"
+msgstr "Downloading…"
+
+msgid "Pobierz bazę OurAirports od nowa"
+msgstr "Download the OurAirports database again"
+
+msgid "Pobierz najnowszy plan lotu z SimBrief"
+msgstr "Download the latest flight plan from SimBrief"
+
+msgid "Pobierz najnowszy plan z SimBrief"
+msgstr "Download the latest plan from SimBrief"
+
+msgid "Pobierz plan"
+msgstr "Get plan"
+
+msgid "Pobierz plan z SimBrief"
+msgstr "Get a plan from SimBrief"
+
+msgid "Pobrano {t}"
+msgstr "Downloaded {t}"
+
+msgid "Początek zniżania (TOD)"
+msgstr "Top of descent (TOD)"
+
+msgid "Podgląd"
+msgstr "Preview"
+
+msgid "Podgląd bieżącego lotu: przyrządy, mapa, systemy"
+msgstr "Current flight view: instruments, map, systems"
+
+msgid "Podgląd karty"
+msgstr "Card preview"
+
+msgid "Podkład mapy"
+msgstr "Map background"
+
+msgid "Podpisy pól"
+msgstr "Field labels"
+
+msgid "Podstawa chmur (szacunkowo)"
+msgstr "Cloud base (estimated)"
+
+msgid "Podwozie"
+msgstr "Landing gear"
+
+msgid "Pogoda"
+msgstr "Weather"
+
+msgid "Pogoda niedostępna: {e}"
+msgstr "Weather unavailable: {e}"
+
+msgid "Pogoda – obserwowane lotniska"
+msgstr "Weather – watched airports"
+
+msgid "Pokazuje się sama po przyziemieniu: ocena, prędkość pionowa, położenie na pasie i uwagi."
+msgstr "Appears automatically after touchdown: score, vertical speed, runway position and remarks."
+
+msgid "Pokaż OpenTakeoff"
+msgstr "Show OpenTakeoff"
+
+msgid "Pokaż całość"
+msgstr "Show all"
+
+msgid "Pokaż cały ślad"
+msgstr "Show the whole track"
+
+msgid "Pokaż kartę"
+msgstr "Show card"
+
+msgid "Pokaż na mapie"
+msgstr "Show on map"
+
+msgid "Pokaż panel lotu (Ctrl+B)"
+msgstr "Show flight panel (Ctrl+B)"
+
+msgid "Pokaż przykładową kartę na wybranym ekranie"
+msgstr "Show a sample card on the chosen screen"
+
+msgid "Pokaż trasę na mapie"
+msgstr "Show the route on the map"
+
+msgid "Pokaż trasę planu na mapie"
+msgstr "Show the plan route on the map"
+
+msgid "Pola paska – włącz i ułóż strzałkami"
+msgstr "Bar fields – turn on and order with the arrows"
+
+msgid "Pomiar"
+msgstr "Measure"
+
+msgid "Pomoc"
+msgstr "Help"
+
+msgid "Pomoc nawigacyjna"
+msgstr "Navaid"
+
+msgid "Poprawka na wiatr"
+msgstr "Wind correction"
+
+msgid "Poprawne"
+msgstr "Fair"
+
+msgid "Port"
+msgstr "Port"
+
+msgid "Port 47810 zajęty – telefony nie połączą się (czy działa stary OpenTakeoff Link?)"
+msgstr "Port 47810 is busy – phones won't connect (is the old OpenTakeoff Link running?)"
+
+msgid "Port {port} zajęty – telefony nie połączą się: {e}"
+msgstr "Port {port} is busy – phones won't connect: {e}"
+
+msgid "Poza zasięgiem lotnisk"
+msgstr "Out of range of airports"
+
+msgid "Pozycja"
+msgstr "Position"
+
+msgid "Położenie"
+msgstr "Position"
+
+msgid "Położenie na pasie"
+msgstr "Runway position"
+
+msgid "Połącz telefon z aplikacji OpenTakeoff i wpisz kod parowania."
+msgstr "Connect a phone from the OpenTakeoff app and enter the pairing code."
+
+msgid "Połączenie z MSFS przestało odpowiadać – łączę ponownie"
+msgstr "The MSFS connection stopped responding – reconnecting"
+
+msgid "Połączenie z telefonem"
+msgstr "Phone connection"
+
+msgid "Połączenie z {ip}"
+msgstr "Connection from {ip}"
+
+msgid "Połączono z MSFS – czekam na dane samolotu"
+msgstr "Connected to MSFS – waiting for aircraft data"
+
+msgid "Połączono z MSFS – czekam na lot"
+msgstr "Connected to MSFS – waiting for a flight"
+
+msgid "Połączono z X-Plane"
+msgstr "Connected to X-Plane"
+
+msgid "Połączono z {name} przez SimConnect"
+msgstr "Connected to {name} via SimConnect"
+
+msgid "Połączono z {sim}"
+msgstr "Connected to {sim}"
+
+msgid "Połączony · steruje samolotem"
+msgstr "Connected · controlling the aircraft"
+
+msgid "Połączony · {ip} · {hz} Hz"
+msgstr "Connected · {ip} · {hz} Hz"
+
+msgid "Prawdopodobieństwo {p}%"
+msgstr "Probability {p}%"
+
+msgid "Prawy dolny róg"
+msgstr "Bottom right corner"
+
+msgid "Prawy górny róg"
+msgstr "Top right corner"
+
+msgid "Procedury MSFS"
+msgstr "MSFS procedures"
+
+msgid "Procedury pochodzą z bazy MSFS – uruchom symulator (albo tryb symulacji: EPWA, EPGD)."
+msgstr "Procedures come from the MSFS database – start the simulator (or simulation mode: EPWA, EPGD)."
+
+msgid "Procedury z bazy MSFS"
+msgstr "Procedures from the MSFS database"
+
+msgid "Prognoza pogody dla lotniska"
+msgstr "Airport weather forecast"
+
+msgid "Program"
+msgstr "Program"
+
+msgid "Program nie steruje samolotem sam – przekazuje do symulatora tylko polecenia ze sparowanego telefonu (autopilot, radia, osie)."
+msgstr "The program doesn't fly the aircraft on its own – it only passes commands from the paired phone to the simulator (autopilot, radios, axes)."
+
+msgid "Przechylenie {deg}° – przyziemienie na jedno koło."
+msgstr "Bank {deg}° – touchdown on one wheel."
+
+msgid "Przeciągnij – obrót kamery · kółko – odległość"
+msgstr "Drag – rotate the camera · wheel – distance"
+
+msgid "Przeciągnij, żeby zmienić szerokość panelu; dwuklik przywraca domyślną"
+msgstr "Drag to change the panel width; double-click restores the default"
+
+msgid "Przeciążenie"
+msgstr "G-force"
+
+msgid "Przelicznik jednostek"
+msgstr "Unit converter"
+
+msgid "Przelot"
+msgstr "Cruise"
+
+msgid "Przeniesiono do kosza: {n}"
+msgstr "Moved to trash: {n}"
+
+msgid "Przenieś do kosza"
+msgstr "Move to trash"
+
+msgid "Przenieść {n} do kosza? Usunięte loty nie wrócą przy synchronizacji, a telefon usunie je u siebie przy następnym połączeniu."
+msgstr "Move {n} to the trash? Deleted flights won't come back when syncing, and the phone will delete them on its next connection."
+
+msgid "Przepuszczaj kliknięcia"
+msgstr "Click-through"
+
+msgid "Przewidywana ścieżka na 1, 2 i 5 minut (z bieżącym zakrętem)"
+msgstr "Predicted path for 1, 2 and 5 minutes (with the current turn)"
+
+msgid "Przy samolocie"
+msgstr "Near the aircraft"
+
+msgid "Przybliż"
+msgstr "Zoom in"
+
+msgid "Przygotowanie bazy lotnisk…"
+msgstr "Preparing the airport database…"
+
+msgid "Przyrządy"
+msgstr "Instruments"
+
+msgid "Przywrócono {n}"
+msgstr "Restored {n}"
+
+msgid "Przywróć"
+msgstr "Restore"
+
+msgid "Przywróć z kosza"
+msgstr "Restore from the trash"
+
+msgid "Przyziemienie"
+msgstr "Touchdown"
+
+msgid "Przyziemienie na przednie koło (pochylenie {pitch}°)."
+msgstr "Nose-wheel touchdown (pitch {pitch}°)."
+
+msgid "Przyziemienie przed progiem pasa ({before} ft)."
+msgstr "Touchdown before the runway threshold ({before} ft)."
+
+msgid "Przyziemienie tuż za progiem ({ft} ft)."
+msgstr "Touchdown just past the threshold ({ft} ft)."
+
+msgid "Prędkość"
+msgstr "Speed"
+
+msgid "Prędkość nad ziemią"
+msgstr "Ground speed"
+
+msgid "Prędkość pionowa"
+msgstr "Vertical speed"
+
+msgid "Prędkość przyrządowa"
+msgstr "Indicated airspeed"
+
+msgid "Prędkość wiatru"
+msgstr "Wind speed"
+
+msgid "Pulpit"
+msgstr "Dashboard"
+
+msgid "Punkt"
+msgstr "Point"
+
+msgid "Punkt rosy"
+msgstr "Dew point"
+
+msgid "Radia"
+msgstr "Radios"
+
+msgid "Radial +1°"
+msgstr "Radial +1°"
+
+msgid "Radial −1°"
+msgstr "Radial −1°"
+
+msgid "Radiale"
+msgstr "Radials"
+
+msgid "Radio"
+msgstr "Radio"
+
+msgid "Region"
+msgstr "Region"
+
+msgid "Rekordy"
+msgstr "Records"
+
+msgid "Rezerwa"
+msgstr "Reserve"
+
+msgid "Rodzaj"
+msgstr "Type"
+
+msgid "Rozglądanie działa tylko, gdy okno MSFS jest aktywne – kliknij w okno symulatora"
+msgstr "Looking around only works while the MSFS window is active – click the simulator window"
+
+msgid "Rozglądanie odrzucone: {why}"
+msgstr "Looking around rejected: {why}"
+
+msgid "Rozglądanie się z telefonu działa tylko w MSFS"
+msgstr "Looking around from the phone only works in MSFS"
+
+msgid "Rozgłaszanie na UDP {port}"
+msgstr "Broadcasting on UDP {port}"
+
+msgid "Rozgłaszanie w sieci nie działa: {e}"
+msgstr "Network broadcast doesn't work: {e}"
+
+msgid "Rozłącz"
+msgstr "Disconnect"
+
+msgid "Rozłączono {name} ({ip})"
+msgstr "Disconnected {name} ({ip})"
+
+msgid "Ruch rozkładowy"
+msgstr "Scheduled service"
+
+msgid "Ryzyko mgły"
+msgstr "Fog risk"
+
+msgid "Róża kursowa na samolocie: kurs, tor, nastawa AP, namiar na punkt"
+msgstr "Heading rose on the aircraft: heading, track, AP setting, bearing to a point"
+
+msgid "Róża kursu"
+msgstr "Heading rose"
+
+msgid "Róże VOR"
+msgstr "VOR roses"
+
+msgid "Róże z radialami wokół VOR (względem deklinacji stacji)"
+msgstr "Roses with radials around VORs (relative to station declination)"
+
+msgid "SILNIKI"
+msgstr "ENGINES"
+
+msgid "Samolot"
+msgstr "Aircraft"
+
+msgid "Samolot na radialu"
+msgstr "Aircraft on the radial"
+
+msgid "Samolot po złej stronie punktu – leć najpierw do punktu"
+msgstr "Aircraft on the wrong side of the point – fly to the point first"
+
+msgid "Samoloty"
+msgstr "Aircraft"
+
+msgid "Satelita"
+msgstr "Satellite"
+
+msgid "Schowaj"
+msgstr "Hide"
+
+msgid "Sepia"
+msgstr "Sepia"
+
+msgid "Serwer telefonów nasłuchuje na porcie {port}"
+msgstr "Phone server listening on port {port}"
+
+msgid "Silnik {n}"
+msgstr "Engine {n}"
+
+msgid "Silniki i paliwo"
+msgstr "Engines and fuel"
+
+msgid "SimBrief, "
+msgstr "SimBrief, "
+
+msgid "SimBrief: {e}"
+msgstr "SimBrief: {e}"
+
+msgid "Skala V/S"
+msgstr "V/S scale"
+
+msgid "Skopiowano adres {text}"
+msgstr "Copied address {text}"
+
+msgid "Skopiowano {text}"
+msgstr "Copied {text}"
+
+msgid "Skrót działa też w symulatorze. Każdy zrzut zapamiętuje pozycję, wysokość i kurs – widać go na mapie."
+msgstr "The shortcut works inside the simulator too. Each screenshot remembers position, altitude and heading – you'll see it on the map."
+
+msgid "Skrót klawiszowy"
+msgstr "Keyboard shortcut"
+
+msgid "Składowe wiatru z bieżącego METAR-u: czołowy (+) / tylny (−) i boczny. Wyróżniony pas ma najkorzystniejszy wiatr."
+msgstr "Wind components from the current METAR: head (+) / tail (−) and cross. The highlighted runway has the most favourable wind."
+
+msgid "Sortowanie"
+msgstr "Sorting"
+
+msgid "Spalanie"
+msgstr "Trip burn"
+
+msgid "Sparowane telefony"
+msgstr "Paired phones"
+
+msgid "Sparowano: {name} ({ip}), {rate} Hz"
+msgstr "Paired: {name} ({ip}), {rate} Hz"
+
+msgid "Spoilery"
+msgstr "Spoilers"
+
+msgid "Sprawdzanie aktualizacji…"
+msgstr "Checking for updates…"
+
+msgid "Sprawdź aktualizacje"
+msgstr "Check for updates"
+
+msgid "Stan"
+msgstr "Status"
+
+msgid "Stan symulatora i telefonów, pogoda, ostatnie loty"
+msgstr "Simulator and phone status, weather, recent flights"
+
+msgid "Startuj w zasobniku"
+msgstr "Start in the tray"
+
+msgid "Statystyki"
+msgstr "Statistics"
+
+msgid "Steruje"
+msgstr "Controlling"
+
+msgid "Stopniowa zmiana"
+msgstr "Gradual change"
+
+msgid "Styl PFD i ND; Auto – rozpoznany z samolotu w symulatorze"
+msgstr "PFD and ND style; Auto – detected from the aircraft in the simulator"
+
+msgid "Styl kabiny"
+msgstr "Cockpit style"
+
+msgid "Styl: "
+msgstr "Style: "
+
+msgid "Sumy, miesiące, samoloty, lotniska, rekordy"
+msgstr "Totals, months, aircraft, airports, records"
+
+msgid "Swobodna"
+msgstr "Free"
+
+msgid "Symulacja"
+msgstr "Simulation"
+
+msgid "Symulacja: {phase}, do EPGD {dist} NM"
+msgstr "Simulation: {phase}, {dist} NM to EPGD"
+
+msgid "Symulator"
+msgstr "Simulator"
+
+msgid "Synchronizacja wyłączona w programie na komputerze"
+msgstr "Syncing disabled in the computer program"
+
+msgid "Synchronizacja z {d}: odebrano {r}, wysłano {s}"
+msgstr "Sync with {d}: received {r}, sent {s}"
+
+msgid "Synchronizacja: {t}"
+msgstr "Sync: {t}"
+
+msgid "Synchronizuj z telefonem"
+msgstr "Sync with the phone"
+
+msgid "Systemy"
+msgstr "Systems"
+
+msgid "Szerokość"
+msgstr "Width"
+
+msgid "Szukaj: lotnisko, samolot, tag…"
+msgstr "Search: airport, aircraft, tag…"
+
+msgid "Szybowiec"
+msgstr "Glider"
+
+msgid "Tagi (po przecinku)"
+msgstr "Tags (comma-separated)"
+
+msgid "Telefon"
+msgstr "Phone"
+
+msgid "Telefon (sparowany wcześniej)"
+msgstr "Phone (paired earlier)"
+
+msgid "Telefon unieważniony"
+msgstr "Phone revoked"
+
+msgid "Telefony"
+msgstr "Phones"
+
+msgid "Telefony i zapis lotów działają dalej; wyjście z menu ikony w zasobniku"
+msgstr "Phones and flight recording keep working; quit from the tray icon menu"
+
+msgid "Temperatura"
+msgstr "Temperature"
+
+msgid "Temperatura {ta} °C, punkt rosy {td} °C"
+msgstr "Temperature {ta} °C, dew point {td} °C"
+
+msgid "Ten rok"
+msgstr "This year"
+
+msgid "Transponder"
+msgstr "Transponder"
+
+msgid "Trasa"
+msgstr "Route"
+
+msgid "Trasa pojawi się na mapie, w panelu bocznym i na pasku do transmisji, a w czasie lotu zobaczysz następny punkt, odległość do celu i paliwo względem planu."
+msgstr "The route appears on the map, in the side panel and on the streaming bar, and in flight you'll see the next waypoint, distance to destination and fuel against the plan."
+
+msgid "Trasa z SimBrief na mapie"
+msgstr "SimBrief route on the map"
+
+msgid "Trasy"
+msgstr "Routes"
+
+msgid "Treść"
+msgstr "Content"
+
+msgid "Tryb symulacji"
+msgstr "Simulation mode"
+
+msgid "Tryb symulacji włączony"
+msgstr "Simulation mode on"
+
+msgid "Tryb symulacji: lot testowy EPWA → EPGD bez MSFS – do sprawdzenia telefonu i dziennika."
+msgstr "Simulation mode: a test flight EPWA → EPGD without MSFS – to check the phone and the logbook."
+
+msgid "Trójkąt wiatru"
+msgstr "Wind triangle"
+
+msgid "Twarde"
+msgstr "Hard"
+
+msgid "Twarde lądowanie: {v} ft/min."
+msgstr "Hard landing: {v} ft/min."
+
+msgid "Twoje loty"
+msgstr "Your flights"
+
+msgid "Tylko do symulacji lotów. Nie używaj do rzeczywistej nawigacji."
+msgstr "For flight simulation only. Do not use for real navigation."
+
+msgid "Tytuł okna"
+msgstr "Window title"
+
+msgid "Tło"
+msgstr "Background"
+
+msgid "U dołu"
+msgstr "Bottom"
+
+msgid "U dołu na środku"
+msgstr "Bottom centre"
+
+msgid "U góry"
+msgstr "Top"
+
+msgid "U góry na środku"
+msgstr "Top centre"
+
+msgid "Ukryj panel lotu (Ctrl+B)"
+msgstr "Hide flight panel (Ctrl+B)"
+
+msgid "Układ"
+msgstr "Layout"
+
+msgid "Ulubione"
+msgstr "Favourites"
+
+msgid "Ulubiony"
+msgstr "Favourite"
+
+msgid "Unieważnij"
+msgstr "Revoke"
+
+msgid "Unieważnij wszystkie"
+msgstr "Revoke all"
+
+msgid "Unieważnić ten telefon? Przy następnym połączeniu będzie potrzebny kod parowania."
+msgstr "Revoke this phone? The pairing code will be needed on its next connection."
+
+msgid "Unieważnić wszystkie sparowane telefony? Każdy będzie musiał połączyć się ponownie z nowym kodem."
+msgstr "Revoke all paired phones? Each one will need to reconnect with a new code."
+
+msgid "Uruchamiaj z Windows"
+msgstr "Start with Windows"
+
+msgid "Ustawienia"
+msgstr "Settings"
+
+msgid "Usunięto trwale: {n}"
+msgstr "Permanently deleted: {n}"
+
+msgid "Usunięto zrzut ekranu"
+msgstr "Screenshot deleted"
+
+msgid "Usunąć ten zrzut ekranu? Plik zniknie z dysku."
+msgstr "Delete this screenshot? The file will be removed from disk."
+
+msgid "Usunąć trwale {n} z kosza? Tego nie da się cofnąć."
+msgstr "Permanently delete {n} from the trash? This can't be undone."
+
+msgid "Usuń"
+msgstr "Delete"
+
+msgid "Usuń plan"
+msgstr "Delete plan"
+
+msgid "Usuń trwale"
+msgstr "Delete permanently"
+
+msgid "Usuń trwale wszystkie loty z kosza"
+msgstr "Permanently delete all flights in the trash"
+
+msgid "Usuń z obserwowanych"
+msgstr "Remove from watched"
+
+msgid "Usuń znacznik"
+msgstr "Delete marker"
+
+msgid "Usuń ślad z mapy (nagranie lotu zostaje)"
+msgstr "Remove the track from the map (the flight recording stays)"
+
+msgid "Uwaga"
+msgstr "Note"
+
+msgid "Uwagi"
+msgstr "Remarks"
+
+msgid "Uwagi (dalsza część w kodzie krajowym)"
+msgstr "Remarks (the rest in national code)"
+
+msgid "Użytkownik albo Pilot ID"
+msgstr "Username or Pilot ID"
+
+msgid "VOR na ND"
+msgstr "VOR on ND"
+
+msgid "VOR, NDB, lotnisko (np. WAR, EPWA)"
+msgstr "VOR, NDB, airport (e.g. WAR, EPWA)"
+
+msgid "W aplikacji OpenTakeoff na telefonie otwórz Kokpit → Połącz. Telefon sam znajdzie ten komputer w sieci Wi-Fi; jeśli nie – wpisz adres ręcznie."
+msgstr "In the OpenTakeoff app on the phone open Cockpit → Connect. The phone finds this computer on the Wi-Fi network by itself; if not, enter the address manually."
+
+msgid "W kolorze akcentu"
+msgstr "In accent colour"
+
+msgid "W miesiącach"
+msgstr "By month"
+
+msgid "W odpowiedzi SimBrief nie ma planu lotu"
+msgstr "The SimBrief response contains no flight plan"
+
+msgid "W pobliżu"
+msgstr "Nearby"
+
+msgid "W strefie przyziemienia: {ft} ft za progiem."
+msgstr "In the touchdown zone: {ft} ft past the threshold."
+
+msgid "Warstwy"
+msgstr "Layers"
+
+msgid "Wartość"
+msgstr "Value"
+
+msgid "Ważna od {a}. dnia {b}:00 do {c}. dnia {d}:00 UTC"
+msgstr "Valid from day {a} {b}:00 to day {c} {d}:00 UTC"
+
+msgid "Wcześniej na pasku"
+msgstr "Earlier on the bar"
+
+msgid "Wcześniejsze depesze"
+msgstr "Earlier reports"
+
+msgid "Wczytaj listę monitorów od nowa"
+msgstr "Reload the list of monitors"
+
+msgid "Wczytaj listę monitorów od nowa (po podłączeniu ekranu)"
+msgstr "Reload the list of monitors (after connecting a screen)"
+
+msgid "Wczytywanie bazy lotnisk…"
+msgstr "Loading the airport database…"
+
+msgid "Według oceny"
+msgstr "By score"
+
+msgid "Wektor"
+msgstr "Vector"
+
+msgid "Wiatr"
+msgstr "Wind"
+
+msgid "Wiatr boczny"
+msgstr "Crosswind"
+
+msgid "Wiatr boczny {kt} kt – wynik złagodzony."
+msgstr "Crosswind {kt} kt – score softened."
+
+msgid "Wiatr czołowy / tylny"
+msgstr "Headwind / tailwind"
+
+msgid "Wiatr na pasie"
+msgstr "Runway wind"
+
+msgid "Wiatr z"
+msgstr "Wind from"
+
+msgid "Wiatr z {d}° z prędkością {spd} {unit}"
+msgstr "Wind from {d}° at {spd} {unit}"
+
+msgid "Wiatr zmienny {spd} {unit}"
+msgstr "Variable wind {spd} {unit}"
+
+msgid "Widok"
+msgstr "View"
+
+msgid "Widok 3D z podkładem mapy, śladem i samolotem"
+msgstr "3D view with map background, track and aircraft"
+
+msgid "Widzialność"
+msgstr "Visibility"
+
+msgid "Widzialność 10 km lub więcej"
+msgstr "Visibility 10 km or more"
+
+msgid "Widzialność {m} m"
+msgstr "Visibility {m} m"
+
+msgid "Widzialność {v} mil lądowych"
+msgstr "Visibility {v} statute miles"
+
+msgid "Widzialność ≥ 10 km, brak chmur poniżej 5000 ft i CB, brak zjawisk"
+msgstr "Visibility ≥ 10 km, no clouds below 5000 ft and no CB, no weather"
+
+msgid "Wielkość"
+msgstr "Size"
+
+msgid "Wielkość interfejsu"
+msgstr "Interface size"
+
+msgid "Wilgotność względna"
+msgstr "Relative humidity"
+
+msgid "Windows"
+msgstr "Windows"
+
+msgid "Windows zablokował symulowanie myszy"
+msgstr "Windows blocked simulated mouse input"
+
+msgid "Wklej depeszę – każda grupa dostanie opis. Prawdziwe depesze znajdziesz na karcie Lotniska."
+msgstr "Paste a report – each group gets a description. Real reports are on the Airports tab."
+
+msgid "Wpisz nazwę użytkownika albo Pilot ID z SimBrief"
+msgstr "Enter your SimBrief username or Pilot ID"
+
+msgid "Wskazany obiekt"
+msgstr "Selected object"
+
+msgid "Wstrzymany do lądowania – „Wznów”, żeby nagrywać od razu"
+msgstr "Paused until landing – “Resume” to record right away"
+
+msgid "Wszystkie"
+msgstr "All"
+
+msgid "Wszystkie loty z komputera i telefonu"
+msgstr "All flights from the computer and the phone"
+
+msgid "Wszystkie telefony unieważnione"
+msgstr "All phones revoked"
+
+msgid "Wszystkie ustawienia nakładek"
+msgstr "All overlay settings"
+
+msgid "Wszystko"
+msgstr "Everything"
+
+msgid "Wybierz lot do eksportu"
+msgstr "Choose a flight to export"
+
+msgid "Wybierz lot z listy"
+msgstr "Choose a flight from the list"
+
+msgid "Wybierz procedurę z listy. Dane pochodzą z bazy nawigacyjnej MSFS, więc procedury są dostępne, gdy symulator działa (albo w trybie symulacji dla EPWA i EPGD)."
+msgstr "Choose a procedure from the list. Data comes from the MSFS navigation database, so procedures are available while the simulator runs (or in simulation mode for EPWA and EPGD)."
+
+msgid "Wybrany radial"
+msgstr "Selected radial"
+
+msgid "Wyczuwalne przyziemienie: {v} ft/min."
+msgstr "Firm touchdown: {v} ft/min."
+
+msgid "Wyczyść"
+msgstr "Clear"
+
+msgid "Wyczyść ślad"
+msgstr "Clear track"
+
+msgid "Wygląd"
+msgstr "Appearance"
+
+msgid "Wygląd karty lądowania"
+msgstr "Landing card appearance"
+
+msgid "Wygląd, język, zapis lotów, Windows, dane"
+msgstr "Appearance, language, flight recording, Windows, data"
+
+msgid "Wynik"
+msgstr "Result"
+
+msgid "Wyrównanie"
+msgstr "Alignment"
+
+msgid "Wysokość"
+msgstr "Altitude"
+
+msgid "Wysokość ciśnieniowa"
+msgstr "Pressure altitude"
+
+msgid "Wysokość gęstościowa"
+msgstr "Density altitude"
+
+msgid "Wyszukaj lotnisko"
+msgstr "Find an airport"
+
+msgid "Wył."
+msgstr "Off"
+
+msgid "Wyłączone"
+msgstr "Off"
+
+msgid "Wznów"
+msgstr "Resume"
+
+msgid "Wznów automatyczny zapis"
+msgstr "Resume automatic recording"
+
+msgid "Wznów zapis"
+msgstr "Resume recording"
+
+msgid "Wł."
+msgstr "On"
+
+msgid "Własny tekst"
+msgstr "Custom text"
+
+msgid "Włączone"
+msgstr "On"
+
+msgid "X-Plane 11/12 bez wtyczek: w X-Plane Settings → Network włącz przyjmowanie połączeń UDP (port 49000). Osobny most w Pythonie nie jest już potrzebny."
+msgstr "X-Plane 11/12 without plugins: in X-Plane Settings → Network allow incoming UDP connections (port 49000). The separate Python bridge is no longer needed."
+
+msgid "X-Plane nie obsługuje komendy"
+msgstr "X-Plane doesn't support the command"
+
+msgid "Z góry"
+msgstr "Top-down"
+
+msgid "Z jednostki"
+msgstr "From unit"
+
+msgid "Z lotniska"
+msgstr "From airport"
+
+msgid "Z rezerwą"
+msgstr "With reserve"
+
+msgid "Z telefonu: {s}"
+msgstr "From phone: {s}"
+
+msgid "Z wysokości"
+msgstr "From altitude"
+
+msgid "Za progiem"
+msgstr "Past threshold"
+
+msgid "Za samolotem"
+msgstr "Chase"
+
+msgid "Zacznie się samo po starcie"
+msgstr "Starts on its own after takeoff"
+
+msgid "Zaimportowano {a}; nie udało się odczytać {e} plików"
+msgstr "Imported {a}; couldn't read {e} files"
+
+msgid "Zaimportowano: {a}, pominięte (już są w dzienniku): {s}"
+msgstr "Imported: {a}, skipped (already in the logbook): {s}"
+
+msgid "Zaimportowany"
+msgstr "Imported"
+
+msgid "Zainstaluj aktualizację"
+msgstr "Install update"
+
+msgid "Zakończ"
+msgstr "Finish"
+
+msgid "Zakończ (rozłącza telefony)"
+msgstr "Quit (disconnects phones)"
+
+msgid "Zakończ zapis"
+msgstr "Stop recording"
+
+msgid "Zakończ zapis teraz (następny zacznie się po wylądowaniu)"
+msgstr "Stop recording now (the next one starts after landing)"
+
+msgid "Zamknij"
+msgstr "Close"
+
+msgid "Zamknięcie okna chowa do zasobnika"
+msgstr "Closing the window hides it to the tray"
+
+msgid "Zaokrąglenia"
+msgstr "Corners"
+
+msgid "Zapasowe"
+msgstr "Alternate"
+
+msgid "Zapis CAMERA STATE nie powiódł się: {e}"
+msgstr "Writing CAMERA STATE failed: {e}"
+
+msgid "Zapis lotu"
+msgstr "Flight recording"
+
+msgid "Zapis lotów"
+msgstr "Flight recording"
+
+msgid "Zapis wznowiony – zacznie się, gdy samolot będzie w powietrzu"
+msgstr "Recording resumed – it starts once the aircraft is airborne"
+
+msgid "Zapis zacznie się sam po starcie (w powietrzu, prędkość nad ziemią > 40 kt)."
+msgstr "Recording starts on its own after takeoff (airborne, ground speed > 40 kt)."
+
+msgid "Zapis zakończony – loty krótsze niż 2 min nie trafiają do dziennika"
+msgstr "Recording finished – flights shorter than 2 min don't go into the logbook"
+
+msgid "Zapisano lot {route}"
+msgstr "Saved flight {route}"
+
+msgid "Zapisano zrzut ekranu{place}"
+msgstr "Screenshot saved{place}"
+
+msgid "Zapisano {n} plików w {d}"
+msgstr "Saved {n} files in {d}"
+
+msgid "Zapisano: {p}"
+msgstr "Saved: {p}"
+
+msgid "Zapisuj loty na komputerze"
+msgstr "Record flights on this computer"
+
+msgid "Zasięg +"
+msgstr "Range +"
+
+msgid "Zasięg widzenia na pasie {rwy}: {v} m"
+msgstr "Runway visual range {rwy}: {v} m"
+
+msgid "Zasięg −"
+msgstr "Range −"
+
+msgid "Zatrzymaj odtwarzanie"
+msgstr "Stop replay"
+
+msgid "Zaznacz"
+msgstr "Select"
+
+msgid "Zaznacz wszystkie widoczne loty"
+msgstr "Select all visible flights"
+
+msgid "Zegary"
+msgstr "Gauges"
+
+msgid "Zegary analogowe i silniki"
+msgstr "Analogue gauges and engines"
+
+msgid "Zegary analogowe: Cessna 172, śmigłowiec, szybowiec"
+msgstr "Analogue gauges: Cessna 172, helicopter, glider"
+
+msgid "Zgodny z motywem"
+msgstr "Follow theme"
+
+msgid "Zgłoś"
+msgstr "Report"
+
+msgid "Zgłoś błąd lub sugestię"
+msgstr "Report a bug or a suggestion"
+
+msgid "Zmiana po ponownym uruchomieniu programu"
+msgstr "Changes after restarting the program"
+
+msgid "Zmiany zatwierdza Enter. Poprawione lotniska i samolot widać tylko na komputerze – lot w telefonie zostaje bez zmian."
+msgstr "Enter confirms changes. Corrected airports and aircraft are only visible on the computer – the flight on the phone stays unchanged."
+
+msgid "Znacznik"
+msgstr "Marker"
+
+msgid "Znacznik w bieżącym nagraniu"
+msgstr "Marker in the current recording"
+
+msgid "Znaczniki"
+msgstr "Markers"
+
+msgid "Zrzut"
+msgstr "Screenshot"
+
+msgid "Zrzut ekranu"
+msgstr "Screenshot"
+
+msgid "Zrzut ekranu nie powiódł się: {e}"
+msgstr "Screenshot failed: {e}"
+
+msgid "Zrzut ekranu symulatora z miejscem samolotu (skrót – karta Nakładki)"
+msgstr "Simulator screenshot with the aircraft position (shortcut – Overlays tab)"
+
+msgid "Zrzuty"
+msgstr "Screenshots"
+
+msgid "Zrzuty ekranu"
+msgstr "Screenshots"
+
+msgid "Zrzuty ekranu symulatora z miejscem samolotu"
+msgstr "Simulator screenshots with the aircraft position"
+
+msgid "Zrzuty ekranu z miejscem samolotu"
+msgstr "Screenshots with the aircraft position"
+
+msgid "Zrób zrzut ekranu"
+msgstr "Take a screenshot"
+
+msgid "Zrób zrzut teraz"
+msgstr "Take a screenshot now"
+
+msgid "Zwykłe"
+msgstr "Normal"
+
+msgid "boczny"
+msgstr "cross"
+
+msgid "brak planu lotu w symulatorze"
+msgstr "no flight plan in the simulator"
+
+msgid "brak sieci"
+msgstr "no network"
+
+msgid "burza"
+msgstr "thunderstorm"
+
+msgid "burza piaskowa"
+msgstr "sandstorm"
+
+msgid "burza pyłowa"
+msgstr "duststorm"
+
+msgid "całkowite zachmurzenie (8/8)"
+msgstr "overcast (8/8)"
+
+msgid "cze"
+msgstr "Jun"
+
+msgid "czerwiec"
+msgstr "June"
+
+msgid "czołowy"
+msgstr "head"
+
+msgid "częściowe"
+msgstr "partial"
+
+msgid "deszcz"
+msgstr "rain"
+
+msgid "deszcz lodowy"
+msgstr "freezing rain"
+
+msgid "do celu "
+msgstr "to destination "
+
+msgid "dobieg"
+msgstr "landing roll"
+
+msgid "duże"
+msgstr "large"
+
+msgid "duże lotnisko"
+msgstr "large airport"
+
+msgid "dym"
+msgstr "smoke"
+
+msgid "dźwignia"
+msgstr "lever"
+
+msgid "grad"
+msgstr "hail"
+
+msgid "gru"
+msgstr "Dec"
+
+msgid "grudzień"
+msgstr "December"
+
+msgid "główny"
+msgstr "main"
+
+msgid "igły lodowe"
+msgstr "ice crystals"
+
+msgid "kołowanie"
+msgstr "taxi"
+
+msgid "krupa"
+msgstr "snow pellets"
+
+msgid "kwi"
+msgstr "Apr"
+
+msgid "kwiecień"
+msgstr "April"
+
+msgid "lip"
+msgstr "Jul"
+
+msgid "lipiec"
+msgstr "July"
+
+msgid "lis"
+msgstr "Nov"
+
+msgid "listopad"
+msgstr "November"
+
+msgid "lot"
+msgstr "flight"
+
+msgid "lotnisko wodne"
+msgstr "seaplane base"
+
+msgid "lotów"
+msgstr "flights"
+
+msgid "lut"
+msgstr "Feb"
+
+msgid "luty"
+msgstr "February"
+
+msgid "lądowisko dla śmigłowców"
+msgstr "heliport"
+
+msgid "maj"
+msgstr "May"
+
+msgid "maks. "
+msgstr "max. "
+
+msgid "mar"
+msgstr "Mar"
+
+msgid "marzec"
+msgstr "March"
+
+msgid "marznące"
+msgstr "freezing"
+
+msgid "małe"
+msgstr "small"
+
+msgid "małe lotnisko"
+msgstr "small airport"
+
+msgid "metry (m)"
+msgstr "metres (m)"
+
+msgid "mgła"
+msgstr "fog"
+
+msgid "mżawka"
+msgstr "drizzle"
+
+msgid "na miejscu"
+msgstr "on site"
+
+msgid "na ziemi"
+msgstr "on the ground"
+
+msgid "nie"
+msgstr "no"
+
+msgid "nieliczne (1–2/8)"
+msgstr "few (1–2/8)"
+
+msgid "nieznany opad"
+msgstr "unknown precipitation"
+
+msgid "nieznany samolot"
+msgstr "unknown aircraft"
+
+msgid "nigdy"
+msgstr "never"
+
+msgid "np. VATSIM, szkolenie"
+msgstr "e.g. VATSIM, training"
+
+msgid "np. twitch.tv/mojkanal"
+msgstr "e.g. twitch.tv/mychannel"
+
+msgid "od samolotu"
+msgstr "from aircraft"
+
+msgid "od {d}"
+msgstr "since {d}"
+
+msgid "paź"
+msgstr "Oct"
+
+msgid "październik"
+msgstr "October"
+
+msgid "piasek"
+msgstr "sand"
+
+msgid "podejście"
+msgstr "approach"
+
+msgid "poprzerywane (5–7/8)"
+msgstr "broken (5–7/8)"
+
+msgid "port "
+msgstr "port "
+
+msgid "porywy"
+msgstr "gusts"
+
+msgid "postój przed startem"
+msgstr "waiting before takeoff"
+
+msgid "połącz się z tym komputerem z aplikacji OpenTakeoff na telefonie."
+msgstr "connect to this computer from the OpenTakeoff app on your phone."
+
+msgid "przed chwilą"
+msgstr "just now"
+
+msgid "przelot"
+msgstr "cruise"
+
+msgid "przelotne"
+msgstr "showers"
+
+msgid "punktów ścieżki"
+msgstr "track points"
+
+msgid "pył"
+msgstr "dust"
+
+msgid "pył wulkaniczny"
+msgstr "volcanic ash"
+
+msgid "płaty"
+msgstr "patches"
+
+msgid "płytkie"
+msgstr "shallow"
+
+msgid "rozbieg"
+msgstr "takeoff roll"
+
+msgid "rozbieg / dobieg"
+msgstr "takeoff / landing roll"
+
+msgid "rozproszone (3–4/8)"
+msgstr "scattered (3–4/8)"
+
+msgid "rzecz."
+msgstr "true"
+
+msgid "schowane"
+msgstr "retracted"
+
+msgid "sie"
+msgstr "Aug"
+
+msgid "sierpień"
+msgstr "August"
+
+msgid "silne"
+msgstr "heavy"
+
+msgid "stopy (ft)"
+msgstr "feet (ft)"
+
+msgid "sty"
+msgstr "Jan"
+
+msgid "styczeń"
+msgstr "January"
+
+msgid "szkwał"
+msgstr "squall"
+
+msgid "słabe"
+msgstr "light"
+
+msgid "tak"
+msgstr "yes"
+
+msgid "ten komputer"
+msgstr "this computer"
+
+msgid "trąba"
+msgstr "funnel cloud"
+
+msgid "tylny"
+msgstr "tail"
+
+msgid "umiarkowane"
+msgstr "moderate"
+
+msgid "uzbrojone"
+msgstr "armed"
+
+msgid "w lewo"
+msgstr "left"
+
+msgid "w pobliżu"
+msgstr "in the vicinity"
+
+msgid "w prawo"
+msgstr "right"
+
+msgid "widzialność pionowa"
+msgstr "vertical visibility"
+
+msgid "wiry pyłowe"
+msgstr "dust whirls"
+
+msgid "wrz"
+msgstr "Sep"
+
+msgid "wrzesień"
+msgstr "September"
+
+msgid "wypuszczone"
+msgstr "extended"
+
+msgid "wyłączone"
+msgstr "off"
+
+msgid "wznoszenie"
+msgstr "climb"
+
+msgid "węzły (kt)"
+msgstr "knots (kt)"
+
+msgid "z lewej"
+msgstr "from the left"
+
+msgid "z prawej"
+msgstr "from the right"
+
+msgid "zaciągnięty"
+msgstr "set"
+
+msgid "zamglenie"
+msgstr "mist"
+
+msgid "zamieć niska"
+msgstr "low drifting snow"
+
+msgid "zamieć wysoka"
+msgstr "blowing snow"
+
+msgid "zmętnienie"
+msgstr "haze"
+
+msgid "zniżanie"
+msgstr "descent"
+
+msgid "zwolniony"
+msgstr "released"
+
+msgid "{a} ft za progiem"
+msgstr "{a} ft past the threshold"
+
+msgid "{device}: odebrano {n} lot(y) z telefonu"
+msgstr "{device}: received {n} flight(s) from the phone"
+
+msgid "{device}: wysłano {n} lot(y) do telefonu"
+msgstr "{device}: sent {n} flight(s) to the phone"
+
+msgid "{h} h temu"
+msgstr "{h} h ago"
+
+msgid "{ip}: nieudane parowanie (zły kod lub token)"
+msgstr "{ip}: pairing failed (wrong code or token)"
+
+msgid "{ip}: za dużo prób parowania – blokada na 60 s"
+msgstr "{ip}: too many pairing attempts – locked for 60 s"
+
+msgid "{m} min temu"
+msgstr "{m} min ago"
+
+msgid "{name} ({ip}) milczy od 30 s – rozłączam"
+msgstr "{name} ({ip}) silent for 30 s – disconnecting"
+
+msgid "{name} przejmuje stery"
+msgstr "{name} takes the controls"
+
+msgid "{name}: odrzucono {cmd} – {msg}"
+msgstr "{name}: rejected {cmd} – {msg}"
+
+msgid "{name}: synchronizacja – do pobrania z telefonu {w}, do wysłania {o}, do usunięcia w telefonie {r}"
+msgstr "{name}: sync – to download from the phone {w}, to send {o}, to delete on the phone {r}"
+
+msgid "{name}: {cmd} nie powiodło się – {msg}"
+msgstr "{name}: {cmd} failed – {msg}"
+
+msgid "{n} procedur z bazy symulatora"
+msgstr "{n} procedures from the simulator database"
+
+msgid "{n} telefony połączone"
+msgstr "{n} phones connected"
+
+msgid "{n} – przechylanie telefonu albo drążek"
+msgstr "{n} – tilting the phone or a stick"
+
+msgid "Ścieżka"
+msgstr "Path"
+
+msgid "Ścieżka do przechwycenia"
+msgstr "Path to intercept"
+
+msgid "Ścieżka z parametrami do arkusza"
+msgstr "Track with parameters for a spreadsheet"
+
+msgid "Ślad"
+msgstr "Track"
+
+msgid "Ślad 3D do Google Earth"
+msgstr "3D track for Google Earth"
+
+msgid "Śledź"
+msgstr "Follow"
+
+msgid "Śledź samolot"
+msgstr "Follow the aircraft"
+
+msgid "Średni"
+msgstr "Medium"
+
+msgid "Średnia"
+msgstr "Average"
+
+msgid "Średnia GS"
+msgstr "Average GS"
+
+msgid "Średnia ocena"
+msgstr "Average score"
+
+msgid "Środek ekranu"
+msgstr "Screen centre"
+
+msgid "Światła"
+msgstr "Lights"
+
+msgid "śnieg"
+msgstr "snow"
+
+msgid "śnieg ziarnisty"
+msgstr "snow grains"
+
+msgid "średnie lotnisko"
+msgstr "medium airport"
+
+msgid "średnio {v} ft/min"
+msgstr "average {v} ft/min"
+
+msgid "Źródło danych"
+msgstr "Data source"
+
+msgid "Źródło danych: MSFS"
+msgstr "Data source: MSFS"
+
+msgid "Źródło danych: MSFS albo X-Plane (automatycznie)"
+msgstr "Data source: MSFS or X-Plane (automatic)"
+
+msgid "Źródło danych: X-Plane"
+msgstr "Data source: X-Plane"
+
+msgid "…"
+msgstr "…"
+
+msgid "… {x} …"
+msgstr "… {x} …"
