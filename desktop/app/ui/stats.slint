@@ -1,11 +1,11 @@
-// Karta Statystyki: sumy, loty w miesiącach, rozkład ocen lądowań, samoloty, lotniska, trasy, rekordy
-// i mapa wszystkich tras.
+// Karta Statystyki: sumy, wyzwania tygodnia i osiągnięcia, loty w miesiącach, rozkład ocen lądowań,
+// samoloty, lotniska, trasy, rekordy i mapa wszystkich tras.
 
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { App, BarV, RowV } from "state.slint";
-import { Segmented, TipArea } from "widgets.slint";
+import { App, BarV, RowV, BadgeV, ChallengeV } from "state.slint";
+import { Segmented, TipArea, Button } from "widgets.slint";
 import { Panel, Heading, Metric, Bar, MapView, ListRow, Colors } from "parts.slint";
 
 component Bars inherits Rectangle {
@@ -143,6 +143,183 @@ component Record inherits ListRow {
     }
 }
 
+// Ikona osiągnięcia (kolejność jak w achievements::Icon).
+component AchIcon inherits Image {
+    in property <int> kind;
+    source: kind == 0 ? Icons.plane : kind == 1 ? Icons.clock : kind == 2 ? Icons.route : kind == 3 ? Icons.plane-landing : kind == 4 ? Icons.map-pin : kind == 5 ? Icons.globe : kind == 6 ? Icons.gauge : kind == 7 ? Icons.sparkles : kind == 8 ? Icons.star : kind == 9 ? Icons.activity : kind == 10 ? Icons.wind : kind == 11 ? Icons.timer : kind == 12 ? Icons.mountain : kind == 13 ? Icons.ruler : kind == 14 ? Icons.moon : kind == 15 ? Icons.rotate-cw : kind == 16 ? Icons.crosshair : kind == 17 ? Icons.scan : Icons.trophy;
+}
+
+component BadgeTile inherits Rectangle {
+    in property <BadgeV> b;
+    property <bool> got: b.level > 0;
+    property <bool> full: b.level >= b.levels;
+    border-radius: Theme.r;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: full ? Theme.accent.with-alpha(0.55) : Theme.line;
+    TipArea {
+        tip: b.desc;
+    }
+    HorizontalLayout {
+        padding: 10px;
+        spacing: 10px;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 38px * Theme.scale;
+                height: self.width;
+                border-radius: self.width / 2;
+                background: got ? Theme.accent-soft : Theme.hover;
+                AchIcon {
+                    kind: b.icon;
+                    width: 20px * Theme.scale;
+                    height: self.width;
+                    colorize: got ? Theme.accent : Theme.text-faint;
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 5px;
+            alignment: center;
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: b.title;
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    font-weight: 600;
+                    color: got ? Theme.text : Theme.text-dim;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+                HorizontalLayout {
+                    spacing: 3px;
+                    alignment: end;
+                    for i in b.levels: VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: 7px;
+                            height: 7px;
+                            border-radius: 3.5px;
+                            background: i < b.level ? Theme.accent : Theme.hover;
+                            border-width: i < b.level ? 0 : 1px;
+                            border-color: Theme.line;
+                        }
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: 6px;
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    Bar {
+                        value: b.progress;
+                        tone: full ? Colors.vfr : Theme.accent;
+                    }
+                }
+                Text {
+                    text: b.value;
+                    font-family: Theme.mono;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                }
+            }
+            Text {
+                text: b.desc;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-faint;
+                overflow: elide;
+            }
+        }
+    }
+}
+
+component ChallengeCard inherits Rectangle {
+    in property <ChallengeV> c;
+    border-radius: Theme.r;
+    background: c.done ? Colors.vfr.with-alpha(0.10) : Theme.raised;
+    border-width: 1px;
+    border-color: c.done ? Colors.vfr.with-alpha(0.6) : Theme.line;
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 44px * Theme.scale;
+                height: self.width;
+                border-radius: self.width / 2;
+                background: c.done ? Colors.vfr.with-alpha(0.2) : Theme.accent-soft;
+                AchIcon {
+                    kind: c.done ? 18 : c.icon;
+                    width: 22px * Theme.scale;
+                    height: self.width;
+                    colorize: c.done ? Colors.vfr : Theme.accent;
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 4px;
+            alignment: center;
+            horizontal-stretch: 1;
+            Text {
+                text: c.title;
+                font-family: Theme.font;
+                font-size: Theme.fs + 1px;
+                font-weight: 600;
+                color: Theme.text;
+                overflow: elide;
+            }
+            Text {
+                text: c.desc;
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-dim;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    Bar {
+                        value: c.progress;
+                        tone: c.done ? Colors.vfr : Theme.accent;
+                    }
+                }
+                Text {
+                    text: c.status;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: c.done ? Colors.vfr : Theme.text-dim;
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 6px;
+            alignment: center;
+            if c.airport != "": Button {
+                label: @tr("Briefing");
+                icon: Icons.map-pin;
+                tip: @tr("Karta lotniska: pasy, pogoda i procedury");
+                clicked => {
+                    App.cmd("airport-open", c.airport);
+                }
+            }
+            if c.flight-id != "": Button {
+                label: @tr("Lot");
+                icon: Icons.plane;
+                clicked => {
+                    App.tab = 2;
+                    App.cmd("flight-open", c.flight-id);
+                }
+            }
+        }
+    }
+}
+
 export component Stats inherits Rectangle {
     sv := ScrollView {
         VerticalLayout {
@@ -182,6 +359,69 @@ export component Stats inherits Rectangle {
                     horizontal-stretch: 1;
                     label: @tr("Lotniska / samoloty");
                     value: App.stats.airports + " / " + App.stats.aircraft;
+                }
+            }
+            Panel {
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Heading {
+                            text: @tr("Wyzwania tygodnia");
+                            icon: Icons.trophy;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: App.ach-week-title + (App.ach-week-left != "" ? " · " + App.ach-week-left : "");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 10px;
+                        for c in App.ach-week: ChallengeCard {
+                            horizontal-stretch: 1;
+                            c: c;
+                        }
+                    }
+                }
+            }
+            Panel {
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Heading {
+                            text: @tr("Osiągnięcia");
+                            icon: Icons.medal;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: App.ach-count;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                        }
+                    }
+                    grid := Rectangle {
+                        property <length> gap: 8px;
+                        property <length> tile-h: 84px * Theme.scale;
+                        property <int> cols: max(1, floor((self.width + self.gap) / (250px * Theme.scale + self.gap)));
+                        property <length> tile-w: (self.width - (self.cols - 1) * self.gap) / self.cols;
+                        height: ceil(App.ach-badges.length / self.cols) * (self.tile-h + self.gap) - self.gap;
+                        for b[i] in App.ach-badges: BadgeTile {
+                            x: mod(i, grid.cols) * (grid.tile-w + grid.gap);
+                            y: floor(i / grid.cols) * (grid.tile-h + grid.gap);
+                            width: grid.tile-w;
+                            height: grid.tile-h;
+                            b: b;
+                        }
+                    }
                 }
             }
             HorizontalLayout {

@@ -1,6 +1,7 @@
 //! Dziennik lotów: model zgodny z telefonem, archiwum .oab, rejestrator, ocena lądowań, magazyn na dysku,
 //! synchronizacja z telefonem, eksport i statystyki.
 
+pub mod achievements;
 pub mod archive;
 pub mod export;
 pub mod landing;

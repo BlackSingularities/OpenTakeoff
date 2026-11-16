@@ -1,3 +1,9 @@
+## 3.4.0
+
+- Pogoda na mapie nawigacyjnej: radar opadów (RainViewer, odświeżany co 5 minut) i METAR-y lotnisk z widocznego obszaru – kółka w kolorze kategorii lotu (VFR, MVFR, IFR, LIFR) z chorągiewką wiatru, po kliknięciu stacji pełna depesza z rozkodowaniem w panelu bocznym; czas radaru i liczba stacji pod mapą.
+- Osiągnięcia i wyzwania tygodnia na karcie Statystyki, liczone na komputerze z dziennika (bez kont): 19 osiągnięć z poziomami – loty, godziny, dystans, lądowania, „Jak po maśle”, seria dobrych lądowań, wiatr boczny, przyziemienie na osi i w strefie, krótki pas, kręgi, kraje, nocne loty i inne. Co tydzień dwa wyzwania: lądowanie na trudnym lotnisku (z przyciskiem briefingu) i zadanie z techniki lądowania. Powiadomienie o nowym poziomie.
+- Odtwarzanie lotu w 3D w dzienniku: przełącznik 2D/3D, kamera za samolotem (przeciąganie obraca, kółko przybliża), płynny ruch między próbkami śladu i wybór prędkości ×10, ×60 albo ×300.
+
 ## 3.3.0
 
 - Analiza lądowania w dzienniku: program zapisuje ostatnie 30 s przed przyziemieniem i 6 s po nim (co 200 ms). Widok pasa z góry ze śladem samolotu, punktem przyziemienia, oznakowaniem progu i strefy przyziemienia; widok z boku z wysokością nad pasem i ścieżką 3° do punktu celowania; wykresy prędkości pionowej, wysokości, prędkości, przeciążenia, przechylenia i pochylenia; wnioski: wysokość nad progiem, wyrównanie od 50 ft, spadek prędkości, stabilizacja podejścia, przechylenie nisko nad ziemią, punkt przyziemienia i zejście z osi na dobiegu. Przebieg można zapisać do CSV.

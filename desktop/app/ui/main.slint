@@ -844,6 +844,29 @@ component Ribbon inherits Rectangle {
                 }
             }
         }
+        if App.tab == 9 && !App.nav.view3d: Group {
+            title: @tr("Pogoda");
+            BigButton {
+                slim: true;
+                icon: Icons.cloud-rain;
+                label: @tr("Radar");
+                active: App.nav.radar;
+                tip: @tr("Opady z radarów pogodowych (RainViewer, odświeżane co 5 minut)");
+                clicked => {
+                    App.cmd("nav-layer", "radar");
+                }
+            }
+            BigButton {
+                slim: true;
+                icon: Icons.wind;
+                label: "METAR";
+                active: App.nav.metar;
+                tip: @tr("Kategoria lotu i wiatr przy lotniskach; kliknij stację, aby zobaczyć depeszę");
+                clicked => {
+                    App.cmd("nav-layer", "metar");
+                }
+            }
+        }
         if App.tab == 9: Group {
             title: @tr("Plan i zrzuty");
             BigButton {

@@ -244,6 +244,10 @@ export struct NavV {
     has-data: bool,
     plan: bool,
     shots: bool,
+    radar: bool,
+    metar: bool,
+    // podpis warstw pogody (czas radaru, liczba stacji METAR)
+    wx: string,
 }
 
 export struct InstrV {
@@ -265,6 +269,30 @@ export struct RowV {
     b: string,
     level: float,
     id: string,
+}
+
+// Osiągnięcie z poziomami (karta Statystyki).
+export struct BadgeV {
+    id: string,
+    title: string,
+    desc: string,
+    icon: int,
+    level: int,
+    levels: int,
+    progress: float,
+    value: string,
+}
+
+// Wyzwanie tygodnia.
+export struct ChallengeV {
+    title: string,
+    desc: string,
+    icon: int,
+    airport: string,
+    done: bool,
+    progress: float,
+    status: string,
+    flight-id: string,
 }
 
 export struct StatsV {
@@ -592,12 +620,19 @@ export global App {
     in property <[LabelV]> map-flight-labels;
     in-out property <float> replay: 0;
     in property <bool> replay-playing;
+    in property <bool> replay-3d;
+    in-out property <int> replay-speed: 1;
     in-out property <int> chart-mode: 0;
     in property <int> selected-count;
 
     // Statystyki
     in property <StatsV> stats;
     in property <[BarV]> stats-months;
+    in property <[BadgeV]> ach-badges;
+    in property <[ChallengeV]> ach-week;
+    in property <string> ach-week-title;
+    in property <string> ach-week-left;
+    in property <string> ach-count;
     in property <[BarV]> stats-scores;
     in property <[RowV]> stats-aircraft;
     in property <[RowV]> stats-airports;

@@ -224,6 +224,21 @@ component Detail inherits ScrollView {
             Rectangle {
                 horizontal-stretch: 1;
             }
+            Segmented {
+                items: ["2D", "3D"];
+                current: App.replay-3d ? 1 : 0;
+                picked(i) => {
+                    App.cmd("replay-3d", i == 1 ? "1" : "0");
+                }
+            }
+            Segmented {
+                items: ["×10", "×60", "×300"];
+                current: App.replay-speed;
+                picked(i) => {
+                    App.replay-speed = i;
+                    App.cmd("replay-speed", i == 0 ? "10" : i == 1 ? "60" : "300");
+                }
+            }
             Text {
                 text: App.detail.cursor-info;
                 font-family: Theme.mono;
@@ -234,7 +249,7 @@ component Detail inherits ScrollView {
             }
             IconButton {
                 icon: App.replay-playing ? Icons.pause : Icons.play;
-                tip: App.replay-playing ? @tr("Zatrzymaj odtwarzanie") : @tr("Odtwórz lot na mapie (×60)");
+                tip: App.replay-playing ? @tr("Zatrzymaj odtwarzanie") : @tr("Odtwórz lot na mapie");
                 clicked => {
                     App.cmd("replay-toggle", "");
                 }

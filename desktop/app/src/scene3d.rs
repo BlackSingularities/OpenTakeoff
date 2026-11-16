@@ -514,6 +514,7 @@ impl Scene<'_> {
             Style::Dark | Style::Light => 16,
             Style::Satellite => 18,
             Style::Osm => 19,
+            Style::Radar => 7,
         }
     }
 }

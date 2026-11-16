@@ -176,6 +176,9 @@ msgstr "Error al aceptar una conexión: {e}"
 msgid "Błąd wysyłania osi do MSFS"
 msgstr "Error al enviar los ejes a MSFS"
 
+msgid "Chmury"
+msgstr "Nubes"
+
 msgid "Chmury i wilgotność"
 msgstr "Nubes y humedad"
 
@@ -196,6 +199,9 @@ msgstr "QNH {h} hPa"
 
 msgid "Ciśnienie {inhg:.2} inHg ({hpa} hPa)"
 msgstr "Presión {inhg:.2} inHg ({hpa} hPa)"
+
+msgid "Co najmniej trzy lądowania w jednym locie – {n} razy"
+msgstr "Al menos tres aterrizajes en un vuelo – {n} veces"
 
 msgid "Ctrl+klik zaznacza kilka lotów (do eksportu albo usunięcia), Shift+klik – zakres."
 msgstr "Ctrl+clic selecciona varios vuelos (para exportar o eliminar), Mayús+clic un rango."
@@ -374,6 +380,12 @@ msgstr "Diario"
 msgid "Dziennik lotów"
 msgstr "Diario de vuelos"
 
+msgid "Długa trasa"
+msgstr "Ruta larga"
+
+msgid "Długi lot"
+msgstr "Vuelo largo"
+
 msgid "Długie lądowanie: {ft} ft za progiem"
 msgstr "Aterrizaje largo: {ft} ft pasado el umbral"
 
@@ -419,6 +431,9 @@ msgstr "Cuando MSFS se ejecuta en este ordenador. El mismo vuelo grabado en el t
 msgid "Godziny"
 msgstr "Horas"
 
+msgid "Godziny w powietrzu"
+msgstr "Horas en el aire"
+
 msgid "Grafitowe"
 msgstr "Grafito"
 
@@ -452,6 +467,9 @@ msgstr "Instrucciones y todas las opciones"
 msgid "Jak dodać w OBS"
 msgstr "Cómo añadirlo en OBS"
 
+msgid "Jak po maśle"
+msgstr "Como mantequilla"
+
 msgid "Jak szybko obraca się kamera MSFS przy rozglądaniu z telefonu"
 msgstr "Lo rápido que gira la cámara de MSFS al mirar desde el teléfono"
 
@@ -479,6 +497,9 @@ msgstr "Cámara"
 msgid "Kamera domyślnie"
 msgstr "Cámara predeterminada"
 
+msgid "Karta lotniska: pasy, pogoda i procedury"
+msgstr "Ficha del aeropuerto: pistas, meteorología y procedimientos"
+
 msgid "Karta lądowania"
 msgstr "Tarjeta de aterrizaje"
 
@@ -493,6 +514,12 @@ msgstr "Tarjeta – vista previa fija"
 
 msgid "Kategoria"
 msgstr "Categoría"
+
+msgid "Kategoria lotu"
+msgstr "Categoría de vuelo"
+
+msgid "Kategoria lotu i wiatr przy lotniskach; kliknij stację, aby zobaczyć depeszę"
+msgstr "Categoría de vuelo y viento en los aeropuertos; haz clic en una estación para ver el parte"
 
 msgid "Kierunek wiatru"
 msgstr "Dirección del viento"
@@ -560,6 +587,9 @@ msgstr "Papelera"
 msgid "Kosz jest pusty"
 msgstr "La papelera está vacía"
 
+msgid "Kraje"
+msgstr "Países"
+
 msgid "Krawędź"
 msgstr "Borde"
 
@@ -571,6 +601,12 @@ msgstr "Paso 2"
 
 msgid "Krycie tła"
 msgstr "Opacidad del fondo"
+
+msgid "Krótki pas"
+msgstr "Pista corta"
+
+msgid "Kręgi"
+msgstr "Circuitos"
 
 msgid "Kurs"
 msgstr "Rumbo"
@@ -617,6 +653,9 @@ msgstr "Esquina inferior izquierda"
 msgid "Lewy górny róg"
 msgstr "Esquina superior izquierda"
 
+msgid "Leć {n} różnymi samolotami"
+msgstr "Vuela {n} aviones distintos"
+
 msgid "Linia akcentu"
 msgstr "Línea de acento"
 
@@ -637,6 +676,12 @@ msgstr "Vuelo"
 
 msgid "Lot do punktu (IN) albo od punktu (OUT) po wybranym radialu"
 msgstr "Volar hacia el punto (IN) o desde el punto (OUT) por el radial elegido"
+
+msgid "Lot dłuższy niż 2 godziny zakończony lądowaniem z oceną co najmniej 80"
+msgstr "Un vuelo de más de 2 horas que termine con un aterrizaje de al menos 80"
+
+msgid "Lot dłuższy niż {n}"
+msgstr "Un vuelo de más de {n}"
 
 msgid "Lot testowy EPWA → EPGD bez symulatora"
 msgstr "Vuelo de prueba EPWA → EPGD sin simulador"
@@ -665,6 +710,9 @@ msgstr "Aeropuerto"
 msgid "Lotnisko nie nadaje METAR-u"
 msgstr "El aeropuerto no emite METAR"
 
+msgid "Lotnisko tygodnia: {name}"
+msgstr "Aeropuerto de la semana: {name}"
+
 msgid "Lotnisko {t}"
 msgstr "Aeropuerto {t}"
 
@@ -682,6 +730,27 @@ msgstr "Aterrizajes"
 
 msgid "Lądowanie"
 msgstr "Aterrizaje"
+
+msgid "Lądowanie na pasie krótszym niż 4000 ft z oceną co najmniej 70 – {n} razy"
+msgstr "Aterrizaje en una pista de menos de 4000 ft con al menos 70 – {n} veces"
+
+msgid "Lądowanie z oceną co najmniej 90 – {n} razy"
+msgstr "Aterrizaje con al menos 90 – {n} veces"
+
+msgid "Ląduj w {n} krajach"
+msgstr "Aterriza en {n} países"
+
+msgid "METAR niedostępny"
+msgstr "METAR no disponible"
+
+msgid "METAR: pobieranie…"
+msgstr "METAR: descargando…"
+
+msgid "METAR: przybliż mapę"
+msgstr "METAR: acerca el mapa"
+
+msgid "METAR: {n} stacji"
+msgstr "METAR: {n} estaciones"
 
 msgid "MSFS albo X-Plane – ten, który działa"
 msgstr "MSFS o X-Plane – el que esté en marcha"
@@ -749,6 +818,9 @@ msgstr "Minimizar"
 msgid "Miękkie przyziemienie: {v} ft/min."
 msgstr "Toma suave: {v} ft/min."
 
+msgid "Miękko"
+msgstr "Suave"
+
 msgid "Mocne"
 msgstr "Fuertes"
 
@@ -769,6 +841,9 @@ msgstr "En la tarjeta"
 
 msgid "Na mapie"
 msgstr "En el mapa"
+
+msgid "Na osi"
+msgstr "En el eje"
 
 msgid "Na radialu"
 msgstr "En el radial"
@@ -791,6 +866,12 @@ msgstr "Sobre el umbral"
 msgid "Nagrany na tym komputerze"
 msgstr "Grabado en este ordenador"
 
+msgid "Najbliżej osi: {b} ft"
+msgstr "Lo más cerca del eje: {b} ft"
+
+msgid "Najbliżej: {b} ft za progiem"
+msgstr "Lo más cerca: {b} ft tras el umbral"
+
 msgid "Najbliższe VOR / NDB"
 msgstr "VOR / NDB más cercanos"
 
@@ -809,14 +890,29 @@ msgstr "Vuelo más lejano"
 msgid "Najdłuższy lot"
 msgstr "Vuelo más largo"
 
+msgid "Najdłuższy lot: {h}:{m:02}"
+msgstr "Vuelo más largo: {h}:{m:02}"
+
 msgid "Najdłuższy pas"
 msgstr "Pista más larga"
+
+msgid "Najlepiej w tym tygodniu: {b} ft/min"
+msgstr "Mejor esta semana: {b} ft/min"
 
 msgid "Najlepsza ocena"
 msgstr "Mejor nota"
 
+msgid "Najlepsza ocena tutaj: {s}"
+msgstr "Mejor nota aquí: {s}"
+
 msgid "Najmiększe lądowanie"
 msgstr "Aterrizaje más suave"
+
+msgid "Najsilniej z dobrą oceną: {b} kt"
+msgstr "Más fuerte con buena nota: {b} kt"
+
+msgid "Najwięcej w jednym locie: {n}"
+msgstr "Máximo en un vuelo: {n}"
 
 msgid "Najwyżej"
 msgstr "Más alto"
@@ -893,11 +989,17 @@ msgstr "Recientemente: {w}"
 msgid "Niepołączony"
 msgstr "No conectado"
 
+msgid "Nocne loty"
+msgstr "Vuelos nocturnos"
+
 msgid "Nocny kokpit"
 msgstr "Cabina nocturna"
 
 msgid "Notatki do lotu…"
 msgstr "Notas del vuelo…"
+
+msgid "Nowe osiągnięcie: {t} – poziom {l}"
+msgstr "Nuevo logro: {t} – nivel {l}"
 
 msgid "Nowy kod"
 msgstr "Nuevo código"
@@ -929,6 +1031,9 @@ msgstr "SALIDAS (SID)"
 msgid "Objętość"
 msgstr "Volumen"
 
+msgid "Obserwacja"
+msgstr "Observación"
+
 msgid "Obserwacja automatyczna (bez obserwatora)"
 msgstr "Observación automática (sin observador)"
 
@@ -946,6 +1051,12 @@ msgstr "Seguir (tiempo en el Panel)"
 
 msgid "Ocena"
 msgstr "Nota"
+
+msgid "Ocena co najmniej 70 przy wietrze bocznym {n}"
+msgstr "Nota de al menos 70 con viento cruzado de {n}"
+
+msgid "Ocena co najmniej 75 przy wietrze bocznym od 10 kt"
+msgstr "Nota de al menos 75 con viento cruzado desde 10 kt"
 
 msgid "Ocena pojawi się po wylądowaniu."
 msgstr "La nota aparecerá tras el aterrizaje."
@@ -998,8 +1109,17 @@ msgstr "Distancia y marcación entre dos puntos"
 msgid "Odstęp od krawędzi"
 msgstr "Margen desde el borde"
 
+msgid "Odtwórz lot na mapie"
+msgstr "Reproducir el vuelo en el mapa"
+
 msgid "Odtwórz lot na mapie (×60)"
 msgstr "Reproducir el vuelo en el mapa (×60)"
+
+msgid "Odwiedzone lotniska"
+msgstr "Aeropuertos visitados"
+
+msgid "Odwiedź {n} różnych lotnisk"
+msgstr "Visita {n} aeropuertos distintos"
 
 msgid "Odznacz"
 msgstr "Desmarcar"
@@ -1040,6 +1160,9 @@ msgstr "Entorno"
 msgid "Okresowo"
 msgstr "Temporalmente"
 
+msgid "Opady z radarów pogodowych (RainViewer, odświeżane co 5 minut)"
+msgstr "Precipitación del radar meteorológico (RainViewer, se actualiza cada 5 minutos)"
+
 msgid "OpenTakeoff dla OBS"
 msgstr "OpenTakeoff para OBS"
 
@@ -1051,6 +1174,9 @@ msgstr "Descripción del vuelo"
 
 msgid "Opróżnij"
 msgstr "Vaciar"
+
+msgid "Osiągnięcia"
+msgstr "Logros"
 
 msgid "Ostatnie loty"
 msgstr "Vuelos recientes"
@@ -1180,6 +1306,9 @@ msgstr "Encontrarás tu Pilot ID en SimBrief, en Account Settings."
 
 msgid "Pionowa kurtyna pod śladem do ziemi"
 msgstr "Cortina vertical bajo la traza hasta el suelo"
+
+msgid "Pięć lądowań w tygodniu z oceną co najmniej 80"
+msgstr "Cinco aterrizajes en la semana con al menos 80"
 
 msgid "Plan SimBrief"
 msgstr "Plan de SimBrief"
@@ -1436,6 +1565,9 @@ msgstr "Arrastra para cambiar el ancho del panel; doble clic restaura el predete
 msgid "Przeciążenie"
 msgstr "Carga G"
 
+msgid "Przeleć łącznie {n}"
+msgstr "Vuela {n} en total"
+
 msgid "Przelicznik jednostek"
 msgstr "Conversor de unidades"
 
@@ -1484,14 +1616,32 @@ msgstr "Restaurar de la papelera"
 msgid "Przyziemienie"
 msgstr "Toma"
 
+msgid "Przyziemienie 1000–2000 ft za progiem pasa"
+msgstr "Toma de contacto a 1000–2000 ft del umbral"
+
+msgid "Przyziemienie 1000–2000 ft za progiem – {n} razy"
+msgstr "Toma de contacto a 1000–2000 ft del umbral – {n} veces"
+
+msgid "Przyziemienie do 100 ft/min bez odbicia – {n} razy"
+msgstr "Toma de contacto de hasta 100 ft/min sin rebote – {n} veces"
+
+msgid "Przyziemienie do 3 ft od osi pasa – {n} razy"
+msgstr "Toma de contacto a menos de 3 ft del eje – {n} veces"
+
 msgid "Przyziemienie na przednie koło (pochylenie {pitch}°)."
 msgstr "Toma sobre la rueda de morro (cabeceo {pitch}°)."
+
+msgid "Przyziemienie najwyżej 5 ft od osi pasa"
+msgstr "Toma de contacto a 5 ft como máximo del eje de pista"
 
 msgid "Przyziemienie przed progiem pasa ({before} ft)."
 msgstr "Toma antes del umbral de pista ({before} ft)."
 
 msgid "Przyziemienie tuż za progiem ({ft} ft)."
 msgstr "Toma justo pasado el umbral ({ft} ft)."
+
+msgid "Przyziemienie wolniej niż 120 ft/min, bez odbicia"
+msgstr "Toma de contacto a menos de 120 ft/min, sin rebote"
 
 msgid "Prędkość"
 msgstr "Velocidad"
@@ -1525,6 +1675,18 @@ msgstr "Punto de rocío"
 
 msgid "Później"
 msgstr "Más tarde"
+
+msgid "Radar"
+msgstr "Radar"
+
+msgid "Radar niedostępny"
+msgstr "Radar no disponible"
+
+msgid "Radar {t} UTC"
+msgstr "Radar {t} UTC"
+
+msgid "Radar: pobieranie…"
+msgstr "Radar: descargando…"
 
 msgid "Radia"
 msgstr "Radios"
@@ -1586,6 +1748,9 @@ msgstr "Vuelos regulares"
 msgid "Ryzyko mgły"
 msgstr "Riesgo de niebla"
 
+msgid "Równa forma"
+msgstr "Regularidad"
+
 msgid "Róża kursowa na samolocie: kurs, tor, nastawa AP, namiar na punkt"
 msgstr "Rosa de rumbos en el avión: rumbo, derrota, ajuste del AP, marcación a un punto"
 
@@ -1621,6 +1786,9 @@ msgstr "Ocultar"
 
 msgid "Sepia"
 msgstr "Sepia"
+
+msgid "Seria"
+msgstr "Racha"
 
 msgid "Serwer telefonów nasłuchuje na porcie {port}"
 msgstr "Servidor de teléfonos escuchando en el puerto {port}"
@@ -1688,14 +1856,23 @@ msgstr "Buscando actualizaciones…"
 msgid "Sprawdź aktualizacje"
 msgstr "Buscar actualizaciones"
 
+msgid "Spędź w powietrzu {n}"
+msgstr "Pasa {n} en el aire"
+
 msgid "Stabilizacja podejścia"
 msgstr "Estabilidad de la aproximación"
+
+msgid "Stacja"
+msgstr "Estación"
 
 msgid "Stan"
 msgstr "Estado"
 
 msgid "Stan symulatora i telefonów, pogoda, ostatnie loty"
 msgstr "Estado del simulador y teléfonos, tiempo, vuelos recientes"
+
+msgid "Start między 21:00 a 5:00 – {n} razy"
+msgstr "Despegue entre las 21:00 y las 5:00 – {n} veces"
 
 msgid "Startuj w zasobniku"
 msgstr "Iniciar en la bandeja"
@@ -1784,6 +1961,9 @@ msgstr "Los teléfonos y la grabación siguen funcionando; para salir usa el men
 msgid "Temperatura"
 msgstr "Temperatura"
 
+msgid "Temperatura / punkt rosy"
+msgstr "Temperatura / punto de rocío"
+
 msgid "Temperatura {ta} °C, punkt rosy {td} °C"
 msgstr "Temperatura {ta} °C, punto de rocío {td} °C"
 
@@ -1823,6 +2003,9 @@ msgstr "Modo de simulación activado"
 msgid "Tryb symulacji: lot testowy EPWA → EPGD bez MSFS – do sprawdzenia telefonu i dziennika."
 msgstr "Modo de simulación: vuelo de prueba EPWA → EPGD sin MSFS – para probar el teléfono y el diario."
 
+msgid "Trzy lądowania w jednym locie (dotyk i start)"
+msgstr "Tres aterrizajes en un vuelo (toma y despegue)"
+
 msgid "Trójkąt wiatru"
 msgstr "Triángulo de viento"
 
@@ -1834,6 +2017,9 @@ msgstr "Aterrizaje duro: {v} ft/min."
 
 msgid "Twoje loty"
 msgstr "Tus vuelos"
+
+msgid "Tydzień {w} · {a}–{b}"
+msgstr "Semana {w} · {a}–{b}"
 
 msgid "Tylko do symulacji lotów. Nie używaj do rzeczywistej nawigacji."
 msgstr "Solo para simulación de vuelo. No usar para la navegación real."
@@ -1955,6 +2141,12 @@ msgstr "La respuesta de SimBrief no contiene plan de vuelo"
 msgid "W pobliżu"
 msgstr "Cerca"
 
+msgid "W strefie"
+msgstr "En la zona"
+
+msgid "W strefie przyziemienia"
+msgstr "En la zona de toma"
+
 msgid "W strefie przyziemienia: {ft} ft za progiem."
 msgstr "En la zona de toma: {ft} ft pasado el umbral."
 
@@ -2005,6 +2197,9 @@ msgstr "Viento en pista"
 
 msgid "Wiatr z"
 msgstr "Viento de"
+
+msgid "Wiatr z boku"
+msgstr "Viento cruzado"
 
 msgid "Wiatr z {d}° z prędkością {spd} {unit}"
 msgstr "Viento de {d}° a {spd} {unit}"
@@ -2072,6 +2267,9 @@ msgstr "Todos los vuelos en un archivo KML para Google Earth, con aterrizajes y 
 msgid "Wszystkie loty z komputera i telefonu"
 msgstr "Todos los vuelos del ordenador y del teléfono"
 
+msgid "Wszystkie poziomy zdobyte"
+msgstr "Todos los niveles conseguidos"
+
 msgid "Wszystkie telefony unieważnione"
 msgstr "Todos los teléfonos revocados"
 
@@ -2111,6 +2309,12 @@ msgstr "Apariencia de la tarjeta de aterrizaje"
 msgid "Wygląd, język, zapis lotów, Windows, dane"
 msgstr "Apariencia, idioma, grabación de vuelos, Windows, datos"
 
+msgid "Wyląduj na {icao} z oceną co najmniej 70"
+msgstr "Aterriza en {icao} con una nota de al menos 70"
+
+msgid "Wyląduj {n} razy"
+msgstr "Aterriza {n} veces"
+
 msgid "Wynik"
 msgstr "Resultado"
 
@@ -2119,6 +2323,9 @@ msgstr "Alineación"
 
 msgid "Wyrównanie od 50 ft"
 msgstr "Recogida desde 50 ft"
+
+msgid "Wysoko"
+msgstr "A gran altura"
 
 msgid "Wysokość"
 msgstr "Altitud"
@@ -2135,11 +2342,20 @@ msgstr "Altura sobre el terreno"
 msgid "Wyszukaj lotnisko"
 msgstr "Buscar un aeropuerto"
 
+msgid "Wyzwania tygodnia"
+msgstr "Retos de la semana"
+
+msgid "Wyzwanie tygodnia zaliczone: {t}"
+msgstr "Reto semanal completado: {t}"
+
 msgid "Wył."
 msgstr "No"
 
 msgid "Wyłączone"
 msgstr "Desactivada"
+
+msgid "Wznieś się na {n}"
+msgstr "Sube a {n}"
 
 msgid "Wznów"
 msgstr "Reanudar"
@@ -2219,6 +2435,9 @@ msgstr "Terminar grabación"
 msgid "Zakończ zapis teraz (następny zacznie się po wylądowaniu)"
 msgstr "Terminar la grabación ahora (la siguiente empezará tras aterrizar)"
 
+msgid "Zalicz {n} wyzwań tygodnia"
+msgstr "Completa {n} retos semanales"
+
 msgid "Zamknij"
 msgstr "Cerrar"
 
@@ -2264,6 +2483,9 @@ msgstr "Guardado: {p}"
 msgid "Zapisuj loty na komputerze"
 msgstr "Grabar vuelos en este ordenador"
 
+msgid "Zapisz w dzienniku {n} lotów"
+msgstr "Registra {n} vuelos"
+
 msgid "Zasięg +"
 msgstr "Alcance +"
 
@@ -2299,6 +2521,9 @@ msgstr "Informar"
 
 msgid "Zgłoś błąd lub sugestię"
 msgstr "Informar de un error o sugerencia"
+
+msgid "Zjawiska"
+msgstr "Fenómenos"
 
 msgid "Zmiana po ponownym uruchomieniu programu"
 msgstr "Cambia al reiniciar el programa"
@@ -2377,6 +2602,9 @@ msgstr "tormenta de polvo"
 
 msgid "całkowite zachmurzenie (8/8)"
 msgstr "cubierto (8/8)"
+
+msgid "cisza"
+msgstr "calma"
 
 msgid "cze"
 msgstr "jun"
@@ -2548,6 +2776,9 @@ msgstr "desde el avión"
 
 msgid "od {d}"
 msgstr "desde {d}"
+
+msgid "ostatni dzień"
+msgstr "último día"
 
 msgid "paź"
 msgstr "oct"
@@ -2738,11 +2969,17 @@ msgstr "calima"
 msgid "zniżanie"
 msgstr "descenso"
 
+msgid "zostało {left} dni"
+msgstr "quedan {left} días"
+
 msgid "zwolniony"
 msgstr "quitado"
 
 msgid "{a} ft za progiem"
 msgstr "{a} ft pasado el umbral"
+
+msgid "{a} z {b} poziomów"
+msgstr "{a} de {b} niveles"
 
 msgid "{device}: odebrano {n} lot(y) z telefonu"
 msgstr "{device}: recibidos {n} vuelo(s) del teléfono"
@@ -2777,17 +3014,26 @@ msgstr "{name}: sincronización – por descargar del teléfono {w}, por enviar 
 msgid "{name}: {cmd} nie powiodło się – {msg}"
 msgstr "{name}: {cmd} falló – {msg}"
 
+msgid "{n} lądowań z rzędu z oceną co najmniej 80"
+msgstr "{n} aterrizajes seguidos con al menos 80"
+
 msgid "{n} procedur z bazy symulatora"
 msgstr "{n} procedimientos de la base del simulador"
 
 msgid "{n} telefony połączone"
 msgstr "{n} teléfonos conectados"
 
+msgid "{n} z 5"
+msgstr "{n} de 5"
+
 msgid "{n} – przechylanie telefonu albo drążek"
 msgstr "{n} – inclinando el teléfono o un mando"
 
 msgid "{s} s od 50 ft do przyziemienia"
 msgstr "{s} s desde 50 ft hasta la toma"
+
+msgid "{t} UTC · {n} min temu"
+msgstr "{t} UTC · hace {n} min"
 
 msgid "Ścieżka"
 msgstr "Senda"
@@ -2830,6 +3076,9 @@ msgstr "Centro de la pantalla"
 
 msgid "Światła"
 msgstr "Luces"
+
+msgid "Świetne lądowania"
+msgstr "Aterrizajes excelentes"
 
 msgid "ścieżka 3° do punktu celowania (1000 ft)"
 msgstr "senda de 3° al punto de visada (1000 ft)"

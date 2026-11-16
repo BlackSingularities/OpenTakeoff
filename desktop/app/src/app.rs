@@ -11,7 +11,7 @@ use opentakeoff_core::aero::airports::{self, Airport};
 use opentakeoff_core::aero::weather::{flight_category, Metar, Taf};
 use opentakeoff_core::aero::{calc, metar as metar_dec};
 use opentakeoff_core::lang::tr;
-use opentakeoff_core::logbook::{export, landing, stats, FlightLog};
+use opentakeoff_core::logbook::{achievements, export, landing, stats, FlightLog};
 use opentakeoff_core::navdata::{math, AirportProcedures, LegInfo};
 use opentakeoff_core::source::unix_ms;
 use opentakeoff_core::{log, trf};
@@ -34,6 +34,10 @@ pub struct State {
     pub detail: Option<Arc<FlightLog>>,
     pub replay: f64,
     pub playing: bool,
+    /// Odtwarzanie lotu w 3D (zamiast mapy 2D), mnożnik prędkości i kamera.
+    pub replay_3d: bool,
+    pub replay_speed: f64,
+    pub replay_cam: crate::scene3d::Camera,
     pub logbook_rev: u64,
     pub airport: Option<String>,
     pub weather: HashMap<String, (Vec<Metar>, Option<Taf>, String)>,
@@ -712,20 +716,126 @@ pub fn render_flight_map() {
     if let Some(p) = replay_point(&f, st.replay) {
         ov.aircraft = Some((p.lat, p.lon, p.hdg.unwrap_or(0) as f64));
     }
+    if st.replay_3d {
+        let img = render_flight_3d(&f, &st, dark);
+        app.set_map_flight(img);
+        app.set_map_flight_labels(model(Vec::new()));
+        return;
+    }
     let r = map::render(&st.views[1], style(&st, dark), &ov, st.scale, dark);
     app.set_map_flight(r.image);
     app.set_map_flight_labels(labels(r.labels));
 }
 
+/// Odtwarzanie lotu w 3D: kamera za samolotem w interpolowanej pozycji, cały ślad i pasy lotnisk.
+fn render_flight_3d(f: &FlightLog, st: &State, dark: bool) -> slint::Image {
+    use crate::scene3d::{self, Label3};
+    let v = &st.views[1];
+    let w = ((v.w * st.scale as f64) as u32).max(16);
+    let h = ((v.h * st.scale as f64) as u32).max(16);
+    let Some((p, alt)) = replay_interp(f, st.replay) else {
+        return slint::Image::default();
+    };
+    // Teren pod samolotem: z AGL, a bez niego najniższy punkt na ziemi (albo całego śladu)
+    let ground = match p.agl_ft {
+        Some(agl) => alt - agl as f64,
+        None => f.track.iter().filter(|t| t.on_ground == Some(true)).map(|t| t.alt_ft).min().or_else(|| f.track.iter().map(|t| t.alt_ft).min()).unwrap_or(0) as f64,
+    };
+    let mut runways = Vec::new();
+    let mut points = Vec::new();
+    let db = airports::db();
+    for code in [f.from.as_deref(), f.to.as_deref()].into_iter().flatten() {
+        if let Some(a) = db.as_ref().and_then(|d| d.get(code)) {
+            points.push(Label3 { lat: a.lat, lon: a.lon, text: a.ident.clone(), kind: 0 });
+            for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed) {
+                runways.push((r.le_lat, r.le_lon, r.he_lat, r.he_lon, r.width_ft.max(60) as f64));
+            }
+        }
+    }
+    let track: Vec<(f64, f64, i32)> = f.track.iter().map(|t| (t.lat, t.lon, t.alt_ft)).collect();
+    let u = units(&st.s);
+    let el = (p.t - f.track[0].t).max(0) / 1000;
+    let hud = vec![
+        format!("{} · ×{}", f.aircraft.clone().filter(|a| !a.is_empty()).unwrap_or_else(|| "OpenTakeoff".into()), st.replay_speed as i64),
+        format!("{}:{:02}:{:02} · ALT {} · GS {}", el / 3600, el % 3600 / 60, el % 60, u.alt_full(alt), u.spd(p.gs_kt as f64)),
+        format!("HDG {:03}° · V/S {:+} ft/min", p.hdg.unwrap_or(0).rem_euclid(360), p.vs_fpm.unwrap_or(0)),
+    ];
+    let sc = scene3d::Scene {
+        style: style(st, dark),
+        dark,
+        w,
+        h,
+        scale: st.scale,
+        lat: p.lat,
+        lon: p.lon,
+        alt_ft: alt,
+        hdg: p.hdg.unwrap_or(0) as f64,
+        pitch: p.pitch_deg.unwrap_or(0.0) as f64,
+        bank: p.bank_deg.unwrap_or(0.0) as f64,
+        ground_ft: ground,
+        mag_var: 0.0,
+        show_aircraft: true,
+        track: &track,
+        runways: &runways,
+        points: &points,
+        route: &[],
+        hud,
+        compass: false,
+        curtain: true,
+    };
+    scene3d::render(&sc, &st.replay_cam)
+}
+
 fn replay_point(f: &FlightLog, pos: f64) -> Option<opentakeoff_core::logbook::TrackPoint> {
+    replay_interp(f, pos).map(|(p, _)| p)
+}
+
+/// Punkt śladu w chwili `pos` (0–1) interpolowany między próbkami – płynny ruch przy odtwarzaniu.
+/// Zwraca też wysokość bez zaokrąglenia do pełnych stóp.
+fn replay_interp(f: &FlightLog, pos: f64) -> Option<(opentakeoff_core::logbook::TrackPoint, f64)> {
     let t = &f.track;
     if t.len() < 2 {
         return None;
     }
     let (t0, t1) = (t[0].t, t[t.len() - 1].t);
     let target = t0 + ((t1 - t0) as f64 * pos.clamp(0.0, 1.0)) as i64;
-    let i = t.partition_point(|p| p.t < target).min(t.len() - 1);
-    Some(t[i].clone())
+    let i = t.partition_point(|p| p.t < target);
+    if i == 0 {
+        return Some((t[0].clone(), t[0].alt_ft as f64));
+    }
+    if i >= t.len() {
+        let l = t[t.len() - 1].clone();
+        let a = l.alt_ft as f64;
+        return Some((l, a));
+    }
+    let (a, b) = (&t[i - 1], &t[i]);
+    let k = ((target - a.t) as f64 / (b.t - a.t).max(1) as f64).clamp(0.0, 1.0);
+    let lerp = |x: f64, y: f64| x + (y - x) * k;
+    let lerp_o = |x: Option<f64>, y: Option<f64>| match (x, y) {
+        (Some(x), Some(y)) => Some(lerp(x, y)),
+        (x, y) => y.or(x),
+    };
+    let mut p = b.clone();
+    p.t = target;
+    p.lat = lerp(a.lat, b.lat);
+    p.lon = lerp(a.lon, b.lon);
+    let alt = lerp(a.alt_ft as f64, b.alt_ft as f64);
+    p.alt_ft = alt.round() as i32;
+    p.gs_kt = lerp(a.gs_kt as f64, b.gs_kt as f64).round() as i32;
+    p.ias_kt = lerp_o(a.ias_kt.map(f64::from), b.ias_kt.map(f64::from)).map(|v| v.round() as i32);
+    p.vs_fpm = lerp_o(a.vs_fpm.map(f64::from), b.vs_fpm.map(f64::from)).map(|v| v.round() as i32);
+    p.agl_ft = lerp_o(a.agl_ft.map(f64::from), b.agl_ft.map(f64::from)).map(|v| v.round() as i32);
+    p.bank_deg = lerp_o(a.bank_deg.map(f64::from), b.bank_deg.map(f64::from)).map(|v| v as f32);
+    p.pitch_deg = lerp_o(a.pitch_deg.map(f64::from), b.pitch_deg.map(f64::from)).map(|v| v as f32);
+    // kurs po krótszym łuku (359° → 1°)
+    p.hdg = match (a.hdg, b.hdg) {
+        (Some(x), Some(y)) => {
+            let d = ((y - x) as f64 + 540.0).rem_euclid(360.0) - 180.0;
+            Some(((x as f64 + d * k).round() as i32).rem_euclid(360))
+        }
+        (x, y) => y.or(x),
+    };
+    Some((p, alt))
 }
 
 pub fn update_cursor() {
@@ -792,6 +902,58 @@ pub fn refresh_stats() {
         softest_id: ss(softest_id),
         best_id: ss(best_id),
     });
+    // Osiągnięcia i wyzwania tygodnia
+    let ach = achievements::compute(&flights, unix_ms());
+    let icon = |i: achievements::Icon| i as i32;
+    app.set_ach_badges(model(
+        ach.badges
+            .iter()
+            .map(|b| BadgeV { id: ss(b.id), title: ss(&b.title), desc: ss(&b.desc), icon: icon(b.icon), level: b.level as i32, levels: b.levels as i32, progress: b.progress, value: ss(&b.value) })
+            .collect(),
+    ));
+    app.set_ach_week(model(
+        ach.week
+            .iter()
+            .map(|c| ChallengeV {
+                title: ss(&c.title),
+                desc: ss(&c.desc),
+                icon: icon(c.icon),
+                airport: ss(c.airport.clone().unwrap_or_default()),
+                done: c.done,
+                progress: c.progress,
+                status: ss(&c.status),
+                flight_id: ss(c.flight_id.clone().unwrap_or_default()),
+            })
+            .collect(),
+    ));
+    app.set_ach_week_title(ss(&ach.week_title));
+    app.set_ach_week_left(ss(&ach.week_left));
+    app.set_ach_count(ss(trf!("{a} z {b} poziomów", a = ach.unlocked, b = ach.total_levels)));
+    // Powiadomienie o nowym poziomie albo zaliczonym wyzwaniu (pierwsze liczenie – bez powiadomień)
+    let keys = ach.keys();
+    if !flights.is_empty() || st.s.ach_init {
+        let fresh: Vec<String> = if st.s.ach_init { keys.iter().filter(|k| !st.s.ach_seen.contains(k)).cloned().collect() } else { Vec::new() };
+        if !st.s.ach_init || !fresh.is_empty() {
+            st.s.ach_init = true;
+            st.s.ach_seen = keys.clone();
+            st.s.save();
+        }
+        if let Some(k) = fresh.last() {
+            let text = match k.split_once(':') {
+                Some((id, lvl)) => {
+                    let title = ach.badges.iter().find(|b| b.id == id).map(|b| b.title.clone()).unwrap_or_default();
+                    trf!("Nowe osiągnięcie: {t} – poziom {l}", t = title, l = lvl)
+                }
+                None => {
+                    let title = ach.week.iter().find(|c| &c.key == k).map(|c| c.title.clone()).unwrap_or_default();
+                    trf!("Wyzwanie tygodnia zaliczone: {t}", t = title)
+                }
+            };
+            let more = fresh.len().saturating_sub(1);
+            let text = if more > 0 { format!("{text} (+{more})") } else { text };
+            later(move || toast(text));
+        }
+    }
     // Ostatnie 12 miesięcy (także puste)
     let metric = app.get_stats_metric();
     let now = Local::now();
@@ -1478,6 +1640,20 @@ pub fn rerender_maps() {
 
 /// Zdarzenia mapy z interfejsu.
 pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
+    // Odtwarzanie 3D w dzienniku: przeciąganie obraca kamerę, kółko zmienia odległość
+    if id == 1 && matches!(kind, "pan" | "zoom" | "fit") && state().borrow().replay_3d {
+        {
+            let st = state();
+            let mut s = st.borrow_mut();
+            match kind {
+                "pan" => s.replay_cam.drag(dx as f64, dy as f64),
+                "zoom" => s.replay_cam.zoom(dy as f64),
+                _ => s.replay_cam = crate::scene3d::Camera::default(),
+            }
+        }
+        render_flight_map();
+        return;
+    }
     if id == 4 {
         crate::navmap::event(kind, x, y, dx, dy);
         return;

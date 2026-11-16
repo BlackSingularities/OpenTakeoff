@@ -22,6 +22,28 @@ pub enum Style {
     Light,
     Osm,
     Satellite,
+    /// Opady z radaru RainViewer (przezroczyste kafelki na podkład, bez zapisu na dysk).
+    Radar,
+}
+
+/// Bieżąca klatka radaru: (adres serwera, ścieżka klatki).
+static RADAR: Mutex<Option<(String, String)>> = Mutex::new(None);
+
+/// Ustawia klatkę radaru; przy zmianie usuwa stare kafelki radaru z pamięci.
+pub fn set_radar_frame(host: &str, path: &str) {
+    let mut r = RADAR.lock();
+    if r.as_ref().is_some_and(|(h, p)| h == host && p == path) {
+        return;
+    }
+    *r = Some((host.to_string(), path.to_string()));
+    drop(r);
+    let t = tiles();
+    let mut m = t.mem.lock();
+    m.0.retain(|k, _| k.0 != Style::Radar);
+    m.1.retain(|k| k.0 != Style::Radar);
+    drop(m);
+    t.failed.lock().retain(|k| k.0 != Style::Radar);
+    TILES_SERIAL.fetch_add(1, Ordering::SeqCst);
 }
 
 impl Style {
@@ -31,6 +53,7 @@ impl Style {
             Style::Light => "esri-light",
             Style::Osm => "osm",
             Style::Satellite => "esri-sat",
+            Style::Radar => "radar",
         }
     }
     fn url(self, z: u32, x: u32, y: u32) -> String {
@@ -40,6 +63,10 @@ impl Style {
             Style::Light => format!("{ESRI}/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"),
             Style::Satellite => format!("{ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}"),
             Style::Osm => format!("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
+            Style::Radar => match RADAR.lock().as_ref() {
+                Some((host, path)) => format!("{host}{path}/256/{z}/{x}/{y}/2/1_1.png"),
+                None => String::new(),
+            },
         }
     }
     /// Najwyższy poziom kafelków danego podkładu (wyżej – powiększony kafelek).
@@ -48,11 +75,14 @@ impl Style {
             Style::Dark | Style::Light => 16,
             Style::Satellite => 18,
             Style::Osm => 19,
+            // darmowy dostęp RainViewer kończy się na poziomie 7 – wyżej kafelek jest powiększany
+            Style::Radar => 7,
         }
     }
     pub fn attribution(self) -> &'static str {
         match self {
             Style::Osm => "© OpenStreetMap",
+            Style::Radar => "RainViewer",
             Style::Satellite => "© Esri, Maxar, Earthstar Geographics",
             _ => "© Esri, HERE, Garmin, © OpenStreetMap",
         }
@@ -98,17 +128,24 @@ fn tiles() -> &'static Tiles {
                 while let Ok(k) = rx.recv() {
                     let t = tiles();
                     let path = tile_path(&k);
-                    let bytes = std::fs::read(&path).ok().or_else(|| {
-                        let resp = agent.get(&k.0.url(k.1, k.2, k.3)).call().ok()?;
+                    let disk = k.0 != Style::Radar;
+                    let bytes = std::fs::read(&path).ok().filter(|_| disk).or_else(|| {
+                        let url = k.0.url(k.1, k.2, k.3);
+                        if url.is_empty() {
+                            return None;
+                        }
+                        let resp = agent.get(&url).call().ok()?;
                         if !resp.content_type().starts_with("image/") {
                             return None;
                         }
                         let mut b = Vec::new();
                         std::io::Read::read_to_end(&mut resp.into_reader(), &mut b).ok()?;
-                        if let Some(d) = path.parent() {
-                            let _ = std::fs::create_dir_all(d);
+                        if disk {
+                            if let Some(d) = path.parent() {
+                                let _ = std::fs::create_dir_all(d);
+                            }
+                            let _ = std::fs::write(&path, &b);
                         }
-                        let _ = std::fs::write(&path, &b);
                         Some(b)
                     });
                     match bytes.and_then(|b| decode(&b)) {
@@ -311,6 +348,8 @@ pub struct Overlay {
     pub aircraft: Option<(f64, f64, f64)>,
     pub cursor: Option<(f64, f64)>,
     pub route: Vec<(f64, f64)>,
+    /// Krycie warstwy radaru opadów (0 – bez radaru).
+    pub radar: f32,
 }
 
 /// Kolor wysokości: nisko zielony → żółty → pomarańczowy → czerwony → fiolet (wysoko).
@@ -350,47 +389,9 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
     let mut pm = Pixmap::new(pw, ph).unwrap();
     pm.fill(if dark { Color::from_rgba8(14, 17, 22, 255) } else { Color::from_rgba8(232, 235, 239, 255) });
     let s = scale as f64;
-    // Kafelki: poziom dopasowany do gęstości ekranu
-    let tz = ((v.zoom + s.log2()).round().clamp(0.0, MAX_ZOOM) as u32).min(style.max_zoom());
-    let n = 1u32 << tz;
-    let k = world(v.zoom) * s / world(tz as f64);
-    let (cx, cy) = project(v.lat, v.lon, tz as f64);
-    let (left, top) = (cx - pw as f64 / 2.0 / k, cy - ph as f64 / 2.0 / k);
-    let tx0 = (left / TILE).floor() as i64;
-    let ty0 = (top / TILE).floor().max(0.0) as i64;
-    let tx1 = ((left + pw as f64 / k) / TILE).floor() as i64;
-    let ty1 = (((top + ph as f64 / k) / TILE).floor() as i64).min(n as i64 - 1);
-    let paint = PixmapPaint { quality: tiny_skia::FilterQuality::Bilinear, ..Default::default() };
-    for ty in ty0..=ty1 {
-        for tx in tx0..=tx1 {
-            let wx = tx.rem_euclid(n as i64) as u32;
-            let sx = ((tx as f64 * TILE - left) * k) as f32;
-            let sy = ((ty as f64 * TILE - top) * k) as f32;
-            match tile((style, tz, wx, ty as u32)) {
-                Some(t) => pm.draw_pixmap(0, 0, t.as_ref().as_ref(), &paint, Transform::from_row(k as f32, 0.0, 0.0, k as f32, sx, sy), None),
-                None => {
-                    // Zastępczo powiększony kafelek z niższego poziomu (płynne ładowanie)
-                    for up in 1..=4u32 {
-                        if tz < up {
-                            break;
-                        }
-                        let (pz, px, py) = (tz - up, wx >> up, ty as u32 >> up);
-                        if let Some(t) = cached((style, pz, px, py)) {
-                            let f = (1u32 << up) as f32;
-                            let ox = (wx - (px << up)) as f32 * TILE as f32 / f;
-                            let oy = (ty as u32 - (py << up)) as f32 * TILE as f32 / f;
-                            let kk = k as f32 * f;
-                            let mut clip = tiny_skia::Mask::new(pw, ph).unwrap();
-                            if let Some(r) = tiny_skia::Rect::from_xywh(sx, sy, (TILE * k) as f32 + 1.0, (TILE * k) as f32 + 1.0) {
-                                clip.fill_path(&PathBuilder::from_rect(r), FillRule::Winding, false, Transform::identity());
-                            }
-                            pm.draw_pixmap(0, 0, t.as_ref().as_ref(), &paint, Transform::from_row(kk, 0.0, 0.0, kk, sx - ox * kk, sy - oy * kk), Some(&clip));
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+    draw_tiles(&mut pm, v, style, scale, 1.0);
+    if ov.radar > 0.0 {
+        draw_tiles(&mut pm, v, Style::Radar, scale, ov.radar);
     }
     let to = |lat: f64, lon: f64| -> (f32, f32) {
         let (x, y) = v.to_screen(lat, lon);
@@ -542,6 +543,54 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
         }
     }
     (pm, labels)
+}
+
+/// Kafelki stylu `style` na obrazie (podkład albo nakładka z przezroczystością `opacity`).
+pub fn draw_tiles(pm: &mut Pixmap, v: &View, style: Style, scale: f32, opacity: f32) {
+    let (pw, ph) = (pm.width(), pm.height());
+    let s = scale as f64;
+    // Kafelki: poziom dopasowany do gęstości ekranu
+    let tz = ((v.zoom + s.log2()).round().clamp(0.0, MAX_ZOOM) as u32).min(style.max_zoom());
+    let n = 1u32 << tz;
+    let k = world(v.zoom) * s / world(tz as f64);
+    let (cx, cy) = project(v.lat, v.lon, tz as f64);
+    let (left, top) = (cx - pw as f64 / 2.0 / k, cy - ph as f64 / 2.0 / k);
+    let tx0 = (left / TILE).floor() as i64;
+    let ty0 = (top / TILE).floor().max(0.0) as i64;
+    let tx1 = ((left + pw as f64 / k) / TILE).floor() as i64;
+    let ty1 = (((top + ph as f64 / k) / TILE).floor() as i64).min(n as i64 - 1);
+    let paint = PixmapPaint { quality: tiny_skia::FilterQuality::Bilinear, opacity, ..Default::default() };
+    for ty in ty0..=ty1 {
+        for tx in tx0..=tx1 {
+            let wx = tx.rem_euclid(n as i64) as u32;
+            let sx = ((tx as f64 * TILE - left) * k) as f32;
+            let sy = ((ty as f64 * TILE - top) * k) as f32;
+            match tile((style, tz, wx, ty as u32)) {
+                Some(t) => pm.draw_pixmap(0, 0, t.as_ref().as_ref(), &paint, Transform::from_row(k as f32, 0.0, 0.0, k as f32, sx, sy), None),
+                None => {
+                    // Zastępczo powiększony kafelek z niższego poziomu (płynne ładowanie)
+                    for up in 1..=4u32 {
+                        if tz < up {
+                            break;
+                        }
+                        let (pz, px, py) = (tz - up, wx >> up, ty as u32 >> up);
+                        if let Some(t) = cached((style, pz, px, py)) {
+                            let f = (1u32 << up) as f32;
+                            let ox = (wx - (px << up)) as f32 * TILE as f32 / f;
+                            let oy = (ty as u32 - (py << up)) as f32 * TILE as f32 / f;
+                            let kk = k as f32 * f;
+                            let mut clip = tiny_skia::Mask::new(pw, ph).unwrap();
+                            if let Some(r) = tiny_skia::Rect::from_xywh(sx, sy, (TILE * k) as f32 + 1.0, (TILE * k) as f32 + 1.0) {
+                                clip.fill_path(&PathBuilder::from_rect(r), FillRule::Winding, false, Transform::identity());
+                            }
+                            pm.draw_pixmap(0, 0, t.as_ref().as_ref(), &paint, Transform::from_row(kk, 0.0, 0.0, kk, sx - ox * kk, sy - oy * kk), Some(&clip));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Granice zbioru punktów (lat0, lon0, lat1, lon1) albo None.

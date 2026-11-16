@@ -75,6 +75,10 @@ pub struct Settings {
     /// Aktualizacje: sprawdzanie co kilka godzin i wersja, o której użytkownik nie chce przypominać.
     pub update_auto: bool,
     pub update_skip: String,
+    /// Zdobyte poziomy osiągnięć i zaliczone wyzwania, o których już powiadomiono.
+    pub ach_seen: Vec<String>,
+    /// Pierwsze policzenie osiągnięć już było (bez powiadomień o tym, co zdobyto wcześniej).
+    pub ach_init: bool,
 }
 
 /// Położenie okna na ekranie: 0 środek, 1 u góry na środku, 2 u dołu na środku, 3 lewy górny róg,
@@ -264,6 +268,8 @@ impl Default for Settings {
             obs_lan: false,
             update_auto: true,
             update_skip: String::new(),
+            ach_seen: Vec::new(),
+            ach_init: false,
         }
     }
 }
@@ -281,6 +287,8 @@ pub const NAV_TRACK: u32 = 128;
 pub const NAV_ROUTE: u32 = 256;
 pub const NAV_CURTAIN: u32 = 512;
 pub const NAV_RWY: u32 = 1024;
+pub const NAV_RADAR: u32 = 2048;
+pub const NAV_METAR: u32 = 4096;
 pub const NAV_DEFAULT: u32 = NAV_APT | NAV_VOR | NAV_NDB | NAV_VOR_ROSE | NAV_ROSE | NAV_VECTOR | NAV_TRACK | NAV_ROUTE | NAV_CURTAIN | NAV_RWY;
 
 pub const UI_VERSION: i32 = 2;

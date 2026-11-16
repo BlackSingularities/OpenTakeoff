@@ -21,6 +21,7 @@ mod settings;
 mod shots;
 mod simbrief;
 mod web;
+mod wxmap;
 mod win;
 
 use std::sync::atomic::Ordering;
@@ -410,6 +411,15 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
             };
             app.set_replay_playing(playing);
         }
+        "replay-3d" => {
+            state().borrow_mut().replay_3d = arg == "1";
+            app.set_replay_3d(arg == "1");
+            app::render_flight_map();
+        }
+        "replay-speed" => {
+            let v = arg.parse::<f64>().unwrap_or(60.0).clamp(1.0, 3600.0);
+            state().borrow_mut().replay_speed = v;
+        }
         "replay-seek" => {
             state().borrow_mut().replay = arg.parse::<f64>().unwrap_or(0.0).clamp(0.0, 1.0);
             app::update_cursor();
@@ -692,6 +702,9 @@ fn main() {
             detail: None,
             replay: 0.0,
             playing: false,
+            replay_3d: false,
+            replay_speed: 60.0,
+            replay_cam: scene3d::Camera::default(),
             logbook_rev: 0,
             airport: None,
             weather: Default::default(),
@@ -782,7 +795,7 @@ fn main() {
                 let mut s = st.borrow_mut();
                 if s.playing {
                     let len = s.detail.as_ref().map(|f| (f.end - f.start).max(1) as f64 / 1000.0).unwrap_or(1.0);
-                    s.replay = (s.replay + dt * 60.0 / len).min(1.0);
+                    s.replay = (s.replay + dt * s.replay_speed / len).min(1.0);
                     if s.replay >= 1.0 {
                         s.playing = false;
                     }
@@ -991,6 +1004,13 @@ fn snapshots(ui: &AppWindow, dir: std::path::PathBuf) {
         }
         if tab == 4 {
             cmd(&ui, "airport-open", "EPGD");
+        }
+        // OPENTAKEOFF_SNAPSHOT_CMDS="replay-3d:1;replay-seek:0.6" – polecenia po przejściu na kartę
+        if let Ok(list) = std::env::var("OPENTAKEOFF_SNAPSHOT_CMDS") {
+            for c in list.split(';').filter(|c| !c.trim().is_empty()) {
+                let (id, arg) = c.split_once(':').unwrap_or((c, ""));
+                cmd(&ui, id.trim(), arg.trim());
+            }
         }
         step.set(i + 1);
     });

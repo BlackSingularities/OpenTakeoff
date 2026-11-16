@@ -33,6 +33,8 @@ pub struct Metar {
     pub clouds: Vec<Cloud>,
     pub flight_category: Option<String>,
     pub name: Option<String>,
+    pub lat: Option<f64>,
+    pub lon: Option<f64>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -90,7 +92,23 @@ pub fn parse_metar(o: &Value) -> Metar {
             .unwrap_or_default(),
         flight_category: text(o, "fltCat").or_else(|| text(o, "fltcat")),
         name: text(o, "name"),
+        lat: num(o, "lat"),
+        lon: num(o, "lon"),
     }
+}
+
+/// Bieżące METAR-y stacji w prostokącie (lat0, lon0, lat1, lon1) – do warstwy pogody na mapie.
+/// Dla każdej stacji tylko najnowsza depesza.
+pub fn metars_in(lat0: f64, lon0: f64, lat1: f64, lon1: f64) -> Result<Vec<Metar>, String> {
+    let body = get(&format!("{BASE}/metar?bbox={:.2},{:.2},{:.2},{:.2}&format=json", lat0.min(lat1), lon0.min(lon1), lat0.max(lat1), lon0.max(lon1)))?;
+    if body.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    let v: Value = serde_json::from_str(&body).map_err(|e| e.to_string())?;
+    let mut out: Vec<Metar> = v.as_array().map(|a| a.iter().map(parse_metar).filter(|m| m.lat.is_some() && m.lon.is_some()).collect()).unwrap_or_default();
+    out.sort_by(|a, b| a.station.cmp(&b.station).then(b.obs_time.cmp(&a.obs_time)));
+    out.dedup_by(|a, b| a.station == b.station);
+    Ok(out)
 }
 
 #[derive(Default)]

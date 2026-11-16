@@ -176,6 +176,9 @@ msgstr "Error accepting a connection: {e}"
 msgid "Błąd wysyłania osi do MSFS"
 msgstr "Error sending axes to MSFS"
 
+msgid "Chmury"
+msgstr "Clouds"
+
 msgid "Chmury i wilgotność"
 msgstr "Clouds and humidity"
 
@@ -196,6 +199,9 @@ msgstr "QNH {h} hPa"
 
 msgid "Ciśnienie {inhg:.2} inHg ({hpa} hPa)"
 msgstr "Pressure {inhg:.2} inHg ({hpa} hPa)"
+
+msgid "Co najmniej trzy lądowania w jednym locie – {n} razy"
+msgstr "At least three landings in one flight – {n} times"
 
 msgid "Ctrl+klik zaznacza kilka lotów (do eksportu albo usunięcia), Shift+klik – zakres."
 msgstr "Ctrl+click selects several flights (to export or delete), Shift+click selects a range."
@@ -374,6 +380,12 @@ msgstr "Logbook"
 msgid "Dziennik lotów"
 msgstr "Flight logbook"
 
+msgid "Długa trasa"
+msgstr "Long haul"
+
+msgid "Długi lot"
+msgstr "Long flight"
+
 msgid "Długie lądowanie: {ft} ft za progiem"
 msgstr "Long landing: {ft} ft past the threshold"
 
@@ -419,6 +431,9 @@ msgstr "When MSFS runs on this computer. The same flight recorded on the phone i
 msgid "Godziny"
 msgstr "Hours"
 
+msgid "Godziny w powietrzu"
+msgstr "Hours in the air"
+
 msgid "Grafitowe"
 msgstr "Graphite"
 
@@ -452,6 +467,9 @@ msgstr "Instructions and all options"
 msgid "Jak dodać w OBS"
 msgstr "How to add it in OBS"
 
+msgid "Jak po maśle"
+msgstr "Butter"
+
 msgid "Jak szybko obraca się kamera MSFS przy rozglądaniu z telefonu"
 msgstr "How fast the MSFS camera turns when looking around from the phone"
 
@@ -479,6 +497,9 @@ msgstr "Camera"
 msgid "Kamera domyślnie"
 msgstr "Default camera"
 
+msgid "Karta lotniska: pasy, pogoda i procedury"
+msgstr "Airport page: runways, weather and procedures"
+
 msgid "Karta lądowania"
 msgstr "Landing card"
 
@@ -493,6 +514,12 @@ msgstr "Card – permanent preview"
 
 msgid "Kategoria"
 msgstr "Category"
+
+msgid "Kategoria lotu"
+msgstr "Flight category"
+
+msgid "Kategoria lotu i wiatr przy lotniskach; kliknij stację, aby zobaczyć depeszę"
+msgstr "Flight category and wind at airports; click a station to see its report"
 
 msgid "Kierunek wiatru"
 msgstr "Wind direction"
@@ -560,6 +587,9 @@ msgstr "Trash"
 msgid "Kosz jest pusty"
 msgstr "The trash is empty"
 
+msgid "Kraje"
+msgstr "Countries"
+
 msgid "Krawędź"
 msgstr "Edge"
 
@@ -571,6 +601,12 @@ msgstr "Step 2"
 
 msgid "Krycie tła"
 msgstr "Background opacity"
+
+msgid "Krótki pas"
+msgstr "Short runway"
+
+msgid "Kręgi"
+msgstr "Circuits"
 
 msgid "Kurs"
 msgstr "Heading"
@@ -617,6 +653,9 @@ msgstr "Bottom left corner"
 msgid "Lewy górny róg"
 msgstr "Top left corner"
 
+msgid "Leć {n} różnymi samolotami"
+msgstr "Fly {n} different aircraft"
+
 msgid "Linia akcentu"
 msgstr "Accent line"
 
@@ -637,6 +676,12 @@ msgstr "Flight"
 
 msgid "Lot do punktu (IN) albo od punktu (OUT) po wybranym radialu"
 msgstr "Fly to the point (IN) or from the point (OUT) on the selected radial"
+
+msgid "Lot dłuższy niż 2 godziny zakończony lądowaniem z oceną co najmniej 80"
+msgstr "A flight longer than 2 hours ending with a landing scored at least 80"
+
+msgid "Lot dłuższy niż {n}"
+msgstr "A flight longer than {n}"
 
 msgid "Lot testowy EPWA → EPGD bez symulatora"
 msgstr "Test flight EPWA → EPGD without a simulator"
@@ -665,6 +710,9 @@ msgstr "Airport"
 msgid "Lotnisko nie nadaje METAR-u"
 msgstr "The airport does not issue METAR"
 
+msgid "Lotnisko tygodnia: {name}"
+msgstr "Airport of the week: {name}"
+
 msgid "Lotnisko {t}"
 msgstr "Airport {t}"
 
@@ -682,6 +730,27 @@ msgstr "Landings"
 
 msgid "Lądowanie"
 msgstr "Landing"
+
+msgid "Lądowanie na pasie krótszym niż 4000 ft z oceną co najmniej 70 – {n} razy"
+msgstr "Landing on a runway shorter than 4000 ft scored at least 70 – {n} times"
+
+msgid "Lądowanie z oceną co najmniej 90 – {n} razy"
+msgstr "Landing scored at least 90 – {n} times"
+
+msgid "Ląduj w {n} krajach"
+msgstr "Land in {n} countries"
+
+msgid "METAR niedostępny"
+msgstr "METAR unavailable"
+
+msgid "METAR: pobieranie…"
+msgstr "METAR: downloading…"
+
+msgid "METAR: przybliż mapę"
+msgstr "METAR: zoom in"
+
+msgid "METAR: {n} stacji"
+msgstr "METAR: {n} stations"
 
 msgid "MSFS albo X-Plane – ten, który działa"
 msgstr "MSFS or X-Plane – whichever is running"
@@ -749,6 +818,9 @@ msgstr "Minimize"
 msgid "Miękkie przyziemienie: {v} ft/min."
 msgstr "Soft touchdown: {v} ft/min."
 
+msgid "Miękko"
+msgstr "Soft touch"
+
 msgid "Mocne"
 msgstr "Strong"
 
@@ -769,6 +841,9 @@ msgstr "On the card"
 
 msgid "Na mapie"
 msgstr "On the map"
+
+msgid "Na osi"
+msgstr "On the centreline"
 
 msgid "Na radialu"
 msgstr "On the radial"
@@ -791,6 +866,12 @@ msgstr "Over the threshold"
 msgid "Nagrany na tym komputerze"
 msgstr "Recorded on this computer"
 
+msgid "Najbliżej osi: {b} ft"
+msgstr "Closest to centreline: {b} ft"
+
+msgid "Najbliżej: {b} ft za progiem"
+msgstr "Closest: {b} ft past the threshold"
+
 msgid "Najbliższe VOR / NDB"
 msgstr "Nearest VOR / NDB"
 
@@ -809,14 +890,29 @@ msgstr "Longest distance"
 msgid "Najdłuższy lot"
 msgstr "Longest flight"
 
+msgid "Najdłuższy lot: {h}:{m:02}"
+msgstr "Longest flight: {h}:{m:02}"
+
 msgid "Najdłuższy pas"
 msgstr "Longest runway"
+
+msgid "Najlepiej w tym tygodniu: {b} ft/min"
+msgstr "Best this week: {b} ft/min"
 
 msgid "Najlepsza ocena"
 msgstr "Best score"
 
+msgid "Najlepsza ocena tutaj: {s}"
+msgstr "Best score here: {s}"
+
 msgid "Najmiększe lądowanie"
 msgstr "Softest landing"
+
+msgid "Najsilniej z dobrą oceną: {b} kt"
+msgstr "Strongest with a good score: {b} kt"
+
+msgid "Najwięcej w jednym locie: {n}"
+msgstr "Most in one flight: {n}"
 
 msgid "Najwyżej"
 msgstr "Highest"
@@ -893,11 +989,17 @@ msgstr "Recently: {w}"
 msgid "Niepołączony"
 msgstr "Not connected"
 
+msgid "Nocne loty"
+msgstr "Night flights"
+
 msgid "Nocny kokpit"
 msgstr "Night cockpit"
 
 msgid "Notatki do lotu…"
 msgstr "Flight notes…"
+
+msgid "Nowe osiągnięcie: {t} – poziom {l}"
+msgstr "New achievement: {t} – level {l}"
 
 msgid "Nowy kod"
 msgstr "New code"
@@ -929,6 +1031,9 @@ msgstr "DEPARTURES (SID)"
 msgid "Objętość"
 msgstr "Volume"
 
+msgid "Obserwacja"
+msgstr "Observed"
+
 msgid "Obserwacja automatyczna (bez obserwatora)"
 msgstr "Automated observation (no observer)"
 
@@ -946,6 +1051,12 @@ msgstr "Watch (weather on the Dashboard)"
 
 msgid "Ocena"
 msgstr "Score"
+
+msgid "Ocena co najmniej 70 przy wietrze bocznym {n}"
+msgstr "Score at least 70 with a {n} crosswind"
+
+msgid "Ocena co najmniej 75 przy wietrze bocznym od 10 kt"
+msgstr "Score at least 75 with a crosswind of 10 kt or more"
 
 msgid "Ocena pojawi się po wylądowaniu."
 msgstr "The score will appear after landing."
@@ -998,8 +1109,17 @@ msgstr "Distance and bearing between two points"
 msgid "Odstęp od krawędzi"
 msgstr "Margin from edge"
 
+msgid "Odtwórz lot na mapie"
+msgstr "Replay the flight on the map"
+
 msgid "Odtwórz lot na mapie (×60)"
 msgstr "Replay the flight on the map (×60)"
+
+msgid "Odwiedzone lotniska"
+msgstr "Airports visited"
+
+msgid "Odwiedź {n} różnych lotnisk"
+msgstr "Visit {n} different airports"
 
 msgid "Odznacz"
 msgstr "Deselect"
@@ -1040,6 +1160,9 @@ msgstr "Surroundings"
 msgid "Okresowo"
 msgstr "Temporarily"
 
+msgid "Opady z radarów pogodowych (RainViewer, odświeżane co 5 minut)"
+msgstr "Precipitation from weather radar (RainViewer, refreshed every 5 minutes)"
+
 msgid "OpenTakeoff dla OBS"
 msgstr "OpenTakeoff for OBS"
 
@@ -1051,6 +1174,9 @@ msgstr "Flight description"
 
 msgid "Opróżnij"
 msgstr "Empty"
+
+msgid "Osiągnięcia"
+msgstr "Achievements"
 
 msgid "Ostatnie loty"
 msgstr "Recent flights"
@@ -1180,6 +1306,9 @@ msgstr "You'll find your Pilot ID in SimBrief under Account Settings."
 
 msgid "Pionowa kurtyna pod śladem do ziemi"
 msgstr "Vertical curtain below the track down to the ground"
+
+msgid "Pięć lądowań w tygodniu z oceną co najmniej 80"
+msgstr "Five landings this week scored at least 80"
 
 msgid "Plan SimBrief"
 msgstr "SimBrief plan"
@@ -1436,6 +1565,9 @@ msgstr "Drag to change the panel width; double-click restores the default"
 msgid "Przeciążenie"
 msgstr "G-force"
 
+msgid "Przeleć łącznie {n}"
+msgstr "Fly {n} in total"
+
 msgid "Przelicznik jednostek"
 msgstr "Unit converter"
 
@@ -1484,14 +1616,32 @@ msgstr "Restore from the trash"
 msgid "Przyziemienie"
 msgstr "Touchdown"
 
+msgid "Przyziemienie 1000–2000 ft za progiem pasa"
+msgstr "Touchdown 1000–2000 ft past the runway threshold"
+
+msgid "Przyziemienie 1000–2000 ft za progiem – {n} razy"
+msgstr "Touchdown 1000–2000 ft past the threshold – {n} times"
+
+msgid "Przyziemienie do 100 ft/min bez odbicia – {n} razy"
+msgstr "Touchdown at up to 100 ft/min without a bounce – {n} times"
+
+msgid "Przyziemienie do 3 ft od osi pasa – {n} razy"
+msgstr "Touchdown within 3 ft of the centreline – {n} times"
+
 msgid "Przyziemienie na przednie koło (pochylenie {pitch}°)."
 msgstr "Nose-wheel touchdown (pitch {pitch}°)."
+
+msgid "Przyziemienie najwyżej 5 ft od osi pasa"
+msgstr "Touchdown within 5 ft of the runway centreline"
 
 msgid "Przyziemienie przed progiem pasa ({before} ft)."
 msgstr "Touchdown before the runway threshold ({before} ft)."
 
 msgid "Przyziemienie tuż za progiem ({ft} ft)."
 msgstr "Touchdown just past the threshold ({ft} ft)."
+
+msgid "Przyziemienie wolniej niż 120 ft/min, bez odbicia"
+msgstr "Touchdown slower than 120 ft/min, without a bounce"
 
 msgid "Prędkość"
 msgstr "Speed"
@@ -1525,6 +1675,18 @@ msgstr "Dew point"
 
 msgid "Później"
 msgstr "Later"
+
+msgid "Radar"
+msgstr "Radar"
+
+msgid "Radar niedostępny"
+msgstr "Radar unavailable"
+
+msgid "Radar {t} UTC"
+msgstr "Radar {t} UTC"
+
+msgid "Radar: pobieranie…"
+msgstr "Radar: downloading…"
 
 msgid "Radia"
 msgstr "Radios"
@@ -1586,6 +1748,9 @@ msgstr "Scheduled service"
 msgid "Ryzyko mgły"
 msgstr "Fog risk"
 
+msgid "Równa forma"
+msgstr "Consistency"
+
 msgid "Róża kursowa na samolocie: kurs, tor, nastawa AP, namiar na punkt"
 msgstr "Heading rose on the aircraft: heading, track, AP setting, bearing to a point"
 
@@ -1621,6 +1786,9 @@ msgstr "Hide"
 
 msgid "Sepia"
 msgstr "Sepia"
+
+msgid "Seria"
+msgstr "Streak"
 
 msgid "Serwer telefonów nasłuchuje na porcie {port}"
 msgstr "Phone server listening on port {port}"
@@ -1688,14 +1856,23 @@ msgstr "Checking for updates…"
 msgid "Sprawdź aktualizacje"
 msgstr "Check for updates"
 
+msgid "Spędź w powietrzu {n}"
+msgstr "Spend {n} in the air"
+
 msgid "Stabilizacja podejścia"
 msgstr "Approach stability"
+
+msgid "Stacja"
+msgstr "Station"
 
 msgid "Stan"
 msgstr "Status"
 
 msgid "Stan symulatora i telefonów, pogoda, ostatnie loty"
 msgstr "Simulator and phone status, weather, recent flights"
+
+msgid "Start między 21:00 a 5:00 – {n} razy"
+msgstr "Take off between 21:00 and 5:00 – {n} times"
 
 msgid "Startuj w zasobniku"
 msgstr "Start in the tray"
@@ -1784,6 +1961,9 @@ msgstr "Phones and flight recording keep working; quit from the tray icon menu"
 msgid "Temperatura"
 msgstr "Temperature"
 
+msgid "Temperatura / punkt rosy"
+msgstr "Temperature / dew point"
+
 msgid "Temperatura {ta} °C, punkt rosy {td} °C"
 msgstr "Temperature {ta} °C, dew point {td} °C"
 
@@ -1823,6 +2003,9 @@ msgstr "Simulation mode on"
 msgid "Tryb symulacji: lot testowy EPWA → EPGD bez MSFS – do sprawdzenia telefonu i dziennika."
 msgstr "Simulation mode: a test flight EPWA → EPGD without MSFS – to check the phone and the logbook."
 
+msgid "Trzy lądowania w jednym locie (dotyk i start)"
+msgstr "Three landings in one flight (touch and go)"
+
 msgid "Trójkąt wiatru"
 msgstr "Wind triangle"
 
@@ -1834,6 +2017,9 @@ msgstr "Hard landing: {v} ft/min."
 
 msgid "Twoje loty"
 msgstr "Your flights"
+
+msgid "Tydzień {w} · {a}–{b}"
+msgstr "Week {w} · {a}–{b}"
 
 msgid "Tylko do symulacji lotów. Nie używaj do rzeczywistej nawigacji."
 msgstr "For flight simulation only. Do not use for real navigation."
@@ -1955,6 +2141,12 @@ msgstr "The SimBrief response contains no flight plan"
 msgid "W pobliżu"
 msgstr "Nearby"
 
+msgid "W strefie"
+msgstr "In the zone"
+
+msgid "W strefie przyziemienia"
+msgstr "In the touchdown zone"
+
 msgid "W strefie przyziemienia: {ft} ft za progiem."
 msgstr "In the touchdown zone: {ft} ft past the threshold."
 
@@ -2005,6 +2197,9 @@ msgstr "Runway wind"
 
 msgid "Wiatr z"
 msgstr "Wind from"
+
+msgid "Wiatr z boku"
+msgstr "Crosswind"
 
 msgid "Wiatr z {d}° z prędkością {spd} {unit}"
 msgstr "Wind from {d}° at {spd} {unit}"
@@ -2072,6 +2267,9 @@ msgstr "All flights in one KML file for Google Earth – with landings and scree
 msgid "Wszystkie loty z komputera i telefonu"
 msgstr "All flights from the computer and the phone"
 
+msgid "Wszystkie poziomy zdobyte"
+msgstr "All levels earned"
+
 msgid "Wszystkie telefony unieważnione"
 msgstr "All phones revoked"
 
@@ -2111,6 +2309,12 @@ msgstr "Landing card appearance"
 msgid "Wygląd, język, zapis lotów, Windows, dane"
 msgstr "Appearance, language, flight recording, Windows, data"
 
+msgid "Wyląduj na {icao} z oceną co najmniej 70"
+msgstr "Land at {icao} with a score of at least 70"
+
+msgid "Wyląduj {n} razy"
+msgstr "Land {n} times"
+
 msgid "Wynik"
 msgstr "Result"
 
@@ -2119,6 +2323,9 @@ msgstr "Alignment"
 
 msgid "Wyrównanie od 50 ft"
 msgstr "Flare from 50 ft"
+
+msgid "Wysoko"
+msgstr "High flyer"
 
 msgid "Wysokość"
 msgstr "Altitude"
@@ -2135,11 +2342,20 @@ msgstr "Height above ground"
 msgid "Wyszukaj lotnisko"
 msgstr "Find an airport"
 
+msgid "Wyzwania tygodnia"
+msgstr "Weekly challenges"
+
+msgid "Wyzwanie tygodnia zaliczone: {t}"
+msgstr "Weekly challenge completed: {t}"
+
 msgid "Wył."
 msgstr "Off"
 
 msgid "Wyłączone"
 msgstr "Off"
+
+msgid "Wznieś się na {n}"
+msgstr "Climb to {n}"
 
 msgid "Wznów"
 msgstr "Resume"
@@ -2219,6 +2435,9 @@ msgstr "Stop recording"
 msgid "Zakończ zapis teraz (następny zacznie się po wylądowaniu)"
 msgstr "Stop recording now (the next one starts after landing)"
 
+msgid "Zalicz {n} wyzwań tygodnia"
+msgstr "Complete {n} weekly challenges"
+
 msgid "Zamknij"
 msgstr "Close"
 
@@ -2264,6 +2483,9 @@ msgstr "Saved: {p}"
 msgid "Zapisuj loty na komputerze"
 msgstr "Record flights on this computer"
 
+msgid "Zapisz w dzienniku {n} lotów"
+msgstr "Log {n} flights"
+
 msgid "Zasięg +"
 msgstr "Range +"
 
@@ -2299,6 +2521,9 @@ msgstr "Report"
 
 msgid "Zgłoś błąd lub sugestię"
 msgstr "Report a bug or a suggestion"
+
+msgid "Zjawiska"
+msgstr "Weather"
 
 msgid "Zmiana po ponownym uruchomieniu programu"
 msgstr "Changes after restarting the program"
@@ -2377,6 +2602,9 @@ msgstr "duststorm"
 
 msgid "całkowite zachmurzenie (8/8)"
 msgstr "overcast (8/8)"
+
+msgid "cisza"
+msgstr "calm"
 
 msgid "cze"
 msgstr "Jun"
@@ -2548,6 +2776,9 @@ msgstr "from aircraft"
 
 msgid "od {d}"
 msgstr "since {d}"
+
+msgid "ostatni dzień"
+msgstr "last day"
 
 msgid "paź"
 msgstr "Oct"
@@ -2738,11 +2969,17 @@ msgstr "haze"
 msgid "zniżanie"
 msgstr "descent"
 
+msgid "zostało {left} dni"
+msgstr "{left} days left"
+
 msgid "zwolniony"
 msgstr "released"
 
 msgid "{a} ft za progiem"
 msgstr "{a} ft past the threshold"
+
+msgid "{a} z {b} poziomów"
+msgstr "{a} of {b} levels"
 
 msgid "{device}: odebrano {n} lot(y) z telefonu"
 msgstr "{device}: received {n} flight(s) from the phone"
@@ -2777,17 +3014,26 @@ msgstr "{name}: sync – to download from the phone {w}, to send {o}, to delete 
 msgid "{name}: {cmd} nie powiodło się – {msg}"
 msgstr "{name}: {cmd} failed – {msg}"
 
+msgid "{n} lądowań z rzędu z oceną co najmniej 80"
+msgstr "{n} landings in a row scored at least 80"
+
 msgid "{n} procedur z bazy symulatora"
 msgstr "{n} procedures from the simulator database"
 
 msgid "{n} telefony połączone"
 msgstr "{n} phones connected"
 
+msgid "{n} z 5"
+msgstr "{n} of 5"
+
 msgid "{n} – przechylanie telefonu albo drążek"
 msgstr "{n} – tilting the phone or a stick"
 
 msgid "{s} s od 50 ft do przyziemienia"
 msgstr "{s} s from 50 ft to touchdown"
+
+msgid "{t} UTC · {n} min temu"
+msgstr "{t} UTC · {n} min ago"
 
 msgid "Ścieżka"
 msgstr "Path"
@@ -2830,6 +3076,9 @@ msgstr "Screen centre"
 
 msgid "Światła"
 msgstr "Lights"
+
+msgid "Świetne lądowania"
+msgstr "Great landings"
 
 msgid "ścieżka 3° do punktu celowania (1000 ft)"
 msgstr "3° path to the aiming point (1000 ft)"

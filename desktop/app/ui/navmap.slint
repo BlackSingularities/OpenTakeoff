@@ -144,6 +144,20 @@ component NavMapView inherits Rectangle {
             color: Theme.text-dim;
         }
     }
+    if !App.nav.view3d && App.nav.wx != "": Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: parent.height - self.height - 8px;
+        width: wt.preferred-width + 16px;
+        height: 20px;
+        border-radius: 10px;
+        background: Theme.popup;
+        wt := Text {
+            text: App.nav.wx;
+            font-family: Theme.font;
+            font-size: 10px;
+            color: Theme.text-dim;
+        }
+    }
     if App.nav.view3d: Rectangle {
         x: (parent.width - self.width) / 2;
         y: parent.height - self.height - 10px;

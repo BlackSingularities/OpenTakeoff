@@ -14,6 +14,7 @@ use opentakeoff_core::aero::{airports, navaids};
 use opentakeoff_core::lang::tr;
 use opentakeoff_core::navdata::math::{bearing_deg, distance_nm};
 use opentakeoff_core::proto::FlightState;
+use opentakeoff_core::trf;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use crate::app::{self, state, ui};
@@ -293,6 +294,13 @@ fn snap_info(v: &View, x: f64, y: f64) -> Option<Vec<(String, String)>> {
             (tr("Od samolotu").to_string(), format!("{}° · {:.1} NM", deg3(bearing_deg(s.position.lat, s.position.lon, la, lo) - var), distance_nm(s.position.lat, s.position.lon, la, lo)))
         })
     };
+    if layers() & NAV_METAR != 0 {
+        let list = crate::wxmap::metars();
+        let near = list.iter().filter_map(|m| Some((distance_nm(lat, lon, m.lat?, m.lon?), m))).filter(|(d, _)| *d < radius).min_by(|a, b| a.0.total_cmp(&b.0));
+        if let Some((_, m)) = near {
+            return Some(metar_rows(m, rel(m.lat.unwrap_or(lat), m.lon.unwrap_or(lon))));
+        }
+    }
     if let Some(db) = navaids::db() {
         if let Some((_, a)) = db.within(lat, lon, radius).into_iter().next() {
             let mut v = vec![
@@ -341,6 +349,77 @@ fn snap_info(v: &View, x: f64, y: f64) -> Option<Vec<(String, String)>> {
     Some(v)
 }
 
+/// Depesza stacji w panelu bocznym: kategoria, wiatr, widzialność, chmury, temperatura, QNH i pełny tekst.
+fn metar_rows(m: &opentakeoff_core::aero::weather::Metar, rel: Option<(String, String)>) -> Vec<(String, String)> {
+    let cat = opentakeoff_core::aero::weather::flight_category(m);
+    let title = match &m.name {
+        Some(n) => format!("{} · {}", m.station, n),
+        None => m.station.clone(),
+    };
+    let mut v = vec![(tr("Stacja").to_string(), title), (tr("Kategoria lotu").to_string(), cat)];
+    if m.obs_time > 0 {
+        let age = ((opentakeoff_core::source::unix_ms() / 1000 - m.obs_time) / 60).max(0);
+        v.push((tr("Obserwacja").to_string(), trf!("{t} UTC · {n} min temu", t = chrono_hm(m.obs_time), n = age)));
+    }
+    let wind = match (m.wind_dir, m.wind_kt, m.gust_kt) {
+        (_, Some(0), _) => tr("cisza").to_string(),
+        (Some(d), Some(w), g) => format!("{d:03}° / {w} kt{}", g.map(|g| format!(", {} {g} kt", tr("porywy"))).unwrap_or_default()),
+        (None, Some(w), _) if m.wind_variable => format!("VRB / {w} kt"),
+        _ => "–".into(),
+    };
+    v.push((tr("Wiatr").to_string(), wind));
+    if let Some(vis) = &m.visibility {
+        v.push((tr("Widzialność").to_string(), format!("{vis} SM")));
+    }
+    if !m.clouds.is_empty() {
+        v.push((tr("Chmury").to_string(), m.clouds.iter().map(|c| match c.base_ft { Some(b) => format!("{} {b} ft", c.cover), None => c.cover.clone() }).collect::<Vec<_>>().join(", ")));
+    }
+    if let Some(wx) = &m.wx {
+        v.push((tr("Zjawiska").to_string(), wx.clone()));
+    }
+    if let (Some(t), Some(d)) = (m.temp_c, m.dewpoint_c) {
+        v.push((tr("Temperatura / punkt rosy").to_string(), format!("{t:.0} / {d:.0} °C")));
+    }
+    if let Some(q) = m.altim_hpa {
+        v.push(("QNH".to_string(), format!("{q:.0} hPa")));
+    }
+    if let Some(r) = rel {
+        v.push(r);
+    }
+    v.push(("METAR".to_string(), m.raw.clone()));
+    v
+}
+
+fn chrono_hm(unix: i64) -> String {
+    let s = unix.rem_euclid(86_400);
+    format!("{:02}:{:02}", s / 3600, s % 3600 / 60)
+}
+
+/// Podpis warstw pogody pod mapą (czas radaru, liczba stacji METAR, stan pobierania).
+fn wx_status(lay: u32) -> String {
+    let mut parts = Vec::new();
+    if lay & NAV_RADAR != 0 {
+        parts.push(match crate::wxmap::radar_time() {
+            Some(t) => trf!("Radar {t} UTC", t = chrono_hm(t)),
+            None if crate::wxmap::radar_error() => tr("Radar niedostępny").to_string(),
+            None => tr("Radar: pobieranie…").to_string(),
+        });
+    }
+    if lay & NAV_METAR != 0 {
+        let (n, busy, err, wide) = crate::wxmap::metar_status();
+        parts.push(if wide {
+            tr("METAR: przybliż mapę").to_string()
+        } else if busy {
+            tr("METAR: pobieranie…").to_string()
+        } else if err && n == 0 {
+            tr("METAR niedostępny").to_string()
+        } else {
+            trf!("METAR: {n} stacji", n = n)
+        });
+    }
+    parts.join(" · ")
+}
+
 // ---------- polecenia ze wstążki ----------
 
 pub fn cmd(id: &str, arg: &str) -> bool {
@@ -356,6 +435,8 @@ pub fn cmd(id: &str, arg: &str) -> bool {
         "route" => NAV_ROUTE,
         "curtain" => NAV_CURTAIN,
         "rwy" => NAV_RWY,
+        "radar" => NAV_RADAR,
+        "metar" => NAV_METAR,
         _ => 0,
     };
     match id {
@@ -508,7 +589,8 @@ pub fn render(force: bool) {
     app.set_map_nav(image.0);
     app.set_map_nav_labels(model(image.1.into_iter().map(|(x, y, t, k)| LabelV { x, y, text: ss(t), kind: k }).collect()));
     app.set_map_nav_scale(ss(if set.nav_3d { String::new() } else { NAV.with(|n| n.borrow().view.scale_text()) }));
-    app.set_map_attribution(st_style.attribution().into());
+    let attribution = if lay & NAV_RADAR != 0 && !set.nav_3d { format!("{} · RainViewer", st_style.attribution()) } else { st_style.attribution().to_string() };
+    app.set_map_attribution(ss(attribution));
     side_panel(&snap, set.nav_3d);
 }
 
@@ -563,6 +645,12 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
     if nav_shots {
         for (lat, lon, label) in crate::shots::points() {
             ov.points.push(Point { lat, lon, label, kind: 2 });
+        }
+    }
+    if lay & NAV_RADAR != 0 {
+        crate::wxmap::ensure_radar();
+        if crate::wxmap::radar_time().is_some() {
+            ov.radar = 0.72;
         }
     }
     let (pm, mut labels) = map::render_pm(&v, style, &ov, scale, dark);
@@ -632,6 +720,45 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                 if v.zoom > 7.0 {
                     labels.push((x / s + 6.0, y / s + 12.0, format!("{} {}", a.ident, a.freq_text().replace(" MHz", "").replace(" kHz", "")), 1));
                 }
+            }
+        }
+    }
+
+    // ---------- METAR: kategoria lotu i wiatr przy stacjach ----------
+    if lay & NAV_METAR != 0 {
+        let (la0, lo0) = from_screen(&v, 0.0, v.h);
+        let (la1, lo1) = from_screen(&v, v.w, 0.0);
+        crate::wxmap::ensure_metars(la0, lo0, la1, lo1);
+        let list = crate::wxmap::metars();
+        let mut placed: Vec<(f32, f32)> = Vec::new();
+        let min_gap = if v.zoom > 8.5 { 18.0 } else { 26.0 } * s;
+        for m in list.iter() {
+            let (Some(la), Some(lo)) = (m.lat, m.lon) else { continue };
+            let (x, y) = to(la, lo);
+            if x < -30.0 * s || y < -30.0 * s || x > wpx + 30.0 * s || y > hpx + 30.0 * s {
+                continue;
+            }
+            // przy małym zoomie nie wszystkie stacje – bez nakładania się kółek
+            if placed.iter().any(|(px, py)| (px - x).abs() < min_gap && (py - y).abs() < min_gap) {
+                continue;
+            }
+            placed.push((x, y));
+            let col = crate::wxmap::category_color(&opentakeoff_core::aero::weather::flight_category(m));
+            if let (Some(dir), Some(spd)) = (m.wind_dir, m.wind_kt) {
+                if spd >= 3 && !m.wind_variable {
+                    wind_barb(&mut c, x, y, dir as f32, spd, s, ink, halo);
+                }
+            }
+            c.circle(x, y, 7.0 * s, halo, 0.0);
+            c.circle(x, y, 5.5 * s, col, 0.0);
+            if v.zoom > 7.5 {
+                let wind = match (m.wind_dir, m.wind_kt, m.gust_kt) {
+                    (_, Some(0), _) => "CALM".to_string(),
+                    (Some(d), Some(w), g) => format!("{:03}/{w}{}", d, g.map(|g| format!("G{g}")).unwrap_or_default()),
+                    (None, Some(w), _) if m.wind_variable => format!("VRB/{w}"),
+                    _ => String::new(),
+                };
+                labels.push((x / s + 9.0, y / s - 8.0, format!("{} {}", m.station, wind).trim().to_string(), 1));
             }
         }
     }
@@ -822,6 +949,52 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
     }
     let buf = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(c.pm.data(), c.pm.width(), c.pm.height());
     (slint::Image::from_rgba8_premultiplied(buf), labels)
+}
+
+/// Chorągiewka wiatru: drzewce w stronę, z której wieje, pełna kreska 10 kt, połówka 5 kt, trójkąt 50 kt.
+#[allow(clippy::too_many_arguments)]
+fn wind_barb(c: &mut Canvas, x: f32, y: f32, dir: f32, kt: i32, s: f32, ink: u32, halo: u32) {
+    let len = 24.0 * s;
+    let t = dir.to_radians();
+    let (ux, uy) = (t.sin(), -t.cos());
+    // prostopadle (po prawej stronie drzewca, jak na mapach półkuli północnej)
+    let (px, py) = (-uy, ux);
+    let (ex, ey) = (x + ux * len, y + uy * len);
+    let mut lines: Vec<[f32; 4]> = vec![[x + ux * 6.0 * s, y + uy * 6.0 * s, ex, ey]];
+    let mut tris: Vec<[f32; 6]> = Vec::new();
+    let mut left = ((kt + 2) / 5) * 5;
+    let mut pos = 0.0f32;
+    let step = 4.0 * s;
+    let feather = 10.0 * s;
+    while left >= 50 {
+        let (ax, ay) = (ex - ux * pos, ey - uy * pos);
+        let (bx, by) = (ex - ux * (pos + step * 1.5), ey - uy * (pos + step * 1.5));
+        tris.push([ax, ay, bx, by, ax + px * feather - ux * step * 0.2, ay + py * feather - uy * step * 0.2]);
+        pos += step * 2.0;
+        left -= 50;
+    }
+    while left >= 10 {
+        let (ax, ay) = (ex - ux * pos, ey - uy * pos);
+        lines.push([ax, ay, ax + px * feather + ux * 3.0 * s, ay + py * feather + uy * 3.0 * s]);
+        pos += step;
+        left -= 10;
+    }
+    if left >= 5 {
+        if pos == 0.0 {
+            pos = step;
+        }
+        let (ax, ay) = (ex - ux * pos, ey - uy * pos);
+        lines.push([ax, ay, ax + px * feather * 0.5 + ux * 1.5 * s, ay + py * feather * 0.5 + uy * 1.5 * s]);
+    }
+    for l in &lines {
+        c.line(l[0], l[1], l[2], l[3], halo, 3.6 * s);
+    }
+    for l in &lines {
+        c.line(l[0], l[1], l[2], l[3], ink, 1.5 * s);
+    }
+    for t in &tris {
+        c.poly(ink, halo, 1.0 * s, t);
+    }
 }
 
 fn render_3d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style: Style, dark: bool, scale: f32, lay: u32) -> (slint::Image, Vec<(f32, f32, String, i32)>) {
@@ -1073,6 +1246,9 @@ fn side_panel(snap: &Option<FlightState>, three_d: bool) {
         has_data: snap.is_some(),
         plan: set.nav_plan,
         shots: set.nav_shots,
+        radar: lay & NAV_RADAR != 0,
+        metar: lay & NAV_METAR != 0,
+        wx: ss(if three_d { String::new() } else { wx_status(lay) }),
     });
 }
 
