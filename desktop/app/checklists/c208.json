@@ -1,0 +1,140 @@
+{
+  "id": "c208",
+  "name": "Cessna 208 / 208B Caravan",
+  "match": ["\\bc?208b?\\b", "caravan"],
+  "source": {
+    "pl": "Cessna 208B Grand Caravan – checklista normalna oparta na podręczniku PFM (C. R. Burger, 2003). Obowiązuje PFM samolotu.",
+    "en": "Cessna 208B Grand Caravan – normal checklist based on the PFM (C. R. Burger, 2003). The aircraft PFM governs.",
+    "es": "Cessna 208B Grand Caravan – lista normal basada en el PFM (C. R. Burger, 2003). Prevalece el PFM de la aeronave."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed uruchomieniem silnika", "en": "Before starting engine", "es": "Antes de arrancar el motor" },
+      "items": [
+        { "item": "Preflight inspection and W&B", "resp": "COMPLETE" },
+        { "item": "Passenger briefing", "resp": "COMPLETE" },
+        { "item": "Cabin doors", "resp": "LATCHED" },
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Seats, belts, harnesses", "resp": "ADJUSTED, SECURE" },
+        { "item": "Switches", "resp": "OFF" },
+        { "item": "Ignition", "resp": "NORM" },
+        { "item": "Circuit breakers", "resp": "CHECK IN" },
+        { "item": "Fuel tank selectors", "resp": "BOTH ON" },
+        { "item": "Radar", "resp": "OFF" },
+        { "item": "Bleed air / inverter / air conditioner", "resp": "OFF" },
+        { "item": "Emergency power lever", "resp": "NORMAL" },
+        { "item": "Power lever", "resp": "IDLE", "auto": "throttle<=5" },
+        { "item": "Propeller", "resp": "FULL FORWARD" },
+        { "item": "Fuel condition lever", "resp": "CUTOFF", "auto": "engines_running==0" },
+        { "item": "Fuel shutoff", "resp": "ON (push in)" },
+        { "item": "Battery switch", "resp": "ON" },
+        { "item": "Wing flaps", "resp": "UP", "auto": "flaps==0" },
+        { "item": "Fire detector test", "resp": "PRESS" },
+        { "item": "Annunciator panel", "resp": "TEST" }
+      ]
+    },
+    {
+      "name": { "pl": "Uruchomienie silnika", "en": "Engine start", "es": "Arranque del motor" },
+      "items": [
+        { "item": "Volt / ammeter", "resp": "CHECK (24 V minimum)" },
+        { "item": "Propeller area", "resp": "CLEAR" },
+        { "item": "Fuel boost", "resp": "ON (AUX FUEL PUMP ON)" },
+        { "item": "Starter switch", "resp": "START" },
+        { "item": "Engine oil pressure", "resp": "CHECK" },
+        { "item": "Ng above 12%, stable", "resp": "WAIT" },
+        { "item": "Fuel condition lever", "resp": "LOW IDLE" },
+        { "item": "ITT", "resp": "MONITOR (1090 °C max. 2 s)" },
+        { "item": "Ng above 52%", "resp": "CHECK", "auto": "engines_running>0" },
+        { "item": "Starter switch", "resp": "OFF" },
+        { "item": "Engine instruments", "resp": "CHECK" },
+        { "item": "Generator", "resp": "CHARGING, GEN OFF out" },
+        { "item": "Fuel boost", "resp": "NORMAL" },
+        { "item": "Standby power", "resp": "ON" },
+        { "item": "Avionics 1 & 2", "resp": "ON" },
+        { "item": "Nav lights, beacon", "resp": "ON as required", "auto": "beacon" }
+      ]
+    },
+    {
+      "name": { "pl": "Kołowanie", "en": "Taxi", "es": "Rodaje" },
+      "items": [
+        { "item": "Parking brake", "resp": "RELEASE", "auto": "!parking_brake" },
+        { "item": "Brakes", "resp": "CHECK" },
+        { "item": "Flight instruments", "resp": "CHECK" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem (run-up)", "en": "Before takeoff (run-up)", "es": "Antes del despegue (run-up)" },
+      "items": [
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Seats, belts, harnesses", "resp": "CHECK SECURE" },
+        { "item": "Flight controls", "resp": "FREE & CORRECT" },
+        { "item": "Flight instruments", "resp": "CHECK, SET" },
+        { "item": "Fuel tanks", "resp": "CHECK BOTH ON" },
+        { "item": "Fuel quantity", "resp": "CHECKED" },
+        { "item": "Trim (elevator, aileron, rudder)", "resp": "SET for takeoff" },
+        { "item": "Power check", "resp": "400 ft-lb" },
+        { "item": "Inertial separator", "resp": "CHECK" },
+        { "item": "Overspeed governor", "resp": "CHECK (1750 ±60 RPM)" },
+        { "item": "Power lever", "resp": "IDLE" },
+        { "item": "Autopilot", "resp": "PREFLIGHT CHECK, then OFF", "auto": "!ap" },
+        { "item": "Pitot / static heat", "resp": "ON if OAT < 4 °C" },
+        { "item": "Avionics and radar", "resp": "CHECK, SET" },
+        { "item": "Strobes", "resp": "AS REQUIRED", "auto": "strobe" },
+        { "item": "Annunciators", "resp": "EXTINGUISHED or considered" },
+        { "item": "Wing flaps", "resp": "20°", "auto": "flaps>0" },
+        { "item": "Brakes", "resp": "RELEASE", "auto": "!parking_brake" },
+        { "item": "Fuel condition lever", "resp": "HIGH IDLE" }
+      ]
+    },
+    {
+      "name": { "pl": "Start", "en": "Takeoff", "es": "Despegue" },
+      "items": [
+        { "item": "Power", "resp": "SET for takeoff" },
+        { "item": "Annunciators", "resp": "CHECK" },
+        { "item": "Rotate", "resp": "70–75 KIAS", "auto": "!on_ground" },
+        { "item": "Climb", "resp": "85–95 KIAS" },
+        { "item": "Flaps", "resp": "10° after 85, UP after 95 KIAS", "auto": "flaps==0 & !on_ground" }
+      ]
+    },
+    {
+      "name": { "pl": "Wznoszenie i przelot", "en": "Climb & cruise", "es": "Ascenso y crucero" },
+      "items": [
+        { "item": "Ice protection", "resp": "AS REQUIRED" },
+        { "item": "Airspeed (cruise climb)", "resp": "110–120 KIAS" },
+        { "item": "Propeller", "resp": "1600–1900 RPM" },
+        { "item": "Torque", "resp": "SET within limits (ITT < 740 °C)" },
+        { "item": "Cruise power", "resp": "SET per tables" }
+      ]
+    },
+    {
+      "name": { "pl": "Zniżanie i przed lądowaniem", "en": "Descent & before landing", "es": "Descenso y antes del aterrizaje" },
+      "items": [
+        { "item": "Altimeter", "resp": "SET", "auto": "altimeter_set" },
+        { "item": "GPS / NAV switch", "resp": "SET" },
+        { "item": "Seats, belts, harnesses", "resp": "SECURE" },
+        { "item": "Fuel selectors", "resp": "L ON, R ON" },
+        { "item": "Fuel condition lever", "resp": "HIGH IDLE" },
+        { "item": "Propeller control lever", "resp": "MAX (forward)" },
+        { "item": "Radar", "resp": "STANDBY / OFF" },
+        { "item": "Autopilot", "resp": "OFF", "auto": "!ap" },
+        { "item": "Wing flaps", "resp": "AS DESIRED (full for landing)", "auto": "flaps>0" }
+      ]
+    },
+    {
+      "name": { "pl": "Po wylądowaniu i wyłączenie", "en": "After landing & shutdown", "es": "Después del aterrizaje y parada" },
+      "items": [
+        { "item": "Wing flaps", "resp": "UP", "auto": "flaps==0 & on_ground" },
+        { "item": "Fuel condition lever", "resp": "LOW IDLE" },
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Power lever", "resp": "IDLE", "auto": "throttle<=5" },
+        { "item": "Avionics, standby power", "resp": "OFF" },
+        { "item": "ITT", "resp": "STABILIZED (1 min)" },
+        { "item": "Fuel condition lever", "resp": "CUTOFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "Fuel boost", "resp": "OFF" },
+        { "item": "Switches (except battery)", "resp": "OFF" },
+        { "item": "Battery switch", "resp": "OFF" },
+        { "item": "Control lock", "resp": "INSTALL" }
+      ]
+    }
+  ]
+}

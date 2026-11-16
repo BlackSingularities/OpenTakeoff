@@ -1,0 +1,133 @@
+{
+  "id": "a320",
+  "name": "Airbus A320 / A330 / A340",
+  "match": ["airbus", "\\ba3[34][0-9]", "\\ba3(18|19|20|21)", "\\ba(19|20|21)n\\b", "a320neo", "a321neo", "fenix", "flybywire", "\\bfbw\\b"],
+  "styles": ["A320"],
+  "source": {
+    "pl": "Airbus FCOM, Normal Checklist (PRO-NOR-CL), rodzina A320 (A330 i A340 mają tę samą listę normalną). Linie lotnicze mają własne wersje.",
+    "en": "Airbus FCOM, Normal Checklist (PRO-NOR-CL), A320 family (the A330 and A340 use the same normal checklist). Airlines use their own versions.",
+    "es": "Airbus FCOM, Normal Checklist (PRO-NOR-CL), familia A320 (el A330 y el A340 usan la misma lista normal). Las aerolíneas usan sus propias versiones."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przygotowanie kabiny", "en": "Cockpit preparation", "es": "Preparación de cabina" },
+      "items": [
+        { "item": "GEAR PINS and COVERS", "resp": "REMOVED" },
+        { "item": "FUEL QUANTITY", "resp": "___ KG" },
+        { "item": "SEAT BELTS", "resp": "ON" },
+        { "item": "ADIRS", "resp": "NAV" },
+        { "item": "BARO REF", "resp": "___ (BOTH)", "auto": "altimeter_set" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed uruchomieniem", "en": "Before start", "es": "Antes de la puesta en marcha" },
+      "items": [
+        { "item": "PARKING BRAKE", "resp": "___" },
+        { "item": "T.O SPEEDS & THRUST", "resp": "___ (BOTH)" },
+        { "item": "WINDOWS", "resp": "CLOSED (BOTH)" },
+        { "item": "BEACON", "resp": "ON", "auto": "beacon" }
+      ]
+    },
+    {
+      "name": { "pl": "Po uruchomieniu", "en": "After start", "es": "Después de la puesta en marcha" },
+      "items": [
+        { "item": "ANTI ICE", "resp": "___" },
+        { "item": "ECAM STATUS", "resp": "CHECKED" },
+        { "item": "PITCH TRIM", "resp": "___ %" },
+        { "item": "RUDDER TRIM", "resp": "ZERO" }
+      ]
+    },
+    {
+      "name": { "pl": "Kołowanie", "en": "Taxi", "es": "Rodaje" },
+      "items": [
+        { "item": "FLIGHT CONTROLS", "resp": "CHECKED (BOTH)" },
+        { "item": "FLT INST", "resp": "CHECKED (BOTH)" },
+        { "item": "BRIEFING", "resp": "CONFIRMED" },
+        { "item": "FLAP SETTING", "resp": "CONF ___ (BOTH)", "auto": "flaps>0" },
+        { "item": "V1, VR, V2 / FLX TEMP", "resp": "___ (BOTH)" },
+        { "item": "ATC", "resp": "SET", "auto": "xpdr_on" },
+        {
+          "item": "ECAM MEMO",
+          "resp": "TO NO BLUE",
+          "note": "AUTO BRK MAX · SIGNS ON · SPLRS ARM · FLAPS T.O · TO CONFIG NORM",
+          "auto": "spoilers_armed & flaps>0"
+        }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem", "en": "Before takeoff", "es": "Antes del despegue" },
+      "items": [
+        { "item": "TAKEOFF RWY", "resp": "___ (BOTH)" },
+        { "item": "CABIN CREW", "resp": "ADVISED" },
+        { "item": "TCAS", "resp": "TA or TA/RA" },
+        { "item": "ENG MODE SEL", "resp": "___" },
+        { "item": "PACKS", "resp": "___" }
+      ]
+    },
+    {
+      "name": { "pl": "Po starcie / wznoszenie", "en": "After takeoff / climb", "es": "Después del despegue / ascenso" },
+      "items": [
+        { "item": "LANDING GEAR", "resp": "UP", "auto": "!gear_down & !on_ground" },
+        { "item": "FLAPS", "resp": "RETRACTED", "auto": "flaps==0 & !on_ground" },
+        { "item": "PACKS", "resp": "ON" },
+        { "item": "BARO REF", "resp": "___ (BOTH)", "note": { "pl": "STD po przekroczeniu wysokości przejściowej", "en": "STD above the transition altitude", "es": "STD por encima de la altitud de transición" }, "auto": "baro_std" }
+      ]
+    },
+    {
+      "name": { "pl": "Podejście", "en": "Approach", "es": "Aproximación" },
+      "items": [
+        { "item": "BRIEFING", "resp": "CONFIRMED" },
+        { "item": "ECAM STATUS", "resp": "CHECKED" },
+        { "item": "SEAT BELTS", "resp": "ON" },
+        { "item": "BARO REF", "resp": "___ (BOTH)", "auto": "altimeter_set" },
+        { "item": "MINIMUM", "resp": "___" },
+        { "item": "ENG MODE SEL", "resp": "___" }
+      ]
+    },
+    {
+      "name": { "pl": "Lądowanie", "en": "Landing", "es": "Aterrizaje" },
+      "items": [
+        { "item": "CABIN CREW", "resp": "ADVISED" },
+        { "item": "A/THR", "resp": "SPEED / OFF" },
+        {
+          "item": "ECAM MEMO",
+          "resp": "LDG NO BLUE",
+          "note": "LDG GEAR DN · SIGNS ON · CABIN READY · SPLRS ARM · FLAPS SET",
+          "auto": "gear_down & spoilers_armed & flaps>0"
+        }
+      ]
+    },
+    {
+      "name": { "pl": "Po wylądowaniu", "en": "After landing", "es": "Después del aterrizaje" },
+      "items": [
+        { "item": "FLAPS", "resp": "RETRACTED", "auto": "flaps==0 & on_ground" },
+        { "item": "SPOILERS", "resp": "DISARMED", "auto": "!spoilers_armed & on_ground" },
+        { "item": "APU", "resp": "START" },
+        { "item": "RADAR", "resp": "OFF" },
+        { "item": "PRED W/S", "resp": "OFF" }
+      ]
+    },
+    {
+      "name": { "pl": "Postój", "en": "Parking", "es": "Estacionamiento" },
+      "items": [
+        { "item": "APU BLEED", "resp": "ON" },
+        { "item": "ENGINES", "resp": "OFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "SEAT BELTS", "resp": "OFF" },
+        { "item": "EXT LT", "resp": "___" },
+        { "item": "FUEL PUMPS", "resp": "OFF" },
+        { "item": "PARK BRK and CHOCKS", "resp": "___" }
+      ]
+    },
+    {
+      "name": { "pl": "Zabezpieczenie samolotu", "en": "Securing the aircraft", "es": "Asegurar la aeronave" },
+      "items": [
+        { "item": "ADIRS", "resp": "OFF" },
+        { "item": "OXYGEN", "resp": "OFF" },
+        { "item": "APU BLEED", "resp": "OFF" },
+        { "item": "EMER EXIT LT", "resp": "OFF" },
+        { "item": "NO SMOKING", "resp": "OFF" },
+        { "item": "APU and BAT", "resp": "OFF" }
+      ]
+    }
+  ]
+}

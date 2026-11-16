@@ -1,0 +1,117 @@
+{
+  "id": "b737",
+  "name": "Boeing 737 NG / MAX",
+  "match": ["\\bb?737", "\\bb73[6-9]\\b", "\\bb3[89]m\\b", "\\bb3xm\\b", "pmdg 737", "ifly 737", "zibo"],
+  "styles": ["B737"],
+  "source": {
+    "pl": "Boeing 737 FCOM / QRH, Normal Checklist (wydanie dla 737 NG i MAX). Linie lotnicze mają własne wersje.",
+    "en": "Boeing 737 FCOM / QRH, Normal Checklist (737 NG and MAX). Airlines use their own versions.",
+    "es": "Boeing 737 FCOM / QRH, Normal Checklist (737 NG y MAX). Las aerolíneas usan sus propias versiones."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed lotem (preflight)", "en": "Preflight", "es": "Prevuelo" },
+      "items": [
+        { "item": "Oxygen", "resp": "Tested, 100%" },
+        { "item": "Navigation transfer and display switches", "resp": "NORMAL, AUTO" },
+        { "item": "Window heat", "resp": "ON" },
+        { "item": "Pressurization mode selector", "resp": "AUTO" },
+        { "item": "Flight instruments", "resp": "Heading ___, Altimeter ___", "auto": "altimeter_set" },
+        { "item": "Parking brake", "resp": "Set", "auto": "parking_brake" },
+        { "item": "Engine start levers", "resp": "CUTOFF", "auto": "engines_running==0" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed uruchomieniem", "en": "Before start", "es": "Antes de la puesta en marcha" },
+      "items": [
+        { "item": "Flight deck door", "resp": "Closed and locked" },
+        { "item": "Fuel", "resp": "___ KGS, Pumps ON" },
+        { "item": "Passenger signs", "resp": "___" },
+        { "item": "Windows", "resp": "Locked" },
+        { "item": "MCP", "resp": "V2 ___, HDG ___, ALT ___" },
+        { "item": "Takeoff speeds", "resp": "V1 ___, VR ___, V2 ___" },
+        { "item": "CDU preflight", "resp": "Completed" },
+        { "item": "Rudder and aileron trim", "resp": "Free and 0" },
+        { "item": "Taxi and takeoff briefing", "resp": "Completed" },
+        { "item": "Anti collision light", "resp": "ON", "auto": "beacon" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed kołowaniem", "en": "Before taxi", "es": "Antes del rodaje" },
+      "items": [
+        { "item": "Generators", "resp": "ON" },
+        { "item": "Probe heat", "resp": "ON" },
+        { "item": "Anti-ice", "resp": "___" },
+        { "item": "Isolation valve", "resp": "AUTO" },
+        { "item": "Engine start switches", "resp": "CONT" },
+        { "item": "Recall", "resp": "Checked" },
+        { "item": "Autobrake", "resp": "RTO" },
+        { "item": "Engine start levers", "resp": "IDLE detent", "auto": "engines_running>0 & engines_running>=engines" },
+        { "item": "Flight controls", "resp": "Checked" },
+        { "item": "Ground equipment", "resp": "Clear" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem", "en": "Before takeoff", "es": "Antes del despegue" },
+      "items": [
+        { "item": "Flaps", "resp": "___, Green light", "auto": "flaps>0" },
+        { "item": "Stabilizer trim", "resp": "___ Units" }
+      ]
+    },
+    {
+      "name": { "pl": "Po starcie", "en": "After takeoff", "es": "Después del despegue" },
+      "items": [
+        { "item": "Engine bleeds", "resp": "ON" },
+        { "item": "Packs", "resp": "AUTO" },
+        { "item": "Landing gear", "resp": "UP and OFF", "auto": "!gear_down & !on_ground" },
+        { "item": "Flaps", "resp": "UP, No lights", "auto": "flaps==0 & !on_ground" }
+      ]
+    },
+    {
+      "name": { "pl": "Zniżanie", "en": "Descent", "es": "Descenso" },
+      "items": [
+        { "item": "Pressurization", "resp": "LAND ALT ___" },
+        { "item": "Recall", "resp": "Checked" },
+        { "item": "Autobrake", "resp": "___" },
+        { "item": "Landing data", "resp": "VREF ___, Minimums ___" },
+        { "item": "Approach briefing", "resp": "Completed" }
+      ]
+    },
+    {
+      "name": { "pl": "Podejście", "en": "Approach", "es": "Aproximación" },
+      "items": [
+        { "item": "Altimeters", "resp": "___", "auto": "altimeter_set" }
+      ]
+    },
+    {
+      "name": { "pl": "Lądowanie", "en": "Landing", "es": "Aterrizaje" },
+      "items": [
+        { "item": "Engine start switches", "resp": "CONT" },
+        { "item": "Speedbrake", "resp": "ARMED", "auto": "spoilers_armed" },
+        { "item": "Landing gear", "resp": "Down", "auto": "gear_down" },
+        { "item": "Flaps", "resp": "___, Green light", "auto": "flaps>0" }
+      ]
+    },
+    {
+      "name": { "pl": "Wyłączenie silników", "en": "Shutdown", "es": "Parada de motores" },
+      "items": [
+        { "item": "Fuel pumps", "resp": "OFF" },
+        { "item": "Probe heat", "resp": "AUTO" },
+        { "item": "Hydraulic panel", "resp": "Set" },
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & on_ground" },
+        { "item": "Parking brake", "resp": "___" },
+        { "item": "Engine start levers", "resp": "CUTOFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "Weather radar", "resp": "OFF" }
+      ]
+    },
+    {
+      "name": { "pl": "Zabezpieczenie (secure)", "en": "Secure", "es": "Asegurar" },
+      "items": [
+        { "item": "IRSs", "resp": "OFF" },
+        { "item": "Emergency exit lights", "resp": "OFF" },
+        { "item": "Window heat", "resp": "OFF" },
+        { "item": "Packs", "resp": "OFF" }
+      ]
+    }
+  ]
+}

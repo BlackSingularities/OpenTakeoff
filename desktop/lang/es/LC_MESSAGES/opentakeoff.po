@@ -4241,3 +4241,123 @@ msgstr "helicóptero"
 
 msgid "Import"
 msgstr "Importar"
+
+msgid "Odhaczone przez symulator"
+msgstr "Marcado por el simulador"
+
+msgid "Stan w symulatorze się zgadza"
+msgstr "El estado en el simulador coincide"
+
+msgid "Symulator sprawdza tę pozycję – stan jeszcze się nie zgadza"
+msgstr "El simulador comprueba este punto – el estado aún no coincide"
+
+msgid "Pozycję sprawdza symulator, gdy jest połączony"
+msgstr "El simulador comprueba este punto cuando está conectado"
+
+msgid "Brak checklisty dla tego samolotu"
+msgstr "No hay lista de comprobación para esta aeronave"
+
+msgid "Zestaw wybierzesz z menu w grupie „Zestaw” na wstążce. Własne checklisty to pliki JSON w folderze checklist (przycisk „Folder”)."
+msgstr "Elige un conjunto en el menú del grupo «Conjunto» de la cinta. Tus propias listas son archivos JSON en la carpeta de listas (botón «Carpeta»)."
+
+msgid "lista ukończona"
+msgstr "lista completada"
+
+msgid "Następna lista"
+msgstr "Siguiente lista"
+
+msgid "Zestaw checklist"
+msgstr "Conjunto de listas"
+
+msgid "własny"
+msgstr "propio"
+
+msgid "Checklisty"
+msgstr "Listas"
+
+msgid "Checklisty samolotu odhaczane ręcznie albo przez symulator"
+msgstr "Listas de la aeronave, marcadas a mano o por el simulador"
+
+msgid "Zestaw"
+msgstr "Conjunto"
+
+msgid "Odhacz"
+msgstr "Marcar"
+
+msgid "Odhacz następną pozycję; na ukończonej liście – przejdź do następnej"
+msgstr "Marca el siguiente punto; en una lista completada, pasa a la siguiente"
+
+msgid "Poprzednia"
+msgstr "Anterior"
+
+msgid "Następna"
+msgstr "Siguiente"
+
+msgid "Od nowa"
+msgstr "Reiniciar"
+
+msgid "Wyczyść pozycje bieżącej listy"
+msgstr "Borra los puntos de la lista actual"
+
+msgid "Nowy lot"
+msgstr "Nuevo vuelo"
+
+msgid "Wszystkie listy od nowa (dzieje się samo po zmianie samolotu)"
+msgstr "Todas las listas desde el principio (ocurre solo al cambiar de aeronave)"
+
+msgid "Własne checklisty"
+msgstr "Listas propias"
+
+msgid "Folder własnych checklist (pliki JSON): "
+msgstr "Carpeta de listas propias (archivos JSON): "
+
+msgid "Kopia do edycji"
+msgstr "Copia para editar"
+
+msgid "Zapisz bieżący zestaw w folderze własnych checklist jako wzór do zmian albo nowego samolotu"
+msgstr "Guarda el conjunto actual en la carpeta de listas propias como plantilla para cambios o una nueva aeronave"
+
+msgid "Wczytaj"
+msgstr "Recargar"
+
+msgid "Wczytaj ponownie pliki z folderu własnych checklist"
+msgstr "Vuelve a cargar los archivos de la carpeta de listas propias"
+
+msgid "{file}: brak list (pole „lists”)"
+msgstr "{file}: no hay listas (campo «lists»)"
+
+msgid "{file}: nieznana zmienna „{name}” w warunku „{c}”"
+msgstr "{file}: variable desconocida «{name}» en la condición «{c}»"
+
+msgid "{file}: zestaw „{id}” już jest – pominięty"
+msgstr "{file}: el conjunto «{id}» ya existe – omitido"
+
+msgid "Nie rozpoznano samolotu – wybierz zestaw checklist z listy."
+msgstr "Aeronave no reconocida: elige un conjunto de listas."
+
+msgid "Połącz symulator albo wybierz zestaw checklist z listy."
+msgstr "Conecta el simulador o elige un conjunto de listas."
+
+msgid "Rozpoznany samolot: {a}"
+msgstr "Aeronave reconocida: {a}"
+
+msgid "Wybrany samoczynnie"
+msgstr "Elegido automáticamente"
+
+msgid "Wybrany ręcznie"
+msgstr "Elegido manualmente"
+
+msgid "Wszystkie checklisty od nowa"
+msgstr "Todas las listas reiniciadas"
+
+msgid "Wczytano własne zestawy: {n}, błędy: {errs} – szczegóły pod listą checklist"
+msgstr "Conjuntos propios cargados: {n}, errores: {errs} – detalles bajo la lista"
+
+msgid "Wczytano własne zestawy: {n}"
+msgstr "Conjuntos propios cargados: {n}"
+
+msgid "Zapisano {f} – zmień plik i kliknij „Wczytaj”"
+msgstr "Guardado {f}: edita el archivo y pulsa «Recargar»"
+
+msgid "Nie udało się zapisać pliku: {e}"
+msgstr "No se pudo guardar el archivo: {e}"

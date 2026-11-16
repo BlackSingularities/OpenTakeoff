@@ -39,6 +39,8 @@ pub struct Settings {
     pub migrated_link: bool,
     /// Styl przyrządów: pusty – rozpoznany z samolotu, inaczej klucz stylu (A320, B737…).
     pub instr_style: String,
+    /// Checklisty: pusty – zestaw rozpoznany z samolotu, inaczej identyfikator zestawu (a320, b737…).
+    pub checklist_set: String,
     /// Układ karty Przyrządy: 0 kokpit, 1 zegary, 2 wszystko.
     pub instr_layout: i32,
     /// Zasięg ND (indeks w ND_RANGES) i tryb ROSE.
@@ -251,6 +253,7 @@ impl Default for Settings {
             tab: 0,
             migrated_link: false,
             instr_style: String::new(),
+            checklist_set: String::new(),
             instr_layout: 0,
             nd_range: 3,
             nd_rose: false,

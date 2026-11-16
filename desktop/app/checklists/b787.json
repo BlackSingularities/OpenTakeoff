@@ -1,0 +1,100 @@
+{
+  "id": "b787",
+  "name": "Boeing 777 / 787",
+  "match": ["\\bb?787", "\\bb78[89x]\\b", "dreamliner", "\\bb?777", "\\bb77[23lw]\\b", "\\bb77f\\b", "747-?8", "\\bb748\\b"],
+  "styles": ["B787"],
+  "source": {
+    "pl": "Boeing 777 i 787 FCOM, Normal Checklist (lista w elektronicznej checkliście ECL – w obu typach taka sama; 747-8 ma bardzo podobną). Linie lotnicze mają własne wersje.",
+    "en": "Boeing 777 and 787 FCOM, Normal Checklist (as in the electronic checklist, ECL – the same in both types; the 747-8 is very similar). Airlines use their own versions.",
+    "es": "Boeing 777 y 787 FCOM, Normal Checklist (como en la lista electrónica ECL – igual en ambos tipos; el 747-8 es muy similar). Las aerolíneas usan sus propias versiones."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed lotem (preflight)", "en": "Preflight", "es": "Prevuelo" },
+      "items": [
+        { "item": "Oxygen", "resp": "Tested, 100%" },
+        { "item": "Flight instruments", "resp": "Heading ___, Altimeter ___", "auto": "altimeter_set" },
+        { "item": "Parking brake", "resp": "Set", "auto": "parking_brake" },
+        { "item": "Fuel control switches", "resp": "CUTOFF", "auto": "engines_running==0" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed uruchomieniem", "en": "Before start", "es": "Antes de la puesta en marcha" },
+      "items": [
+        { "item": "Flight deck door", "resp": "Closed and locked" },
+        { "item": "Passenger signs", "resp": "___" },
+        { "item": "MCP", "resp": "V2 ___, HDG/TRK ___, Altitude ___" },
+        { "item": "Takeoff speeds", "resp": "V1 ___, VR ___, V2 ___" },
+        { "item": "CDU preflight", "resp": "Completed" },
+        { "item": "Trim", "resp": "___ Units, 0, 0" },
+        { "item": "Taxi and takeoff briefing", "resp": "Completed" },
+        { "item": "Beacon", "resp": "ON", "auto": "beacon" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed kołowaniem", "en": "Before taxi", "es": "Antes del rodaje" },
+      "items": [
+        { "item": "Anti-ice", "resp": "___" },
+        { "item": "Recall", "resp": "Checked" },
+        { "item": "Autobrake", "resp": "RTO" },
+        { "item": "Flight controls", "resp": "Checked" },
+        { "item": "Ground equipment", "resp": "Clear" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem", "en": "Before takeoff", "es": "Antes del despegue" },
+      "items": [
+        { "item": "Flaps", "resp": "___, Green light", "auto": "flaps>0" }
+      ]
+    },
+    {
+      "name": { "pl": "Po starcie", "en": "After takeoff", "es": "Después del despegue" },
+      "items": [
+        { "item": "Landing gear", "resp": "UP", "auto": "!gear_down & !on_ground" },
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & !on_ground" }
+      ]
+    },
+    {
+      "name": { "pl": "Zniżanie", "en": "Descent", "es": "Descenso" },
+      "items": [
+        { "item": "Recall", "resp": "Checked" },
+        { "item": "Autobrake", "resp": "___" },
+        { "item": "Landing data", "resp": "VREF ___, Minimums ___" },
+        { "item": "Approach briefing", "resp": "Completed" }
+      ]
+    },
+    {
+      "name": { "pl": "Podejście", "en": "Approach", "es": "Aproximación" },
+      "items": [
+        { "item": "Altimeters", "resp": "___", "auto": "altimeter_set" }
+      ]
+    },
+    {
+      "name": { "pl": "Lądowanie", "en": "Landing", "es": "Aterrizaje" },
+      "items": [
+        { "item": "Speedbrake", "resp": "ARMED", "auto": "spoilers_armed" },
+        { "item": "Landing gear", "resp": "Down", "auto": "gear_down" },
+        { "item": "Flaps", "resp": "___, Green light", "auto": "flaps>0" }
+      ]
+    },
+    {
+      "name": { "pl": "Wyłączenie silników", "en": "Shutdown", "es": "Parada de motores" },
+      "items": [
+        { "item": "Hydraulic panel", "resp": "Set" },
+        { "item": "Fuel pumps", "resp": "Off" },
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & on_ground" },
+        { "item": "Parking brake", "resp": "___" },
+        { "item": "Fuel control switches", "resp": "CUTOFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "Weather radar", "resp": "Off" }
+      ]
+    },
+    {
+      "name": { "pl": "Zabezpieczenie (secure)", "en": "Secure", "es": "Asegurar" },
+      "items": [
+        { "item": "ADIRU", "resp": "OFF" },
+        { "item": "Emergency lights", "resp": "OFF" },
+        { "item": "Packs", "resp": "OFF" }
+      ]
+    }
+  ]
+}

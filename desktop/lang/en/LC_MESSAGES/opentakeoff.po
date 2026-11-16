@@ -4241,3 +4241,123 @@ msgstr "helicopter"
 
 msgid "Import"
 msgstr "Import"
+
+msgid "Odhaczone przez symulator"
+msgstr "Checked by the simulator"
+
+msgid "Stan w symulatorze się zgadza"
+msgstr "The simulator state matches"
+
+msgid "Symulator sprawdza tę pozycję – stan jeszcze się nie zgadza"
+msgstr "The simulator checks this item – the state does not match yet"
+
+msgid "Pozycję sprawdza symulator, gdy jest połączony"
+msgstr "This item is checked by the simulator when it is connected"
+
+msgid "Brak checklisty dla tego samolotu"
+msgstr "No checklist for this aircraft"
+
+msgid "Zestaw wybierzesz z menu w grupie „Zestaw” na wstążce. Własne checklisty to pliki JSON w folderze checklist (przycisk „Folder”)."
+msgstr "Pick a set from the menu in the “Set” group on the ribbon. Your own checklists are JSON files in the checklists folder (“Folder” button)."
+
+msgid "lista ukończona"
+msgstr "checklist complete"
+
+msgid "Następna lista"
+msgstr "Next checklist"
+
+msgid "Zestaw checklist"
+msgstr "Checklist set"
+
+msgid "własny"
+msgstr "custom"
+
+msgid "Checklisty"
+msgstr "Checklists"
+
+msgid "Checklisty samolotu odhaczane ręcznie albo przez symulator"
+msgstr "Aircraft checklists, ticked off by hand or by the simulator"
+
+msgid "Zestaw"
+msgstr "Set"
+
+msgid "Odhacz"
+msgstr "Check"
+
+msgid "Odhacz następną pozycję; na ukończonej liście – przejdź do następnej"
+msgstr "Check the next item; on a completed checklist – go to the next one"
+
+msgid "Poprzednia"
+msgstr "Previous"
+
+msgid "Następna"
+msgstr "Next"
+
+msgid "Od nowa"
+msgstr "Restart"
+
+msgid "Wyczyść pozycje bieżącej listy"
+msgstr "Clear the items of the current checklist"
+
+msgid "Nowy lot"
+msgstr "New flight"
+
+msgid "Wszystkie listy od nowa (dzieje się samo po zmianie samolotu)"
+msgstr "All checklists from the start (happens automatically when the aircraft changes)"
+
+msgid "Własne checklisty"
+msgstr "Custom checklists"
+
+msgid "Folder własnych checklist (pliki JSON): "
+msgstr "Custom checklists folder (JSON files): "
+
+msgid "Kopia do edycji"
+msgstr "Copy to edit"
+
+msgid "Zapisz bieżący zestaw w folderze własnych checklist jako wzór do zmian albo nowego samolotu"
+msgstr "Save the current set to the custom checklists folder as a template for changes or a new aircraft"
+
+msgid "Wczytaj"
+msgstr "Reload"
+
+msgid "Wczytaj ponownie pliki z folderu własnych checklist"
+msgstr "Reload the files from the custom checklists folder"
+
+msgid "{file}: brak list (pole „lists”)"
+msgstr "{file}: no checklists (the “lists” field)"
+
+msgid "{file}: nieznana zmienna „{name}” w warunku „{c}”"
+msgstr "{file}: unknown variable “{name}” in the condition “{c}”"
+
+msgid "{file}: zestaw „{id}” już jest – pominięty"
+msgstr "{file}: the set “{id}” already exists – skipped"
+
+msgid "Nie rozpoznano samolotu – wybierz zestaw checklist z listy."
+msgstr "Aircraft not recognised – pick a checklist set from the list."
+
+msgid "Połącz symulator albo wybierz zestaw checklist z listy."
+msgstr "Connect the simulator or pick a checklist set from the list."
+
+msgid "Rozpoznany samolot: {a}"
+msgstr "Recognised aircraft: {a}"
+
+msgid "Wybrany samoczynnie"
+msgstr "Picked automatically"
+
+msgid "Wybrany ręcznie"
+msgstr "Picked manually"
+
+msgid "Wszystkie checklisty od nowa"
+msgstr "All checklists restarted"
+
+msgid "Wczytano własne zestawy: {n}, błędy: {errs} – szczegóły pod listą checklist"
+msgstr "Custom sets loaded: {n}, errors: {errs} – details below the checklist list"
+
+msgid "Wczytano własne zestawy: {n}"
+msgstr "Custom sets loaded: {n}"
+
+msgid "Zapisano {f} – zmień plik i kliknij „Wczytaj”"
+msgstr "Saved {f} – edit the file and click “Reload”"
+
+msgid "Nie udało się zapisać pliku: {e}"
+msgstr "Could not save the file: {e}"

@@ -5,7 +5,7 @@
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { App, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV } from "state.slint";
+import { App, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV, ClSetV, ClListV, ClItemV } from "state.slint";
 import { Tip, TipArea, IconButton, BigButton, Group, Col, Row, Button, Card, Segmented, Splitter, MenuItem, MenuSep } from "widgets.slint";
 import { NavTab, Readout, RecordButton, Sidebar } from "shell.slint";
 import { Toast, Dot, Colors } from "parts.slint";
@@ -23,9 +23,57 @@ import { FeedbackWindow } from "feedback.slint";
 import { Studio } from "studio.slint";
 import { Shots } from "shots.slint";
 import { PlanView } from "plan.slint";
+import { Checklists } from "checklists.slint";
 import { LandingWindow, StreamWindow, OverlayWindow, StreamCell } from "overlays.slint";
 
-export { App, Theme, Icons, Tip, FeedbackWindow, LandingWindow, StreamWindow, OverlayWindow, StreamCell, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV }
+export { App, Theme, Icons, Tip, FeedbackWindow, LandingWindow, StreamWindow, OverlayWindow, StreamCell, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV, ClSetV, ClListV, ClItemV }
+
+/// Checklisty: zestaw dla samolotu – duży przycisk wstążki z menu (Auto – rozpoznany z samolotu).
+component ChecklistSetButton inherits Rectangle {
+    width: bb.min-width;
+    bb := BigButton {
+        width: parent.width;
+        icon: Icons.plane;
+        label: App.cl-auto ? "Auto" : App.cl-set-name != "" ? App.cl-set-name : @tr("Samolot");
+        menu: true;
+        active: !App.cl-auto;
+        tip: @tr("Zestaw checklist") + (App.cl-set-name != "" ? ": " + App.cl-set-name : "");
+        clicked => {
+            pop.show();
+        }
+    }
+    pop := PopupWindow {
+        x: 0;
+        y: root.height + 4px;
+        width: 300px * Theme.scale;
+        close-policy: close-on-click-outside;
+        Card {
+            VerticalLayout {
+                padding: 6px;
+                spacing: 1px;
+                MenuItem {
+                    label: "Auto";
+                    hint: App.cl-auto && App.cl-set-name != "" ? App.cl-set-name : @tr("z samolotu");
+                    checked: App.cl-auto;
+                    clicked => {
+                        App.cmd("cl-set", "");
+                        pop.close();
+                    }
+                }
+                MenuSep { }
+                for s in App.cl-sets: MenuItem {
+                    label: s.name;
+                    hint: s.user ? @tr("własny") : "";
+                    checked: !App.cl-auto && s.active;
+                    clicked => {
+                        App.cmd("cl-set", s.id);
+                        pop.close();
+                    }
+                }
+            }
+        }
+    }
+}
 
 /// Podkład mapy: duży przycisk wstążki z menu (wg motywu, ciemny, jasny, OSM, satelita).
 component MapStyleButton inherits Rectangle {
@@ -234,6 +282,12 @@ component Tabs inherits Rectangle {
                 label: @tr("Plan lotu");
                 icon: Icons.route;
                 tip: @tr("Trasa, SID, STAR, podejścia, profil i eksport do MSFS i X-Plane");
+            }
+            NavTab {
+                index: 13;
+                label: @tr("Checklisty");
+                icon: Icons.list-checks;
+                tip: @tr("Checklisty samolotu odhaczane ręcznie albo przez symulator");
             }
             NavTab {
                 index: 4;
@@ -607,6 +661,85 @@ component Ribbon inherits Rectangle {
         padding-left: 4px;
         spacing: 0;
         alignment: start;
+        if App.tab == 13: Group {
+            title: @tr("Zestaw");
+            ChecklistSetButton { }
+        }
+        if App.tab == 13: Group {
+            title: @tr("Lista");
+            BigButton {
+                icon: Icons.check;
+                label: @tr("Odhacz");
+                enabled: App.cl-set-id != "";
+                tip: @tr("Odhacz następną pozycję; na ukończonej liście – przejdź do następnej");
+                clicked => {
+                    App.cmd("cl-check-next", "");
+                }
+            }
+            BigButton {
+                icon: Icons.chevron-left;
+                label: @tr("Poprzednia");
+                enabled: App.cl-set-id != "" && App.cl-current > 0;
+                clicked => {
+                    App.cmd("cl-prev", "");
+                }
+            }
+            BigButton {
+                icon: Icons.chevron-right;
+                label: @tr("Następna");
+                enabled: App.cl-has-next;
+                clicked => {
+                    App.cmd("cl-next", "");
+                }
+            }
+            BigButton {
+                icon: Icons.rotate-ccw;
+                label: @tr("Od nowa");
+                enabled: App.cl-set-id != "";
+                tip: @tr("Wyczyść pozycje bieżącej listy");
+                clicked => {
+                    App.cmd("cl-reset-list", "");
+                }
+            }
+            BigButton {
+                icon: Icons.undo-2;
+                label: @tr("Nowy lot");
+                enabled: App.cl-set-id != "";
+                tip: @tr("Wszystkie listy od nowa (dzieje się samo po zmianie samolotu)");
+                clicked => {
+                    App.cmd("cl-reset", "");
+                }
+            }
+        }
+        if App.tab == 13: Group {
+            title: @tr("Własne checklisty");
+            last: true;
+            BigButton {
+                icon: Icons.folder-open;
+                label: @tr("Folder");
+                tip: @tr("Folder własnych checklist (pliki JSON): ") + App.cl-folder;
+                clicked => {
+                    App.cmd("cl-folder", "");
+                }
+            }
+            BigButton {
+                icon: Icons.copy;
+                label: @tr("Kopia do edycji");
+                enabled: App.cl-set-id != "";
+                tip: @tr("Zapisz bieżący zestaw w folderze własnych checklist jako wzór do zmian albo nowego samolotu");
+                clicked => {
+                    App.cmd("cl-copy", "");
+                }
+            }
+            BigButton {
+                icon: Icons.refresh-cw;
+                label: @tr("Wczytaj");
+                tip: @tr("Wczytaj ponownie pliki z folderu własnych checklist");
+                clicked => {
+                    App.cmd("cl-reload", "");
+                }
+            }
+        }
         if App.tab == 12: Group {
             title: @tr("Plan");
             BigButton {
@@ -1707,6 +1840,10 @@ export component AppWindow inherits Window {
                         height: parent.height;
                     }
                     if App.tab == 12: PlanView {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                    if App.tab == 13: Checklists {
                         width: parent.width;
                         height: parent.height;
                     }

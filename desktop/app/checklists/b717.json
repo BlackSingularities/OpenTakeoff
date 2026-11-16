@@ -1,0 +1,166 @@
+{
+  "id": "b717",
+  "name": "Boeing 717",
+  "match": ["\\bb?717\\b", "\\bb712\\b", "md-?95"],
+  "source": {
+    "pl": "Boeing 717 – checklista normalna TFDi Design wzorowana na checkliście linii lotniczych (tylko do symulacji). C – kapitan / PF, F – pierwszy oficer / PM.",
+    "en": "Boeing 717 – TFDi Design normal checklist modelled on airline checklists (flight simulation only). C – captain / PF, F – first officer / PM.",
+    "es": "Boeing 717 – lista normal de TFDi Design basada en listas de aerolíneas (solo simulación). C – comandante / PF, F – primer oficial / PM."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed lotem (preflight)", "en": "Preflight", "es": "Prevuelo" },
+      "items": [
+        { "item": "Interior and exterior inspection", "resp": "Completed (C)" },
+        { "item": "Oxygen mask", "resp": "Checked (All)" },
+        { "item": "Voice recorder", "resp": "Checked (C)" },
+        { "item": "Cargo smoke", "resp": "Checked (C)" },
+        { "item": "Air conditioning panel", "resp": "Set (C)" },
+        { "item": "Ice protection panel", "resp": "Set (C)" },
+        { "item": "Annunciator lights", "resp": "Checked (C)" },
+        { "item": "Passenger signs", "resp": "On (C)" },
+        { "item": "Flight control panel", "resp": "Set (C)" },
+        { "item": "Altimeters", "resp": "___, Cross checked (Both)", "auto": "altimeter_set" },
+        { "item": "Flight and navigation instruments", "resp": "Checked (Both)" },
+        { "item": "Fire warning", "resp": "Checked (C)" },
+        { "item": "Parking brake", "resp": "Set (C)", "auto": "parking_brake" },
+        { "item": "Takeoff warning", "resp": "Checked (C)" },
+        { "item": "Fuel switches", "resp": "Off (C)", "auto": "engines_running==0" },
+        { "item": "Radios and transponder", "resp": "Set (C)" },
+        { "item": "Radar", "resp": "Off (C)" },
+        { "item": "Aileron and rudder trim", "resp": "Set (C)" },
+        { "item": "Flight attendant briefing", "resp": "Completed (C)" },
+        { "item": "Departure briefing", "resp": "Completed (C)" },
+        { "item": "Logbook and QRHs", "resp": "Onboard (C)" },
+        { "item": "Fuel required", "resp": "___, Verified (Both)" }
+      ]
+    },
+    {
+      "name": { "pl": "Wypychanie (pushback)", "en": "Pushback", "es": "Remolque (pushback)" },
+      "items": [
+        { "item": "Doors", "resp": "Closed (F)" },
+        { "item": "Hydraulic pumps (all)", "resp": "On (F)" },
+        { "item": "Fuel panel", "resp": "Set (F)" },
+        { "item": "Transponder", "resp": "As required (F)" },
+        { "item": "Ice protection", "resp": "As required (C)" },
+        { "item": "Beacon", "resp": "On (C)", "auto": "beacon" },
+        { "item": "Parking brake", "resp": "Released (C)", "auto": "!parking_brake" }
+      ]
+    },
+    {
+      "name": { "pl": "Po uruchomieniu", "en": "After start", "es": "Después de la puesta en marcha" },
+      "items": [
+        { "item": "Engine anti-ice", "resp": "As required (C)" },
+        { "item": "Air conditioning panel", "resp": "Set (F)" }
+      ]
+    },
+    {
+      "name": { "pl": "Kołowanie", "en": "Taxi", "es": "Rodaje" },
+      "items": [
+        { "item": "Flaps", "resp": "___, Set (Both)", "auto": "flaps>0" },
+        { "item": "Spoilers", "resp": "Armed (F)", "auto": "spoilers_armed" },
+        { "item": "Takeoff speeds", "resp": "V1, VR, V2, Verified (Both)" },
+        { "item": "Stabiliser trim", "resp": "Set (C)" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem", "en": "Before takeoff", "es": "Antes del despegue" },
+      "items": [
+        { "item": "Departure runway", "resp": "Verified (Both)" },
+        { "item": "Flaps", "resp": "___, Set (Both)", "auto": "flaps>0" },
+        { "item": "Takeoff briefing", "resp": "Completed (C)" },
+        { "item": "Brake temperature", "resp": "Checked (F)" },
+        { "item": "Flight controls", "resp": "Free and correct (Both)" },
+        { "item": "EAD", "resp": "Checked (F)" },
+        { "item": "Transponder", "resp": "TA/RA (F)", "auto": "xpdr_alt" },
+        { "item": "Landing lights", "resp": "On (C)", "auto": "landing_lights" },
+        { "item": "Flight attendants", "resp": "Notified and acknowledged (F)" }
+      ]
+    },
+    {
+      "name": { "pl": "Po starcie", "en": "After takeoff", "es": "Después del despegue" },
+      "items": [
+        { "item": "Landing gear", "resp": "Up (F)", "auto": "!gear_down & !on_ground" },
+        { "item": "Hydraulic aux / trans pump switches", "resp": "Off (F)" },
+        { "item": "APU", "resp": "Off (F)" },
+        { "item": "Flaps", "resp": "Up (F)", "auto": "flaps==0 & !on_ground" },
+        { "item": "Flap takeoff selector", "resp": "5 (F)" },
+        { "item": "Spoilers", "resp": "Disarmed (F)", "auto": "!spoilers_armed & !on_ground" },
+        { "item": "EAD", "resp": "Checked (F)" }
+      ]
+    },
+    {
+      "name": { "pl": "Wznoszenie", "en": "Climb", "es": "Ascenso" },
+      "items": [
+        { "item": "Landing lights", "resp": "Off (C)", "auto": "!landing_lights & !on_ground" },
+        { "item": "Altimeters", "resp": "Set standard, Cross checked (Both)", "auto": "baro_std" }
+      ]
+    },
+    {
+      "name": { "pl": "Zniżanie", "en": "Descent", "es": "Descenso" },
+      "items": [
+        { "item": "Altimeters", "resp": "Set and cross checked (Both)", "auto": "altimeter_set" },
+        { "item": "Minimums", "resp": "Set and cross checked (Both)" },
+        { "item": "Landing data", "resp": "Verified (C)" },
+        { "item": "Approach briefing", "resp": "Completed (C)" },
+        { "item": "Hydraulic aux / trans pump switches", "resp": "On (Both)" },
+        { "item": "Ice protection", "resp": "As required (C)" },
+        { "item": "Seatbelt sign", "resp": "On (C)" }
+      ]
+    },
+    {
+      "name": { "pl": "Podejście", "en": "Approach", "es": "Aproximación" },
+      "items": [
+        { "item": "Flight and navigation instruments", "resp": "Verified (Both)" },
+        { "item": "Cabin", "resp": "Notified (C)" },
+        { "item": "Altimeters", "resp": "Set and cross checked (Both)", "auto": "altimeter_set" }
+      ]
+    },
+    {
+      "name": { "pl": "Lądowanie", "en": "Landing", "es": "Aterrizaje" },
+      "items": [
+        { "item": "Landing gear", "resp": "Down, 3 green (Both)", "auto": "gear_down" },
+        { "item": "Flaps", "resp": "___, Set (Both)", "auto": "flaps>0" },
+        { "item": "Spoilers", "resp": "Armed (F)", "auto": "spoilers_armed" },
+        { "item": "EAD", "resp": "Checked (F)" }
+      ]
+    },
+    {
+      "name": { "pl": "Po wylądowaniu", "en": "After landing", "es": "Después del aterrizaje" },
+      "items": [
+        { "item": "Spoilers", "resp": "Retracted (F)", "auto": "!spoilers_armed & spoilers_pct<5 & on_ground" },
+        { "item": "Flaps", "resp": "Up (F)", "auto": "flaps==0 & on_ground" },
+        { "item": "Radar", "resp": "Off (F)" },
+        { "item": "Transponder", "resp": "As required (F)" },
+        { "item": "APU", "resp": "As required (F)" },
+        { "item": "Landing lights", "resp": "Off (F)", "auto": "!landing_lights & on_ground" },
+        { "item": "Taxi lights", "resp": "On (F)", "auto": "taxi_lights" }
+      ]
+    },
+    {
+      "name": { "pl": "Wyłączenie / postój", "en": "Shutdown / parking", "es": "Parada / estacionamiento" },
+      "items": [
+        { "item": "Parking brake", "resp": "Set (C)", "auto": "parking_brake" },
+        { "item": "Seatbelt sign", "resp": "Off (F)" },
+        { "item": "Hydraulic aux / transfer pump switches", "resp": "As required (F)" },
+        { "item": "Air conditioning panel", "resp": "As required (F)" },
+        { "item": "Fuel panel", "resp": "As required (F)" },
+        { "item": "Ice protection", "resp": "Off (F)" },
+        { "item": "Beacon", "resp": "Off (F)", "auto": "!beacon" },
+        { "item": "Fuel switches", "resp": "Off (C)", "auto": "engines_running==0 & on_ground" }
+      ]
+    },
+    {
+      "name": { "pl": "Zabezpieczenie (secure)", "en": "Secure", "es": "Asegurar" },
+      "items": [
+        { "item": "IRS mode selectors", "resp": "Off (C)" },
+        { "item": "Galley power", "resp": "Off (F)" },
+        { "item": "Pack switches", "resp": "Off (C)" },
+        { "item": "Emergency lights", "resp": "Off (C)" },
+        { "item": "APU / external power", "resp": "As required (C)" },
+        { "item": "Emergency power", "resp": "Off (C)" },
+        { "item": "Battery switch", "resp": "Off (C)" }
+      ]
+    }
+  ]
+}

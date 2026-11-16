@@ -1,0 +1,170 @@
+{
+  "id": "b200",
+  "name": "Beechcraft King Air B200 / 350",
+  "match": ["king ?air", "\\bb350i?\\b", "\\bbe(20|35|30|9l)\\b", "\\bb200\\b"],
+  "source": {
+    "pl": "Beechcraft Super King Air B200 – skrócona checklista (P. Almeida, wersja 1.0) według POH, rozdział 4. King Air 350 ma podobne procedury.",
+    "en": "Beechcraft Super King Air B200 – abbreviated checklist (P. Almeida, v1.0) following the POH, chapter 4. The King Air 350 uses similar procedures.",
+    "es": "Beechcraft Super King Air B200 – lista abreviada (P. Almeida, v1.0) según el POH, capítulo 4. El King Air 350 usa procedimientos similares."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed uruchomieniem", "en": "Before start", "es": "Antes de la puesta en marcha" },
+      "items": [
+        { "item": "Weight / CG", "resp": "CHECKED" },
+        { "item": "Control locks", "resp": "REMOVED" },
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Landing gear handle", "resp": "DOWN", "auto": "gear_down" },
+        { "item": "Power levers", "resp": "IDLE", "auto": "throttle<=5" },
+        { "item": "Propeller levers", "resp": "FULL FORWARD" },
+        { "item": "Condition levers", "resp": "OFF", "auto": "engines_running==0" },
+        { "item": "Subpanel switches", "resp": "SET" },
+        { "item": "Oxygen system", "resp": "CHECKED / SET" },
+        { "item": "Circuit breakers", "resp": "SET" },
+        { "item": "Firewall valves", "resp": "OPEN / CHECKED" },
+        { "item": "Standby pumps", "resp": "CHECKED / OFF" },
+        { "item": "Battery", "resp": "ON / CHECKED" },
+        { "item": "Fuel quantity", "resp": "CHECKED" },
+        { "item": "Cabin door / cabin", "resp": "LOCKED / SECURE" },
+        { "item": "Seat belts", "resp": "FASTENED" },
+        { "item": "Annunciator panel", "resp": "TEST / CHECKED" },
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "beacon" }
+      ]
+    },
+    {
+      "name": { "pl": "Uruchomienie silników", "en": "Engine start", "es": "Arranque de motores" },
+      "items": [
+        { "item": "Propellers", "resp": "CLEAR" },
+        { "item": "Right ignition", "resp": "START" },
+        { "item": "Right condition lever", "resp": "LOW IDLE" },
+        { "item": "ITT / N1 / oil pressure", "resp": "CHECKED" },
+        { "item": "Right ignition", "resp": "OFF" },
+        { "item": "Right generator", "resp": "RESET / ON" },
+        { "item": "Left ignition", "resp": "START" },
+        { "item": "Left condition lever", "resp": "LOW IDLE" },
+        { "item": "ITT / N1 / oil pressure", "resp": "CHECKED", "auto": "engines_running>=2" },
+        { "item": "Left ignition", "resp": "OFF" },
+        { "item": "Left generator", "resp": "RESET / ON" }
+      ]
+    },
+    {
+      "name": { "pl": "Po uruchomieniu / kołowanie", "en": "After start / taxi", "es": "Después del arranque / rodaje" },
+      "items": [
+        { "item": "Inverter", "resp": "ON" },
+        { "item": "DC volt & load", "resp": "CHECKED" },
+        { "item": "Avionics master", "resp": "ON" },
+        { "item": "Bleed air", "resp": "AS REQUIRED" },
+        { "item": "Engine instruments", "resp": "CHECKED" },
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "taxi_lights" },
+        { "item": "Clearance", "resp": "RECEIVED" },
+        { "item": "Brakes", "resp": "CHECKED", "auto": "!parking_brake" }
+      ]
+    },
+    {
+      "name": { "pl": "Próba silników (1800 RPM)", "en": "Engine run-up (1800 RPM)", "es": "Prueba de motores (1800 RPM)" },
+      "items": [
+        { "item": "Parking brake", "resp": "AS REQUIRED" },
+        { "item": "Engine friction locks", "resp": "SET" },
+        { "item": "Pneumatic / vacuum", "resp": "CHECKED" },
+        { "item": "Overspeed governors & rudder boost", "resp": "CHECKED" },
+        { "item": "Primary governors", "resp": "CHECKED" },
+        { "item": "Ice vanes", "resp": "CHECKED" },
+        { "item": "Autofeather / autoignition", "resp": "CHECKED / OFF" },
+        { "item": "Manual feather", "resp": "CHECKED" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem", "en": "Before takeoff", "es": "Antes del despegue" },
+      "items": [
+        { "item": "Autopilot / flight director", "resp": "AS REQUIRED / OFF" },
+        { "item": "Electric trim", "resp": "CHECKED / ON" },
+        { "item": "Trim", "resp": "SET" },
+        { "item": "Flight controls", "resp": "CHECKED" },
+        { "item": "Flaps", "resp": "CHECKED / AS REQUIRED" },
+        { "item": "Propeller levers", "resp": "FULL FORWARD" },
+        { "item": "Autofeather", "resp": "ARMED" },
+        { "item": "Altimeters", "resp": "CHECKED / SET", "auto": "altimeter_set" },
+        { "item": "Radios / NAVAIDs", "resp": "CHECKED / SET" },
+        { "item": "Pressurization", "resp": "SET" },
+        { "item": "Fuel panel", "resp": "CHECKED" },
+        { "item": "Crew", "resp": "BRIEFED" },
+        { "item": "Bleed air", "resp": "OPEN" },
+        { "item": "Condition levers", "resp": "AS REQUIRED" },
+        { "item": "Transponder", "resp": "CHECKED / ON", "auto": "xpdr_on" },
+        { "item": "Anti-ice / de-ice", "resp": "AS REQUIRED" },
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "landing_lights" },
+        { "item": "Autoignition", "resp": "ARMED" }
+      ]
+    },
+    {
+      "name": { "pl": "Wznoszenie", "en": "Climb", "es": "Ascenso" },
+      "items": [
+        { "item": "Landing gear", "resp": "UP", "auto": "!gear_down & !on_ground" },
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & !on_ground" },
+        { "item": "Yaw damper", "resp": "ON" },
+        { "item": "Climb power", "resp": "SET" },
+        { "item": "Propeller RPM", "resp": "1900 RPM" },
+        { "item": "Propeller sync", "resp": "ON" },
+        { "item": "Autofeather", "resp": "OFF" },
+        { "item": "Engine instruments", "resp": "CHECKED" },
+        { "item": "Lights", "resp": "AS REQUIRED" },
+        { "item": "Pressurization", "resp": "CHECKED" },
+        { "item": "Altimeters", "resp": "CHECKED / SET" }
+      ]
+    },
+    {
+      "name": { "pl": "Przelot i zniżanie", "en": "Cruise & descent", "es": "Crucero y descenso" },
+      "items": [
+        { "item": "Cruise power", "resp": "SET" },
+        { "item": "Engine instruments", "resp": "CHECKED" },
+        { "item": "Altimeters", "resp": "CHECKED / SET", "auto": "altimeter_set" },
+        { "item": "Cabin sign", "resp": "AS REQUIRED" },
+        { "item": "Windshield anti-ice", "resp": "AS REQUIRED" },
+        { "item": "Descent power", "resp": "AS REQUIRED" },
+        { "item": "Crew / weather", "resp": "BRIEFED / CHECKED" }
+      ]
+    },
+    {
+      "name": { "pl": "Podejście i lądowanie", "en": "Approach & landing", "es": "Aproximación y aterrizaje" },
+      "items": [
+        { "item": "Pressurization", "resp": "CHECKED" },
+        { "item": "Cabin sign", "resp": "SET" },
+        { "item": "Autofeather", "resp": "ARMED" },
+        { "item": "Flaps", "resp": "APPROACH", "auto": "flaps>0" },
+        { "item": "Landing gear", "resp": "DOWN", "auto": "gear_down" },
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "landing_lights" },
+        { "item": "Propeller sync", "resp": "OFF" },
+        { "item": "Radar", "resp": "OFF" },
+        { "item": "Flaps", "resp": "LAND" },
+        { "item": "Yaw damper", "resp": "OFF" },
+        { "item": "Propeller levers", "resp": "FULL FORWARD" }
+      ]
+    },
+    {
+      "name": { "pl": "Po wylądowaniu", "en": "After landing", "es": "Después del aterrizaje" },
+      "items": [
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "!landing_lights" },
+        { "item": "Anti-ice / de-ice", "resp": "OFF" },
+        { "item": "Autoignition", "resp": "OFF" },
+        { "item": "Trim", "resp": "SET" },
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & on_ground" }
+      ]
+    },
+    {
+      "name": { "pl": "Wyłączenie i zabezpieczenie", "en": "Shutdown & securing", "es": "Parada y asegurar" },
+      "items": [
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Avionics master", "resp": "OFF" },
+        { "item": "Inverter", "resp": "OFF" },
+        { "item": "Autofeather", "resp": "OFF" },
+        { "item": "Lights", "resp": "OFF" },
+        { "item": "ITT", "resp": "CHECKED" },
+        { "item": "Condition levers", "resp": "OFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "Propeller levers", "resp": "FEATHERED" },
+        { "item": "Boost pumps / crossfeed", "resp": "OFF / OFF" },
+        { "item": "Battery / generators", "resp": "OFF / OFF" },
+        { "item": "Control locks", "resp": "INSTALLED" }
+      ]
+    }
+  ]
+}

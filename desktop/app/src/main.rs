@@ -9,6 +9,7 @@ mod app;
 mod avionics;
 mod briefing;
 mod chart;
+mod checklists;
 mod feedback;
 mod flightplan;
 mod fmt;
@@ -123,6 +124,7 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
                 }
                 11 => shots::refresh(),
                 12 => flightplan::refresh(),
+                13 => checklists::refresh(),
                 _ => {}
             }
             if t == 0 {
@@ -560,7 +562,7 @@ fn cmd(ui: &AppWindow, id: &str, arg: &str) {
         }
         "feedback" => feedback::open_form(),
         _ => {
-            if !instruments::cmd(id, arg) && !flightplan::cmd(id, arg) && !navmap::cmd(id, arg) && !overlays::cmd(id, arg) && !shots::cmd(id, arg) {
+            if !instruments::cmd(id, arg) && !flightplan::cmd(id, arg) && !checklists::cmd(id, arg) && !navmap::cmd(id, arg) && !overlays::cmd(id, arg) && !shots::cmd(id, arg) {
                 log::warn(&format!("Nieznane polecenie: {id} {arg}"));
             }
         }
@@ -862,6 +864,10 @@ fn main() {
             if tick % 4 == 0 {
                 app::refresh_live(false);
             }
+            // Checklisty: samolot, warunki i odhaczanie przez symulator (także przy innej karcie)
+            if tick % 5 == 2 {
+                checklists::tick(ui.global::<App>().get_tab() == 13);
+            }
             // Nakładki (karta lądowania, pasek do transmisji, okno), skrót zrzutu ekranu, postęp planu
             overlays::tick();
             shots::poll_key();
@@ -1037,8 +1043,8 @@ fn snapshots(ui: &AppWindow, dir: std::path::PathBuf) {
                 let _ = image::save_buffer(&path, buf.as_bytes(), buf.width(), buf.height(), image::ExtendedColorType::Rgba8);
             }
         }
-        // Karty 0–12 (12: Plan lotu), potem 99: Mapa w widoku 3D (OPENTAKEOFF_SNAPSHOT_TABS="1,8,9,99" – wybrane)
-        let order: Vec<i32> = std::env::var("OPENTAKEOFF_SNAPSHOT_TABS").ok().map(|t| t.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_else(|| (0..=12).chain([99]).collect());
+        // Karty 0–13 (12: Plan lotu, 13: Checklisty), potem 99: Mapa w widoku 3D (OPENTAKEOFF_SNAPSHOT_TABS="1,8,9,99" – wybrane)
+        let order: Vec<i32> = std::env::var("OPENTAKEOFF_SNAPSHOT_TABS").ok().map(|t| t.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_else(|| (0..=13).chain([99]).collect());
         if i as usize >= order.len() {
             cmd(&ui, "nav-3d", "0");
             quit();

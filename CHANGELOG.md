@@ -1,3 +1,8 @@
+## 3.7.0
+
+- Nowa karta Checklisty w programie na Windows – 11 zestawów checklist normalnych: Airbus A320/A330/A340 (FCOM), Boeing 737 NG/MAX, 777/787 (FCOM/QRH) i 717, King Air B200/350, Cessna 208 Caravan, Cessna 152 i 172S, Piper PA-28, Cirrus SR20/SR22 oraz Diamond DA40 NG (według POH, PFM i checklist operatorów), dobierane same do samolotu z symulatora albo wybierane ręcznie. Pozycje odhacza się kliknięciem albo przyciskiem Odhacz, a pozycje z warunkiem (hamulec postojowy, klapy, podwozie, spoilery, światła, silniki, transponder, wysokościomierz) odhacza symulator. Postęp każdej listy i całego zestawu, przejście do następnej listy, zmiana samolotu zaczyna wszystko od nowa.
+- Własne checklisty jako pliki JSON w folderze danych programu: zastępują wbudowane albo dochodzą do listy, z dopasowaniem do samolotu po nazwie i warunkami odhaczania. „Kopia do edycji” zapisuje wbudowany zestaw jako wzór. Nowy wbudowany zestaw to sam plik w folderze desktop/app/checklists. Opis formatu: docs/checklists.md.
+
 ## 3.6.0
 
 - Mapa: Direct To – kliknięcie celu na mapie albo lotniska na liście rysuje linię do celu, a panel pokazuje kurs z poprawką na wiatr, czas lotu, ETA, paliwo na przylocie i początek zniżania. Szybki wybór podkładu mapy (wg motywu, ciemny, jasny, OpenStreetMap, satelita).

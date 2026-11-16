@@ -1,0 +1,176 @@
+{
+  "id": "c172",
+  "name": "Cessna 172S Skyhawk (G1000)",
+  "match": ["\\bc?172", "skyhawk"],
+  "styles": ["C172", "G1000"],
+  "source": {
+    "pl": "Cessna 172S Nav III – checklista normalna szkoły lotniczej oparta na POH, sekcja 4 (normal procedures). Do używania razem z POH.",
+    "en": "Cessna 172S Nav III – flight school normal checklist based on the POH, section 4 (normal procedures). Use together with the POH.",
+    "es": "Cessna 172S Nav III – lista normal de escuela de vuelo basada en el POH, sección 4 (procedimientos normales). Úsese junto con el POH."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed uruchomieniem silnika", "en": "Before starting engine", "es": "Antes de arrancar el motor" },
+      "items": [
+        { "item": "Brakes", "resp": "TEST & SET", "auto": "parking_brake" },
+        { "item": "Passenger briefing", "resp": "COMPLETE" },
+        { "item": "Seats", "resp": "ADJUST & LOCK" },
+        { "item": "Seat belts & harnesses", "resp": "FASTEN" },
+        { "item": "Avionics bus 1 & 2", "resp": "OFF" },
+        { "item": "Electrical equipment", "resp": "OFF" },
+        { "item": "Circuit breakers", "resp": "CHECK IN" },
+        { "item": "Fuel shutoff valve", "resp": "ON (push full in)" },
+        { "item": "Fuel selector", "resp": "BOTH" },
+        { "item": "Standby battery", "resp": "TEST (10 s) & ARM" }
+      ]
+    },
+    {
+      "name": { "pl": "Uruchomienie silnika", "en": "Starting engine", "es": "Arranque del motor" },
+      "items": [
+        { "item": "Master switch", "resp": "ON" },
+        { "item": "Beacon", "resp": "ON", "auto": "beacon" },
+        { "item": "Navigation lights", "resp": "AS REQUIRED" },
+        { "item": "Throttle", "resp": "OPEN 1/4 INCH" },
+        { "item": "Mixture", "resp": "IDLE CUT-OFF" },
+        { "item": "Prime", "resp": "AS REQUIRED" },
+        { "item": "Propeller area", "resp": "CLEAR" },
+        { "item": "Magnetos", "resp": "START", "auto": "engines_running>0" },
+        { "item": "Mixture", "resp": "FULL RICH (as engine starts)", "auto": "engines_running>0 & mixture>=95" },
+        { "item": "Oil pressure", "resp": "CHECK" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed kołowaniem", "en": "Before taxi", "es": "Antes del rodaje" },
+      "items": [
+        { "item": "Avionics bus 1 & 2", "resp": "ON" },
+        { "item": "Flaps", "resp": "RETRACT", "auto": "flaps==0" },
+        { "item": "Mixture", "resp": "ADJUST (lean for taxi)" },
+        { "item": "Flight plan", "resp": "BUILD & ACTIVATE" },
+        { "item": "Fuel totalizer", "resp": "SET" },
+        { "item": "ATIS", "resp": "COPY" },
+        { "item": "Altimeters", "resp": "SET (PFD & standby)", "auto": "altimeter_set" },
+        { "item": "Altitude select", "resp": "SET" },
+        { "item": "Radios", "resp": "SET" },
+        { "item": "Transponder", "resp": "SET", "auto": "xpdr_on" }
+      ]
+    },
+    {
+      "name": { "pl": "Kołowanie", "en": "Taxi", "es": "Rodaje" },
+      "items": [
+        { "item": "Parking brake", "resp": "RELEASE", "auto": "!parking_brake" },
+        { "item": "Taxi light", "resp": "ON", "auto": "taxi_lights" },
+        { "item": "Brakes, nose steering & flight instruments", "resp": "CHECK" }
+      ]
+    },
+    {
+      "name": { "pl": "Próba silnika (run-up)", "en": "Engine run-up", "es": "Prueba de motor (run-up)" },
+      "items": [
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Mixture", "resp": "FULL RICH", "auto": "mixture>=95" },
+        { "item": "Throttle", "resp": "1800 RPM" },
+        { "item": "Magnetos", "resp": "CHECK (max drop 150, max diff. 50 RPM)" },
+        { "item": "Vacuum", "resp": "CHECK" },
+        { "item": "Engine indicators", "resp": "CHECK" },
+        { "item": "Volt & ammeters", "resp": "CHECK" },
+        { "item": "Annunciators", "resp": "CHECK CLEAR" },
+        { "item": "Throttle", "resp": "IDLE, then 1000 RPM" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem", "en": "Before takeoff", "es": "Antes del despegue" },
+      "items": [
+        { "item": "Doors & windows", "resp": "CLOSED & LOCKED" },
+        { "item": "Seat belts & harnesses", "resp": "FASTENED & SECURED" },
+        { "item": "Magnetos", "resp": "BOTH" },
+        { "item": "Fuel selector", "resp": "BOTH" },
+        { "item": "Flight controls", "resp": "FREE & CORRECT" },
+        { "item": "Autopilot", "resp": "DISCONNECT", "auto": "!ap" },
+        { "item": "Flight director", "resp": "OFF" },
+        { "item": "Flaps", "resp": "SET (0°–10°)", "auto": "flaps<=1" },
+        { "item": "Trim", "resp": "SET (takeoff)" },
+        { "item": "Landing & taxi lights", "resp": "ON", "auto": "landing_lights" },
+        { "item": "Strobe lights", "resp": "ON", "auto": "strobe" },
+        { "item": "Transponder", "resp": "ALT", "auto": "xpdr_alt" },
+        { "item": "Takeoff briefing", "resp": "COMPLETE" }
+      ]
+    },
+    {
+      "name": { "pl": "Start normalny", "en": "Normal takeoff", "es": "Despegue normal" },
+      "items": [
+        { "item": "Throttle", "resp": "FULL OPEN", "auto": "throttle>=95" },
+        { "item": "Mixture", "resp": "FULL RICH (above 3000 ft – lean for max RPM)" },
+        { "item": "Elevator control", "resp": "ROTATE at 55 KIAS", "auto": "!on_ground" },
+        { "item": "Climb speed", "resp": "70–80 KIAS" },
+        { "item": "Flaps", "resp": "RETRACT (above 300 ft AGL)", "auto": "flaps==0 & agl>300" }
+      ]
+    },
+    {
+      "name": { "pl": "Wznoszenie", "en": "Climb", "es": "Ascenso" },
+      "items": [
+        { "item": "Airspeed", "resp": "70–85 KIAS" },
+        { "item": "Throttle", "resp": "FULL OPEN" },
+        { "item": "Mixture", "resp": "FULL RICH (lean above 3000 ft)" }
+      ]
+    },
+    {
+      "name": { "pl": "Przelot", "en": "Cruise", "es": "Crucero" },
+      "items": [
+        { "item": "Power", "resp": "2100–2700 RPM (≤ 75%)" },
+        { "item": "Elevator trim", "resp": "ADJUST" },
+        { "item": "Mixture", "resp": "LEAN" }
+      ]
+    },
+    {
+      "name": { "pl": "Zniżanie", "en": "Descent", "es": "Descenso" },
+      "items": [
+        { "item": "Power", "resp": "AS DESIRED" },
+        { "item": "Mixture", "resp": "ADJUST (enrich as required)" },
+        { "item": "Fuel selector", "resp": "BOTH" },
+        { "item": "Altimeters", "resp": "SET", "auto": "altimeter_set" },
+        { "item": "CDI softkey", "resp": "SELECT NAV SOURCE" },
+        { "item": "Approach", "resp": "REVIEW & BRIEF" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed lądowaniem", "en": "Before landing", "es": "Antes del aterrizaje" },
+      "items": [
+        { "item": "Seat backs", "resp": "MOST UPRIGHT" },
+        { "item": "Seat belts & harnesses", "resp": "FASTENED & SECURED" },
+        { "item": "Fuel selector", "resp": "BOTH" },
+        { "item": "Mixture", "resp": "FULL RICH", "auto": "mixture>=95" },
+        { "item": "Landing & taxi lights", "resp": "ON", "auto": "landing_lights" },
+        { "item": "Autopilot", "resp": "DISCONNECT", "auto": "!ap" },
+        { "item": "Flaps", "resp": "AS REQUIRED" },
+        { "item": "Airspeed", "resp": "65–75 KIAS (85 downwind, 75 base, 65 final)" }
+      ]
+    },
+    {
+      "name": { "pl": "Po wylądowaniu", "en": "After landing", "es": "Después del aterrizaje" },
+      "items": [
+        { "item": "Flaps", "resp": "RETRACT", "auto": "flaps==0 & on_ground" },
+        { "item": "Landing light", "resp": "OFF", "auto": "!landing_lights" },
+        { "item": "Strobe lights", "resp": "OFF", "auto": "!strobe" },
+        { "item": "Taxi light", "resp": "ON", "auto": "taxi_lights" },
+        { "item": "Transponder", "resp": "STBY / GND" },
+        { "item": "Mixture", "resp": "LEAN for taxi" }
+      ]
+    },
+    {
+      "name": { "pl": "Wyłączenie i zabezpieczenie", "en": "Shutdown & securing", "es": "Parada y asegurar" },
+      "items": [
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Throttle", "resp": "IDLE" },
+        { "item": "Electrical equipment", "resp": "OFF" },
+        { "item": "Avionics bus 1 & 2", "resp": "OFF" },
+        { "item": "ELT", "resp": "CHECK (121.5 MHz silent)" },
+        { "item": "Mixture", "resp": "IDLE CUT-OFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "Magnetos", "resp": "OFF" },
+        { "item": "Master switch", "resp": "OFF" },
+        { "item": "Standby battery", "resp": "OFF" },
+        { "item": "Control lock", "resp": "INSTALL" },
+        { "item": "Fuel selector", "resp": "LEFT or RIGHT" },
+        { "item": "Tach & Hobbs time", "resp": "RECORD" }
+      ]
+    }
+  ]
+}

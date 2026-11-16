@@ -1,0 +1,161 @@
+{
+  "id": "pa28",
+  "name": "Piper PA-28 Archer / Warrior",
+  "match": ["pa-?28", "\\barcher\\b", "\\bwarrior\\b", "cherokee", "\\bp28[a-z]\\b"],
+  "source": {
+    "pl": "Piper PA-28-181 Archer III – checklista normalna szkoły lotniczej oparta na POH, sekcja 4. Do używania razem z POH.",
+    "en": "Piper PA-28-181 Archer III – flight school normal checklist based on the POH, section 4. Use together with the POH.",
+    "es": "Piper PA-28-181 Archer III – lista normal de escuela de vuelo basada en el POH, sección 4. Úsese junto con el POH."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed uruchomieniem", "en": "Before start", "es": "Antes de la puesta en marcha" },
+      "items": [
+        { "item": "Preflight inspection", "resp": "COMPLETE" },
+        { "item": "Passenger briefing", "resp": "COMPLETE" },
+        { "item": "Seats & seat belts", "resp": "ADJUSTED & FASTENED" },
+        { "item": "Fuel selector", "resp": "PROPER TANK" },
+        { "item": "Circuit breakers", "resp": "CHECK IN" },
+        { "item": "Flight controls", "resp": "FREE & CORRECT" },
+        { "item": "Avionics switch", "resp": "OFF" },
+        { "item": "Master switch", "resp": "ON" },
+        { "item": "Strobe / beacon", "resp": "ON", "auto": "strobe | beacon" },
+        { "item": "Navigation lights", "resp": "AS REQUIRED" }
+      ]
+    },
+    {
+      "name": { "pl": "Uruchomienie silnika", "en": "Engine start", "es": "Arranque del motor" },
+      "items": [
+        { "item": "Throttle", "resp": "OPEN 1/2 INCH" },
+        { "item": "Electric fuel pump", "resp": "ON" },
+        { "item": "Mixture", "resp": "FULL RICH", "auto": "mixture>=95" },
+        { "item": "Primer", "resp": "AS REQUIRED (none if hot)" },
+        { "item": "Propeller area", "resp": "CLEAR" },
+        { "item": "Brakes", "resp": "HOLD" },
+        { "item": "Starter", "resp": "ENGAGE", "auto": "engines_running>0" },
+        { "item": "Throttle", "resp": "1000 RPM" },
+        { "item": "Electric fuel pump", "resp": "OFF" },
+        { "item": "Fuel pressure", "resp": "CHECK GREEN" },
+        { "item": "Oil pressure", "resp": "CHECK GREEN" },
+        { "item": "Ammeter", "resp": "POSITIVE CHARGE" },
+        { "item": "Annunciators", "resp": "EXTINGUISHED" },
+        { "item": "Mixture", "resp": "LEAN for taxi" },
+        { "item": "Flaps", "resp": "RETRACT", "auto": "flaps==0" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed kołowaniem", "en": "Before taxi", "es": "Antes del rodaje" },
+      "items": [
+        { "item": "Avionics", "resp": "ON" },
+        { "item": "GPS database", "resp": "VERIFY CURRENT" },
+        { "item": "Radios", "resp": "SET" },
+        { "item": "ATIS", "resp": "OBTAIN" },
+        { "item": "Altimeter", "resp": "SET", "auto": "altimeter_set" },
+        { "item": "Flight plan", "resp": "SET" },
+        { "item": "Transponder", "resp": "SET (1200 / assigned)", "auto": "xpdr_on" },
+        { "item": "Taxi clearance", "resp": "OBTAINED" }
+      ]
+    },
+    {
+      "name": { "pl": "Kołowanie", "en": "Taxi", "es": "Rodaje" },
+      "items": [
+        { "item": "Parking brake", "resp": "RELEASE", "auto": "!parking_brake" },
+        { "item": "Taxi light", "resp": "ON", "auto": "taxi_lights" },
+        { "item": "Brakes", "resp": "TEST" },
+        { "item": "Steering", "resp": "CHECK" },
+        { "item": "Flight instruments", "resp": "CHECK" }
+      ]
+    },
+    {
+      "name": { "pl": "Próba silnika (run-up)", "en": "Run-up", "es": "Prueba de motor" },
+      "items": [
+        { "item": "Brakes", "resp": "HOLD" },
+        { "item": "Mixture", "resp": "FULL RICH", "auto": "mixture>=95" },
+        { "item": "Throttle", "resp": "2000 RPM" },
+        { "item": "Magnetos", "resp": "CHECK (max drop 175, diff. 50 RPM)" },
+        { "item": "Carburetor heat", "resp": "CHECK (RPM drop)" },
+        { "item": "Oil temperature & pressure", "resp": "CHECK" },
+        { "item": "Ammeter / voltmeter", "resp": "CHECK" },
+        { "item": "Throttle", "resp": "IDLE, then 1000 RPM" },
+        { "item": "Autopilot", "resp": "TEST" },
+        { "item": "Electric trim", "resp": "TEST" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem", "en": "Before takeoff", "es": "Antes del despegue" },
+      "items": [
+        { "item": "Departure briefing", "resp": "COMPLETE" },
+        { "item": "Electric fuel pump", "resp": "ON" },
+        { "item": "Magnetos", "resp": "BOTH ON" },
+        { "item": "Carburetor heat", "resp": "OFF" },
+        { "item": "Flight & standby instruments", "resp": "CHECK" },
+        { "item": "Annunciators", "resp": "CHECK" },
+        { "item": "Fuel selector", "resp": "PROPER TANK" },
+        { "item": "Engine indications", "resp": "CHECK" },
+        { "item": "Seats & seat belts", "resp": "SECURE" },
+        { "item": "Flaps", "resp": "SET (0°–25°)", "auto": "flaps<=2" },
+        { "item": "Trim", "resp": "TAKEOFF" },
+        { "item": "Flight controls", "resp": "FREE & CORRECT" },
+        { "item": "Door & window", "resp": "LATCHED" },
+        { "item": "Lights / pitot heat", "resp": "AS REQUIRED", "auto": "landing_lights" }
+      ]
+    },
+    {
+      "name": { "pl": "Wznoszenie (1000 ft AGL)", "en": "Climb (1000 ft AGL)", "es": "Ascenso (1000 ft AGL)" },
+      "items": [
+        { "item": "Airspeed", "resp": "87 KIAS (Vy 76)" },
+        { "item": "Electric fuel pump", "resp": "OFF" },
+        { "item": "Flaps", "resp": "RETRACTED", "auto": "flaps==0 & !on_ground" }
+      ]
+    },
+    {
+      "name": { "pl": "Przelot", "en": "Cruise", "es": "Crucero" },
+      "items": [
+        { "item": "Throttle", "resp": "SET per power table" },
+        { "item": "Mixture", "resp": "LEAN as required" },
+        { "item": "Engine instruments", "resp": "CHECK" },
+        { "item": "Lights", "resp": "AS REQUIRED" }
+      ]
+    },
+    {
+      "name": { "pl": "Zniżanie i przed lądowaniem", "en": "Descent & before landing", "es": "Descenso y antes del aterrizaje" },
+      "items": [
+        { "item": "ATIS", "resp": "OBTAIN" },
+        { "item": "Altimeter", "resp": "SET", "auto": "altimeter_set" },
+        { "item": "Radios & avionics", "resp": "SET" },
+        { "item": "Approach", "resp": "BRIEFED" },
+        { "item": "Seats & seat belts", "resp": "SECURE" },
+        { "item": "Mixture", "resp": "FULL RICH", "auto": "mixture>=95" },
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "landing_lights" },
+        { "item": "Electric fuel pump", "resp": "ON" },
+        { "item": "Carburetor heat", "resp": "AS REQUIRED" },
+        { "item": "Parking brake", "resp": "VERIFY OFF", "auto": "!parking_brake" }
+      ]
+    },
+    {
+      "name": { "pl": "Po wylądowaniu", "en": "After landing", "es": "Después del aterrizaje" },
+      "items": [
+        { "item": "Flaps", "resp": "RETRACT", "auto": "flaps==0 & on_ground" },
+        { "item": "Mixture", "resp": "LEAN for taxi" },
+        { "item": "Electric fuel pump", "resp": "OFF" },
+        { "item": "Pitot heat", "resp": "OFF" },
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "!landing_lights" }
+      ]
+    },
+    {
+      "name": { "pl": "Wyłączenie i zabezpieczenie", "en": "Shutdown & securing", "es": "Parada y asegurar" },
+      "items": [
+        { "item": "Avionics", "resp": "OFF" },
+        { "item": "Electrical switches", "resp": "OFF" },
+        { "item": "Throttle", "resp": "IDLE" },
+        { "item": "Magnetos", "resp": "GROUND CHECK" },
+        { "item": "Mixture", "resp": "IDLE CUT-OFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "Magnetos", "resp": "OFF" },
+        { "item": "Master switch", "resp": "OFF" },
+        { "item": "Control lock", "resp": "INSTALL" },
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Hobbs / tach time", "resp": "RECORD" }
+      ]
+    }
+  ]
+}

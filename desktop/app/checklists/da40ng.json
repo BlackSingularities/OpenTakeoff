@@ -1,0 +1,130 @@
+{
+  "id": "da40ng",
+  "name": "Diamond DA40 NG",
+  "match": ["\\bda-?\\s?40", "diamond star"],
+  "source": {
+    "pl": "Diamond DA40 NG – checklista normalna operatora (LN-FTQ / LN-FTU, wyd. 3, 03/2022). Nie zastępuje AFM.",
+    "en": "Diamond DA40 NG – operator normal checklist (LN-FTQ / LN-FTU, rev. 3, 03/2022). Does not replace the AFM.",
+    "es": "Diamond DA40 NG – lista normal del operador (LN-FTQ / LN-FTU, rev. 3, 03/2022). No sustituye al AFM."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed uruchomieniem", "en": "Before start", "es": "Antes de la puesta en marcha" },
+      "items": [
+        { "item": "A/C documents / preflight / pax brief", "resp": "COMPLETED" },
+        { "item": "Pitot cover / chocks / control lock", "resp": "REMOVED" },
+        { "item": "Tow bar", "resp": "REMOVED" },
+        { "item": "Rudder pedals", "resp": "ADJUSTED" },
+        { "item": "Seat belts", "resp": "FASTENED" },
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Front canopy", "resp": "POS 1 or 2" },
+        { "item": "Rear door", "resp": "CLOSED" },
+        { "item": "Before start flow check", "resp": "COMPLETED" },
+        { "item": "Electric master", "resp": "ON" },
+        { "item": "Engine fire on ground", "resp": "BRIEFED" },
+        { "item": "Flight controls", "resp": "CHECKED" },
+        { "item": "G1000", "resp": "POWERED & ACK." },
+        { "item": "Fuel", "resp": "CHECKED & SET" },
+        { "item": "Fuel temperature", "resp": "CHECKED" },
+        { "item": "Position lights", "resp": "ON", "auto": "nav_lights" }
+      ]
+    },
+    {
+      "name": { "pl": "Uruchomienie silnika", "en": "Starting engine", "es": "Arranque del motor" },
+      "items": [
+        { "item": "Engine master", "resp": "ON" },
+        { "item": "Annunciations", "resp": "CHECKED" },
+        { "item": "Start key", "resp": "START", "auto": "engines_running>0" },
+        { "item": "Annunciations / engine instruments", "resp": "CHECKED" },
+        { "item": "RPM", "resp": "710 ±30 CHECKED" },
+        { "item": "Avionics master", "resp": "ON" },
+        { "item": "Flaps", "resp": "CHECKED & SET" },
+        { "item": "Pitot heat", "resp": "CHECKED" },
+        { "item": "ATIS", "resp": "RECEIVED" },
+        { "item": "Standby instruments", "resp": "CHECKED" },
+        { "item": "Altimeters", "resp": "SET & CHECKED", "auto": "altimeter_set" },
+        { "item": "Clearance", "resp": "RECEIVED" },
+        { "item": "Instrument setup / nav aids", "resp": "SET" }
+      ]
+    },
+    {
+      "name": { "pl": "Kołowanie", "en": "Taxi", "es": "Rodaje" },
+      "items": [
+        { "item": "Brakes", "resp": "CHECKED" },
+        { "item": "Flight instruments", "resp": "CHECKED" }
+      ]
+    },
+    {
+      "name": { "pl": "Próba na ziemi (ground check)", "en": "Ground check", "es": "Prueba en tierra" },
+      "items": [
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Annunciations", "resp": "CHECKED" },
+        { "item": "Engine instruments", "resp": "NORMAL RANGE CHECKED" },
+        { "item": "Circuit breakers", "resp": "CHECKED" },
+        { "item": "Flaps", "resp": "AS REQUIRED" },
+        { "item": "Trim", "resp": "SET T/O" },
+        { "item": "Fuel valve", "resp": "NORMAL" },
+        { "item": "Power lever", "resp": "IDLE" },
+        { "item": "ECU test", "resp": "COMPLETED" },
+        { "item": "Voter switch A & B", "resp": "CHECKED & AUTO" },
+        { "item": "Departure & engine fail procedure", "resp": "BRIEFED" },
+        { "item": "Transponder", "resp": "SET", "auto": "xpdr_on" }
+      ]
+    },
+    {
+      "name": { "pl": "Wejście na pas (line up)", "en": "Line up", "es": "Alineación" },
+      "items": [
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "landing_lights | strobe" },
+        { "item": "Fuel pumps", "resp": "ON" },
+        { "item": "Front canopy / windows", "resp": "POS 1 / CLOSED" },
+        { "item": "Compass / HDG bug", "resp": "CHECKED & SET" },
+        { "item": "Pitot heat / alternate air", "resp": "ON / AS REQUIRED" }
+      ]
+    },
+    {
+      "name": { "pl": "Po starcie", "en": "After takeoff", "es": "Después del despegue" },
+      "items": [
+        { "item": "Lights", "resp": "AS REQUIRED" },
+        { "item": "Fuel pumps", "resp": "OFF" },
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & !on_ground" },
+        { "item": "Power", "resp": "SET" },
+        { "item": "Engine instruments", "resp": "CHECKED" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed lądowaniem", "en": "Before landing", "es": "Antes del aterrizaje" },
+      "items": [
+        { "item": "ATIS / weather information", "resp": "RECEIVED" },
+        { "item": "Nav aids / approach brief", "resp": "SET & GIVEN" },
+        { "item": "Altimeters", "resp": "SET", "auto": "altimeter_set" },
+        { "item": "Seat belts", "resp": "CHECKED" },
+        { "item": "Fuel valve", "resp": "NORMAL" },
+        { "item": "Parking brake", "resp": "RELEASED", "auto": "!parking_brake" },
+        { "item": "Fuel pumps", "resp": "ON" },
+        { "item": "Lights", "resp": "AS REQUIRED", "auto": "landing_lights" }
+      ]
+    },
+    {
+      "name": { "pl": "Po wylądowaniu (po zejściu z pasa)", "en": "After landing (runway vacated)", "es": "Después del aterrizaje (pista libre)" },
+      "items": [
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & on_ground" },
+        { "item": "Pitot heat / alternate air", "resp": "OFF" },
+        { "item": "Fuel pumps", "resp": "OFF" },
+        { "item": "Lights", "resp": "AS REQUIRED" }
+      ]
+    },
+    {
+      "name": { "pl": "Wyłączenie", "en": "Shutdown", "es": "Parada" },
+      "items": [
+        { "item": "Parking brake", "resp": "SET", "auto": "parking_brake" },
+        { "item": "Power lever", "resp": "IDLE (1 min)" },
+        { "item": "Transponder", "resp": "7000" },
+        { "item": "Avionics master", "resp": "OFF" },
+        { "item": "Engine master", "resp": "OFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "Lights", "resp": "OFF", "auto": "!nav_lights & !strobe & !landing_lights" },
+        { "item": "Electric master", "resp": "10 s, then OFF" },
+        { "item": "Interior lights", "resp": "OFF" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "id": "sr22",
+  "name": "Cirrus SR20 / SR22",
+  "match": ["\\bsr2[02]t?\\b", "cirrus sr"],
+  "source": {
+    "pl": "Cirrus SR22 – checklista normalna operatora (wyd. 03/2022) oparta na POH, sekcja 4. Do używania razem z POH.",
+    "en": "Cirrus SR22 – operator normal checklist (rev. 03/2022) based on the POH, section 4. Use together with the POH.",
+    "es": "Cirrus SR22 – lista normal del operador (rev. 03/2022) basada en el POH, sección 4. Úsese junto con el POH."
+  },
+  "lists": [
+    {
+      "name": { "pl": "Przed uruchomieniem", "en": "Before start", "es": "Antes de la puesta en marcha" },
+      "items": [
+        { "item": "Passenger briefing", "resp": "COMPLETED" },
+        { "item": "Seats and seat belts", "resp": "ADJUST & LOCK" },
+        { "item": "CAPS handle", "resp": "PIN REMOVED" },
+        { "item": "Hobbs time", "resp": "CHECK" }
+      ]
+    },
+    {
+      "name": { "pl": "Uruchomienie silnika", "en": "Engine start", "es": "Arranque del motor" },
+      "items": [
+        { "item": "Parking brake", "resp": "ON", "auto": "parking_brake" },
+        { "item": "BAT master switches", "resp": "ON" },
+        { "item": "Strobe light", "resp": "ON", "auto": "strobe" },
+        { "item": "NAV light", "resp": "AS REQUIRED" },
+        { "item": "Mixture", "resp": "FULL RICH", "auto": "mixture>=95" },
+        { "item": "Fuel pump", "resp": "PRIME (cold), then BOOST" },
+        { "item": "Power lever", "resp": "1/4 INCH OPEN" },
+        { "item": "Propeller area", "resp": "CLEAR" },
+        { "item": "Magneto / starter", "resp": "ENGAGE", "auto": "engines_running>0" },
+        { "item": "Mixture (when engine starts)", "resp": "SMOOTHLY ADVANCE" }
+      ]
+    },
+    {
+      "name": { "pl": "Po uruchomieniu", "en": "After start", "es": "Después de la puesta en marcha" },
+      "items": [
+        { "item": "Tachometer", "resp": "1000 RPM" },
+        { "item": "Oil pressure", "resp": "CHECK" },
+        { "item": "Engine parameters", "resp": "MONITOR" },
+        { "item": "Ammeter", "resp": "CHECK" },
+        { "item": "ALT master switches", "resp": "ON" },
+        { "item": "Avionics", "resp": "ON" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed kołowaniem", "en": "Before taxi", "es": "Antes del rodaje" },
+      "items": [
+        { "item": "ATIS / AWOS", "resp": "OBTAIN" },
+        { "item": "Altimeters (3)", "resp": "SET", "auto": "altimeter_set" },
+        { "item": "Heading indicator", "resp": "MATCH COMPASS" },
+        { "item": "Radio check", "resp": "COMPLETED" },
+        { "item": "Taxi briefing", "resp": "COMPLETED" },
+        { "item": "Fuel selector", "resp": "SWITCH TANK" },
+        { "item": "Flaps", "resp": "UP (0%)", "auto": "flaps==0" },
+        { "item": "Transponder", "resp": "ALT and SET", "auto": "xpdr_alt" },
+        { "item": "Parking brake", "resp": "RELEASE", "auto": "!parking_brake" },
+        { "item": "Brakes", "resp": "CHECK" }
+      ]
+    },
+    {
+      "name": { "pl": "Próba silnika (run-up)", "en": "Run-up", "es": "Prueba de motor" },
+      "items": [
+        { "item": "Parking brake", "resp": "ON", "auto": "parking_brake" },
+        { "item": "Flight controls", "resp": "FREE & CORRECT" },
+        { "item": "Trim", "resp": "TAKEOFF" },
+        { "item": "Fuel selector", "resp": "FULLEST TANK" },
+        { "item": "Fuel pump", "resp": "BOOST" },
+        { "item": "Mixture", "resp": "RICH", "auto": "mixture>=95" },
+        { "item": "Autopilot", "resp": "CHECK, then DISCONNECT", "auto": "!ap" },
+        { "item": "Fuel quantity", "resp": "CHECK" },
+        { "item": "Power lever", "resp": "1700 RPM" },
+        { "item": "Alternators & voltage", "resp": "CHECK" },
+        { "item": "Magnetos", "resp": "CHECK L & R" },
+        { "item": "Engine parameters", "resp": "CHECK" },
+        { "item": "Power lever", "resp": "1000 RPM" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed startem", "en": "Before takeoff", "es": "Antes del despegue" },
+      "items": [
+        { "item": "Fuel pump", "resp": "BOOST" },
+        { "item": "Mixture", "resp": "AS REQUIRED" },
+        { "item": "Flaps", "resp": "50%", "auto": "flaps>0" },
+        { "item": "COM / NAV frequencies", "resp": "SET" },
+        { "item": "Transponder", "resp": "SET", "auto": "xpdr_alt" },
+        { "item": "Pitot heat", "resp": "AS REQUIRED" },
+        { "item": "Takeoff briefing / time", "resp": "REVIEWED" },
+        { "item": "Doors", "resp": "LATCHED" },
+        { "item": "Brakes", "resp": "RELEASE", "auto": "!parking_brake" },
+        { "item": "Landing light", "resp": "ON", "auto": "landing_lights" }
+      ]
+    },
+    {
+      "name": { "pl": "Wznoszenie", "en": "Climb", "es": "Ascenso" },
+      "items": [
+        { "item": "Airspeed", "resp": "101 KIAS (115 KIAS en route)" },
+        { "item": "Mixture", "resp": "AS REQUIRED" },
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & !on_ground" },
+        { "item": "Engine gauges", "resp": "CHECK" }
+      ]
+    },
+    {
+      "name": { "pl": "Przelot", "en": "Cruise", "es": "Crucero" },
+      "items": [
+        { "item": "Power", "resp": "2100–2700 RPM" },
+        { "item": "Mixture", "resp": "AS REQUIRED" },
+        { "item": "Fuel pump", "resp": "OFF" },
+        { "item": "Engine parameters", "resp": "CHECK" },
+        { "item": "Landing light", "resp": "OFF", "auto": "!landing_lights" }
+      ]
+    },
+    {
+      "name": { "pl": "Zniżanie", "en": "Descent", "es": "Descenso" },
+      "items": [
+        { "item": "Power", "resp": "AS REQUIRED" },
+        { "item": "Mixture", "resp": "ADJUST" },
+        { "item": "ATIS / AWOS", "resp": "OBTAIN" },
+        { "item": "Altimeters (3)", "resp": "SET", "auto": "altimeter_set" },
+        { "item": "PFD altitude select", "resp": "SET" },
+        { "item": "Landing and taxi lights", "resp": "ON", "auto": "landing_lights" }
+      ]
+    },
+    {
+      "name": { "pl": "Przed lądowaniem", "en": "Before landing", "es": "Antes del aterrizaje" },
+      "items": [
+        { "item": "Seats and seat belts", "resp": "SECURE" },
+        { "item": "Fuel pump", "resp": "BOOST" },
+        { "item": "Mixture", "resp": "RICH", "auto": "mixture>=95" },
+        { "item": "Autopilot", "resp": "OFF", "auto": "!ap" },
+        { "item": "Approach briefing", "resp": "COMPLETE" }
+      ]
+    },
+    {
+      "name": { "pl": "Po wylądowaniu", "en": "After landing", "es": "Después del aterrizaje" },
+      "items": [
+        { "item": "Power lever", "resp": "1000 RPM" },
+        { "item": "Fuel pump", "resp": "OFF" },
+        { "item": "Mixture", "resp": "AS REQUIRED" },
+        { "item": "Flaps", "resp": "UP", "auto": "flaps==0 & on_ground" },
+        { "item": "Landing light", "resp": "OFF", "auto": "!landing_lights" },
+        { "item": "Pitot heat", "resp": "OFF" }
+      ]
+    },
+    {
+      "name": { "pl": "Wyłączenie", "en": "Shutdown", "es": "Parada" },
+      "items": [
+        { "item": "Parking brake", "resp": "ON", "auto": "parking_brake" },
+        { "item": "Power lever", "resp": "1000 RPM" },
+        { "item": "ELT", "resp": "SILENT on 121.5 MHz" },
+        { "item": "Transponder", "resp": "STBY" },
+        { "item": "Avionics switch", "resp": "OFF" },
+        { "item": "Mixture", "resp": "IDLE CUT-OFF", "auto": "engines_running==0 & on_ground" },
+        { "item": "Magneto switch", "resp": "OFF, key removed" },
+        { "item": "All switches", "resp": "OFF" },
+        { "item": "BAT master switches", "resp": "OFF" },
+        { "item": "Hobbs and tach time", "resp": "RECORD" }
+      ]
+    }
+  ]
+}

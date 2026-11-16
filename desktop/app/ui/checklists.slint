@@ -1,0 +1,351 @@
+// Karta Checklisty: po lewej listy zestawu dopasowanego do samolotu (z postępem), po prawej pozycje
+// bieżącej listy – wyzwanie i odpowiedź jak na karcie w kabinie. Pozycje z warunkiem odhacza
+// symulator, gdy stan samolotu się zgadza; kliknięcie odhacza albo odznacza pozycję ręcznie.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { Button, TipArea } from "widgets.slint";
+import { Panel, Heading, Empty, ListRow } from "parts.slint";
+
+/// Znacznik pozycji: pusty kwadrat albo kwadrat w akcencie z ptaszkiem.
+component CheckBox inherits Rectangle {
+    in property <bool> on;
+    in property <bool> sim;
+    width: 20px * Theme.scale;
+    height: self.width;
+    border-radius: Theme.r-small;
+    background: root.on ? (root.sim ? Theme.ok : Theme.accent) : transparent;
+    border-width: root.on ? 0 : 1.5px;
+    border-color: Theme.line-strong;
+    animate background { duration: 120ms; }
+    if root.on: Image {
+        source: Icons.check;
+        width: 14px * Theme.scale;
+        height: 14px * Theme.scale;
+        colorize: root.sim ? #000000 : Theme.accent-text;
+    }
+}
+
+/// Znacznik warunku z symulatora: „SIM” w kolorze stanu (zgadza się / jeszcze nie / brak danych).
+component SimChip inherits Rectangle {
+    in property <int> live;
+    in property <bool> done-by-sim;
+    callback clicked();
+    property <color> tone: root.live == 1 ? Theme.ok : root.live == 0 ? #ffb547 : Theme.text-faint;
+    width: t.preferred-width + 12px;
+    height: 18px * Theme.scale;
+    border-radius: self.height / 2;
+    background: root.tone.with-alpha(0.14);
+    border-width: 1px;
+    border-color: root.tone.with-alpha(0.5);
+    t := Text {
+        text: "SIM";
+        font-family: Theme.mono;
+        font-size: 9.5px * Theme.scale;
+        font-weight: 700;
+        color: root.tone;
+    }
+    TipArea {
+        clicked => {
+            root.clicked();
+        }
+        tip: root.done-by-sim ? @tr("Odhaczone przez symulator") : root.live == 1 ? @tr("Stan w symulatorze się zgadza") : root.live == 0 ? @tr("Symulator sprawdza tę pozycję – stan jeszcze się nie zgadza") : @tr("Pozycję sprawdza symulator, gdy jest połączony");
+    }
+}
+
+export component Checklists inherits Rectangle {
+    // Bieżąca lista
+    property <bool> has-cur: App.cl-current >= 0 && App.cl-current < App.cl-lists.length;
+    property <string> cur-name: root.has-cur ? App.cl-lists[App.cl-current].name : "";
+    property <int> cur-done: root.has-cur ? App.cl-lists[App.cl-current].done : 0;
+    property <int> cur-total: root.has-cur ? App.cl-lists[App.cl-current].total : 0;
+    property <bool> cur-complete: root.cur-total > 0 && root.cur-done == root.cur-total;
+    if App.cl-set-id == "": VerticalLayout {
+        padding: 30px;
+        Empty {
+            icon: Icons.list-checks;
+            title: @tr("Brak checklisty dla tego samolotu");
+            text: App.cl-status + "\n" + @tr("Zestaw wybierzesz z menu w grupie „Zestaw” na wstążce. Własne checklisty to pliki JSON w folderze checklist (przycisk „Folder”).");
+        }
+        if App.cl-errors != "": Text {
+            text: App.cl-errors;
+            font-family: Theme.mono;
+            font-size: Theme.fs-small;
+            color: Theme.danger;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+    }
+    if App.cl-set-id != "": HorizontalLayout {
+        padding: 14px;
+        spacing: 12px;
+        // Listy zestawu
+        Panel {
+            width: 290px * Theme.scale;
+            VerticalLayout {
+                padding: 12px;
+                spacing: 6px;
+                Heading {
+                    icon: Icons.plane;
+                    text: App.cl-set-name;
+                }
+                Text {
+                    text: App.cl-status;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-dim;
+                    wrap: word-wrap;
+                }
+                Rectangle {
+                    height: 4px;
+                }
+                lsv := ScrollView {
+                    vertical-stretch: 1;
+                    VerticalLayout {
+                        width: lsv.visible-width;
+                        spacing: 1px;
+                        alignment: start;
+                        for l[i] in App.cl-lists: ListRow {
+                            selected: i == App.cl-current;
+                            height: 32px * Theme.scale;
+                            clicked => {
+                                App.cmd("cl-list", i);
+                            }
+                            HorizontalLayout {
+                                padding-left: 8px;
+                                padding-right: 10px;
+                                spacing: 8px;
+                                // Kółko postępu: pełne – lista ukończona
+                                Rectangle {
+                                    width: 16px * Theme.scale;
+                                    height: self.width;
+                                    y: (parent.height - self.height) / 2;
+                                    border-radius: self.width / 2;
+                                    background: l.complete ? Theme.ok : l.done > 0 ? Theme.accent-soft : transparent;
+                                    border-width: l.complete ? 0 : 1.5px;
+                                    border-color: l.done > 0 ? Theme.accent : Theme.line-strong;
+                                    if l.complete: Image {
+                                        source: Icons.check;
+                                        width: 11px * Theme.scale;
+                                        height: 11px * Theme.scale;
+                                        colorize: #000000;
+                                    }
+                                }
+                                Text {
+                                    text: l.name;
+                                    font-family: Theme.font;
+                                    font-size: Theme.fs;
+                                    font-weight: i == App.cl-current ? 600 : 400;
+                                    color: l.complete && i != App.cl-current ? Theme.text-dim : Theme.text;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                    horizontal-stretch: 1;
+                                }
+                                Text {
+                                    text: "" + l.done + "/" + l.total;
+                                    font-family: Theme.mono;
+                                    font-size: Theme.fs-small;
+                                    color: l.complete ? Theme.ok : Theme.text-faint;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                }
+                Text {
+                    text: @tr("Razem") + ": " + App.cl-progress;
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                }
+                Text {
+                    text: App.cl-source;
+                    font-family: Theme.font;
+                    font-size: 10.5px * Theme.scale;
+                    color: Theme.text-faint;
+                    wrap: word-wrap;
+                }
+                if App.cl-errors != "": Text {
+                    text: App.cl-errors;
+                    font-family: Theme.mono;
+                    font-size: 10px * Theme.scale;
+                    color: Theme.danger;
+                    wrap: word-wrap;
+                }
+            }
+        }
+        // Pozycje bieżącej listy
+        Panel {
+            horizontal-stretch: 1;
+            VerticalLayout {
+                padding: 16px;
+                spacing: 10px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    Text {
+                        text: root.cur-name.to-uppercase();
+                        font-family: Theme.cond;
+                        font-size: 20px * Theme.scale;
+                        font-weight: 700;
+                        letter-spacing: 0.6px;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: "" + root.cur-done + " / " + root.cur-total;
+                        font-family: Theme.mono;
+                        font-size: 15px * Theme.scale;
+                        color: root.cur-complete ? Theme.ok : Theme.text-dim;
+                        vertical-alignment: center;
+                    }
+                }
+                // Pasek postępu listy
+                Rectangle {
+                    height: 4px;
+                    border-radius: 2px;
+                    background: Theme.hover;
+                    Rectangle {
+                        x: 0;
+                        width: root.cur-total > 0 ? parent.width * root.cur-done / root.cur-total : 0px;
+                        border-radius: 2px;
+                        background: root.cur-complete ? Theme.ok : Theme.accent;
+                        animate width { duration: 180ms; }
+                    }
+                }
+                isv := ScrollView {
+                    vertical-stretch: 1;
+                    VerticalLayout {
+                        width: isv.visible-width;
+                        spacing: 4px;
+                        alignment: start;
+                        for it[i] in App.cl-items: Rectangle {
+                            min-height: 44px * Theme.scale;
+                            border-radius: Theme.r;
+                            background: it.next ? Theme.accent-soft : ta.has-hover ? Theme.hover : Theme.raised;
+                            border-width: 1px;
+                            border-color: it.next ? Theme.accent.with-alpha(0.55) : Theme.line;
+                            // Pod treścią – znacznik SIM ma własną podpowiedź
+                            ta := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    App.cmd("cl-toggle", i);
+                                }
+                            }
+                            HorizontalLayout {
+                                padding-left: 12px;
+                                padding-right: 12px;
+                                padding-top: 6px;
+                                padding-bottom: 6px;
+                                spacing: 12px;
+                                CheckBox {
+                                    y: (parent.height - self.height) / 2;
+                                    on: it.done;
+                                    sim: it.by-sim;
+                                }
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    alignment: center;
+                                    spacing: 1px;
+                                    HorizontalLayout {
+                                        spacing: 10px;
+                                        Text {
+                                            text: it.item;
+                                            font-family: Theme.mono;
+                                            font-size: 13.5px * Theme.scale;
+                                            font-weight: 700;
+                                            color: it.done ? Theme.text-faint : Theme.text;
+                                            vertical-alignment: center;
+                                            wrap: word-wrap;
+                                            min-width: 120px;
+                                            horizontal-stretch: 1;
+                                        }
+                                        // Kropki prowadzące jak na karcie checklisty
+                                        Rectangle {
+                                            horizontal-stretch: 2;
+                                            min-width: 20px;
+                                            Rectangle {
+                                                y: parent.height / 2;
+                                                height: 1px;
+                                                background: Theme.line-strong;
+                                            }
+                                        }
+                                        Text {
+                                            text: it.resp;
+                                            font-family: Theme.mono;
+                                            font-size: 13.5px * Theme.scale;
+                                            font-weight: 700;
+                                            color: it.done ? (it.by-sim ? Theme.ok : Theme.accent) : Theme.text;
+                                            horizontal-alignment: right;
+                                            vertical-alignment: center;
+                                            wrap: word-wrap;
+                                            min-width: 80px;
+                                        }
+                                    }
+                                    if it.note != "": Text {
+                                        text: it.note;
+                                        font-family: Theme.font;
+                                        font-size: Theme.fs-small;
+                                        color: Theme.text-faint;
+                                        wrap: word-wrap;
+                                    }
+                                }
+                                if it.auto: SimChip {
+                                    y: (parent.height - self.height) / 2;
+                                    live: it.live;
+                                    done-by-sim: it.by-sim;
+                                    clicked => {
+                                        App.cmd("cl-toggle", i);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // Lista ukończona – przejście do następnej
+                if root.cur-complete: Rectangle {
+                    height: 46px * Theme.scale;
+                    border-radius: Theme.r;
+                    background: Theme.ok.with-alpha(0.12);
+                    border-width: 1px;
+                    border-color: Theme.ok.with-alpha(0.45);
+                    HorizontalLayout {
+                        padding-left: 14px;
+                        padding-right: 8px;
+                        spacing: 10px;
+                        Image {
+                            source: Icons.check;
+                            width: 18px * Theme.scale;
+                            height: 18px * Theme.scale;
+                            y: (parent.height - self.height) / 2;
+                            colorize: Theme.ok;
+                        }
+                        Text {
+                            text: root.cur-name + " – " + @tr("lista ukończona");
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            font-weight: 600;
+                            color: Theme.text;
+                            vertical-alignment: center;
+                            overflow: elide;
+                            horizontal-stretch: 1;
+                        }
+                        if App.cl-has-next: Button {
+                            y: (parent.height - self.height) / 2;
+                            label: @tr("Następna lista");
+                            icon: Icons.arrow-right;
+                            primary: true;
+                            clicked => {
+                                App.cmd("cl-next", "");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
