@@ -1,3 +1,14 @@
+## 3.8.0
+
+- OFP SimBrief na karcie Plan lotu (przełącznik „Mapa i profil / OFP SimBrief”): znak wywoławczy, trasa i lotniska, czasy OUT/OFF/ON/IN z ETE i blokiem, przelot, prędkość, cost index, średni wiatr i odchyłka ISA; wagi ZFW/TOW/LDW na paskach wobec limitów z zapasem; paliwo bloku rozłożone na kołowanie, trasę, rezerwy, zapasowe, ETOPS i dodatkowe; profil trasy z etapami, chorągiewkami wiatru, paskiem temperatury (ISA) i paliwem na pokładzie; navlog z wiatrem, OAT, ISA, GS, czasem i paliwem; METAR/TAF lotnisk z OFP i plan lotu ATC; prędkości startu i lądowania z raportu TLR (gdy jest w OFP).
+- OFP łączy się z resztą programu: „Do planu” przenosi trasę, lotnisko zapasowe i paliwo (spalanie, kołowanie, rezerwy, dodatkowe), kalkulatory osiągów biorą z OFP typ, masę, lotnisko, pas i pogodę („Z SimBrief”), prędkości TLR trafiają do checklisty, a briefing PDF dostaje wagi, paliwo i navlog SimBrief.
+- Narzędzia: kalkulatory startu (V1, VR, V2, długość startu wobec TORA) i lądowania (VREF, VAPP, odległość i wymagana długość pasa wobec LDA) dla 16 typów samolotów, z pasem z bazy lotnisk, wysokością gęstościową, wiatrem na pasie i pasem mokrym; „Do checklisty” dopisuje prędkości przy pozycjach z prędkościami.
+- Plan lotu: paliwo bez SimBriefa (kołowanie, trasa, rezerwa trasy, zapasowe, rezerwa końcowa, dodatkowe, minimum do startu, blok), TOC i TOD w podsumowaniu, propozycje lotnisk zapasowych blisko celu, briefing do druku i PDF (trasa, paliwo, punkty, lotniska z pasami i częstotliwościami, METAR i TAF) oraz NOTAM-y w wyszukiwarce FAA.
+- PFD: przy nastrojonym ILS belki lokalizera i ścieżki mają pierwszeństwo przed odchyleniem od trasy GPS; panel zegarów Cessny ma wskaźnik VOR/ILS (CDI z belką ścieżki schodzenia i chorągiewkami TO/FR, NAV, GS).
+- Przyrządy w osobnych oknach (PFD, ND, silniki, systemy, zegary) – np. na drugi monitor, z zapamiętanym miejscem i rozmiarem oraz opcją „zawsze na wierzchu”.
+- Skróty klawiaturowe (F1 – lista): Ctrl+1…0 karty, Ctrl+PgDn/PgUp następna/poprzednia karta, Ctrl+R zapis lotu, Ctrl+M znacznik, Ctrl+P / Ctrl+Shift+P PFD i ND w oknie, spacja odhacza pozycję checklisty.
+- Przewodnik pierwszego uruchomienia: symulator i źródło danych, parowanie telefonu, karty programu (później z okna pomocy F1).
+
 ## 3.7.1
 
 - Windows: kod programu uporządkowany – karty w osobnych modułach (Na żywo, Dziennik, Statystyki, Lotniska, Narzędzia, polecenia), wstążka i pasek tytułu w osobnych plikach interfejsu. Działanie bez zmian.

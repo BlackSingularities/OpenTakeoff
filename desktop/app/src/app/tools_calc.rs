@@ -342,6 +342,14 @@ pub fn calc(kind: &str, input: &[String]) -> Vec<String> {
         },
         "phonetic" => phonetic(input.first().map(|s| s.as_str()).unwrap_or("")),
         "live" => live_numbers(),
+        // Osiągi: start i lądowanie (crate::perf)
+        "perf-to" => crate::perf::takeoff(input),
+        "perf-ldg" => crate::perf::landing(input),
+        "perf-names" => crate::perf::names(),
+        "perf-info" => crate::perf::info(n(0).unwrap_or(0.0) as usize),
+        "perf-ofp-to" => crate::simbrief::perf_inputs(true),
+        "perf-ofp-ldg" => crate::simbrief::perf_inputs(false),
+        "perf-detect" => state().borrow().host.snapshot().and_then(|s| crate::perf::detect(&s)).map(|i| vec![i.to_string()]).unwrap_or_default(),
         "decode" => metar_dec::decode(input.first().map(|s| s.as_str()).unwrap_or("")).into_iter().filter(|g| !g.meaning.is_empty()).flat_map(|g| [g.token, g.meaning]).collect(),
         _ => Vec::new(),
     }

@@ -33,6 +33,21 @@ pub(crate) fn cmd(ui: &AppWindow, id: &str, arg: &str) {
                 simbrief::refresh();
             }
         }
+        // Ctrl+PgDn / Ctrl+PgUp: następna / poprzednia karta w kolejności paska kart
+        "tab-step" => {
+            const ORDER: [i32; 14] = [0, 1, 8, 9, 2, 3, 11, 12, 13, 4, 5, 10, 6, 7];
+            let cur = ORDER.iter().position(|&t| t == app.get_tab()).unwrap_or(0) as i32;
+            let step: i32 = arg.parse().unwrap_or(1);
+            let next = ORDER[(cur + step).rem_euclid(ORDER.len() as i32) as usize];
+            app.set_tab(next);
+            cmd(ui, "tab", &next.to_string());
+        }
+        "welcome-done" => {
+            let st = state();
+            let mut b = st.borrow_mut();
+            b.s.welcome_done = true;
+            b.s.save();
+        }
         "simbrief-fetch" => simbrief::fetch(arg),
         "simbrief-clear" => simbrief::clear(),
         "plan-map" => {
@@ -464,7 +479,7 @@ pub(crate) fn cmd(ui: &AppWindow, id: &str, arg: &str) {
         }
         "feedback" => feedback::open_form(),
         _ => {
-            if !instruments::cmd(id, arg) && !flightplan::cmd(id, arg) && !checklists::cmd(id, arg) && !navmap::cmd(id, arg) && !overlays::cmd(id, arg) && !shots::cmd(id, arg) {
+            if !instruments::cmd(id, arg) && !flightplan::cmd(id, arg) && !checklists::cmd(id, arg) && !popout::cmd(id, arg) && !navmap::cmd(id, arg) && !overlays::cmd(id, arg) && !shots::cmd(id, arg) {
                 log::warn(&format!("Nieznane polecenie: {id} {arg}"));
             }
         }

@@ -1,0 +1,22 @@
+// Osobne okno przyrządu (PFD, ND, silniki, systemy, zegary) – zwykłe okno Windows do przeniesienia na
+// drugi monitor. Obraz rysuje Rust w rozmiarze okna.
+
+export component InstrWindow inherits Window {
+    in property <string> title-text: "OpenTakeoff";
+    in property <bool> on-top;
+    in property <image> image;
+    title: root.title-text;
+    icon: @image-url("../icon.png");
+    always-on-top: root.on-top;
+    background: #000000;
+    preferred-width: 520px;
+    preferred-height: 520px;
+    min-width: 160px;
+    min-height: 160px;
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.image;
+        image-fit: fill;
+    }
+}

@@ -58,6 +58,11 @@ pub struct FPlan {
     pub cruise_ft: i32,
     pub tas_kt: i32,
     pub burn_kgh: f64,
+    /// Paliwo: rezerwa końcowa (min), kołowanie (kg), dodatkowe (kg), rezerwa trasy (% paliwa trasy).
+    pub reserve_min: i32,
+    pub taxi_kg: f64,
+    pub extra_kg: f64,
+    pub cont_pct: f64,
     pub enroute: Vec<Wpt>,
 }
 
@@ -78,6 +83,10 @@ impl Default for FPlan {
             cruise_ft: 24_000,
             tas_kt: 420,
             burn_kgh: 2400.0,
+            reserve_min: 30,
+            taxi_kg: 200.0,
+            extra_kg: 0.0,
+            cont_pct: 5.0,
             enroute: Vec::new(),
         }
     }
@@ -344,6 +353,58 @@ fn resolve(ident: &str, near: (f64, f64), xp: Option<&XPlaneNavData>, live: Opti
         .map(|f| Wpt { ident: id.clone(), kind: kind_of(&f.kind), lat: f.lat, lon: f.lon, via: "DCT".into(), alt: None, region: f.region.unwrap_or_default() })
 }
 
+/// Paliwo planu (kg) – bez SimBriefa, z TAS i spalania godzinowego.
+pub struct Fuel {
+    pub taxi: f64,
+    pub trip: f64,
+    pub cont: f64,
+    pub altn: f64,
+    pub altn_nm: f64,
+    pub reserve: f64,
+    pub extra: f64,
+}
+
+impl Fuel {
+    /// Minimum do startu (bez kołowania).
+    pub fn takeoff(&self) -> f64 {
+        self.trip + self.cont + self.altn + self.reserve + self.extra
+    }
+    pub fn block(&self) -> f64 {
+        self.takeoff() + self.taxi
+    }
+}
+
+pub fn fuel_plan(p: &FPlan, total_nm: f64) -> Fuel {
+    let tas = p.tas_kt.max(60) as f64;
+    let trip = total_nm / tas * p.burn_kgh;
+    let altn_nm = match (apt_pos(&p.dest), apt_pos(&p.altn)) {
+        (Some(a), Some(b)) if !p.altn.is_empty() => math::distance_nm(a.0, a.1, b.0, b.1),
+        _ => 0.0,
+    };
+    // Lot na zapasowe niżej i wolniej (×0,8 TAS) plus nieudane podejście (12 min)
+    let altn = if altn_nm > 0.0 { (altn_nm / (tas * 0.8) + 0.2) * p.burn_kgh } else { 0.0 };
+    // Rezerwa końcowa w oczekiwaniu – spalanie ok. 85% przelotowego
+    let reserve = p.reserve_min.max(0) as f64 / 60.0 * p.burn_kgh * 0.85;
+    Fuel { taxi: p.taxi_kg.max(0.0), trip, cont: trip * p.cont_pct.max(0.0) / 100.0, altn, altn_nm, reserve, extra: p.extra_kg.max(0.0) }
+}
+
+/// Propozycje lotnisk zapasowych: duże i średnie lotniska do 200 NM od celu z pasem nie krótszym
+/// niż ¾ najdłuższego pasa celu (najwyżej 6000 ft), najbliższe najpierw.
+pub fn alternates(p: &FPlan) -> Vec<(String, f64, i32)> {
+    let Some(db) = airports::db() else { return Vec::new() };
+    let Some(d) = db.get(&p.dest) else { return Vec::new() };
+    let need = (d.longest_runway_ft() as f64 * 0.75).min(6000.0);
+    let mut v: Vec<(String, f64, i32)> = db
+        .within(d.lat, d.lon, 200.0, false)
+        .into_iter()
+        .filter(|(_, a)| a.ident != d.ident && a.ident != p.origin && a.kind <= 1 && a.longest_runway_ft() as f64 >= need)
+        .map(|(dist, a)| (a.ident.clone(), dist, a.longest_runway_ft()))
+        .collect();
+    v.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+    v.truncate(5);
+    v
+}
+
 fn apt_pos(icao: &str) -> Option<(f64, f64, f64)> {
     airports::db().and_then(|d| d.get(icao).map(|a| (a.lat, a.lon, a.elev_ft.unwrap_or(0) as f64)))
 }
@@ -590,7 +651,7 @@ pub fn refresh() {
     publish();
 }
 
-fn fmt_alt(a: f64) -> String {
+pub(crate) fn fmt_alt(a: f64) -> String {
     if a >= 18_000.0 {
         format!("FL{:03.0}", a / 100.0)
     } else {
@@ -598,7 +659,7 @@ fn fmt_alt(a: f64) -> String {
     }
 }
 
-fn hm(h: f64) -> String {
+pub(crate) fn hm(h: f64) -> String {
     let m = (h * 60.0).round() as i64;
     format!("{}:{:02}", m / 60, m % 60)
 }
@@ -647,13 +708,33 @@ pub fn publish() {
         let toc = ((p.cruise_ft as f64 - e0) / 300.0).min(total);
         let tod = (total - (p.cruise_ft as f64 - e1) / 318.0).max(0.0);
         let kv = |k: &str, v: String| KV { k: ss(k), v: ss(v) };
+        let fuel = fuel_plan(&p, total);
         app.set_plan_summary(model(vec![
             kv(tr("Dystans"), format!("{total:.0} NM")),
             kv(tr("Czas lotu"), hm(hours)),
-            kv(tr("Paliwo trasy"), format!("{:.0} kg", hours * p.burn_kgh)),
-            kv("TOC / TOD", format!("{toc:.0} / {tod:.0} NM")),
-            kv(tr("Punkty"), s.legs.len().to_string()),
+            kv(tr("Paliwo blok"), format!("{:.0} kg", fuel.block())),
+            kv("TOC", format!("{toc:.0} NM · {}", hm(toc / tas))),
+            kv("TOD", trf!("{d} NM przed celem", d = format!("{:.0}", (total - tod).max(0.0)))),
         ]));
+        let kg = |v: f64| format!("{v:.0} kg");
+        app.set_plan_fuel(model(vec![
+            kv(tr("Kołowanie"), kg(fuel.taxi)),
+            kv(tr("Trasa"), kg(fuel.trip)),
+            kv(&trf!("Rezerwa trasy {p}%", p = format!("{:.0}", p.cont_pct)), kg(fuel.cont)),
+            kv(&if p.altn.is_empty() { tr("Zapasowe").to_string() } else { format!("{} {} · {:.0} NM", tr("Zapasowe"), p.altn, fuel.altn_nm) }, kg(fuel.altn)),
+            kv(&trf!("Rezerwa końcowa {m} min", m = p.reserve_min), kg(fuel.reserve)),
+            kv(tr("Dodatkowe"), kg(fuel.extra)),
+            kv(tr("Minimum do startu"), kg(fuel.takeoff())),
+            kv(tr("Blok"), kg(fuel.block())),
+        ]));
+        app.set_plan_altn(ss(&p.altn));
+        app.set_plan_burn(ss(format!("{:.0}", p.burn_kgh)));
+        app.set_plan_reserve(ss(p.reserve_min.to_string()));
+        app.set_plan_taxi(ss(format!("{:.0}", p.taxi_kg)));
+        app.set_plan_extra(ss(format!("{:.0}", p.extra_kg)));
+        app.set_plan_altn_opts(model(
+            alternates(&p).into_iter().map(|(id, d, len)| PlanOptV { selected: id == p.altn, sub: ss(format!("{d:.0} NM · {:.0} m", len as f64 * 0.3048)), name: ss(id) }).collect(),
+        ));
         // procedury do wyboru
         let opt = |name: &str, sub: String, sel: bool| PlanOptV { name: ss(name), sub: ss(sub), selected: sel };
         let po = s.procs.get(&p.origin).cloned();
@@ -721,7 +802,7 @@ pub fn publish() {
     render_profile();
 }
 
-fn route_string(p: &FPlan) -> String {
+pub(crate) fn route_string(p: &FPlan) -> String {
     let mut out = vec![p.origin.clone()];
     if !p.sid.is_empty() {
         out.push(p.sid.clone());
@@ -793,6 +874,46 @@ pub fn cmd(id: &str, arg: &str) -> bool {
                 with(|s| s.plan.cruise_ft = ft.clamp(1000, 60_000));
             }
             changed();
+        }
+        "plan-altn" => {
+            with(|s| s.plan.altn = a.clone());
+            changed();
+        }
+        "plan-burn" | "plan-taxi" | "plan-extra" | "plan-reserve" => {
+            if let Ok(v) = a.replace(',', ".").parse::<f64>() {
+                with(|s| match id {
+                    "plan-burn" => s.plan.burn_kgh = v.clamp(1.0, 50_000.0),
+                    "plan-taxi" => s.plan.taxi_kg = v.clamp(0.0, 10_000.0),
+                    "plan-extra" => s.plan.extra_kg = v.clamp(0.0, 200_000.0),
+                    _ => s.plan.reserve_min = (v as i32).clamp(0, 180),
+                });
+            }
+            changed();
+        }
+        "plan-notam" => {
+            // Darmowe źródła NOTAM bez klucza nie odpowiadają programom – wyszukiwarka FAA w przeglądarce,
+            // kody lotnisk planu w schowku do wklejenia
+            let ids = with(|s| [s.plan.origin.clone(), s.plan.dest.clone(), s.plan.altn.clone()].into_iter().filter(|x| !x.is_empty()).collect::<Vec<_>>().join(" "));
+            if !ids.is_empty() {
+                if let Ok(mut c) = arboard::Clipboard::new() {
+                    let _ = c.set_text(ids.clone());
+                }
+                toast(trf!("Skopiowano {ids} – wklej w wyszukiwarce NOTAM"));
+            }
+            let _ = open::that("https://notams.aim.faa.gov/notamSearch/nsapp.html#/");
+        }
+        "plan-briefing" => {
+            // Z widoku OFP: najpierw plan z SimBrief do edycji, żeby briefing i OFP się zgadzały
+            if arg == "ofp" {
+                if let Some(sb) = crate::simbrief::plan() {
+                    let same = with(|s| s.plan.origin == sb.origin && s.plan.dest == sb.dest);
+                    if !same {
+                        cmd("plan-simbrief", "");
+                    }
+                }
+            }
+            let (plan, legs) = with(|s| (s.plan.clone(), s.legs.clone()));
+            crate::planbrief::make(plan, legs);
         }
         "plan-tas" => {
             if let Ok(v) = a.parse::<i32>() {
@@ -961,6 +1082,24 @@ pub fn cmd(id: &str, arg: &str) -> bool {
                 if sb.ete_s > 0.0 && sb.distance_nm > 0.0 {
                     p.tas_kt = (sb.distance_nm / (sb.ete_s / 3600.0)).round().clamp(60.0, 700.0) as i32;
                     p.burn_kgh = sb.burn / (sb.ete_s / 3600.0) * if sb.lbs { 0.4536 } else { 1.0 };
+                }
+                // Paliwo z OFP: spalanie średnie, kołowanie, rezerwa trasy, rezerwa końcowa, dodatkowe
+                let o = &sb.ofp;
+                let kgf = if sb.lbs { 0.453_592 } else { 1.0 };
+                if o.avg_ff > 0.0 {
+                    p.burn_kgh = o.avg_ff * kgf;
+                }
+                if o.taxi > 0.0 {
+                    p.taxi_kg = (o.taxi * kgf).round();
+                }
+                if o.trip > 0.0 && o.cont > 0.0 {
+                    p.cont_pct = (o.cont / o.trip * 100.0).clamp(0.0, 20.0);
+                }
+                if o.extra > 0.0 {
+                    p.extra_kg = (o.extra * kgf).round();
+                }
+                if o.reserve > 0.0 && p.burn_kgh > 0.0 {
+                    p.reserve_min = (o.reserve * kgf / (p.burn_kgh * 0.85) * 60.0).round().clamp(0.0, 180.0) as i32;
                 }
                 p.enroute = fixes
                     .iter()

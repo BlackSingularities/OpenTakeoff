@@ -459,6 +459,12 @@ pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
         }
         return;
     }
+    if id == crate::simbrief::OFP_PROFILE {
+        if kind == "size" {
+            crate::simbrief::size_ofp(x, y);
+        }
+        return;
+    }
     if id == crate::flightplan::MAP || id == crate::flightplan::PROFILE {
         crate::flightplan::map_event(id, kind, x, y, dx, dy);
         return;

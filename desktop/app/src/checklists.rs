@@ -156,6 +156,9 @@ struct St {
     connected: bool,
     /// Podpis ostatnio wysłanego stanu – bez zmian nie odświeżamy modeli.
     shown: String,
+    /// Prędkości z kalkulatorów osiągów (karta Narzędzia): start i lądowanie.
+    perf_to: String,
+    perf_ldg: String,
 }
 
 thread_local! {
@@ -167,7 +170,7 @@ fn with<R>(f: impl FnOnce(&mut St) -> R) -> R {
         let mut s = s.borrow_mut();
         let st = s.get_or_insert_with(|| {
             let (sets, errors) = load_sets();
-            St { sets, errors, cur: None, detected: false, aircraft: String::new(), list: 0, marks: Vec::new(), live: Vec::new(), connected: false, shown: String::new() }
+            St { sets, errors, cur: None, detected: false, aircraft: String::new(), list: 0, marks: Vec::new(), live: Vec::new(), connected: false, shown: String::new(), perf_to: String::new(), perf_ldg: String::new() }
         });
         f(st)
     })
@@ -578,7 +581,7 @@ fn publish(force: bool) {
                         ClItemV {
                             item: ss(it.item.get()),
                             resp: ss(it.resp.get()),
-                            note: ss(it.note.get()),
+                            note: ss(perf_note(&it.item.get(), &it.resp.get(), it.note.get(), &st.perf_to, &st.perf_ldg)),
                             auto: !it.auto.trim().is_empty(),
                             live: st.live.get(i).copied().unwrap_or(-1),
                             done: m.done,
@@ -592,6 +595,24 @@ fn publish(force: bool) {
         app.set_cl_items(model(items));
         app.set_cl_has_next(st.list + 1 < set.lists.len());
     });
+}
+
+/// Dopisek z kalkulatora osiągów przy pozycjach z prędkościami startu albo lądowania.
+fn perf_note(item: &str, resp: &str, note: String, to: &str, ldg: &str) -> String {
+    let t = format!("{item} {resp}").to_uppercase();
+    let extra = if !to.is_empty() && (t.contains("V1") || t.contains("SPEEDS") || t.contains("VR ")) {
+        to
+    } else if !ldg.is_empty() && (t.contains("VREF") || t.contains("LANDING DATA") || t.contains("LDG DATA")) {
+        ldg
+    } else {
+        return note;
+    };
+    let extra = trf!("Z kalkulatora: {v}", v = extra);
+    if note.is_empty() {
+        extra
+    } else {
+        format!("{note} · {extra}")
+    }
 }
 
 // ---------- polecenia ----------
@@ -703,6 +724,38 @@ pub fn cmd(id: &str, arg: &str) -> bool {
             } else {
                 toast(trf!("Wczytano własne zestawy: {n}"));
             }
+        }
+        "cl-tlr" => {
+            // Prędkości z raportu TLR w OFP SimBrief
+            let list = crate::simbrief::tlr_for_checklist();
+            if list.is_empty() {
+                toast(tr("W OFP nie ma raportu startu i lądowania (TLR)"));
+                return true;
+            }
+            with(|st| {
+                for x in &list {
+                    if let Some(v) = x.strip_prefix("to|") {
+                        st.perf_to = format!("SimBrief: {v}");
+                    } else if let Some(v) = x.strip_prefix("ldg|") {
+                        st.perf_ldg = format!("SimBrief: {v}");
+                    }
+                }
+                st.shown.clear();
+            });
+            toast(tr("Prędkości z OFP wpisane do checklisty"));
+        }
+        "cl-perf" => {
+            // „to|V1 143 kt · VR 147 kt · V2 151 kt” albo „ldg|VREF 133 kt · VAPP 138 kt”
+            let (kind, v) = arg.split_once('|').unwrap_or(("", ""));
+            with(|st| {
+                if kind == "to" {
+                    st.perf_to = v.to_string();
+                } else {
+                    st.perf_ldg = v.to_string();
+                }
+                st.shown.clear();
+            });
+            toast(trf!("W checkliście: {v}"));
         }
         "cl-copy" => {
             // Bieżący zestaw do folderu własnych – wzór do poprawek albo nowego samolotu

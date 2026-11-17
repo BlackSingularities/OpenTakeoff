@@ -387,7 +387,8 @@ impl FlightData {
         if let Some(a) = av {
             let n1 = &a.nav1;
             let g = &a.gps;
-            let gps_nav = g.active_flight_plan && (g.drives_nav1 || !n1.has_nav);
+            // Nastrojony ILS/LOC ma pierwszeństwo przed GPS – na podejściu PFD pokazuje belki lokalizera i ścieżki
+            let gps_nav = g.active_flight_plan && (g.drives_nav1 || !n1.has_nav) && !n1.has_loc;
             d.nav = if gps_nav {
                 NavInfo {
                     source: NavSource::Gps,

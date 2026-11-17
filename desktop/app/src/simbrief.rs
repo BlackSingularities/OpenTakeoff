@@ -1,6 +1,10 @@
 //! Plan lotu z SimBrief: pobranie ostatniego planu użytkownika (API xml.fetcher, JSON), zapis na
 //! dysku (plan zostaje po ponownym uruchomieniu), trasa na mapie i postęp lotu względem planu –
 //! następny punkt, odległość do celu, paliwo planowane i rzeczywiste.
+//!
+//! Z OFP czytamy też całość potrzebną do widoku „OFP SimBrief” na karcie Plan lotu: wagi z limitami,
+//! rozpisane paliwo, czasy blokowe, średni wiatr i odchyłkę ISA, navlog (etap, wiatr, OAT, GS, czas,
+//! paliwo), METAR/TAF lotnisk, plan ATC i – gdy w OFP jest raport TLR – prędkości startu i lądowania.
 
 use std::cell::RefCell;
 use std::time::Duration;
@@ -27,6 +31,95 @@ pub struct Fix {
     /// Paliwo planowane na pokładzie (w jednostkach planu).
     pub fuel: Option<f64>,
     pub wind: String,
+    /// Navlog OFP: etap (CLB, CRZ, DSC), wiatr, temperatura, odchyłka ISA, prędkość nad ziemią,
+    /// czas od startu (s), długość odcinka (NM).
+    pub stage: String,
+    pub wind_dir: Option<f64>,
+    pub wind_spd: Option<f64>,
+    pub oat: Option<f64>,
+    pub isa_dev: Option<f64>,
+    pub gs: Option<f64>,
+    pub time_s: Option<f64>,
+    pub leg_nm: Option<f64>,
+}
+
+/// Lotnisko w OFP (start, cel, zapasowe).
+#[derive(Clone, Debug, Default)]
+pub struct OfpApt {
+    pub icao: String,
+    pub name: String,
+    pub rwy: String,
+    pub elev: f64,
+    pub metar: String,
+    pub taf: String,
+    pub trans_alt: String,
+    pub trans_level: String,
+    /// Zapasowe: odległość od celu (NM) i paliwo (jednostki planu).
+    pub dist: f64,
+    pub burn: f64,
+}
+
+/// Prędkości z raportu startu / lądowania (TLR) SimBrief.
+#[derive(Clone, Debug, Default)]
+pub struct Tlr {
+    pub rwy: String,
+    pub flaps: String,
+    pub thrust: String,
+    pub v1: f64,
+    pub vr: f64,
+    pub v2: f64,
+    pub vref: f64,
+    pub weight: f64,
+    pub temp: String,
+    pub dist: f64,
+}
+
+/// Rozszerzone dane OFP.
+#[derive(Clone, Debug, Default)]
+pub struct Ofp {
+    pub oew: f64,
+    pub pax: i32,
+    pub payload: f64,
+    pub zfw: f64,
+    pub max_zfw: f64,
+    pub tow: f64,
+    pub max_tow: f64,
+    pub ldw: f64,
+    pub max_ldw: f64,
+    pub taxi: f64,
+    pub trip: f64,
+    pub cont: f64,
+    pub altn: f64,
+    pub reserve: f64,
+    pub etops: f64,
+    pub extra: f64,
+    pub min_to: f64,
+    pub plan_to: f64,
+    pub plan_land: f64,
+    pub ramp: f64,
+    pub avg_ff: f64,
+    pub max_tanks: f64,
+    pub cruise_mach: String,
+    pub cruise_tas: f64,
+    pub avg_wind_comp: f64,
+    pub avg_wind_dir: f64,
+    pub avg_wind_spd: f64,
+    pub avg_isa: f64,
+    pub air_dist: f64,
+    pub step: String,
+    pub sched_out: i64,
+    pub sched_off: i64,
+    pub sched_on: i64,
+    pub sched_in: i64,
+    pub block_s: f64,
+    pub fpl: String,
+    pub icao_type: String,
+    pub reg: String,
+    pub origin: OfpApt,
+    pub dest: OfpApt,
+    pub alternate: OfpApt,
+    pub tlr_to: Option<Tlr>,
+    pub tlr_ldg: Option<Tlr>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -53,6 +146,7 @@ pub struct Plan {
     pub lbs: bool,
     pub generated: i64,
     pub fixes: Vec<Fix>,
+    pub ofp: Ofp,
 }
 
 thread_local! {
@@ -84,6 +178,89 @@ fn txt(o: &Value, path: &[&str]) -> String {
 
 fn num(o: &Value, path: &[&str]) -> f64 {
     txt(o, path).parse::<f64>().unwrap_or(0.0)
+}
+
+fn opt_num(o: &Value, path: &[&str]) -> Option<f64> {
+    txt(o, path).parse::<f64>().ok()
+}
+
+/// Pierwszy element, gdy pole jest tablicą (np. kilka lotnisk zapasowych).
+fn first<'a>(v: &'a Value, key: &str) -> Option<&'a Value> {
+    match v.get(key)? {
+        Value::Array(a) => a.first(),
+        o => Some(o),
+    }
+}
+
+fn apt(v: &Value, key: &str) -> OfpApt {
+    let Some(a) = first(v, key) else { return OfpApt::default() };
+    OfpApt {
+        icao: txt(a, &["icao_code"]),
+        name: txt(a, &["name"]),
+        rwy: txt(a, &["plan_rwy"]),
+        elev: num(a, &["elevation"]),
+        metar: txt(a, &["metar"]),
+        taf: txt(a, &["taf"]),
+        trans_alt: txt(a, &["trans_alt"]),
+        trans_level: txt(a, &["trans_level"]),
+        dist: num(a, &["distance"]),
+        burn: num(a, &["burn"]),
+    }
+}
+
+/// Raport TLR: warunki i wiersz planowanego pasa (nazwy pól różnią się między wersjami – kilka wariantów).
+fn tlr(v: &Value, kind: &str) -> Option<Tlr> {
+    let t = v.get("tlr")?.get(kind)?;
+    let cond = t.get("conditions");
+    let planned = cond.map(|c| txt(c, &["planned_runway"])).unwrap_or_default();
+    let rows: Vec<&Value> = match t.get("runway") {
+        Some(Value::Array(a)) => a.iter().collect(),
+        Some(o @ Value::Object(_)) => vec![o],
+        _ => Vec::new(),
+    };
+    let row = rows.iter().find(|r| !planned.is_empty() && txt(r, &["identifier"]) == planned).or(rows.first())?;
+    let pick = |names: &[&str]| names.iter().map(|n| num(row, &[*n])).find(|x| *x > 0.0).unwrap_or(0.0);
+    let out = Tlr {
+        rwy: txt(row, &["identifier"]),
+        flaps: txt(row, &["flap_setting"]),
+        thrust: txt(row, &["thrust_setting"]),
+        v1: pick(&["speeds_v1", "v1"]),
+        vr: pick(&["speeds_vr", "vr"]),
+        v2: pick(&["speeds_v2", "v2"]),
+        vref: pick(&["speeds_vref", "vref", "speeds_vapp"]),
+        weight: cond.map(|c| [num(c, &["weight"]), num(c, &["planned_weight"])].into_iter().find(|x| *x > 0.0).unwrap_or(0.0)).unwrap_or(0.0),
+        temp: cond.map(|c| txt(c, &["temperature"])).unwrap_or_default(),
+        dist: pick(&["distance_actual", "actual_distance", "decision_distance", "distance"]),
+    };
+    (out.v1 > 0.0 || out.vr > 0.0 || out.vref > 0.0).then_some(out)
+}
+
+/// METAR: (kierunek wiatru, prędkość, temperatura, QNH hPa).
+pub fn metar_parts(m: &str) -> (Option<f64>, Option<f64>, Option<f64>, Option<f64>) {
+    let (mut wd, mut ws, mut t, mut q) = (None, None, None, None);
+    for tok in m.split_whitespace() {
+        if let Some(w) = tok.strip_suffix("KT") {
+            let w = w.split('G').next().unwrap_or("");
+            if w.len() >= 5 {
+                wd = w[..3].parse::<f64>().ok();
+                ws = w[3..].parse::<f64>().ok();
+            }
+        } else if let Some((a, b)) = tok.split_once('/') {
+            let temp_like = |x: &str| !x.is_empty() && x.len() <= 3 && x.trim_start_matches('M').chars().all(|c| c.is_ascii_digit());
+            if t.is_none() && temp_like(a) && (b.is_empty() || temp_like(b)) {
+                t = a.trim_start_matches('M').parse::<f64>().ok().map(|x| if a.starts_with('M') { -x } else { x });
+            }
+        } else if let Some(x) = tok.strip_prefix('Q') {
+            if x.len() == 4 {
+                q = x.parse::<f64>().ok();
+            }
+        } else if let Some(x) = tok.strip_prefix('A') {
+            if x.len() == 4 && x.chars().all(|c| c.is_ascii_digit()) {
+                q = x.parse::<f64>().ok().map(|v| v / 100.0 * 33.8639);
+            }
+        }
+    }
+    (wd, ws, t, q)
 }
 
 /// Odczyt odpowiedzi API SimBrief (format JSON).
@@ -138,7 +315,55 @@ pub fn parse(text: &str) -> Result<Plan, String> {
         lbs: txt(&v, &["params", "units"]).to_lowercase().starts_with("lb"),
         generated: num(&v, &["params", "time_generated"]) as i64,
         fixes: Vec::new(),
+        ofp: Ofp {
+            oew: num(&v, &["weights", "oew"]),
+            pax: num(&v, &["weights", "pax_count"]) as i32,
+            payload: num(&v, &["weights", "payload"]),
+            zfw: num(&v, &["weights", "est_zfw"]),
+            max_zfw: num(&v, &["weights", "max_zfw"]),
+            tow: num(&v, &["weights", "est_tow"]),
+            max_tow: num(&v, &["weights", "max_tow"]),
+            ldw: num(&v, &["weights", "est_ldw"]),
+            max_ldw: num(&v, &["weights", "max_ldw"]),
+            taxi: num(&v, &["fuel", "taxi"]),
+            trip: num(&v, &["fuel", "enroute_burn"]),
+            cont: num(&v, &["fuel", "contingency"]),
+            altn: num(&v, &["fuel", "alternate_burn"]),
+            reserve: num(&v, &["fuel", "reserve"]),
+            etops: num(&v, &["fuel", "etops"]),
+            extra: num(&v, &["fuel", "extra"]),
+            min_to: num(&v, &["fuel", "min_takeoff"]),
+            plan_to: num(&v, &["fuel", "plan_takeoff"]),
+            plan_land: num(&v, &["fuel", "plan_landing"]),
+            ramp: num(&v, &["fuel", "plan_ramp"]),
+            avg_ff: num(&v, &["fuel", "avg_fuel_flow"]),
+            max_tanks: num(&v, &["fuel", "max_tanks"]),
+            cruise_mach: txt(&v, &["general", "cruise_mach"]),
+            cruise_tas: num(&v, &["general", "cruise_tas"]),
+            avg_wind_comp: num(&v, &["general", "avg_wind_comp"]),
+            avg_wind_dir: num(&v, &["general", "avg_wind_dir"]),
+            avg_wind_spd: num(&v, &["general", "avg_wind_spd"]),
+            avg_isa: num(&v, &["general", "avg_temp_dev"]),
+            air_dist: num(&v, &["general", "air_distance"]),
+            step: txt(&v, &["general", "stepclimb_string"]),
+            sched_out: num(&v, &["times", "sched_out"]) as i64,
+            sched_off: num(&v, &["times", "sched_off"]) as i64,
+            sched_on: num(&v, &["times", "sched_on"]) as i64,
+            sched_in: num(&v, &["times", "sched_in"]) as i64,
+            block_s: num(&v, &["times", "est_block"]),
+            fpl: txt(&v, &["atc", "flightplan_text"]),
+            icao_type: txt(&v, &["aircraft", "icaocode"]),
+            reg: txt(&v, &["aircraft", "reg"]),
+            origin: apt(&v, "origin"),
+            dest: apt(&v, "destination"),
+            alternate: apt(&v, "alternate"),
+            tlr_to: tlr(&v, "takeoff"),
+            tlr_ldg: tlr(&v, "landing"),
+        },
     };
+    if p.altn.is_empty() {
+        p.altn = p.ofp.alternate.icao.clone();
+    }
     if p.origin.is_empty() || p.dest.is_empty() {
         return Err(tr("W odpowiedzi SimBrief nie ma planu lotu").to_string());
     }
@@ -174,6 +399,14 @@ pub fn parse(text: &str) -> Result<Plan, String> {
             cum_nm: cum,
             fuel: if fuel > 0.0 { Some(fuel) } else { None },
             wind: if wd.is_empty() { String::new() } else { format!("{:0>3}/{}", wd, wsp) },
+            stage: txt(f, &["stage"]),
+            wind_dir: opt_num(f, &["wind_dir"]),
+            wind_spd: opt_num(f, &["wind_spd"]),
+            oat: opt_num(f, &["oat"]),
+            isa_dev: opt_num(f, &["oat_isa_dev"]),
+            gs: opt_num(f, &["groundspeed"]),
+            time_s: opt_num(f, &["time_total"]),
+            leg_nm: opt_num(f, &["distance"]),
         });
     }
     if p.distance_nm <= 0.0 {
@@ -189,6 +422,7 @@ pub fn load_saved() {
         PLAN.with(|x| *x.borrow_mut() = Some(p));
     }
     refresh();
+    publish_ofp();
 }
 
 /// Pobiera najnowszy plan użytkownika z SimBrief (w tle).
@@ -231,6 +465,7 @@ pub fn fetch(user: &str) {
                     let msg = trf!("Plan {a} → {b} pobrany z SimBrief", a = p.origin, b = p.dest);
                     PLAN.with(|x| *x.borrow_mut() = Some(p));
                     refresh();
+                    publish_ofp();
                     crate::navmap::render(true);
                     app::toast(msg);
                 }
@@ -256,6 +491,7 @@ pub fn clear() {
     PLAN.with(|x| *x.borrow_mut() = None);
     let _ = std::fs::remove_file(file());
     refresh();
+    publish_ofp();
     crate::navmap::render(true);
 }
 
@@ -513,4 +749,359 @@ fn render_profile() {
     }
     c.text_f(tr("PALIWO"), wf - 6.0 * k, 9.0 * k, 8.5 * k, alpha(FUEL, 0xC0), Align::Right, Face::CondBold);
     app.set_plan_profile_sb(c.into_image());
+}
+
+// ---------- widok OFP na karcie Plan lotu ----------
+
+pub const OFP_PROFILE: i32 = 43;
+
+thread_local! {
+    static OSIZE: RefCell<(f32, f32)> = const { RefCell::new((0.0, 0.0)) };
+}
+
+pub fn size_ofp(w: f32, h: f32) {
+    let changed = OSIZE.with(|s| {
+        let old = *s.borrow();
+        *s.borrow_mut() = (w, h);
+        (old.0 - w).abs() > 0.5 || (old.1 - h).abs() > 0.5
+    });
+    if changed {
+        render_ofp_profile();
+    }
+}
+
+fn kg_of(v: f64, lbs: bool) -> f64 {
+    if lbs {
+        v * 0.453_592
+    } else {
+        v
+    }
+}
+
+fn hhmm_utc(t: i64) -> String {
+    if t <= 0 {
+        return String::new();
+    }
+    chrono::DateTime::from_timestamp(t, 0).map(|d| d.format("%H:%M").to_string()).unwrap_or_default()
+}
+
+fn fl(ft: f64) -> String {
+    if ft >= 18_000.0 {
+        format!("FL{:03.0}", ft / 100.0)
+    } else {
+        format!("{ft:.0}")
+    }
+}
+
+/// Prędkości TLR jednym wierszem (do widoku i checklisty).
+pub fn tlr_text(t: &Tlr, takeoff: bool) -> String {
+    let kt = |v: f64| format!("{v:.0} kt");
+    let mut parts = Vec::new();
+    if takeoff {
+        if t.v1 > 0.0 {
+            parts.push(format!("V1 {}", kt(t.v1)));
+        }
+        if t.vr > 0.0 {
+            parts.push(format!("VR {}", kt(t.vr)));
+        }
+        if t.v2 > 0.0 {
+            parts.push(format!("V2 {}", kt(t.v2)));
+        }
+    } else if t.vref > 0.0 {
+        parts.push(format!("VREF {}", kt(t.vref)));
+    }
+    parts.join(" · ")
+}
+
+/// Dane OFP do widoku (po pobraniu, wczytaniu i usunięciu planu – nie co sekundę).
+pub fn publish_ofp() {
+    let Some(u) = ui() else { return };
+    let app = u.global::<App>();
+    let empty = || -> ModelRc<OfpBarV> { ModelRc::new(VecModel::from(Vec::<OfpBarV>::new())) };
+    let Some(p) = PLAN.with(|x| x.borrow().clone()) else {
+        app.set_ofp(OfpV::default());
+        app.set_ofp_weights(empty());
+        app.set_ofp_fuel(ModelRc::new(VecModel::from(Vec::<OfpSegV>::new())));
+        app.set_ofp_navlog(ModelRc::new(VecModel::from(Vec::<OfpRowV>::new())));
+        app.set_ofp_apts(ModelRc::new(VecModel::from(Vec::<OfpAptV>::new())));
+        return;
+    };
+    let o = &p.ofp;
+    let w = |v: f64| weight(v, p.lbs);
+    let unit = if p.lbs { "lb" } else { "kg" };
+    let comp = o.avg_wind_comp;
+    let tlr_to = o.tlr_to.as_ref().map(|t| format!("{} {} · {}{}", tr("Start"), t.rwy, tlr_text(t, true), if t.flaps.is_empty() { String::new() } else { format!(" · FLAPS {}", t.flaps) })).unwrap_or_default();
+    let tlr_ldg = o.tlr_ldg.as_ref().map(|t| format!("{} {} · {}{}", tr("Lądowanie"), t.rwy, tlr_text(t, false), if t.flaps.is_empty() { String::new() } else { format!(" · FLAPS {}", t.flaps) })).unwrap_or_default();
+    app.set_ofp(OfpV {
+        loaded: true,
+        callsign: ss(&p.callsign),
+        title: ss(format!("{} → {}", p.origin, p.dest)),
+        origin_name: ss(&p.origin_name),
+        dest_name: ss(&p.dest_name),
+        altn: ss(&p.altn),
+        aircraft: ss([p.aircraft.as_str(), o.reg.as_str()].iter().filter(|x| !x.is_empty()).copied().collect::<Vec<_>>().join(" · ")),
+        ci: ss(&p.ci),
+        cruise: ss(fl(p.cruise_ft as f64)),
+        speed: ss([if o.cruise_mach.is_empty() { String::new() } else { format!("M{}", o.cruise_mach.trim_start_matches('0')) }, if o.cruise_tas > 0.0 { format!("TAS {:.0} kt", o.cruise_tas) } else { String::new() }].iter().filter(|x| !x.is_empty()).cloned().collect::<Vec<_>>().join(" · ")),
+        wind: ss(format!("{} {:.0} kt · {:03.0}/{:.0}", if comp >= 0.0 { "TW" } else { "HW" }, comp.abs(), o.avg_wind_dir, o.avg_wind_spd)),
+        wind_head: comp < 0.0,
+        isa: ss(format!("ISA {:+.0} °C", o.avg_isa)),
+        dist: ss(format!("{:.0} NM · {} {:.0} NM", p.distance_nm, tr("w powietrzu"), o.air_dist)),
+        t_out: ss(hhmm_utc(o.sched_out)),
+        t_off: ss(hhmm_utc(o.sched_off)),
+        t_on: ss(hhmm_utc(o.sched_on)),
+        t_in: ss(hhmm_utc(o.sched_in)),
+        block: ss(crate::fmt::ete(o.block_s)),
+        ete: ss(crate::fmt::ete(p.ete_s)),
+        units: ss(unit),
+        pax: o.pax,
+        payload: ss(w(o.payload)),
+        oew: ss(w(o.oew)),
+        avg_ff: ss(if o.avg_ff > 0.0 { format!("{}/h", w(o.avg_ff)) } else { String::new() }),
+        plan_land: ss(w(o.plan_land)),
+        min_to: ss(w(o.min_to)),
+        ramp: ss(w(o.ramp)),
+        step: ss(&o.step),
+        route: ss(&p.route),
+        fpl: ss(&o.fpl),
+        generated: ss(if p.generated > 0 { crate::fmt::date_time(p.generated * 1000) } else { String::new() }),
+        has_tlr: o.tlr_to.is_some() || o.tlr_ldg.is_some(),
+        tlr_to: ss(tlr_to),
+        tlr_ldg: ss(tlr_ldg),
+    });
+    // Wagi wobec limitów
+    let bar = |k: &str, est: f64, max: f64| OfpBarV {
+        k: ss(k),
+        est: ss(w(est)),
+        max: ss(if max > 0.0 { format!("max {}", w(max)) } else { String::new() }),
+        frac: if max > 0.0 { (est / max).clamp(0.0, 1.2) as f32 } else { 0.0 },
+        over: max > 0.0 && est > max,
+        margin: ss(if max > 0.0 { format!("{}{}", if max - est >= 0.0 { "+" } else { "−" }, w((max - est).abs())) } else { String::new() }),
+    };
+    let weights = vec![bar("ZFW", o.zfw, o.max_zfw), bar("TOW", o.tow, o.max_tow), bar("LDW", o.ldw, o.max_ldw)];
+    app.set_ofp_weights(ModelRc::new(VecModel::from(weights)));
+    // Paliwo: części bloku
+    let parts = [
+        (tr("Kołowanie"), o.taxi),
+        (tr("Trasa"), o.trip),
+        (tr("Rezerwa trasy"), o.cont),
+        (tr("Zapasowe"), o.altn),
+        (tr("Rezerwa końcowa"), o.reserve),
+        ("ETOPS", o.etops),
+        (tr("Dodatkowe"), o.extra),
+    ];
+    let sum: f64 = parts.iter().map(|x| x.1).sum::<f64>().max(o.ramp).max(1.0);
+    let fuel: Vec<OfpSegV> = parts.iter().enumerate().filter(|(_, x)| x.1 > 0.0).map(|(i, x)| OfpSegV { k: ss(x.0), v: ss(w(x.1)), frac: (x.1 / sum) as f32, tone: i as i32 }).collect();
+    app.set_ofp_fuel(ModelRc::new(VecModel::from(fuel)));
+    // Navlog
+    let rows: Vec<OfpRowV> = p
+        .fixes
+        .iter()
+        .map(|f| OfpRowV {
+            ident: ss(&f.ident),
+            via: ss(&f.via),
+            stage: ss(&f.stage),
+            alt: ss(fl(f.alt_ft as f64)),
+            wind: ss(match (f.wind_dir, f.wind_spd) {
+                (Some(d), Some(s)) => format!("{d:03.0}/{s:.0}"),
+                _ => String::new(),
+            }),
+            oat: ss(f.oat.map(|t| format!("{t:.0}°")).unwrap_or_default()),
+            isa: ss(f.isa_dev.map(|t| format!("{t:+.0}")).unwrap_or_default()),
+            gs: ss(f.gs.map(|g| format!("{g:.0}")).unwrap_or_default()),
+            dist: ss(format!("{:.0}", f.cum_nm)),
+            time: ss(f.time_s.map(|t| format!("{}:{:02}", (t as i64) / 3600, (t as i64) % 3600 / 60)).unwrap_or_default()),
+            fuel: ss(f.fuel.map(|x| format!("{:.1}", x / 1000.0)).unwrap_or_default()),
+            mark: f.ident == "TOC" || f.ident == "TOD",
+        })
+        .collect();
+    app.set_ofp_navlog(ModelRc::new(VecModel::from(rows)));
+    // Lotniska
+    let apt_v = |role: &str, a: &OfpApt, extra: String| OfpAptV {
+        role: ss(role),
+        icao: ss(&a.icao),
+        name: ss(&a.name),
+        rwy: ss(if a.rwy.is_empty() { String::new() } else { format!("RWY {}", a.rwy) }),
+        metar: ss(&a.metar),
+        taf: ss(&a.taf),
+        info: ss(extra),
+    };
+    let ta = |a: &OfpApt| if a.trans_alt.is_empty() { String::new() } else { format!("TA {} · TL {}", a.trans_alt, a.trans_level) };
+    let mut apts = vec![apt_v(tr("start"), &o.origin, ta(&o.origin)), apt_v(tr("cel"), &o.dest, ta(&o.dest))];
+    if !o.alternate.icao.is_empty() {
+        apts.push(apt_v(tr("zapasowe"), &o.alternate, format!("{:.0} NM · {}", o.alternate.dist, w(o.alternate.burn))));
+    }
+    app.set_ofp_apts(ModelRc::new(VecModel::from(apts)));
+    render_ofp_profile();
+}
+
+/// Chorągiewka wiatru: drzewce w stronę, z której wieje; 50 kt – trójkąt, 10 kt – pełna kreska, 5 kt – połowa.
+fn barb(c: &mut crate::avionics::gfx::Canvas, x: f32, y: f32, dir: f64, spd: f64, k: f32, col: u32) {
+    let len = 20.0 * k;
+    c.save();
+    c.translate(x, y);
+    c.rotate(dir as f32, 0.0, 0.0);
+    let mut rem = ((spd / 5.0).round() * 5.0) as i32;
+    if rem < 3 {
+        c.circle(0.0, 0.0, 3.0 * k, col, 1.2 * k);
+        c.restore();
+        return;
+    }
+    c.line(0.0, 0.0, 0.0, -len, col, 1.4 * k);
+    let mut pos = -len;
+    while rem >= 50 {
+        c.poly(col, 0, 0.0, &[0.0, pos, 8.0 * k, pos + 3.0 * k, 0.0, pos + 6.0 * k]);
+        pos += 7.0 * k;
+        rem -= 50;
+    }
+    while rem >= 10 {
+        c.line(0.0, pos, 8.0 * k, pos - 4.0 * k, col, 1.4 * k);
+        pos += 4.0 * k;
+        rem -= 10;
+    }
+    if rem >= 5 {
+        c.line(0.0, pos, 4.5 * k, pos - 2.2 * k, col, 1.4 * k);
+    }
+    c.restore();
+}
+
+/// Profil OFP: wysokość z etapami, chorągiewki wiatru nad trasą, pasek temperatury (odchyłka ISA) pod
+/// trasą, paliwo na pokładzie, T/C i T/D, nazwy punktów.
+fn render_ofp_profile() {
+    use crate::avionics::gfx::*;
+    let Some(u) = ui() else { return };
+    let app = u.global::<App>();
+    let Some(p) = PLAN.with(|x| x.borrow().clone()) else { return };
+    let (w0, h0) = OSIZE.with(|s| *s.borrow());
+    let k = state().borrow().scale.max(1.0);
+    let (w, h) = ((w0 * k) as u32, (h0 * k) as u32);
+    if w < 64 || h < 64 || p.fixes.len() < 2 {
+        return;
+    }
+    let mut c = Canvas::new(w, h);
+    let (wf, hf) = (w as f32, h as f32);
+    const BG: Argb = 0xFF0B1016;
+    const CY: Argb = 0xFF4FD8EB;
+    const DIM: Argb = 0xFF6F7C8A;
+    const FUEL: Argb = 0xFFFFB547;
+    const GREEN: Argb = 0xFF3CCF7A;
+    c.rect(0.0, 0.0, wf, hf, BG);
+    // Pasma: chorągiewki (góra), profil, temperatury, nazwy punktów
+    let (l, r) = (54.0 * k, wf - 64.0 * k);
+    let barb_y = 26.0 * k;
+    let t = 52.0 * k;
+    let temp_h = 16.0 * k;
+    let b = hf - 24.0 * k - temp_h - 6.0 * k;
+    let total = p.fixes.last().map(|f| f.cum_nm).unwrap_or(1.0).max(1.0);
+    let max_alt = p.fixes.iter().map(|f| f.alt_ft).max().unwrap_or(10_000).max(p.cruise_ft) as f32;
+    let top = (max_alt / 5000.0).ceil() * 5000.0 + 2000.0;
+    let x = |d: f64| l + (d / total) as f32 * (r - l);
+    let y = |a: f32| b - (a / top).clamp(0.0, 1.0) * (b - t);
+    let step = if top > 30_000.0 { 10_000 } else { 5000 };
+    let mut a = 0;
+    while a as f32 <= top {
+        c.dash_line(l, y(a as f32), r, y(a as f32), alpha(WHITE, 0x14), k, 3.0 * k, 5.0 * k);
+        c.text_f(&if a >= 10_000 { format!("FL{}", a / 100) } else { a.to_string() }, l - 6.0 * k, y(a as f32), 9.5 * k, DIM, Align::Right, Face::Mono);
+        a += step;
+    }
+    // Paliwo (prawa oś)
+    let ramp = p.fixes.iter().filter_map(|f| f.fuel).fold(p.ofp.ramp.max(p.ramp), f64::max).max(1.0);
+    let fy = |f: f64| b - (f / ramp).clamp(0.0, 1.0) as f32 * (b - t);
+    let fuel: Vec<f32> = p.fixes.iter().filter_map(|f| Some([x(f.cum_nm), fy(f.fuel?)])).flatten().collect();
+    if fuel.len() >= 4 {
+        c.polyline(alpha(FUEL, 0xC0), 1.8 * k, &fuel);
+        let plain = |v: f64| weight(v, p.lbs).replace(['\u{202F}', '\u{00A0}', '\u{2009}'], " ").replace('\u{2212}', "-");
+        c.text_f(&plain(ramp), r + 6.0 * k, fy(ramp), 9.0 * k, FUEL, Align::Left, Face::Mono);
+        if let Some(last) = p.fixes.iter().rev().find_map(|f| f.fuel) {
+            c.text_f(&plain(last), r + 6.0 * k, fy(last).min(b - 6.0 * k), 9.0 * k, alpha(FUEL, 0xC0), Align::Left, Face::Mono);
+        }
+    }
+    // Wysokość: wypełnienie i linia w kolorze etapu
+    let mut poly = vec![x(0.0), b];
+    for f in &p.fixes {
+        poly.push(x(f.cum_nm));
+        poly.push(y(f.alt_ft as f32));
+    }
+    poly.push(x(total));
+    poly.push(b);
+    c.poly(alpha(CY, 0x20), 0, 0.0, &poly);
+    for wv in p.fixes.windows(2) {
+        let col = match wv[1].stage.as_str() {
+            "CLB" => GREEN,
+            "DSC" => 0xFFE07CFF,
+            _ => CY,
+        };
+        c.line(x(wv[0].cum_nm), y(wv[0].alt_ft as f32), x(wv[1].cum_nm), y(wv[1].alt_ft as f32), col, 2.4 * k);
+    }
+    // Co który punkt – tyle, ile się zmieści
+    let every = ((p.fixes.len() as f32 * 34.0 * k) / (r - l)).ceil().max(1.0) as usize;
+    let temp_top = b + 6.0 * k;
+    for (i, f) in p.fixes.iter().enumerate() {
+        let (px, py) = (x(f.cum_nm), y(f.alt_ft as f32));
+        // Pasek temperatury: odchyłka ISA od niebieskiego (zimno) do czerwonego (ciepło)
+        if let (Some(dev), Some(next)) = (f.isa_dev, p.fixes.get(i + 1)) {
+            let tcol = if dev >= 0.0 {
+                let a = ((dev / 15.0).clamp(0.0, 1.0) * 200.0) as u32 + 40;
+                (a << 24) | 0x00FF_5A4F
+            } else {
+                let a = ((-dev / 15.0).clamp(0.0, 1.0) * 200.0) as u32 + 40;
+                (a << 24) | 0x004F_A8FF
+            };
+            c.rect(px, temp_top, x(next.cum_nm), temp_top + temp_h, tcol);
+        }
+        if f.ident == "TOC" || f.ident == "TOD" {
+            c.circle(px, py, 4.0 * k, GREEN, 1.6 * k);
+            c.text_f(if f.ident == "TOC" { "T/C" } else { "T/D" }, px, py - 11.0 * k, 10.0 * k, GREEN, Align::Center, Face::CondBold);
+        } else {
+            c.circle(px, py, 2.2 * k, CY, 0.0);
+        }
+        if i % every == 0 || i + 1 == p.fixes.len() {
+            c.text_f(&f.ident, px, hf - 10.0 * k, 9.0 * k, DIM, Align::Center, Face::Mono);
+            if let (Some(d), Some(s)) = (f.wind_dir, f.wind_spd) {
+                barb(&mut c, px, barb_y + 10.0 * k, d, s, k, 0xFFE8F6F8);
+                c.text_f(&format!("{s:.0}"), px, barb_y + 24.0 * k, 8.5 * k, DIM, Align::Center, Face::Mono);
+            }
+            if let Some(o) = f.oat {
+                c.text_f(&format!("{o:.0}"), px, temp_top + temp_h / 2.0, 8.5 * k, 0xFFFFFFFF, Align::Center, Face::Mono);
+            }
+        }
+    }
+    c.text_f(tr("WIATR"), 6.0 * k, barb_y + 10.0 * k, 8.5 * k, DIM, Align::Left, Face::CondBold);
+    c.text_f("OAT", 6.0 * k, temp_top + temp_h / 2.0, 8.5 * k, DIM, Align::Left, Face::CondBold);
+    c.text_f(tr("PALIWO"), wf - 6.0 * k, t - 6.0 * k, 8.5 * k, alpha(FUEL, 0xC0), Align::Right, Face::CondBold);
+    app.set_ofp_profile(c.into_image());
+}
+
+/// Dane z OFP do kalkulatora osiągów: [typ, masa kg, ICAO, pas, OAT, QNH, kierunek wiatru, prędkość].
+pub fn perf_inputs(takeoff: bool) -> Vec<String> {
+    let Some(p) = PLAN.with(|x| x.borrow().clone()) else { return Vec::new() };
+    let o = &p.ofp;
+    let (apt, wgt) = if takeoff { (&o.origin, o.tow) } else { (&o.dest, o.ldw) };
+    let (wd, ws, t, q) = metar_parts(&apt.metar);
+    let text = format!("{} {}", p.aircraft, o.icao_type);
+    let idx = crate::perf::PROFILES.iter().position(|pr| regex::RegexBuilder::new(pr.pattern).case_insensitive(true).build().is_ok_and(|r| r.is_match(&text)));
+    let f = |v: Option<f64>, d: &str| v.map(|x| format!("{x:.0}")).unwrap_or_else(|| d.to_string());
+    vec![
+        idx.map(|i| i.to_string()).unwrap_or_default(),
+        if wgt > 0.0 { format!("{:.0}", kg_of(wgt, p.lbs)) } else { String::new() },
+        if apt.icao.is_empty() { if takeoff { p.origin.clone() } else { p.dest.clone() } } else { apt.icao.clone() },
+        if apt.rwy.is_empty() { if takeoff { p.dep_rwy.clone() } else { p.arr_rwy.clone() } } else { apt.rwy.clone() },
+        f(t, "15"),
+        f(q, "1013"),
+        f(wd, "0"),
+        f(ws, "0"),
+    ]
+}
+
+/// Prędkości TLR z OFP do checklisty („to|…”, „ldg|…”); pusta lista bez TLR.
+pub fn tlr_for_checklist() -> Vec<String> {
+    let Some(p) = PLAN.with(|x| x.borrow().clone()) else { return Vec::new() };
+    let mut out = Vec::new();
+    if let Some(t) = &p.ofp.tlr_to {
+        out.push(format!("to|{}", tlr_text(t, true)));
+    }
+    if let Some(t) = &p.ofp.tlr_ldg {
+        out.push(format!("ldg|{}", tlr_text(t, false)));
+    }
+    out
 }

@@ -5,7 +5,7 @@
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { App, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV, ClSetV, ClListV, ClItemV } from "state.slint";
+import { App, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV, ClSetV, ClListV, ClItemV, OfpV, OfpBarV, OfpSegV, OfpRowV, OfpAptV } from "state.slint";
 import { Tip, TipArea, IconButton, BigButton, Group, Col, Row, Button, Card, Segmented, Splitter, MenuItem, MenuSep } from "widgets.slint";
 import { NavTab, Readout, RecordButton, Sidebar } from "shell.slint";
 import { Toast, Dot, Colors } from "parts.slint";
@@ -26,9 +26,11 @@ import { PlanView } from "plan.slint";
 import { Checklists } from "checklists.slint";
 import { Ribbon } from "ribbon.slint";
 import { TopBar } from "titlebar.slint";
+import { InstrWindow } from "popout.slint";
+import { HelpDialog, WelcomeDialog } from "dialogs.slint";
 import { LandingWindow, StreamWindow, OverlayWindow, StreamCell } from "overlays.slint";
 
-export { App, Theme, Icons, Tip, FeedbackWindow, LandingWindow, StreamWindow, OverlayWindow, StreamCell, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV, ClSetV, ClListV, ClItemV }
+export { App, Theme, Icons, Tip, FeedbackWindow, LandingWindow, StreamWindow, OverlayWindow, InstrWindow, StreamCell, KV, LogV, EngineV, LampV, LiveV, FlightV, LandingV, MarkerV, LabelV, ChartV, DetailV, BarV, RowV, StatsV, AptV, RwyV, FreqV, GroupV, WxV, ProcV, LegV, DevV, OptV, ClSetV, ClListV, ClItemV, OfpV, OfpBarV, OfpSegV, OfpRowV, OfpAptV }
 
 /// Pasek narzędzi: polecenia karty po lewej, odczyt lotu i zapis po prawej.
 component Toolbar inherits Rectangle {
@@ -196,11 +198,72 @@ export component AppWindow inherits Window {
         App.win(100);
         root.fit-ribbon();
     }
+    // Kolejność kart jak na pasku (Ctrl+1…Ctrl+9, Ctrl+0)
+    property <[int]> tab-keys: [0, 1, 8, 9, 2, 3, 11, 12, 13, 4];
+    function go-tab(t: int) {
+        App.tab = t;
+        App.cmd("tab", t);
+    }
     fs := FocusScope {
         key-pressed(e) => {
+            if (e.text == Key.F1) {
+                App.help-open = !App.help-open;
+                return accept;
+            }
+            if (e.text == Key.Escape && (App.help-open || App.welcome-step >= 0)) {
+                if (App.welcome-step >= 0) {
+                    App.welcome-step = -1;
+                    App.cmd("welcome-done", "");
+                }
+                App.help-open = false;
+                return accept;
+            }
             if (e.modifiers.control && !e.modifiers.shift && (e.text == "b" || e.text == "B")) {
                 Theme.sidebar = !Theme.sidebar;
                 return accept;
+            }
+            if (e.modifiers.control && !e.modifiers.alt && (e.text == "1" || e.text == "2" || e.text == "3" || e.text == "4" || e.text == "5" || e.text == "6" || e.text == "7" || e.text == "8" || e.text == "9" || e.text == "0")) {
+                root.go-tab(root.tab-keys[e.text == "0" ? 9 : round(e.text.to-float()) - 1]);
+                return accept;
+            }
+            if (e.modifiers.control && e.text == Key.PageDown) {
+                App.cmd("tab-step", "1");
+                return accept;
+            }
+            if (e.modifiers.control && e.text == Key.PageUp) {
+                App.cmd("tab-step", "-1");
+                return accept;
+            }
+            if (e.modifiers.control && e.text == ",") {
+                root.go-tab(7);
+                return accept;
+            }
+            if (e.modifiers.control && !e.modifiers.shift && (e.text == "r" || e.text == "R")) {
+                App.cmd(App.recording ? "record-stop" : "record-resume", "");
+                return accept;
+            }
+            if (e.modifiers.control && !e.modifiers.shift && (e.text == "m" || e.text == "M")) {
+                App.cmd("record-mark", "");
+                return accept;
+            }
+            if (e.modifiers.control && (e.text == "p" || e.text == "P")) {
+                App.cmd("popout", e.modifiers.shift ? "1" : "0");
+                return accept;
+            }
+            // Checklisty: spacja odhacza, PgDn/PgUp – następna i poprzednia lista
+            if (App.tab == 13 && !e.modifiers.control) {
+                if (e.text == " ") {
+                    App.cmd("cl-check-next", "");
+                    return accept;
+                }
+                if (e.text == Key.PageDown) {
+                    App.cmd("cl-next", "");
+                    return accept;
+                }
+                if (e.text == Key.PageUp) {
+                    App.cmd("cl-prev", "");
+                    return accept;
+                }
             }
             if (root.key(e.text, e.modifiers.control, e.modifiers.shift)) {
                 return accept;
@@ -505,6 +568,8 @@ export component AppWindow inherits Window {
             }
         }
     }
+    if App.help-open: HelpDialog { }
+    if App.welcome-step >= 0: WelcomeDialog { }
     // Dymek podpowiedzi (wspólny dla wszystkich kontrolek)
     if Tip.text != "" && Tip.shown == Tip.serial: Rectangle {
         x: min(Tip.x + 12px, root.width - self.width - 6px);

@@ -4361,3 +4361,420 @@ msgstr "Saved {f} – edit the file and click “Reload”"
 
 msgid "Nie udało się zapisać pliku: {e}"
 msgstr "Could not save the file: {e}"
+
+msgid "Adres do ręcznego wpisania"
+msgstr "Address for manual entry"
+
+msgid "Aplikacja OpenTakeoff na Androida pokazuje kokpit i steruje samolotem. Telefon i komputer muszą być w tej samej sieci Wi-Fi. W aplikacji wybierz połączenie z komputerem – znajdzie go sam; przy pierwszym połączeniu wpisz kod parowania."
+msgstr "The OpenTakeoff Android app shows the cockpit and flies the aircraft. The phone and the PC must be on the same Wi-Fi network. In the app choose to connect to the PC – it finds it on its own; enter the pairing code the first time."
+
+msgid "Blok"
+msgstr "Block"
+
+msgid "Brak METAR"
+msgstr "No METAR"
+
+msgid "Brak TAF"
+msgstr "No TAF"
+
+msgid "Brak planu SimBrief"
+msgstr "No SimBrief plan"
+
+msgid "Briefing PDF"
+msgstr "Briefing PDF"
+
+msgid "Briefing zapisany: {f}"
+msgstr "Briefing saved: {f}"
+
+msgid "CZAS"
+msgstr "TIME"
+
+msgid "Dalej"
+msgstr "Next"
+
+msgid "Do checklisty"
+msgstr "To checklist"
+
+msgid "Do planu"
+msgstr "To plan"
+
+msgid "Dodatkowe"
+msgstr "Extra"
+
+msgid "Dodatkowe kg"
+msgstr "Extra kg"
+
+msgid "Dostępna (LDA)"
+msgstr "Available (LDA)"
+
+msgid "Dostępna (TORA)"
+msgstr "Available (TORA)"
+
+msgid "Droga"
+msgstr "Airway"
+
+msgid "Drukuj / zapisz jako PDF"
+msgstr "Print / save as PDF"
+
+msgid "Dziennik i Statystyki"
+msgstr "Logbook and Statistics"
+
+msgid "Długość startu"
+msgstr "Takeoff distance"
+
+msgid "F1 – skróty klawiaturowe."
+msgstr "F1 – keyboard shortcuts."
+
+msgid "Kalkulatory lotnicze, także start i lądowanie (V1, VR, V2, VREF)."
+msgstr "Aviation calculators, including takeoff and landing (V1, VR, V2, VREF)."
+
+msgid "Karty"
+msgstr "Tabs"
+
+msgid "Karty programu"
+msgstr "Program tabs"
+
+msgid "Każdy lot zapisuje się sam – z oceną i analizą lądowania."
+msgstr "Every flight is recorded automatically – with landing score and analysis."
+
+msgid "Kołowanie kg"
+msgstr "Taxi kg"
+
+msgid "Lot na bieżąco i wyświetlacze kabiny; przyrząd w osobnym oknie – przycisk Okno na wstążce."
+msgstr "The live flight and cockpit displays; an instrument in its own window – the Window button on the ribbon."
+
+msgid "Mapa i profil"
+msgstr "Map and profile"
+
+msgid "Masa / MLW"
+msgstr "Weight / MLW"
+
+msgid "Masa / MTOW"
+msgstr "Weight / MTOW"
+
+msgid "Masa powyżej MLW"
+msgstr "Weight above MLW"
+
+msgid "Masa powyżej MTOW"
+msgstr "Weight above MTOW"
+
+msgid "Min. do startu"
+msgstr "Min. takeoff"
+
+msgid "Minimum do startu"
+msgstr "Minimum takeoff fuel"
+
+msgid "ND w osobnym oknie"
+msgstr "ND in its own window"
+
+msgid "NOTAM-y sprawdź przed lotem w wyszukiwarce FAA albo w AIS kraju startu i celu."
+msgstr "Check NOTAMs before the flight in the FAA search or in the AIS of the departure and destination countries."
+
+msgid "Na lądowaniu"
+msgstr "At landing"
+
+msgid "Na żywo i Przyrządy"
+msgstr "Live and Instruments"
+
+msgid "Najpierw pobierz OFP (Plan lotu → OFP SimBrief)"
+msgstr "Download the OFP first (Flight plan → SimBrief OFP)"
+
+msgid "Następna i poprzednia lista"
+msgstr "Next and previous checklist"
+
+msgid "Następna karta (PgUp – poprzednia)"
+msgstr "Next tab (PgUp – previous)"
+
+msgid "Navlog"
+msgstr "Navlog"
+
+msgid "Nawierzchnia"
+msgstr "Surface"
+
+msgid "Nawigacja z radialami, Direct To, pogoda i widok 3D."
+msgstr "Navigation with radials, Direct To, weather and the 3D view."
+
+msgid "Nie udało się zapisać briefingu: {e}"
+msgstr "Could not save the briefing: {e}"
+
+msgid "OFP SimBrief"
+msgstr "SimBrief OFP"
+
+msgid "Odhacz następną pozycję"
+msgstr "Check the next item"
+
+msgid "Odległość lądowania"
+msgstr "Landing distance"
+
+msgid "Ograniczenie"
+msgstr "Constraint"
+
+msgid "OpenTakeoff łączy symulator (MSFS 2020/2024 albo X-Plane 11/12) z komputerem i telefonem. Na komputerze masz przyrządy w stylu kabiny, mapę z widokiem 3D, plan lotu, checklisty, dziennik lotów ze statystykami i analizą lądowania oraz nakładki do transmisji."
+msgstr "OpenTakeoff connects the simulator (MSFS 2020/2024 or X-Plane 11/12) with your PC and phone. On the PC you get cockpit-style instruments, a map with a 3D view, a flight plan, checklists, a logbook with statistics and landing analysis, and streaming overlays."
+
+msgid "OpenTakeoff – tylko do symulacji lotów. Nie używać do rzeczywistej nawigacji."
+msgstr "OpenTakeoff – for flight simulation only. Not for real-world navigation."
+
+msgid "Osiągi"
+msgstr "Performance"
+
+msgid "Osobne okna"
+msgstr "Separate windows"
+
+msgid "PALIWO t"
+msgstr "FUEL t"
+
+msgid "PFD w osobnym oknie"
+msgstr "PFD in its own window"
+
+msgid "Pakiet briefingu: trasa, paliwo, punkty, lotniska z pasami i częstotliwościami, METAR i TAF – do druku albo zapisu jako PDF"
+msgstr "Briefing pack: route, fuel, waypoints, airports with runways and frequencies, METAR and TAF – to print or save as PDF"
+
+msgid "Paliwo blok"
+msgstr "Block fuel"
+
+msgid "Panel boczny"
+msgstr "Side panel"
+
+msgid "Pas mokry"
+msgstr "Wet runway"
+
+msgid "Pas nie znaleziony w bazie lotnisk"
+msgstr "Runway not found in the airport database"
+
+msgid "Pas suchy"
+msgstr "Dry runway"
+
+msgid "Pas wystarcza"
+msgstr "Runway is long enough"
+
+msgid "Pas za krótki"
+msgstr "Runway too short"
+
+msgid "Pasażerowie"
+msgstr "Passengers"
+
+msgid "Plan lotu ATC (ICAO)"
+msgstr "ATC flight plan (ICAO)"
+
+msgid "Plan lotu i Checklisty"
+msgstr "Flight plan and Checklists"
+
+msgid "Pobierz OFP"
+msgstr "Download OFP"
+
+msgid "Pobierz ponownie"
+msgstr "Download again"
+
+msgid "Pokaż przewodnik"
+msgstr "Show the guide"
+
+msgid "Pomiń"
+msgstr "Skip"
+
+msgid "Połączenie z symulatorem"
+msgstr "Connecting the simulator"
+
+msgid "Profil trasy – wiatr, temperatura i paliwo"
+msgstr "Route profile – wind, temperature and fuel"
+
+msgid "Program sam łączy się z działającym symulatorem – nie trzeba nic instalować. Kolejność uruchamiania nie ma znaczenia. X-Plane łączy się przez UDP bez wtyczek."
+msgstr "The program connects to a running simulator on its own – nothing to install. Start order does not matter. X-Plane connects over UDP without plugins."
+
+msgid "Propozycje zapasowych"
+msgstr "Suggested alternates"
+
+msgid "Przygotowano"
+msgstr "Prepared"
+
+msgid "Przygotowuję briefing – pobieram pogodę…"
+msgstr "Preparing the briefing – downloading weather…"
+
+msgid "Przyrząd w osobnym oknie – np. na drugi monitor"
+msgstr "An instrument in its own window – e.g. on a second monitor"
+
+msgid "Prędkości do checklisty"
+msgstr "Speeds to checklist"
+
+msgid "Prędkości z OFP wpisane do checklisty"
+msgstr "OFP speeds added to the checklist"
+
+msgid "Punkty trasy"
+msgstr "Route waypoints"
+
+msgid "Rezerwa końcowa"
+msgstr "Final reserve"
+
+msgid "Rezerwa końcowa {m} min"
+msgstr "Final reserve {m} min"
+
+msgid "Rezerwa min"
+msgstr "Reserve min"
+
+msgid "Rezerwa trasy"
+msgstr "Contingency"
+
+msgid "Rezerwa trasy {p}%"
+msgstr "Contingency {p}%"
+
+msgid "Samolot i pas"
+msgstr "Aircraft and runway"
+
+msgid "Skopiowano {ids} – wklej w wyszukiwarce NOTAM"
+msgstr "Copied {ids} – paste it into the NOTAM search"
+
+msgid "Skróty klawiaturowe"
+msgstr "Keyboard shortcuts"
+
+msgid "Spacja"
+msgstr "Space"
+
+msgid "Spalanie kg/h"
+msgstr "Burn kg/h"
+
+msgid "Start i lądowanie (TLR)"
+msgstr "Takeoff and landing (TLR)"
+
+msgid "Szacunek do symulatora z prostego modelu typu samolotu – nie zastępuje danych z AFM ani EFB."
+msgstr "A simulator estimate from a simple model of the aircraft type – not a substitute for AFM or EFB data."
+
+msgid "Ta pomoc"
+msgstr "This help"
+
+msgid "Ten krótki przewodnik pokaże, jak połączyć symulator i telefon. Wrócisz do niego klawiszem F1 (Pokaż przewodnik)."
+msgstr "This short guide shows how to connect the simulator and the phone. You can come back to it with F1 (Show the guide)."
+
+msgid "Trasa z procedurami, paliwo, briefing do PDF, plan z SimBrief i checklisty samolotu."
+msgstr "Route with procedures, fuel, a PDF briefing, the SimBrief plan and aircraft checklists."
+
+msgid "Trasa, procedury, paliwo i lotnisko zapasowe z OFP do edycji na tej karcie"
+msgstr "Route, procedures, fuel and alternate from the OFP for editing on this tab"
+
+msgid "Typ"
+msgstr "Type"
+
+msgid "Typ, masa, lotnisko, pas i pogoda z pobranego OFP"
+msgstr "Type, weight, airport, runway and weather from the downloaded OFP"
+
+msgid "Ustaw jako lotnisko zapasowe"
+msgstr "Set as alternate"
+
+msgid "Użytkownik SimBrief"
+msgstr "SimBrief user"
+
+msgid "V1, VR, V2, długość startu na pasie"
+msgstr "V1, VR, V2, takeoff distance on the runway"
+
+msgid "VREF, VAPP, wymagana długość pasa"
+msgstr "VREF, VAPP, required runway length"
+
+msgid "W OFP nie ma raportu startu i lądowania (TLR)"
+msgstr "The OFP has no takeoff and landing report (TLR)"
+
+msgid "W checkliście: {v}"
+msgstr "In the checklist: {v}"
+
+msgid "W oknie drukowania wybierz „Microsoft Print to PDF”, żeby zapisać plik PDF."
+msgstr "In the print dialog choose “Microsoft Print to PDF” to save a PDF file."
+
+msgid "Wagi"
+msgstr "Weights"
+
+msgid "Wiatr tylny ponad 10 kt"
+msgstr "Tailwind above 10 kt"
+
+msgid "Witaj w OpenTakeoff"
+msgstr "Welcome to OpenTakeoff"
+
+msgid "Wpisz lotnisko startu i celu"
+msgstr "Enter the departure and destination airports"
+
+msgid "Wpisz nazwę użytkownika albo Pilot ID z SimBrief – program pobierze najnowszy OFP: wagi, paliwo, navlog z wiatrem, pogodę lotnisk i prędkości startu."
+msgstr "Enter your SimBrief username or Pilot ID – the program downloads the latest OFP: weights, fuel, navlog with winds, airport weather and takeoff speeds."
+
+msgid "Wpisz prędkości jako dopisek w checkliście bieżącego samolotu"
+msgstr "Add the speeds as a note in the current aircraft's checklist"
+
+msgid "Wstecz"
+msgstr "Back"
+
+msgid "Wymagana długość pasa"
+msgstr "Required runway"
+
+msgid "Wyszukiwarka NOTAM FAA w przeglądarce; kody lotnisk planu trafiają do schowka"
+msgstr "FAA NOTAM search in the browser; the plan's airport codes go to the clipboard"
+
+msgid "Wznoszenia schodkowe"
+msgstr "Step climbs"
+
+msgid "Z kalkulatora: {v}"
+msgstr "From the calculator: {v}"
+
+msgid "Zaczynamy"
+msgstr "Let's go"
+
+msgid "Zakończ albo wznów zapis lotu"
+msgstr "Stop or resume flight recording"
+
+msgid "Zamknij okno pomocy albo przewodnik"
+msgstr "Close the help or the guide"
+
+msgid "Zapas"
+msgstr "Margin"
+
+msgid "Zawsze na wierzchu"
+msgstr "Always on top"
+
+msgid "Zrzut ekranu symulatora ma osobny skrót, działający także w grze – ustawisz go na karcie Nakładki."
+msgstr "The simulator screenshot has its own shortcut that also works in the game – set it on the Overlays tab."
+
+msgid "cel"
+msgstr "destination"
+
+msgid "elewacja"
+msgstr "elevation"
+
+msgid "pasażerowie"
+msgstr "passengers"
+
+msgid "plan"
+msgstr "plan"
+
+msgid "start"
+msgstr "departure"
+
+msgid "w powietrzu"
+msgstr "in the air"
+
+msgid "zapas"
+msgstr "margin"
+
+msgid "zapasowe"
+msgstr "alternate"
+
+msgid "{d} NM przed celem"
+msgstr "{d} NM before destination"
+
+msgid "Ładunek"
+msgstr "Payload"
+
+msgid "ładunek"
+msgstr "payload"
+
+msgid "Średni wiatr"
+msgstr "Average wind"
+
+msgid "Średnie spalanie"
+msgstr "Average burn"
+
+msgid "średni wiatr"
+msgstr "average wind"
+
+msgid "Źródło danych lotu"
+msgstr "Flight data source"
+
+msgid "Żaden telefon nie jest połączony"
+msgstr "No phone connected"
+
+msgid "„Symulacja” to lot pokazowy bez symulatora – dobry do obejrzenia programu. Start razem z symulatorem włączysz na karcie Telefony albo w ustawieniach."
+msgstr "“Simulation” is a demo flight without a simulator – good for a look around. Starting together with the simulator is set on the Phones tab or in Settings."

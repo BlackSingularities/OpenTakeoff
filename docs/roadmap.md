@@ -29,21 +29,23 @@ Kolejność to propozycja – priorytety ustala autor.
    „Retard”, STALL i OVERSPEED przez syntezator mowy Windows (SAPI); czytanie pozycji checklisty.
 2. **Ruch VATSIM/IVAO.** Samoloty w pobliżu na mapie, ND i w 3D; stacje ATC z częstotliwościami, ATIS
    w briefingu (publiczne dane, bez kont).
-3. **PFD i ECAM/EICAS.** Belki LOC/GS we wszystkich stylach kabiny; strony ELEC, HYD, FUEL i DOOR.
+3. **ECAM/EICAS.** Strony ELEC, HYD, FUEL i DOOR (belki ILS na PFD – zrobione).
 
 ### Checklisty
-- Spacja odhacza następną pozycję; checklista w nakładce na ekranie symulatora.
+- Checklista w nakładce na ekranie symulatora (spacja odhacza – zrobione).
 - Wybór listy według fazy lotu (po starcie silników „After start”, po oderwaniu „After takeoff”).
 - Jeden format plików dla Windows i Androida; odhaczanie zsynchronizowane z telefonem.
 - Kolejne zestawy, gdy znajdą się publiczne źródła: ATR 72, Dash 8 Q400, CRJ, E-Jets, PC-12, TBM.
 
 ### Plan lotu i briefing
-- NOTAM-y, obliczanie paliwa bez SimBriefa, TOD z planu, lotniska zapasowe.
-- Pakiet briefingu do PDF (METAR, TAF, diagram pasów, trasa, profil).
+- Zrobione: paliwo bez SimBriefa, TOC/TOD, propozycje zapasowych, briefing do PDF, OFP SimBrief
+  z wagami, paliwem, navlogiem i profilem wiatru.
+- NOTAM-y w programie – gdy znajdzie się darmowe źródło bez klucza (dziś tylko wyszukiwarka FAA
+  w przeglądarce).
+- Diagram pasów i mapa trasy w briefingu PDF.
 
 ### Wygoda
-- Dowolny przyrząd w osobnym oknie na drugi monitor.
-- Skróty klawiaturowe kart i nagrywania z oknem pomocy.
+- Zrobione: przyrządy w osobnych oknach, skróty klawiaturowe z oknem pomocy (F1), przewodnik.
 - Discord Rich Presence; import dziennika z Volanty i SimToolkitPro.
 
 ### Jakość kodu

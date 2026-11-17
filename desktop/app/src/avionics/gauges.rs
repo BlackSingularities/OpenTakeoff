@@ -1,6 +1,7 @@
 //! Zegary analogowe – przeniesione z CessnaPanel.kt: „six-pack” Cessny 172 (prędkościomierz, sztuczny
 //! horyzont, wysokościomierz, zakrętomierz, żyrobusola, wariometr), śmigłowca (radiowysokościomierz)
-//! i szybowca (wariometr TE, G-metr). Każdy zegar rysowany w układzie o promieniu 100.
+//! i szybowca (wariometr TE, G-metr), a w Cessnie także wskaźnik VOR/ILS (CDI z belką ścieżki schodzenia).
+//! Każdy zegar rysowany w układzie o promieniu 100.
 
 use std::time::Instant;
 
@@ -36,6 +37,7 @@ enum G {
     Vario,
     GMeter,
     Ra,
+    Cdi,
 }
 
 #[derive(Clone, Copy)]
@@ -60,7 +62,7 @@ struct AsiCfg {
 
 pub struct Panel {
     kind: Kind,
-    gauges: [G; 6],
+    gauges: Vec<G>,
     asi_cfg: AsiCfg,
     cfg_now: AsiCfg,
     g_max: f32,
@@ -75,9 +77,9 @@ pub struct Panel {
 impl Panel {
     pub fn new(kind: Kind) -> Self {
         let gauges = match kind {
-            Kind::Cessna => [G::Asi, G::Ai, G::Alt, G::Tc, G::Hi, G::Vsi],
-            Kind::Heli => [G::Asi, G::Ai, G::Alt, G::Ra, G::Hi, G::Vsi],
-            Kind::Glider => [G::Asi, G::Vario, G::Alt, G::Tc, G::Hi, G::GMeter],
+            Kind::Cessna => vec![G::Asi, G::Ai, G::Alt, G::Cdi, G::Tc, G::Hi, G::Vsi],
+            Kind::Heli => vec![G::Asi, G::Ai, G::Alt, G::Ra, G::Hi, G::Vsi],
+            Kind::Glider => vec![G::Asi, G::Vario, G::Alt, G::Tc, G::Hi, G::GMeter],
         };
         let asi_cfg = match kind {
             Kind::Cessna => AsiCfg {
@@ -109,12 +111,13 @@ impl Panel {
             c.fill_radial(&p, w / 2.0, h / 2.0, w.max(h) * 0.75, 0xFF34373B, 0xFF1A1B1D);
         }
         let hb = (h * 0.055).clamp(26.0, 64.0);
-        let cols = if w >= h * 1.6 { 3 } else if w >= h { 3 } else { 2 };
-        let rows = 6 / cols;
+        let n = self.gauges.len();
+        let cols = if w >= h * 1.6 { if n > 6 { 4 } else { 3 } } else if w >= h { 3 } else { 2 };
+        let rows = n.div_ceil(cols);
         let cw = w / cols as f32;
         let ch = (h - hb) / rows as f32;
         let r = cw.min(ch) * 0.46;
-        for i in 0..6 {
+        for i in 0..n {
             let cx = cw * (i % cols) as f32 + cw / 2.0;
             let cy = ch * (i / cols) as f32 + ch / 2.0;
             c.save();
@@ -131,6 +134,7 @@ impl Panel {
                 G::Vario => self.vario(c, d),
                 G::GMeter => self.gmeter(c, d),
                 G::Ra => radio_alt(c, d),
+                G::Cdi => cdi(c, d),
             }
             bezel_front(c);
             c.restore();
@@ -514,6 +518,89 @@ fn hi(c: &mut Canvas, d: &FlightData) {
         c.text_b(&format!("{:03}", imod(roundi(hdg), 360)), 0.0, 60.0, 16.0, WHITE);
     } else {
         c.text_b("OFF", 0.0, 60.0, 14.0, ORANGE);
+    }
+}
+
+/// Wskaźnik VOR/ILS (CDI): karta kursu z nastawą OBS u góry, belka lokalizera / radialu (5 kropek),
+/// belka ścieżki schodzenia przy ILS, chorągiewki TO/FR, NAV i GS.
+fn cdi(c: &mut Canvas, d: &FlightData) {
+    use super::data::NavSource;
+    let n = &d.nav;
+    let course = if n.course.is_nan() { 0.0 } else { n.course };
+    let mut deg = 0;
+    while deg < 360 {
+        c.save();
+        c.rotate(deg as f32 - course, 0.0, 0.0);
+        let ten = deg % 10 == 0;
+        c.line(0.0, -90.0, 0.0, if ten { -80.0 } else { -85.0 }, WHITE, if ten { 2.0 } else { 1.2 });
+        if deg % 30 == 0 {
+            let label = match deg {
+                0 => "N".to_string(),
+                90 => "E".to_string(),
+                180 => "S".to_string(),
+                270 => "W".to_string(),
+                x => (x / 10).to_string(),
+            };
+            c.text_b(&label, 0.0, -68.0, 13.0, WHITE);
+        }
+        c.restore();
+        deg += 5;
+    }
+    // Znacznik kursu (u góry) i kursu odwrotnego (u dołu)
+    c.poly(ORANGE, 0, 0.0, &[0.0, -91.0, -6.0, -100.0, 6.0, -100.0]);
+    c.poly(WHITE, 0, 0.0, &[0.0, 91.0, -5.0, 99.0, 5.0, 99.0]);
+    let dot = 10.0;
+    for i in 1..=5 {
+        let x = i as f32 * dot;
+        c.circle(x, 0.0, 2.0, WHITE, 0.0);
+        c.circle(-x, 0.0, 2.0, WHITE, 0.0);
+    }
+    c.circle(0.0, 0.0, 4.5, WHITE, 1.5);
+    let has_nav = n.source != NavSource::None && !n.cdi.is_nan();
+    let has_gs = !n.gs.is_nan();
+    if has_gs {
+        for i in 1..=4 {
+            let y = i as f32 * dot;
+            c.circle(62.0, y, 2.0, WHITE, 0.0);
+            c.circle(62.0, -y, 2.0, WHITE, 0.0);
+        }
+    }
+    // Belka boczna: 2,5 kropki PFD = pełne wychylenie (5 kropek)
+    let x = if has_nav { n.cdi.clamp(-2.5, 2.5) * 2.0 * dot } else { 0.0 };
+    c.line(x, -56.0, x, 56.0, WHITE, 3.5);
+    if has_gs {
+        let y = -n.gs.clamp(-2.5, 2.5) * 1.6 * dot;
+        c.line(-56.0, y, 56.0, y, WHITE, 3.5);
+    }
+    // Chorągiewki: TO/FR przy VOR, NAV bez sygnału, GS przy lokalizerze bez ścieżki
+    if !has_nav {
+        c.rect(-48.0, -40.0, -22.0, -26.0, GRED);
+        c.text_b("NAV", -35.0, -33.0, 10.0, WHITE);
+    } else if n.source == NavSource::Vor {
+        let t = match n.to_from {
+            1 => "TO",
+            2 => "FR",
+            _ => "",
+        };
+        if !t.is_empty() {
+            c.text_b(t, 32.0, -30.0, 12.0, WHITE);
+        }
+    }
+    if n.loc && !has_gs {
+        c.rect(48.0, -14.0, 74.0, 0.0, GRED);
+        c.text_b("GS", 61.0, -7.0, 10.0, WHITE);
+    }
+    let src = match n.source {
+        NavSource::Loc if has_gs => "ILS",
+        NavSource::Loc => "LOC",
+        NavSource::Vor => "VOR 1",
+        NavSource::Gps => "GPS",
+        NavSource::None => "NAV 1",
+    };
+    c.text_b(src, 0.0, 34.0, 11.0, LABEL);
+    c.text_b(&format!("{:03}", imod(roundi(course), 360)), 0.0, 50.0, 13.0, ORANGE);
+    if let Some(id) = &n.ident {
+        c.text_b(id, 0.0, -40.0, 11.0, LABEL);
     }
 }
 

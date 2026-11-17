@@ -53,6 +53,52 @@ component ChecklistSetButton inherits Rectangle {
     }
 }
 
+/// Przyrządy w osobnych oknach: duży przycisk wstążki z menu (każde okno osobno, zawsze na wierzchu).
+component PopoutButton inherits Rectangle {
+    property <[string]> names: ["PFD", "ND", @tr("Silniki"), @tr("Systemy"), @tr("Zegary")];
+    width: bb.min-width;
+    bb := BigButton {
+        width: parent.width;
+        icon: Icons.external-link;
+        label: @tr("Okno");
+        menu: true;
+        active: App.popouts[0] || App.popouts[1] || App.popouts[2] || App.popouts[3] || App.popouts[4];
+        tip: @tr("Przyrząd w osobnym oknie – np. na drugi monitor");
+        clicked => {
+            pop.show();
+        }
+    }
+    pop := PopupWindow {
+        x: 0;
+        y: root.height + 4px;
+        width: 240px * Theme.scale;
+        close-policy: close-on-click-outside;
+        Card {
+            VerticalLayout {
+                padding: 6px;
+                spacing: 1px;
+                for n[i] in root.names: MenuItem {
+                    label: n;
+                    checked: App.popouts[i];
+                    clicked => {
+                        App.cmd("popout", i);
+                        pop.close();
+                    }
+                }
+                MenuSep { }
+                MenuItem {
+                    label: @tr("Zawsze na wierzchu");
+                    checked: App.popout-top;
+                    clicked => {
+                        App.cmd("popout-top", "");
+                        pop.close();
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Podkład mapy: duży przycisk wstążki z menu (wg motywu, ciemny, jasny, OSM, satelita).
 component MapStyleButton inherits Rectangle {
     property <[string]> names: [@tr("Wg motywu"), @tr("Ciemny"), @tr("Jasny"), "OpenStreetMap", @tr("Satelita")];
@@ -315,6 +361,25 @@ export component Ribbon inherits Rectangle {
             }
         }
         if App.tab == 12: Group {
+            title: "Briefing";
+            BigButton {
+                icon: Icons.file-text;
+                label: @tr("Briefing PDF");
+                tip: @tr("Pakiet briefingu: trasa, paliwo, punkty, lotniska z pasami i częstotliwościami, METAR i TAF – do druku albo zapisu jako PDF");
+                clicked => {
+                    App.cmd("plan-briefing", "");
+                }
+            }
+            BigButton {
+                icon: Icons.external-link;
+                label: "NOTAM";
+                tip: @tr("Wyszukiwarka NOTAM FAA w przeglądarce; kody lotnisk planu trafiają do schowka");
+                clicked => {
+                    App.cmd("plan-notam", "");
+                }
+            }
+        }
+        if App.tab == 12: Group {
             title: @tr("Dane nawigacyjne");
             last: true;
             BigButton {
@@ -391,6 +456,10 @@ export component Ribbon inherits Rectangle {
         if App.tab == 8: Group {
             title: @tr("Styl kabiny");
             CabinStyleButton { }
+        }
+        if App.tab == 8: Group {
+            title: @tr("Osobne okna");
+            PopoutButton { }
         }
         if App.tab == 8: Group {
             title: "ND";

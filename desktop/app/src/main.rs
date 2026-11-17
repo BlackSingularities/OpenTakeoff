@@ -20,6 +20,9 @@ mod map;
 mod navmap;
 mod overlays;
 mod params;
+mod perf;
+mod planbrief;
+mod popout;
 mod scene3d;
 mod screen;
 mod settings;
@@ -334,6 +337,13 @@ fn main() {
         simbrief::load_saved();
         shots::refresh();
         overlays::apply();
+        popout::restore();
+        // Pierwsze uruchomienie: przewodnik
+        if !state().borrow().s.welcome_done {
+            if let Some(u) = app::ui() {
+                u.global::<App>().set_welcome_step(0);
+            }
+        }
     });
     {
         let w = ui.as_weak();
@@ -397,6 +407,10 @@ fn main() {
             }
             if tick % 4 == 0 {
                 app::refresh_live(false);
+            }
+            // Przyrządy w osobnych oknach (co 100 ms)
+            if tick % 2 == 1 {
+                popout::tick();
             }
             // Checklisty: samolot, warunki i odhaczanie przez symulator (także przy innej karcie)
             if tick % 5 == 2 {
@@ -545,6 +559,7 @@ fn cmd_by_name(id: &str, arg: &str) {
 
 fn quit() {
     overlays::close_all();
+    popout::close_all();
     save();
     state().borrow().host.shutdown();
     let _ = slint::quit_event_loop();

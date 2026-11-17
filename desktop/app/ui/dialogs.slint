@@ -1,0 +1,495 @@
+// Okna dialogowe w oknie głównym: skróty klawiaturowe (F1) i przewodnik pierwszego uruchomienia.
+
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { Button, Card, Segmented } from "widgets.slint";
+import { Dot } from "parts.slint";
+
+/// Klawisz w ramce (np. „Ctrl”, „F1”).
+component Kbd inherits Rectangle {
+    in property <string> text;
+    width: t.preferred-width + 12px;
+    height: 22px * Theme.scale;
+    border-radius: 4px;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line-strong;
+    t := Text {
+        text: root.text;
+        font-family: Theme.mono;
+        font-size: Theme.fs-small;
+        font-weight: 700;
+        color: Theme.text;
+    }
+}
+
+/// Wiersz: klawisze i opis.
+component Shortcut inherits HorizontalLayout {
+    in property <[string]> keys;
+    in property <string> text;
+    spacing: 4px;
+    height: 26px * Theme.scale;
+    HorizontalLayout {
+        width: 150px * Theme.scale;
+        spacing: 4px;
+        alignment: start;
+        for k in root.keys: Kbd {
+            y: (parent.height - self.height) / 2;
+            text: k;
+        }
+    }
+    Text {
+        text: root.text;
+        font-family: Theme.font;
+        font-size: Theme.fs;
+        color: Theme.text-dim;
+        vertical-alignment: center;
+        overflow: elide;
+        horizontal-stretch: 1;
+    }
+}
+
+component SectionTitle inherits Text {
+    font-family: Theme.cond;
+    font-size: 11px * Theme.scale;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: Theme.text-faint;
+    height: 24px * Theme.scale;
+    vertical-alignment: bottom;
+}
+
+/// Pomoc: wszystkie skróty klawiaturowe.
+export component HelpDialog inherits Rectangle {
+    background: #00000088;
+    TouchArea {
+        clicked => {
+            App.help-open = false;
+        }
+    }
+    Card {
+        width: min(760px * Theme.scale, parent.width - 40px);
+        height: min(hl.preferred-height, parent.height - 40px);
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        TouchArea { }
+        hl := VerticalLayout {
+            padding: 20px;
+            spacing: 10px;
+            HorizontalLayout {
+                spacing: 10px;
+                Image {
+                    source: Icons.command;
+                    width: 22px;
+                    height: 22px;
+                    y: (parent.height - self.height) / 2;
+                    colorize: Theme.accent;
+                }
+                Text {
+                    text: @tr("Skróty klawiaturowe");
+                    font-family: Theme.cond;
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: Theme.text;
+                    horizontal-stretch: 1;
+                }
+            }
+            HorizontalLayout {
+                spacing: 24px;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    SectionTitle {
+                        text: @tr("Karty").to-uppercase();
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "1"];
+                        text: @tr("Pulpit");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "2"];
+                        text: @tr("Na żywo");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "3"];
+                        text: @tr("Przyrządy");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "4"];
+                        text: @tr("Mapa");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "5"];
+                        text: @tr("Dziennik");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "6"];
+                        text: @tr("Statystyki");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "7"];
+                        text: @tr("Zrzuty");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "8"];
+                        text: @tr("Plan lotu");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "9"];
+                        text: @tr("Checklisty");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "0"];
+                        text: @tr("Lotniska");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "PgDn"];
+                        text: @tr("Następna karta (PgUp – poprzednia)");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", ","];
+                        text: @tr("Ustawienia");
+                    }
+                }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    SectionTitle {
+                        text: @tr("Lot").to-uppercase();
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "R"];
+                        text: @tr("Zakończ albo wznów zapis lotu");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "M"];
+                        text: @tr("Znacznik w bieżącym nagraniu");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "P"];
+                        text: @tr("PFD w osobnym oknie");
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "Shift", "P"];
+                        text: @tr("ND w osobnym oknie");
+                    }
+                    SectionTitle {
+                        text: @tr("Checklisty").to-uppercase();
+                    }
+                    Shortcut {
+                        keys: [@tr("Spacja")];
+                        text: @tr("Odhacz następną pozycję");
+                    }
+                    Shortcut {
+                        keys: ["PgDn", "PgUp"];
+                        text: @tr("Następna i poprzednia lista");
+                    }
+                    SectionTitle {
+                        text: @tr("Okno").to-uppercase();
+                    }
+                    Shortcut {
+                        keys: ["Ctrl", "B"];
+                        text: @tr("Panel boczny");
+                    }
+                    Shortcut {
+                        keys: ["F1"];
+                        text: @tr("Ta pomoc");
+                    }
+                    Shortcut {
+                        keys: ["Esc"];
+                        text: @tr("Zamknij okno pomocy albo przewodnik");
+                    }
+                }
+            }
+            Text {
+                text: @tr("Zrzut ekranu symulatora ma osobny skrót, działający także w grze – ustawisz go na karcie Nakładki.");
+                font-family: Theme.font;
+                font-size: Theme.fs-small;
+                color: Theme.text-faint;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                Button {
+                    label: @tr("Pokaż przewodnik");
+                    icon: Icons.book-open;
+                    clicked => {
+                        App.help-open = false;
+                        App.welcome-step = 0;
+                    }
+                }
+                Rectangle {
+                    horizontal-stretch: 1;
+                }
+                Button {
+                    label: @tr("Zamknij");
+                    primary: true;
+                    clicked => {
+                        App.help-open = false;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Karta w opisie zakładek przewodnika.
+component TabInfo inherits HorizontalLayout {
+    in property <image> icon;
+    in property <string> title;
+    in property <string> text;
+    spacing: 10px;
+    Rectangle {
+        width: 28px * Theme.scale;
+        height: self.width;
+        border-radius: Theme.r-small;
+        background: Theme.accent-soft;
+        Image {
+            source: root.icon;
+            width: 15px * Theme.scale;
+            height: self.width;
+            colorize: Theme.accent;
+        }
+    }
+    VerticalLayout {
+        horizontal-stretch: 1;
+        alignment: center;
+        Text {
+            text: root.title;
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            font-weight: 600;
+            color: Theme.text;
+        }
+        Text {
+            text: root.text;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            color: Theme.text-dim;
+            wrap: word-wrap;
+        }
+    }
+}
+
+/// Przewodnik pierwszego uruchomienia: powitanie, symulator, telefon, karty.
+export component WelcomeDialog inherits Rectangle {
+    property <int> step: App.welcome-step;
+    property <[string]> titles: [@tr("Witaj w OpenTakeoff"), @tr("Połączenie z symulatorem"), @tr("Telefon"), @tr("Karty programu")];
+    background: #000000aa;
+    TouchArea { }
+    Card {
+        width: min(640px * Theme.scale, parent.width - 40px);
+        height: min(wl.preferred-height, parent.height - 40px);
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        wl := VerticalLayout {
+            padding: 22px;
+            spacing: 14px;
+            // Kroki
+            HorizontalLayout {
+                spacing: 6px;
+                for t[i] in root.titles: Rectangle {
+                    height: 4px;
+                    border-radius: 2px;
+                    background: i <= root.step ? Theme.accent : Theme.hover;
+                }
+            }
+            Text {
+                text: root.titles[root.step];
+                font-family: Theme.cond;
+                font-size: 24px * Theme.scale;
+                font-weight: 700;
+                color: Theme.text;
+            }
+            if root.step == 0: VerticalLayout {
+                spacing: 10px;
+                Text {
+                    text: @tr("OpenTakeoff łączy symulator (MSFS 2020/2024 albo X-Plane 11/12) z komputerem i telefonem. Na komputerze masz przyrządy w stylu kabiny, mapę z widokiem 3D, plan lotu, checklisty, dziennik lotów ze statystykami i analizą lądowania oraz nakładki do transmisji.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.text-dim;
+                    wrap: word-wrap;
+                }
+                Text {
+                    text: @tr("Ten krótki przewodnik pokaże, jak połączyć symulator i telefon. Wrócisz do niego klawiszem F1 (Pokaż przewodnik).");
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.text-dim;
+                    wrap: word-wrap;
+                }
+            }
+            if root.step == 1: VerticalLayout {
+                spacing: 12px;
+                Text {
+                    text: @tr("Program sam łączy się z działającym symulatorem – nie trzeba nic instalować. Kolejność uruchamiania nie ma znaczenia. X-Plane łączy się przez UDP bez wtyczek.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.text-dim;
+                    wrap: word-wrap;
+                }
+                Segmented {
+                    items: [@tr("Automatycznie"), "MSFS", "X-Plane", @tr("Symulacja")];
+                    current: App.simulation ? 3 : App.sim-kind;
+                    tip: @tr("Źródło danych lotu");
+                    picked(i) => {
+                        App.cmd("source", i == 0 ? "auto" : i == 1 ? "msfs" : i == 2 ? "xplane" : "sim");
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Dot {
+                        y: (parent.height - self.height) / 2;
+                        state: App.sim-connected ? 2 : 0;
+                    }
+                    Text {
+                        text: App.sim-status;
+                        font-family: Theme.font;
+                        font-size: Theme.fs;
+                        font-weight: 600;
+                        color: App.sim-connected ? Theme.ok : Theme.text-dim;
+                        vertical-alignment: center;
+                        wrap: word-wrap;
+                        horizontal-stretch: 1;
+                    }
+                }
+                Text {
+                    text: @tr("„Symulacja” to lot pokazowy bez symulatora – dobry do obejrzenia programu. Start razem z symulatorem włączysz na karcie Telefony albo w ustawieniach.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                    wrap: word-wrap;
+                }
+            }
+            if root.step == 2: VerticalLayout {
+                spacing: 12px;
+                Text {
+                    text: @tr("Aplikacja OpenTakeoff na Androida pokazuje kokpit i steruje samolotem. Telefon i komputer muszą być w tej samej sieci Wi-Fi. W aplikacji wybierz połączenie z komputerem – znajdzie go sam; przy pierwszym połączeniu wpisz kod parowania.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.text-dim;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    spacing: 16px;
+                    Rectangle {
+                        width: 200px * Theme.scale;
+                        height: 84px * Theme.scale;
+                        border-radius: Theme.r;
+                        background: Theme.raised;
+                        border-width: 1px;
+                        border-color: Theme.line;
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 2px;
+                            Text {
+                                text: @tr("Kod parowania").to-uppercase();
+                                font-family: Theme.cond;
+                                font-size: 10.5px * Theme.scale;
+                                font-weight: 700;
+                                color: Theme.text-faint;
+                                horizontal-alignment: center;
+                            }
+                            Text {
+                                text: App.pairing-code;
+                                font-family: Theme.mono;
+                                font-size: 30px * Theme.scale;
+                                font-weight: 700;
+                                color: Theme.accent;
+                                horizontal-alignment: center;
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 4px;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: @tr("Adres do ręcznego wpisania");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                        }
+                        Text {
+                            text: App.addresses + "  ·  port " + App.port;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs;
+                            color: Theme.text;
+                            wrap: word-wrap;
+                        }
+                        Text {
+                            text: App.phones > 0 ? App.phones-text : @tr("Żaden telefon nie jest połączony");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: App.phones > 0 ? Theme.ok : Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+            if root.step == 3: VerticalLayout {
+                spacing: 8px;
+                TabInfo {
+                    icon: Icons.gauge;
+                    title: @tr("Na żywo i Przyrządy");
+                    text: @tr("Lot na bieżąco i wyświetlacze kabiny; przyrząd w osobnym oknie – przycisk Okno na wstążce.");
+                }
+                TabInfo {
+                    icon: Icons.map;
+                    title: @tr("Mapa");
+                    text: @tr("Nawigacja z radialami, Direct To, pogoda i widok 3D.");
+                }
+                TabInfo {
+                    icon: Icons.route;
+                    title: @tr("Plan lotu i Checklisty");
+                    text: @tr("Trasa z procedurami, paliwo, briefing do PDF, plan z SimBrief i checklisty samolotu.");
+                }
+                TabInfo {
+                    icon: Icons.book-open;
+                    title: @tr("Dziennik i Statystyki");
+                    text: @tr("Każdy lot zapisuje się sam – z oceną i analizą lądowania.");
+                }
+                TabInfo {
+                    icon: Icons.calculator;
+                    title: @tr("Narzędzia");
+                    text: @tr("Kalkulatory lotnicze, także start i lądowanie (V1, VR, V2, VREF).");
+                }
+                Text {
+                    text: @tr("F1 – skróty klawiaturowe.");
+                    font-family: Theme.font;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                }
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                Button {
+                    label: @tr("Pomiń");
+                    clicked => {
+                        App.welcome-step = -1;
+                        App.cmd("welcome-done", "");
+                    }
+                }
+                Rectangle {
+                    horizontal-stretch: 1;
+                }
+                if root.step > 0: Button {
+                    label: @tr("Wstecz");
+                    clicked => {
+                        App.welcome-step = root.step - 1;
+                    }
+                }
+                Button {
+                    label: root.step < 3 ? @tr("Dalej") : @tr("Zaczynamy");
+                    primary: true;
+                    clicked => {
+                        if (root.step < 3) {
+                            App.welcome-step = root.step + 1;
+                        } else {
+                            App.welcome-step = -1;
+                            App.cmd("welcome-done", "");
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

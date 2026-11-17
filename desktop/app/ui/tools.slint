@@ -6,9 +6,68 @@ import { ScrollView, TextEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Field, Segmented, Button, TipArea } from "widgets.slint";
+import { Field, Segmented, Button, TipArea, MenuItem, Card as WCard } from "widgets.slint";
 import { Panel, Colors } from "parts.slint";
 import { Cab, Caps, In, Out, Card, Table, Scope, Tag } from "tool_parts.slint";
+
+/// Wybór typu samolotu do kalkulatorów osiągów: przycisk z menu.
+component PerfType inherits Rectangle {
+    in property <[string]> names;
+    in property <int> current;
+    callback picked(int);
+    height: 28px * Theme.scale;
+    border-radius: Theme.r-small;
+    background: ta.has-hover ? Theme.hover : Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 8px;
+        spacing: 6px;
+        Text {
+            text: root.current >= 0 && root.current < root.names.length ? root.names[root.current] : "";
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            color: Theme.text;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        Image {
+            source: Icons.chevron-down;
+            width: 12px;
+            height: 12px;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.text-dim;
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            pop.show();
+        }
+    }
+    pop := PopupWindow {
+        x: 0;
+        y: root.height + 4px;
+        width: max(root.width, 240px * Theme.scale);
+        close-policy: close-on-click-outside;
+        WCard {
+            VerticalLayout {
+                padding: 6px;
+                spacing: 1px;
+                for n[i] in root.names: MenuItem {
+                    label: n;
+                    checked: i == root.current;
+                    clicked => {
+                        root.picked(i);
+                        pop.close();
+                    }
+                }
+            }
+        }
+    }
+}
 
 /// Pozycja spisu narzędzi.
 struct ToolItem {
@@ -36,6 +95,8 @@ export component Tools inherits Rectangle {
         { g: @tr("Przeliczniki i radio"), t: @tr("Jednostki"), d: @tr("Wszystkie jednostki naraz"), i: Icons.calculator, live: false },
         { g: @tr("Przeliczniki i radio"), t: @tr("Alfabet i transponder"), d: @tr("Literowanie ICAO, kody specjalne"), i: Icons.radio, live: false },
         { g: @tr("Przeliczniki i radio"), t: @tr("Dekoder METAR / TAF"), d: @tr("Opis każdej grupy depeszy"), i: Icons.text-quote, live: false },
+        { g: @tr("Osiągi"), t: @tr("Start"), d: @tr("V1, VR, V2, długość startu na pasie"), i: Icons.plane-takeoff, live: true },
+        { g: @tr("Osiągi"), t: @tr("Lądowanie"), d: @tr("VREF, VAPP, wymagana długość pasa"), i: Icons.plane-landing, live: true },
     ];
     property <ToolItem> cur: root.items[App.tool];
 
@@ -120,6 +181,69 @@ export component Tools inherits Rectangle {
     // Dekoder
     property <string> metar: "METAR EPGD 151230Z 29012G22KT 250V320 9999 -SHRA FEW014CB BKN030 12/08 Q1009 NOSIG";
     property <[string]> decoded: App.calc("decode", [root.metar]);
+    // Osiągi: typ samolotu wspólny dla startu i lądowania
+    property <int> pf-type: 0;
+    property <[string]> pf-names: App.calc("perf-names", []);
+    property <string> to-w: "67000";
+    property <string> to-icao: "EPWA";
+    property <string> to-rwy: "29";
+    property <string> to-oat: "15";
+    property <string> to-qnh: "1013";
+    property <string> to-wdir: "290";
+    property <string> to-wspd: "8";
+    property <bool> to-wet: false;
+    property <[string]> tko: App.calc("perf-to", ["" + root.pf-type, root.to-w, root.to-icao, root.to-rwy, root.to-oat, root.to-qnh, root.to-wdir, root.to-wspd, root.to-wet ? "1" : "0"]);
+    property <string> ld-w: "60000";
+    property <string> ld-icao: "EPKK";
+    property <string> ld-rwy: "25";
+    property <string> ld-oat: "15";
+    property <string> ld-qnh: "1013";
+    property <string> ld-wdir: "250";
+    property <string> ld-wspd: "10";
+    property <bool> ld-wet: false;
+    property <[string]> ld: App.calc("perf-ldg", ["" + root.pf-type, root.ld-w, root.ld-icao, root.ld-rwy, root.ld-oat, root.ld-qnh, root.ld-wdir, root.ld-wspd, root.ld-wet ? "1" : "0"]);
+
+    /// Dane z OFP SimBrief: typ, masa (TOW albo LDW), lotnisko i pas z planu, pogoda z METAR w OFP.
+    function from-ofp(takeoff: bool) {
+        let v = App.calc(takeoff ? "perf-ofp-to" : "perf-ofp-ldg", []);
+        if (v.length < 8) {
+            return;
+        }
+        if (v[0] != "") {
+            root.set-type(round(v[0].to-float()));
+        }
+        if (takeoff) {
+            if (v[1] != "") {
+                root.to-w = v[1];
+            }
+            root.to-icao = v[2];
+            root.to-rwy = v[3];
+            root.to-oat = v[4];
+            root.to-qnh = v[5];
+            root.to-wdir = v[6];
+            root.to-wspd = v[7];
+        } else {
+            if (v[1] != "") {
+                root.ld-w = v[1];
+            }
+            root.ld-icao = v[2];
+            root.ld-rwy = v[3];
+            root.ld-oat = v[4];
+            root.ld-qnh = v[5];
+            root.ld-wdir = v[6];
+            root.ld-wspd = v[7];
+        }
+    }
+
+    /// Nowy typ samolotu: masy domyślne z profilu.
+    function set-type(i: int) {
+        root.pf-type = i;
+        let info = App.calc("perf-info", ["" + i]);
+        if (info.length >= 4) {
+            root.to-w = info[2];
+            root.ld-w = info[3];
+        }
+    }
 
     /// Wypełnia dane bieżącego narzędzia wartościami z symulatora.
     function fill() {
@@ -165,6 +289,25 @@ export component Tools inherits Rectangle {
             root.fu-fob = l[11];
             if (l[12] != "0") {
                 root.fu-burn = l[12];
+            }
+        } else if (App.tool == 15 || App.tool == 16) {
+            let d = App.calc("perf-detect", []);
+            if (d.length > 0) {
+                root.set-type(round(d[0].to-float()));
+            }
+            if (App.tool == 15) {
+                root.to-oat = l[6];
+                root.to-qnh = l[7];
+                root.to-wdir = l[0];
+                root.to-wspd = l[1];
+                if (l[9] != "") {
+                    root.to-icao = l[9];
+                }
+            } else {
+                root.ld-oat = l[6];
+                root.ld-qnh = l[7];
+                root.ld-wdir = l[0];
+                root.ld-wspd = l[1];
             }
         }
     }
@@ -1366,6 +1509,405 @@ export component Tools inherits Rectangle {
                     }
                 }
 
+                // ---------- 15: Start ----------
+                if App.tool == 15: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Samolot i pas");
+                        width: 340px * Theme.scale;
+                        Caps {
+                            text: @tr("Typ").to-uppercase();
+                            color: Cab.label;
+                        }
+                        PerfType {
+                            names: root.pf-names;
+                            current: root.pf-type;
+                            picked(i) => {
+                                root.set-type(i);
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Masa");
+                                text <=> root.to-w;
+                                unit: "kg";
+                                w: 84px * Theme.scale;
+                            }
+                            In {
+                                label: "ICAO";
+                                text <=> root.to-icao;
+                                w: 60px * Theme.scale;
+                            }
+                            In {
+                                label: @tr("Pas");
+                                text <=> root.to-rwy;
+                                w: 44px * Theme.scale;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: "OAT";
+                                text <=> root.to-oat;
+                                unit: "°C";
+                                w: 56px * Theme.scale;
+                            }
+                            In {
+                                label: "QNH";
+                                text <=> root.to-qnh;
+                                unit: "hPa";
+                                w: 62px * Theme.scale;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Wiatr");
+                                text <=> root.to-wdir;
+                                unit: "°";
+                                w: 56px * Theme.scale;
+                            }
+                            In {
+                                label: @tr("Prędkość");
+                                text <=> root.to-wspd;
+                                unit: "kt";
+                                w: 56px * Theme.scale;
+                            }
+                        }
+                        Segmented {
+                            items: [@tr("Pas suchy"), @tr("Pas mokry")];
+                            current: root.to-wet ? 1 : 0;
+                            picked(i) => {
+                                root.to-wet = i == 1;
+                            }
+                        }
+                        HorizontalLayout {
+                            alignment: start;
+                            Button {
+                                label: @tr("Z SimBrief");
+                                icon: Icons.cloud-download;
+                                enabled: App.ofp.loaded;
+                                tip: App.ofp.loaded ? @tr("Typ, masa, lotnisko, pas i pogoda z pobranego OFP") : @tr("Najpierw pobierz OFP (Plan lotu → OFP SimBrief)");
+                                clicked => {
+                                    root.from-ofp(true);
+                                }
+                            }
+                        }
+                        Text {
+                            text: @tr("Szacunek do symulatora z prostego modelu typu samolotu – nie zastępuje danych z AFM ani EFB.");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 8px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: "V1";
+                                v: root.tko[1];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                big: true;
+                                k: "VR";
+                                v: root.tko[2];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                big: true;
+                                k: root.tko[1] == "–" ? "VY" : "V2";
+                                v: root.tko[3];
+                                tone: Cab.cyan;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Długość startu");
+                                v: root.tko[4];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                k: @tr("Dostępna (TORA)");
+                                v: root.tko[5];
+                            }
+                            Out {
+                                k: @tr("Zapas");
+                                v: root.tko[6];
+                                tone: root.tko[0] == "1" ? Cab.green : Cab.red;
+                            }
+                        }
+                        // Pasek: wymagana część pasa
+                        if root.tko[12] != "": Scope {
+                            height: 30px * Theme.scale;
+                            Rectangle {
+                                x: 0;
+                                width: parent.width * min(1, root.tko[12].to-float());
+                                background: root.tko[0] == "1" ? Cab.green.with-alpha(0.55) : Cab.red.with-alpha(0.65);
+                            }
+                            Text {
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                                text: root.tko[0] == "1" ? @tr("Pas wystarcza") : @tr("Pas za krótki");
+                                font-family: Theme.cond;
+                                font-size: 12px * Theme.scale;
+                                font-weight: 700;
+                                color: Cab.white;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Pas");
+                                v: root.tko[7];
+                                horizontal-stretch: 2;
+                            }
+                            Out {
+                                k: @tr("Wiatr na pasie");
+                                v: root.tko[8];
+                                horizontal-stretch: 2;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Wysokość gęstościowa");
+                                v: root.tko[9];
+                            }
+                            Out {
+                                k: @tr("Masa / MTOW");
+                                v: root.tko[10];
+                            }
+                        }
+                        if root.tko[11] != "": Text {
+                            text: root.tko[11];
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            font-weight: 600;
+                            color: Cab.amber;
+                            wrap: word-wrap;
+                        }
+                        HorizontalLayout {
+                            alignment: start;
+                            Button {
+                                label: @tr("Do checklisty");
+                                icon: Icons.list-checks;
+                                enabled: root.tko[2] != "";
+                                tip: @tr("Wpisz prędkości jako dopisek w checkliście bieżącego samolotu");
+                                clicked => {
+                                    App.cmd("cl-perf", "to|V1 " + root.tko[1] + " · VR " + root.tko[2] + " · " + (root.tko[1] == "–" ? "VY " : "V2 ") + root.tko[3]);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ---------- 16: Lądowanie ----------
+                if App.tool == 16: HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Card {
+                        title: @tr("Samolot i pas");
+                        width: 340px * Theme.scale;
+                        Caps {
+                            text: @tr("Typ").to-uppercase();
+                            color: Cab.label;
+                        }
+                        PerfType {
+                            names: root.pf-names;
+                            current: root.pf-type;
+                            picked(i) => {
+                                root.set-type(i);
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Masa");
+                                text <=> root.ld-w;
+                                unit: "kg";
+                                w: 84px * Theme.scale;
+                            }
+                            In {
+                                label: "ICAO";
+                                text <=> root.ld-icao;
+                                w: 60px * Theme.scale;
+                            }
+                            In {
+                                label: @tr("Pas");
+                                text <=> root.ld-rwy;
+                                w: 44px * Theme.scale;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: "OAT";
+                                text <=> root.ld-oat;
+                                unit: "°C";
+                                w: 56px * Theme.scale;
+                            }
+                            In {
+                                label: "QNH";
+                                text <=> root.ld-qnh;
+                                unit: "hPa";
+                                w: 62px * Theme.scale;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 10px;
+                            In {
+                                label: @tr("Wiatr");
+                                text <=> root.ld-wdir;
+                                unit: "°";
+                                w: 56px * Theme.scale;
+                            }
+                            In {
+                                label: @tr("Prędkość");
+                                text <=> root.ld-wspd;
+                                unit: "kt";
+                                w: 56px * Theme.scale;
+                            }
+                        }
+                        Segmented {
+                            items: [@tr("Pas suchy"), @tr("Pas mokry")];
+                            current: root.ld-wet ? 1 : 0;
+                            picked(i) => {
+                                root.ld-wet = i == 1;
+                            }
+                        }
+                        HorizontalLayout {
+                            alignment: start;
+                            Button {
+                                label: @tr("Z SimBrief");
+                                icon: Icons.cloud-download;
+                                enabled: App.ofp.loaded;
+                                tip: App.ofp.loaded ? @tr("Typ, masa, lotnisko, pas i pogoda z pobranego OFP") : @tr("Najpierw pobierz OFP (Plan lotu → OFP SimBrief)");
+                                clicked => {
+                                    root.from-ofp(false);
+                                }
+                            }
+                        }
+                        Text {
+                            text: @tr("Szacunek do symulatora z prostego modelu typu samolotu – nie zastępuje danych z AFM ani EFB.");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 8px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                big: true;
+                                k: "VREF";
+                                v: root.ld[1];
+                                tone: Cab.magenta;
+                            }
+                            Out {
+                                big: true;
+                                k: "VAPP";
+                                v: root.ld[2];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                big: true;
+                                k: @tr("Wymagana długość pasa");
+                                v: root.ld[4];
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Odległość lądowania");
+                                v: root.ld[3];
+                                tone: Cab.cyan;
+                            }
+                            Out {
+                                k: @tr("Dostępna (LDA)");
+                                v: root.ld[5];
+                            }
+                            Out {
+                                k: @tr("Zapas");
+                                v: root.ld[6];
+                                tone: root.ld[0] == "1" ? Cab.green : Cab.red;
+                            }
+                        }
+                        // Pasek: wymagana część pasa
+                        if root.ld[12] != "": Scope {
+                            height: 30px * Theme.scale;
+                            Rectangle {
+                                x: 0;
+                                width: parent.width * min(1, root.ld[12].to-float());
+                                background: root.ld[0] == "1" ? Cab.green.with-alpha(0.55) : Cab.red.with-alpha(0.65);
+                            }
+                            Text {
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                                text: root.ld[0] == "1" ? @tr("Pas wystarcza") : @tr("Pas za krótki");
+                                font-family: Theme.cond;
+                                font-size: 12px * Theme.scale;
+                                font-weight: 700;
+                                color: Cab.white;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Pas");
+                                v: root.ld[7];
+                                horizontal-stretch: 2;
+                            }
+                            Out {
+                                k: @tr("Wiatr na pasie");
+                                v: root.ld[8];
+                                horizontal-stretch: 2;
+                            }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Out {
+                                k: @tr("Wysokość gęstościowa");
+                                v: root.ld[9];
+                            }
+                            Out {
+                                k: @tr("Masa / MLW");
+                                v: root.ld[10];
+                            }
+                        }
+                        if root.ld[11] != "": Text {
+                            text: root.ld[11];
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            font-weight: 600;
+                            color: Cab.amber;
+                            wrap: word-wrap;
+                        }
+                        HorizontalLayout {
+                            alignment: start;
+                            Button {
+                                label: @tr("Do checklisty");
+                                icon: Icons.list-checks;
+                                enabled: root.ld[2] != "";
+                                tip: @tr("Wpisz prędkości jako dopisek w checkliście bieżącego samolotu");
+                                clicked => {
+                                    App.cmd("cl-perf", "ldg|VREF " + root.ld[1] + " · VAPP " + root.ld[2]);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // ---------- 9: Atmosfera wzorcowa ----------
                 if App.tool == 9: VerticalLayout {
                     spacing: 12px;
@@ -1811,6 +2353,8 @@ export component Tools inherits Rectangle {
                                 }
                             }
                             Text {
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
                                 text: root.decoded[i * 2 + 1];
                                 font-family: Theme.font;
                                 font-size: Theme.fs;

@@ -3,6 +3,17 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Okno przyrządu: rodzaj (popout::name) i położenie w pikselach ekranu.
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
+pub struct PopoutCfg {
+    pub kind: i32,
+    pub x: i32,
+    pub y: i32,
+    pub w: u32,
+    pub h: u32,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
@@ -41,6 +52,11 @@ pub struct Settings {
     pub instr_style: String,
     /// Checklisty: pusty – zestaw rozpoznany z samolotu, inaczej identyfikator zestawu (a320, b737…).
     pub checklist_set: String,
+    /// Przyrządy w osobnych oknach (rodzaj, miejsce, rozmiar) i czy zawsze na wierzchu.
+    pub popouts: Vec<PopoutCfg>,
+    pub popout_top: bool,
+    /// Przewodnik pierwszego uruchomienia już pokazany.
+    pub welcome_done: bool,
     /// Układ karty Przyrządy: 0 kokpit, 1 zegary, 2 wszystko.
     pub instr_layout: i32,
     /// Zasięg ND (indeks w ND_RANGES) i tryb ROSE.
@@ -254,6 +270,9 @@ impl Default for Settings {
             migrated_link: false,
             instr_style: String::new(),
             checklist_set: String::new(),
+            popouts: Vec::new(),
+            popout_top: false,
+            welcome_done: false,
             instr_layout: 0,
             nd_range: 3,
             nd_rose: false,

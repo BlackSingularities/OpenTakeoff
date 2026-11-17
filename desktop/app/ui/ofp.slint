@@ -1,0 +1,730 @@
+// Widok OFP SimBrief na karcie Plan lotu: nagłówek lotu z czasami blokowymi, wagi wobec limitów,
+// paliwo rozłożone na części bloku, profil trasy z wiatrem i temperaturą, prędkości TLR, navlog,
+// lotniska z METAR/TAF i plan ATC.
+
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { Button, Field } from "widgets.slint";
+import { Panel } from "parts.slint";
+
+global OfpColors {
+    out property <[color]> fuel: [#8a94a6, #4fd8eb, #3ee07a, #e07cff, #ffb547, #ff8a5c, #5b8cff];
+    out property <color> screen: #0b1016;
+}
+
+component Cap inherits Text {
+    font-family: Theme.cond;
+    font-size: 10.5px * Theme.scale;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: Theme.text-faint;
+    vertical-alignment: center;
+}
+
+/// Kafelek: podpis i wartość.
+component Tile inherits Rectangle {
+    in property <string> k;
+    in property <string> v;
+    in property <color> tone: Theme.text;
+    horizontal-stretch: 1;
+    min-width: 0;
+    height: tl.preferred-height;
+    border-radius: Theme.r-small;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.line;
+    tl := VerticalLayout {
+        padding: 7px;
+        padding-left: 10px;
+        spacing: 1px;
+        Cap {
+            text: root.k.to-uppercase();
+        }
+        Text {
+            text: root.v == "" ? "–" : root.v;
+            font-family: Theme.mono;
+            font-size: 14px * Theme.scale;
+            font-weight: 700;
+            color: root.v == "" ? Theme.text-faint : root.tone;
+            overflow: elide;
+        }
+    }
+}
+
+/// Godzina w pasku czasów blokowych (OUT / OFF / ON / IN).
+component Clock inherits VerticalLayout {
+    in property <string> k;
+    in property <string> v;
+    alignment: center;
+    spacing: 0;
+    Cap {
+        text: root.k;
+        horizontal-alignment: center;
+    }
+    Text {
+        text: root.v == "" ? "––:––" : root.v + "Z";
+        font-family: Theme.mono;
+        font-size: 17px * Theme.scale;
+        font-weight: 700;
+        color: #e8f6f8;
+        horizontal-alignment: center;
+    }
+}
+
+component Section inherits Panel {
+    in property <string> title;
+    in property <image> icon;
+    VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 7px;
+            height: 20px * Theme.scale;
+            Image {
+                source: root.icon;
+                width: 15px * Theme.scale;
+                height: self.width;
+                y: (parent.height - self.height) / 2;
+                colorize: Theme.accent;
+            }
+            Cap {
+                text: root.title.to-uppercase();
+                color: Theme.text-dim;
+                horizontal-stretch: 1;
+            }
+        }
+        @children
+    }
+}
+
+/// Tekst depeszy krojem mono na ciemnym tle.
+component Raw inherits Rectangle {
+    in property <string> text;
+    in property <string> label;
+    height: rl.preferred-height;
+    border-radius: Theme.r-small;
+    background: OfpColors.screen;
+    rl := VerticalLayout {
+        padding: 8px;
+        spacing: 2px;
+        if root.label != "": Text {
+            text: root.label;
+            font-family: Theme.cond;
+            font-size: 9.5px * Theme.scale;
+            font-weight: 700;
+            color: #4fd8eb;
+        }
+        Text {
+            text: root.text == "" ? "–" : root.text;
+            font-family: Theme.mono;
+            font-size: 11px * Theme.scale;
+            color: #e8f6f8;
+            wrap: word-wrap;
+        }
+    }
+}
+
+export component OfpView inherits Rectangle {
+    // Brak planu: pobranie z SimBrief
+    if !App.ofp.loaded: VerticalLayout {
+        alignment: center;
+        spacing: 12px;
+        padding: 30px;
+        Image {
+            source: Icons.cloud-download;
+            height: 40px;
+            colorize: Theme.text-faint;
+        }
+        Text {
+            text: @tr("Brak planu SimBrief");
+            font-family: Theme.font;
+            font-size: Theme.fs-big;
+            font-weight: 600;
+            color: Theme.text-dim;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: @tr("Wpisz nazwę użytkownika albo Pilot ID z SimBrief – program pobierze najnowszy OFP: wagi, paliwo, navlog z wiatrem, pogodę lotnisk i prędkości startu.");
+            font-family: Theme.font;
+            font-size: Theme.fs;
+            color: Theme.text-faint;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 6px;
+            uf := Field {
+                w: 200px * Theme.scale;
+                text <=> App.simbrief-user;
+                placeholder: @tr("Użytkownik SimBrief");
+                accepted(t) => {
+                    App.cmd("simbrief-fetch", t);
+                }
+            }
+            Button {
+                label: App.plan-busy ? @tr("Pobieranie…") : @tr("Pobierz OFP");
+                icon: Icons.cloud-download;
+                primary: true;
+                enabled: !App.plan-busy;
+                clicked => {
+                    App.cmd("simbrief-fetch", App.simbrief-user);
+                }
+            }
+        }
+    }
+    if App.ofp.loaded: sv := ScrollView {
+        VerticalLayout {
+            width: sv.visible-width;
+            padding-right: 6px;
+            spacing: 10px;
+            // ---------- Nagłówek ----------
+            Panel {
+                height: hd.preferred-height;
+                hd := VerticalLayout {
+                    padding: 14px;
+                    spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 14px;
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 2px;
+                            HorizontalLayout {
+                                spacing: 12px;
+                                Text {
+                                    text: App.ofp.callsign;
+                                    font-family: Theme.mono;
+                                    font-size: 26px * Theme.scale;
+                                    font-weight: 700;
+                                    color: Theme.accent;
+                                }
+                                Text {
+                                    text: App.ofp.title;
+                                    font-family: Theme.cond;
+                                    font-size: 26px * Theme.scale;
+                                    font-weight: 700;
+                                    color: Theme.text;
+                                    overflow: elide;
+                                }
+                            }
+                            Text {
+                                text: App.ofp.origin-name + "  →  " + App.ofp.dest-name + (App.ofp.altn != "" ? "   ·   ALTN " + App.ofp.altn : "");
+                                font-family: Theme.font;
+                                font-size: Theme.fs;
+                                color: Theme.text-dim;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: App.ofp.aircraft + (App.ofp.generated != "" ? "   ·   OFP " + App.ofp.generated : "");
+                                font-family: Theme.font;
+                                font-size: Theme.fs-small;
+                                color: Theme.text-faint;
+                                overflow: elide;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: start;
+                            spacing: 6px;
+                            HorizontalLayout {
+                                spacing: 6px;
+                                alignment: end;
+                                Button {
+                                    label: @tr("Pobierz ponownie");
+                                    icon: Icons.refresh-cw;
+                                    enabled: !App.plan-busy;
+                                    clicked => {
+                                        App.cmd("simbrief-fetch", App.simbrief-user);
+                                    }
+                                }
+                                Button {
+                                    label: @tr("Do planu");
+                                    icon: Icons.route;
+                                    tip: @tr("Trasa, procedury, paliwo i lotnisko zapasowe z OFP do edycji na tej karcie");
+                                    clicked => {
+                                        App.cmd("plan-simbrief", "");
+                                    }
+                                }
+                            }
+                            HorizontalLayout {
+                                spacing: 6px;
+                                alignment: end;
+                                if App.ofp.has-tlr: Button {
+                                    label: @tr("Prędkości do checklisty");
+                                    icon: Icons.list-checks;
+                                    clicked => {
+                                        App.cmd("cl-tlr", "");
+                                    }
+                                }
+                                Button {
+                                    label: @tr("Briefing PDF");
+                                    icon: Icons.file-text;
+                                    clicked => {
+                                        App.cmd("plan-briefing", "ofp");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Czasy blokowe na ciemnym pasku
+                    Rectangle {
+                        height: 54px * Theme.scale;
+                        border-radius: Theme.r;
+                        background: OfpColors.screen;
+                        HorizontalLayout {
+                            padding-left: 14px;
+                            padding-right: 14px;
+                            Clock {
+                                horizontal-stretch: 1;
+                                k: "OUT";
+                                v: App.ofp.t-out;
+                            }
+                            Clock {
+                                horizontal-stretch: 1;
+                                k: "OFF";
+                                v: App.ofp.t-off;
+                            }
+                            VerticalLayout {
+                                horizontal-stretch: 2;
+                                alignment: center;
+                                spacing: 3px;
+                                Rectangle {
+                                    height: 2px;
+                                    background: #4fd8eb80;
+                                }
+                                Text {
+                                    text: "ETE " + App.ofp.ete + "   ·   BLOCK " + App.ofp.block;
+                                    font-family: Theme.mono;
+                                    font-size: 11px * Theme.scale;
+                                    color: #4fd8eb;
+                                    horizontal-alignment: center;
+                                }
+                            }
+                            Clock {
+                                horizontal-stretch: 1;
+                                k: "ON";
+                                v: App.ofp.t-on;
+                            }
+                            Clock {
+                                horizontal-stretch: 1;
+                                k: "IN";
+                                v: App.ofp.t-in;
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Tile {
+                            k: @tr("Przelot");
+                            v: App.ofp.cruise;
+                        }
+                        Tile {
+                            k: @tr("Prędkość");
+                            v: App.ofp.speed;
+                        }
+                        Tile {
+                            k: "Cost index";
+                            v: App.ofp.ci;
+                        }
+                        Tile {
+                            k: @tr("Średni wiatr");
+                            v: App.ofp.wind;
+                            tone: App.ofp.wind-head ? #ffb547 : #3ee07a;
+                        }
+                        Tile {
+                            k: @tr("Temperatura");
+                            v: App.ofp.isa;
+                        }
+                        Tile {
+                            k: @tr("Dystans");
+                            v: App.ofp.dist;
+                        }
+                    }
+                }
+            }
+            // ---------- Wagi i paliwo ----------
+            HorizontalLayout {
+                spacing: 10px;
+                Section {
+                    horizontal-stretch: 1;
+                    title: @tr("Wagi") + " (" + App.ofp.units + ")";
+                    icon: Icons.gauge;
+                    for b in App.ofp-weights: VerticalLayout {
+                        spacing: 3px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Text {
+                                text: b.k;
+                                font-family: Theme.mono;
+                                font-size: Theme.fs;
+                                font-weight: 700;
+                                color: Theme.text;
+                                width: 42px * Theme.scale;
+                            }
+                            Text {
+                                text: b.est;
+                                font-family: Theme.mono;
+                                font-size: Theme.fs;
+                                color: b.over ? Theme.danger : Theme.text;
+                                horizontal-stretch: 1;
+                            }
+                            Text {
+                                text: b.margin;
+                                font-family: Theme.mono;
+                                font-size: Theme.fs-small;
+                                color: b.over ? Theme.danger : #3ee07a;
+                            }
+                        }
+                        Rectangle {
+                            height: 10px * Theme.scale;
+                            border-radius: 3px;
+                            background: Theme.hover;
+                            Rectangle {
+                                x: 0;
+                                width: parent.width * min(1, b.frac);
+                                border-radius: 3px;
+                                background: b.over ? Theme.danger : b.frac > 0.95 ? #ffb547 : Theme.accent;
+                            }
+                        }
+                        Text {
+                            text: b.max;
+                            font-family: Theme.font;
+                            font-size: 10.5px * Theme.scale;
+                            color: Theme.text-faint;
+                            horizontal-alignment: right;
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Tile {
+                            k: "OEW";
+                            v: App.ofp.oew;
+                        }
+                        Tile {
+                            k: @tr("Ładunek");
+                            v: App.ofp.payload;
+                        }
+                        Tile {
+                            k: @tr("Pasażerowie");
+                            v: App.ofp.pax > 0 ? "" + App.ofp.pax : "";
+                        }
+                    }
+                }
+                Section {
+                    horizontal-stretch: 1;
+                    title: @tr("Paliwo") + " (" + App.ofp.units + ")";
+                    icon: Icons.fuel;
+                    // Blok jako jeden pasek z częściami
+                    Rectangle {
+                        height: 22px * Theme.scale;
+                        border-radius: 4px;
+                        clip: true;
+                        background: Theme.hover;
+                        HorizontalLayout {
+                            spacing: 1px;
+                            for f in App.ofp-fuel: Rectangle {
+                                horizontal-stretch: f.frac;
+                                background: OfpColors.fuel[f.tone];
+                            }
+                        }
+                    }
+                    for f in App.ofp-fuel: HorizontalLayout {
+                        spacing: 8px;
+                        height: 20px * Theme.scale;
+                        Rectangle {
+                            width: 10px;
+                            height: 10px;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: 2px;
+                            background: OfpColors.fuel[f.tone];
+                        }
+                        Text {
+                            text: f.k;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: f.v;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: Theme.text;
+                            vertical-alignment: center;
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Tile {
+                            k: @tr("Blok");
+                            v: App.ofp.ramp;
+                            tone: Theme.accent;
+                        }
+                        Tile {
+                            k: @tr("Min. do startu");
+                            v: App.ofp.min-to;
+                        }
+                        Tile {
+                            k: @tr("Na lądowaniu");
+                            v: App.ofp.plan-land;
+                        }
+                    }
+                    if App.ofp.avg-ff != "": Text {
+                        text: @tr("Średnie spalanie") + ": " + App.ofp.avg-ff;
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                    }
+                }
+            }
+            // ---------- Profil z wiatrem i temperaturą ----------
+            Section {
+                title: @tr("Profil trasy – wiatr, temperatura i paliwo");
+                icon: Icons.chart-area;
+                Rectangle {
+                    height: 250px * Theme.scale;
+                    border-radius: Theme.r-small;
+                    background: OfpColors.screen;
+                    clip: true;
+                    changed width => {
+                        App.map-event(43, "size", self.width / 1px, self.height / 1px, 0, 0);
+                    }
+                    changed height => {
+                        App.map-event(43, "size", self.width / 1px, self.height / 1px, 0, 0);
+                    }
+                    init => {
+                        App.map-event(43, "size", self.width / 1px, self.height / 1px, 0, 0);
+                    }
+                    Image {
+                        x: 0;
+                        y: 0;
+                        width: parent.width;
+                        height: parent.height;
+                        source: App.ofp-profile;
+                        image-fit: fill;
+                    }
+                }
+                if App.ofp.step != "": Text {
+                    text: @tr("Wznoszenia schodkowe") + ": " + App.ofp.step;
+                    font-family: Theme.mono;
+                    font-size: Theme.fs-small;
+                    color: Theme.text-faint;
+                    wrap: word-wrap;
+                }
+            }
+            // ---------- Prędkości TLR ----------
+            if App.ofp.has-tlr: Section {
+                title: @tr("Start i lądowanie (TLR)");
+                icon: Icons.plane-takeoff;
+                if App.ofp.tlr-to != "": Text {
+                    text: App.ofp.tlr-to;
+                    font-family: Theme.mono;
+                    font-size: 14px * Theme.scale;
+                    font-weight: 700;
+                    color: #4fd8eb;
+                    wrap: word-wrap;
+                }
+                if App.ofp.tlr-ldg != "": Text {
+                    text: App.ofp.tlr-ldg;
+                    font-family: Theme.mono;
+                    font-size: 14px * Theme.scale;
+                    font-weight: 700;
+                    color: #e07cff;
+                    wrap: word-wrap;
+                }
+            }
+            // ---------- Navlog ----------
+            Section {
+                title: @tr("Navlog");
+                icon: Icons.list-ordered;
+                HorizontalLayout {
+                    spacing: 6px;
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    height: 18px * Theme.scale;
+                    Cap {
+                        text: @tr("PUNKT");
+                        horizontal-stretch: 2;
+                    }
+                    Cap {
+                        text: @tr("DROGA");
+                        horizontal-stretch: 2;
+                    }
+                    Cap {
+                        text: "ALT";
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                    Cap {
+                        text: @tr("WIATR");
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                    Cap {
+                        text: "OAT";
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                    Cap {
+                        text: "ISA";
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                    Cap {
+                        text: "GS";
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                    Cap {
+                        text: "Σ NM";
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                    Cap {
+                        text: @tr("CZAS");
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                    Cap {
+                        text: @tr("PALIWO t");
+                        horizontal-stretch: 1;
+                        horizontal-alignment: right;
+                    }
+                }
+                for r[i] in App.ofp-navlog: Rectangle {
+                    height: 22px * Theme.scale;
+                    border-radius: 3px;
+                    background: r.mark ? Theme.accent-soft : mod(i, 2) == 0 ? (Theme.dark ? #ffffff06 : #00000006) : transparent;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        padding-left: 6px;
+                        padding-right: 6px;
+                        Text {
+                            text: r.ident;
+                            horizontal-stretch: 2;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            font-weight: 700;
+                            color: r.mark ? Theme.accent : Theme.text;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: r.via;
+                            horizontal-stretch: 2;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: r.alt;
+                            horizontal-stretch: 1;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: r.stage == "CLB" ? #3ee07a : r.stage == "DSC" ? #e07cff : Theme.text;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: r.wind;
+                            horizontal-stretch: 1;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: r.oat;
+                            horizontal-stretch: 1;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: r.isa;
+                            horizontal-stretch: 1;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: r.isa.to-float() > 0 ? #ff8a5c : r.isa.to-float() < 0 ? #5b9cff : Theme.text-dim;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: r.gs;
+                            horizontal-stretch: 1;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: r.dist;
+                            horizontal-stretch: 1;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: r.time;
+                            horizontal-stretch: 1;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: r.fuel;
+                            horizontal-stretch: 1;
+                            font-family: Theme.mono;
+                            font-size: Theme.fs-small;
+                            color: #ffb547;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+            // ---------- Lotniska ----------
+            for a in App.ofp-apts: Section {
+                title: a.role + " · " + a.icao + (a.rwy != "" ? " · " + a.rwy : "") + (a.info != "" ? " · " + a.info : "");
+                icon: Icons.map-pin;
+                Text {
+                    text: a.name;
+                    font-family: Theme.font;
+                    font-size: Theme.fs;
+                    color: Theme.text-dim;
+                }
+                Raw {
+                    label: "METAR";
+                    text: a.metar;
+                }
+                Raw {
+                    label: "TAF";
+                    text: a.taf;
+                }
+            }
+            // ---------- Plan ATC ----------
+            if App.ofp.fpl != "": Section {
+                title: @tr("Plan lotu ATC (ICAO)");
+                icon: Icons.file-text;
+                Raw {
+                    text: App.ofp.fpl;
+                }
+            }
+            Rectangle {
+                height: 6px;
+            }
+        }
+    }
+}

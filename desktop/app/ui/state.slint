@@ -707,6 +707,86 @@ export struct ShotV {
     flight: string,
 }
 
+// OFP SimBrief: nagłówek, wagi wobec limitów, części paliwa, navlog i lotniska.
+export struct OfpV {
+    loaded: bool,
+    callsign: string,
+    title: string,
+    origin-name: string,
+    dest-name: string,
+    altn: string,
+    aircraft: string,
+    ci: string,
+    cruise: string,
+    speed: string,
+    wind: string,
+    wind-head: bool,
+    isa: string,
+    dist: string,
+    t-out: string,
+    t-off: string,
+    t-on: string,
+    t-in: string,
+    block: string,
+    ete: string,
+    units: string,
+    pax: int,
+    payload: string,
+    oew: string,
+    avg-ff: string,
+    plan-land: string,
+    min-to: string,
+    ramp: string,
+    step: string,
+    route: string,
+    fpl: string,
+    generated: string,
+    has-tlr: bool,
+    tlr-to: string,
+    tlr-ldg: string,
+}
+
+export struct OfpBarV {
+    k: string,
+    est: string,
+    max: string,
+    frac: float,
+    over: bool,
+    margin: string,
+}
+
+export struct OfpSegV {
+    k: string,
+    v: string,
+    frac: float,
+    tone: int,
+}
+
+export struct OfpRowV {
+    ident: string,
+    via: string,
+    stage: string,
+    alt: string,
+    wind: string,
+    oat: string,
+    isa: string,
+    gs: string,
+    dist: string,
+    time: string,
+    fuel: string,
+    mark: bool,
+}
+
+export struct OfpAptV {
+    role: string,
+    icao: string,
+    name: string,
+    rwy: string,
+    metar: string,
+    taf: string,
+    info: string,
+}
+
 // Checklisty: zestaw (samolot), lista w zestawie i pozycja listy.
 export struct ClSetV {
     id: string,
@@ -954,6 +1034,21 @@ export global App {
     in property <image> plan-map;
     in property <[LabelV]> plan-map-labels;
     in property <image> plan-profile;
+    in property <string> plan-altn;
+    in property <string> plan-burn;
+    in property <string> plan-reserve;
+    in property <string> plan-taxi;
+    in property <string> plan-extra;
+    in property <[KV]> plan-fuel;
+    in property <[PlanOptV]> plan-altn-opts;
+    // Prawa część karty Plan lotu: 0 – mapa i profil, 1 – OFP SimBrief
+    in-out property <int> plan-view: 0;
+    in property <OfpV> ofp;
+    in property <[OfpBarV]> ofp-weights;
+    in property <[OfpSegV]> ofp-fuel;
+    in property <[OfpRowV]> ofp-navlog;
+    in property <[OfpAptV]> ofp-apts;
+    in property <image> ofp-profile;
 
     // Zrzuty ekranu
     in property <[ShotV]> shots;
@@ -963,6 +1058,12 @@ export global App {
     in property <int> shot-monitor;
     in property <int> shot-key;
     in property <string> shots-dir;
+    // Okna dialogowe: pomoc ze skrótami (F1) i przewodnik pierwszego uruchomienia (-1 – ukryty, 0–3 – krok)
+    in-out property <bool> help-open;
+    in-out property <int> welcome-step: -1;
+    // Przyrządy w osobnych oknach: otwarte (PFD, ND, silniki, systemy, zegary) i zawsze na wierzchu
+    in property <[bool]> popouts: [false, false, false, false, false];
+    in property <bool> popout-top;
     // Checklisty
     in property <[ClSetV]> cl-sets;
     in property <string> cl-set-id;
