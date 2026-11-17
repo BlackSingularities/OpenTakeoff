@@ -1,3 +1,9 @@
+## 3.7.1
+
+- Windows: kod programu uporządkowany – karty w osobnych modułach (Na żywo, Dziennik, Statystyki, Lotniska, Narzędzia, polecenia), wstążka i pasek tytułu w osobnych plikach interfejsu. Działanie bez zmian.
+- Testy programu na Windows (m.in. checklist, planu lotu i mapy) uruchamiane przy każdym wydaniu.
+- Nowy plan rozwoju w docs/roadmap.md.
+
 ## 3.7.0
 
 - Nowa karta Checklisty w programie na Windows – 11 zestawów checklist normalnych: Airbus A320/A330/A340 (FCOM), Boeing 737 NG/MAX, 777/787 (FCOM/QRH) i 717, King Air B200/350, Cessna 208 Caravan, Cessna 152 i 172S, Piper PA-28, Cirrus SR20/SR22 oraz Diamond DA40 NG (według POH, PFM i checklist operatorów), dobierane same do samolotu z symulatora albo wybierane ręcznie. Pozycje odhacza się kliknięciem albo przyciskiem Odhacz, a pozycje z warunkiem (hamulec postojowy, klapy, podwozie, spoilery, światła, silniki, transponder, wysokościomierz) odhacza symulator. Postęp każdej listy i całego zestawu, przejście do następnej listy, zmiana samolotu zaczyna wszystko od nowa.

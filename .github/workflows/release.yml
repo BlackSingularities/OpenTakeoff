@@ -100,7 +100,7 @@ jobs:
           workspaces: desktop
 
       - name: Testy
-        run: cargo test --release -p opentakeoff-core -p opentakeoff-msfs
+        run: cargo test --release -p opentakeoff-core -p opentakeoff-msfs -p opentakeoff
 
       - name: Budowanie
         run: cargo build --release -p opentakeoff

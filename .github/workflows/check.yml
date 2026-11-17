@@ -26,4 +26,4 @@ jobs:
         run: cargo check --release -p opentakeoff --message-format short
 
       - name: Testy
-        run: cargo test --release -p opentakeoff-core
+        run: cargo test --release -p opentakeoff-core -p opentakeoff-msfs -p opentakeoff

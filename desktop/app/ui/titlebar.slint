@@ -1,0 +1,458 @@
+// Pasek tytułu okna: karty, stan symulatora ze źródłem danych i przyciski okna (bez ramki Windows).
+
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { App } from "state.slint";
+import { TipArea } from "widgets.slint";
+import { NavTab } from "shell.slint";
+import { Colors } from "parts.slint";
+
+component WinButton inherits Rectangle {
+    in property <int> kind;
+    in property <string> tip;
+    width: 46px;
+    background: ta.pressed ? (kind == 3 ? #c42b1c : Theme.press) : ta.has-hover ? (kind == 3 ? #e81123 : Theme.hover) : transparent;
+    Path {
+        width: 10px;
+        height: 10px;
+        viewbox-width: 10;
+        viewbox-height: 10;
+        stroke: ta.has-hover && root.kind == 3 ? #ffffff : Theme.text;
+        stroke-width: 1px;
+        fill: transparent;
+        commands: root.kind == 1 ? "M 0 5 L 10 5" : root.kind == 3 ? "M 0 0 L 10 10 M 10 0 L 0 10" : App.maximized ? "M 2 0 L 10 0 L 10 8 M 0 2 L 8 2 L 8 10 L 0 10 Z" : "M 0 0 L 10 0 L 10 10 L 0 10 Z";
+    }
+    ta := TipArea {
+        tip: root.tip;
+        clicked => {
+            App.win(root.kind);
+        }
+    }
+}
+
+component Tabs inherits Rectangle {
+    background: transparent;
+    min-width: tl.preferred-width;
+    VerticalLayout {
+        alignment: center;
+        tl := HorizontalLayout {
+            padding-left: 6px;
+            spacing: 3px;
+            alignment: start;
+            NavTab {
+                index: 0;
+                label: @tr("Pulpit");
+                icon: Icons.layout-dashboard;
+                tip: @tr("Stan symulatora i telefonów, pogoda, ostatnie loty");
+            }
+            NavTab {
+                index: 1;
+                label: @tr("Na żywo");
+                icon: Icons.gauge;
+                tip: @tr("Podgląd bieżącego lotu: przyrządy, mapa, systemy");
+            }
+            NavTab {
+                index: 8;
+                label: @tr("Przyrządy");
+                icon: Icons.compass;
+                tip: @tr("PFD, ND, zegary i silniki w stylu kabiny samolotu");
+            }
+            NavTab {
+                index: 9;
+                label: @tr("Mapa");
+                icon: Icons.map;
+                tip: @tr("Mapa nawigacyjna z radialami i różami VOR oraz widok 3D");
+            }
+            NavTab {
+                index: 2;
+                label: @tr("Dziennik");
+                icon: Icons.book-open;
+                tip: @tr("Wszystkie loty z komputera i telefonu");
+            }
+            NavTab {
+                index: 3;
+                label: @tr("Statystyki");
+                icon: Icons.chart-column;
+                tip: @tr("Sumy, miesiące, samoloty, lotniska, rekordy");
+            }
+            NavTab {
+                index: 11;
+                label: @tr("Zrzuty");
+                icon: Icons.image;
+                tip: @tr("Zrzuty ekranu symulatora z miejscem samolotu");
+            }
+            NavTab {
+                index: 12;
+                label: @tr("Plan lotu");
+                icon: Icons.route;
+                tip: @tr("Trasa, SID, STAR, podejścia, profil i eksport do MSFS i X-Plane");
+            }
+            NavTab {
+                index: 13;
+                label: @tr("Checklisty");
+                icon: Icons.list-checks;
+                tip: @tr("Checklisty samolotu odhaczane ręcznie albo przez symulator");
+            }
+            NavTab {
+                index: 4;
+                label: @tr("Lotniska");
+                icon: Icons.map-pin;
+                tip: @tr("Briefing lotniska: pogoda, pasy, częstotliwości, procedury");
+            }
+            NavTab {
+                index: 5;
+                label: @tr("Narzędzia");
+                icon: Icons.calculator;
+                tip: @tr("Kalkulatory lotnicze i dekoder METAR");
+            }
+            NavTab {
+                index: 10;
+                label: @tr("Nakładki");
+                icon: Icons.monitor;
+                tip: @tr("Karta lądowania, pasek do transmisji, okno zawsze na wierzchu, zrzuty ekranu");
+            }
+            NavTab {
+                index: 6;
+                label: @tr("Telefony");
+                icon: Icons.smartphone;
+                tip: @tr("Parowanie, urządzenia, źródło danych, aktywność");
+            }
+            NavTab {
+                index: 7;
+                label: @tr("Ustawienia");
+                icon: Icons.settings;
+                tip: @tr("Wygląd, język, zapis lotów, Windows, dane");
+            }
+        }
+    }
+}
+
+/// Przełącznik wł./wył. (suwak).
+component Toggle inherits Rectangle {
+    in property <bool> on;
+    callback toggled();
+    width: 38px * Theme.scale;
+    height: 22px * Theme.scale;
+    border-radius: self.height / 2;
+    background: root.on ? Theme.accent : ta.has-hover ? Theme.press : Theme.hover;
+    border-width: 1px;
+    border-color: root.on ? Theme.accent : Theme.line;
+    animate background, border-color { duration: 140ms; }
+    Rectangle {
+        x: root.on ? parent.width - self.width - 3px : 3px;
+        y: 3px;
+        width: parent.height - 6px;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: root.on ? #ffffff : Theme.text-dim;
+        drop-shadow-blur: 3px;
+        drop-shadow-color: #00000040;
+        animate x { duration: 160ms; easing: ease-out; }
+        animate background { duration: 140ms; }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.toggled();
+        }
+    }
+}
+
+/// Wybór źródła danych w okienku stanu: kafelek z ikoną.
+component SourceTile inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    in property <bool> active;
+    in property <string> tip;
+    callback clicked();
+    height: 54px * Theme.scale;
+    horizontal-stretch: 1;
+    border-radius: Theme.r-small;
+    background: root.active ? Theme.accent.with-alpha(0.16) : ta.pressed ? Theme.press : ta.has-hover ? Theme.hover : Theme.raised;
+    border-width: 1px;
+    border-color: root.active ? Theme.accent.with-alpha(0.7) : Theme.line;
+    animate background, border-color { duration: 120ms; }
+    VerticalLayout {
+        alignment: center;
+        spacing: 4px;
+        Image {
+            source: root.icon;
+            height: 17px * Theme.scale;
+            colorize: root.active ? Theme.accent : Theme.text-dim;
+        }
+        Text {
+            text: root.label;
+            horizontal-alignment: center;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            font-weight: root.active ? 600 : 400;
+            color: root.active ? Theme.text : Theme.text-dim;
+        }
+    }
+    ta := TipArea {
+        tip: root.tip;
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+/// Przycisk stanu symulatora przy kontrolkach okna i jego okienko: stan, źródło danych, start z symulatorem.
+component SimButton inherits Rectangle {
+    property <color> tone: App.sim-connected ? Theme.ok : App.simulation ? Theme.accent : Colors.warn;
+    property <string> name: App.sim-connected ? App.sim-name : App.simulation ? @tr("Symulacja") : @tr("Brak symulatora");
+    height: 26px * Theme.scale;
+    width: min(sl.preferred-width, 280px * Theme.scale);
+    border-radius: self.height / 2;
+    background: ta.pressed ? Theme.press : ta.has-hover ? Theme.hover : Theme.raised;
+    border-width: 1px;
+    border-color: root.tone.with-alpha(App.sim-connected ? 0.5 : 0.28);
+    animate background, border-color { duration: 140ms; }
+    sl := HorizontalLayout {
+        padding-left: 3px;
+        padding-right: 9px;
+        spacing: 7px;
+        Rectangle {
+            width: 20px * Theme.scale;
+            height: self.width;
+            y: (parent.height - self.height) / 2;
+            border-radius: self.width / 2;
+            background: root.tone.with-alpha(0.18);
+            Image {
+                source: App.sim-connected || App.simulation ? Icons.plug : Icons.unplug;
+                width: 11px * Theme.scale;
+                height: self.width;
+                colorize: root.tone;
+            }
+        }
+        Text {
+            text: root.name;
+            font-family: Theme.font;
+            font-size: Theme.fs-small;
+            font-weight: App.sim-connected ? 600 : 400;
+            color: App.sim-connected ? Theme.text : Theme.text-dim;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        if App.sim-launch: Image {
+            source: Icons.power;
+            width: 11px * Theme.scale;
+            height: 11px * Theme.scale;
+            image-fit: contain;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.accent;
+        }
+        Image {
+            source: Icons.chevron-down;
+            width: 12px * Theme.scale;
+            height: 12px * Theme.scale;
+            image-fit: contain;
+            y: (parent.height - self.height) / 2;
+            colorize: Theme.text-faint;
+        }
+    }
+    ta := TipArea {
+        tip: App.sim-status;
+        mouse-cursor: pointer;
+        clicked => {
+            pop.show();
+        }
+    }
+    pop := PopupWindow {
+        x: root.width - self.width;
+        y: root.height + 6px;
+        width: 330px * Theme.scale;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            border-radius: Theme.r;
+            background: Theme.surface;
+            border-width: 1px;
+            border-color: Theme.line;
+            drop-shadow-blur: 22px;
+            drop-shadow-offset-y: 6px;
+            drop-shadow-color: #00000070;
+            VerticalLayout {
+                padding: 14px;
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 11px;
+                    Rectangle {
+                        width: 36px * Theme.scale;
+                        height: self.width;
+                        border-radius: self.width / 2;
+                        background: root.tone.with-alpha(0.16);
+                        border-width: 1px;
+                        border-color: root.tone.with-alpha(0.45);
+                        Image {
+                            source: App.sim-connected || App.simulation ? Icons.plug : Icons.unplug;
+                            width: 17px * Theme.scale;
+                            height: self.width;
+                            colorize: root.tone;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 2px;
+                        Text {
+                            text: root.name;
+                            font-family: Theme.cond;
+                            font-size: Theme.fs + 2px;
+                            font-weight: 700;
+                            color: Theme.text;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: App.simulation ? @tr("Lot testowy EPWA → EPGD bez symulatora") : App.sim-status;
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-dim;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+                Text {
+                    text: @tr("Źródło danych");
+                    font-family: Theme.cond;
+                    font-size: Theme.fs-small;
+                    font-weight: 600;
+                    color: Theme.text-faint;
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    SourceTile {
+                        icon: Icons.sparkles;
+                        label: "Auto";
+                        active: !App.simulation && App.sim-kind == 0;
+                        tip: @tr("MSFS albo X-Plane – ten, który działa");
+                        clicked => {
+                            App.cmd("source", "auto");
+                        }
+                    }
+                    SourceTile {
+                        icon: Icons.monitor;
+                        label: "MSFS";
+                        active: !App.simulation && App.sim-kind == 1;
+                        tip: @tr("Dane z MSFS przez SimConnect");
+                        clicked => {
+                            App.cmd("source", "msfs");
+                        }
+                    }
+                    SourceTile {
+                        icon: Icons.mountain;
+                        label: "X-Plane";
+                        active: !App.simulation && App.sim-kind == 2;
+                        tip: @tr("Dane z X-Plane 11/12 przez UDP (bez wtyczek)");
+                        clicked => {
+                            App.cmd("source", "xplane");
+                        }
+                    }
+                    SourceTile {
+                        icon: Icons.plane;
+                        label: @tr("Symulacja");
+                        active: App.simulation;
+                        tip: @tr("Lot testowy EPWA → EPGD bez symulatora");
+                        clicked => {
+                            App.cmd("source", "sim");
+                        }
+                    }
+                }
+                Rectangle {
+                    height: 1px;
+                    background: Theme.line;
+                }
+                HorizontalLayout {
+                    spacing: 12px;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        alignment: center;
+                        spacing: 2px;
+                        Text {
+                            text: @tr("Uruchamiaj razem z symulatorem");
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text;
+                            wrap: word-wrap;
+                        }
+                        Text {
+                            text: @tr("MSFS 2020/2024 i X-Plane 11/12 – OpenTakeoff startuje w zasobniku");
+                            font-family: Theme.font;
+                            font-size: Theme.fs-small;
+                            color: Theme.text-faint;
+                            wrap: word-wrap;
+                        }
+                    }
+                    Toggle {
+                        y: (parent.height - self.height) / 2;
+                        on: App.sim-launch;
+                        toggled => {
+                            App.cmd("sim-launch", App.sim-launch ? "0" : "1");
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component TopBar inherits Rectangle {
+    height: Theme.title-h;
+    background: Theme.chrome;
+    HorizontalLayout {
+        padding-left: 12px;
+        spacing: 8px;
+        Image {
+            source: @image-url("../icon.png");
+            width: 22px;
+            height: 22px;
+            y: (parent.height - self.height) / 2;
+        }
+        if Theme.tabs-level == 0: Text {
+            text: "OpenTakeoff";
+            font-family: Theme.cond;
+            font-size: 16px * Theme.scale;
+            font-weight: 700;
+            color: Theme.text;
+            vertical-alignment: center;
+        }
+        Rectangle {
+            width: 4px;
+        }
+        Tabs { }
+        Rectangle {
+            horizontal-stretch: 1;
+            min-width: 60px;
+            TouchArea {
+                pointer-event(e) => {
+                    if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left) {
+                        App.win(0);
+                    }
+                }
+                double-clicked => {
+                    App.win(2);
+                }
+            }
+            HorizontalLayout {
+                alignment: end;
+                padding-right: 10px;
+                // Stan symulatora: przycisk przy kontrolkach okna; po kliknięciu okienko ze źródłem danych
+                // i startem razem z symulatorem
+                SimButton {
+                    y: (parent.height - self.height) / 2;
+                }
+            }
+        }
+        WinButton {
+            kind: 1;
+            tip: @tr("Minimalizuj");
+        }
+        WinButton {
+            kind: 2;
+            tip: App.maximized ? @tr("Przywróć") : @tr("Maksymalizuj");
+        }
+        WinButton {
+            kind: 3;
+            tip: @tr("Zamknij");
+        }
+    }
+}
