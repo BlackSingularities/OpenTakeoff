@@ -6,7 +6,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Button, TipArea } from "widgets.slint";
+import { Button, TipArea, AText } from "widgets.slint";
 import { Panel, Heading, Empty, ListRow } from "parts.slint";
 
 /// Znacznik pozycji: pusty kwadrat albo kwadrat w akcencie z ptaszkiem.
@@ -69,7 +69,7 @@ export component Checklists inherits Rectangle {
             title: @tr("Brak checklisty dla tego samolotu");
             text: App.cl-status + "\n" + @tr("Zestaw wybierzesz z menu w grupie „Zestaw” na wstążce. Własne checklisty to pliki JSON w folderze checklist (przycisk „Folder”).");
         }
-        if App.cl-errors != "": Text {
+        if App.cl-errors != "": AText {
             text: App.cl-errors;
             font-family: Theme.mono;
             font-size: Theme.fs-small;
@@ -91,7 +91,7 @@ export component Checklists inherits Rectangle {
                     icon: Icons.plane;
                     text: App.cl-set-name;
                 }
-                Text {
+                AText {
                     text: App.cl-status;
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -133,7 +133,7 @@ export component Checklists inherits Rectangle {
                                         colorize: #000000;
                                     }
                                 }
-                                Text {
+                                AText {
                                     text: l.name;
                                     font-family: Theme.font;
                                     font-size: Theme.fs;
@@ -143,7 +143,7 @@ export component Checklists inherits Rectangle {
                                     overflow: elide;
                                     horizontal-stretch: 1;
                                 }
-                                Text {
+                                AText {
                                     text: "" + l.done + "/" + l.total;
                                     font-family: Theme.mono;
                                     font-size: Theme.fs-small;
@@ -154,20 +154,20 @@ export component Checklists inherits Rectangle {
                         }
                     }
                 }
-                Text {
+                AText {
                     text: @tr("Razem") + ": " + App.cl-progress;
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
                     color: Theme.text-faint;
                 }
-                Text {
+                AText {
                     text: App.cl-source;
                     font-family: Theme.font;
                     font-size: 10.5px * Theme.scale;
                     color: Theme.text-faint;
                     wrap: word-wrap;
                 }
-                if App.cl-errors != "": Text {
+                if App.cl-errors != "": AText {
                     text: App.cl-errors;
                     font-family: Theme.mono;
                     font-size: 10px * Theme.scale;
@@ -184,7 +184,7 @@ export component Checklists inherits Rectangle {
                 spacing: 10px;
                 HorizontalLayout {
                     spacing: 10px;
-                    Text {
+                    AText {
                         text: root.cur-name.to-uppercase();
                         font-family: Theme.cond;
                         font-size: 20px * Theme.scale;
@@ -195,7 +195,7 @@ export component Checklists inherits Rectangle {
                         overflow: elide;
                         horizontal-stretch: 1;
                     }
-                    Text {
+                    AText {
                         text: "" + root.cur-done + " / " + root.cur-total;
                         font-family: Theme.mono;
                         font-size: 15px * Theme.scale;
@@ -323,7 +323,7 @@ export component Checklists inherits Rectangle {
                             y: (parent.height - self.height) / 2;
                             colorize: Theme.ok;
                         }
-                        Text {
+                        AText {
                             text: root.cur-name + " – " + @tr("lista ukończona");
                             font-family: Theme.font;
                             font-size: Theme.fs;

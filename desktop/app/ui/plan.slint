@@ -5,7 +5,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, PlanRowV, PlanOptV, KV } from "state.slint";
-import { Button, IconButton, Field, Segmented, TipArea } from "widgets.slint";
+import { Button, IconButton, Field, Segmented, TipArea, AText } from "widgets.slint";
 import { Panel, MapView, Colors } from "parts.slint";
 import { OfpView } from "ofp.slint";
 
@@ -14,7 +14,7 @@ global PlanUi {
     in-out property <string> alt-edit;
 }
 
-component Caption inherits Text {
+component Caption inherits AText {
     font-family: Theme.cond;
     font-size: 10.5px * Theme.scale;
     font-weight: 700;
@@ -60,7 +60,7 @@ component OptColumn inherits Rectangle {
         Caption {
             text: root.title.to-uppercase();
         }
-        if root.items.length == 0: Text {
+        if root.items.length == 0: AText {
             text: root.empty;
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -422,7 +422,7 @@ export component PlanView inherits Rectangle {
                             }
                         }
                     }
-                    Text {
+                    AText {
                         text: App.plan-source + (App.plan-status != "" ? "  ·  " + App.plan-status : "");
                         font-family: Theme.font;
                         font-size: 10.5px * Theme.scale;
@@ -601,7 +601,7 @@ export component PlanView inherits Rectangle {
                             Caption {
                                 text: kv.k.to-uppercase();
                             }
-                            Text {
+                            AText {
                                 text: kv.v;
                                 font-family: Theme.mono;
                                 font-size: 15px * Theme.scale;
@@ -634,7 +634,7 @@ export component PlanView inherits Rectangle {
                         }
                         for kv[i] in App.plan-fuel: HorizontalLayout {
                             spacing: 6px;
-                            Text {
+                            AText {
                                 text: kv.k;
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -643,7 +643,7 @@ export component PlanView inherits Rectangle {
                                 overflow: elide;
                                 horizontal-stretch: 1;
                             }
-                            Text {
+                            AText {
                                 text: kv.v;
                                 font-family: Theme.mono;
                                 font-size: Theme.fs-small;

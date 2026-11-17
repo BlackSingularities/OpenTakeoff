@@ -4782,6 +4782,9 @@ msgstr "“Simulation” is a demo flight without a simulator – good for a loo
 msgid "Pochyl"
 msgstr "Tilt"
 
+msgid "Kompas – kliknij, żeby obrócić mapę północą do góry (obracanie: przeciągnij prawym przyciskiem w bok)"
+msgstr "Compass – click to turn the map north up (to rotate: drag sideways with the right mouse button)"
+
 msgid "Pochyl mapę albo wróć do widoku z góry (albo przeciągnij prawym przyciskiem w górę i w dół)"
 msgstr "Tilt the map or go back to the top-down view (or drag up and down with the right mouse button)"
 
@@ -4793,3 +4796,469 @@ msgstr "Map tilting"
 
 msgid "Mapę można pochylić prawym przyciskiem albo z Ctrl (przeciąganie w górę i w dół) lub przyciskiem z górą. Wyłączone – wszystkie mapy tylko z góry (2D)."
 msgstr "Tilt a map by dragging up and down with the right mouse button or with Ctrl, or with the mountain button. Off – all maps are top-down only (2D)."
+
+# Wyjaśnienia skrótów (podpowiedzi)
+msgid "Zero Fuel Weight – masa samolotu bez paliwa (z ładunkiem i pasażerami)"
+msgstr "Zero Fuel Weight – aircraft weight without fuel (with payload and passengers)"
+
+msgid "Maximum Zero Fuel Weight – największa dopuszczalna masa bez paliwa"
+msgstr "Maximum Zero Fuel Weight – the highest allowed weight without fuel"
+
+msgid "Take-Off Weight – masa startowa"
+msgstr "Take-Off Weight"
+
+msgid "Maximum Take-Off Weight – największa dopuszczalna masa startowa"
+msgstr "Maximum Take-Off Weight – the highest allowed take-off weight"
+
+msgid "Landing Weight – masa do lądowania"
+msgstr "Landing Weight"
+
+msgid "Maximum Landing Weight – największa dopuszczalna masa do lądowania"
+msgstr "Maximum Landing Weight – the highest allowed landing weight"
+
+msgid "Operating Empty Weight – masa pustego samolotu gotowego do lotu (z załogą i wyposażeniem)"
+msgstr "Operating Empty Weight – empty aircraft ready for flight (with crew and equipment)"
+
+msgid "Center of Gravity – położenie środka ciężkości"
+msgstr "Center of Gravity"
+
+msgid "Mean Aerodynamic Chord – średnia cięciwa aerodynamiczna; środek ciężkości podaje się w % MAC"
+msgstr "Mean Aerodynamic Chord – the center of gravity is given in % MAC"
+
+msgid "Paliwo blokowe – całe paliwo na pokładzie przed uruchomieniem (kołowanie, trasa i rezerwy)"
+msgstr "Block fuel – all fuel on board before engine start (taxi, trip and reserves)"
+
+msgid "Block – czas blokowy (od odsunięcia od stanowiska do postoju na stanowisku) albo paliwo blokowe (całe paliwo przed uruchomieniem)"
+msgstr "Block – block time (from leaving the gate to parking at the gate) or block fuel (all fuel before engine start)"
+
+msgid "Fuel Flow – przepływ paliwa (zużycie na godzinę)"
+msgstr "Fuel Flow – fuel used per hour"
+
+msgid "Estimated Time En route – szacowany czas lotu"
+msgstr "Estimated Time En route"
+
+msgid "Estimated Elapsed Time – szacowany czas lotu do punktu"
+msgstr "Estimated Elapsed Time to a point"
+
+msgid "Estimated Time of Arrival – szacowana godzina przylotu"
+msgstr "Estimated Time of Arrival"
+
+msgid "Estimated Time of Departure – szacowana godzina odlotu"
+msgstr "Estimated Time of Departure"
+
+msgid "Scheduled Time of Departure – planowa godzina odlotu"
+msgstr "Scheduled Time of Departure"
+
+msgid "Scheduled Time of Arrival – planowa godzina przylotu"
+msgstr "Scheduled Time of Arrival"
+
+msgid "OUT – odsunięcie od stanowiska (off-block)"
+msgstr "OUT – leaving the gate (off-block)"
+
+msgid "OFF – oderwanie od pasa (start)"
+msgstr "OFF – wheels off the runway (take-off)"
+
+msgid "ON – przyziemienie na pasie"
+msgstr "ON – touchdown on the runway"
+
+msgid "IN – postój na stanowisku (on-block)"
+msgstr "IN – parked at the gate (on-block)"
+
+msgid "Uniwersalny czas koordynowany (czas Zulu, Z) – w lotnictwie wszystkie godziny podaje się w UTC"
+msgstr "Coordinated Universal Time (Zulu, Z) – aviation times are always given in UTC"
+
+msgid "Local Time – czas lokalny"
+msgstr "Local Time"
+
+msgid "Cost Index – kompromis między kosztem paliwa a kosztem czasu (0 – najoszczędniej, więcej – szybciej)"
+msgstr "Cost Index – trade-off between fuel cost and time cost (0 – most economical, higher – faster)"
+
+msgid "Top of Climb – koniec wznoszenia, początek przelotu"
+msgstr "Top of Climb – end of climb, start of cruise"
+
+msgid "Top of Descent – początek zniżania"
+msgstr "Top of Descent – start of descent"
+
+msgid "Climb – wznoszenie"
+msgstr "Climb"
+
+msgid "Cruise – przelot"
+msgstr "Cruise"
+
+msgid "Descent – zniżanie"
+msgstr "Descent"
+
+msgid "Approach – podejście do lądowania"
+msgstr "Approach to landing"
+
+msgid "Take-off – start"
+msgstr "Take-off"
+
+msgid "Landing – lądowanie"
+msgstr "Landing"
+
+msgid "Take-Off / Go-Around – pełny ciąg do startu albo odejścia na drugi krąg"
+msgstr "Take-Off / Go-Around – full thrust for take-off or go-around"
+
+msgid "Obniżony ciąg startowy (zakładana temperatura) – oszczędza silniki"
+msgstr "Reduced take-off thrust (assumed temperature) – saves the engines"
+
+msgid "Flight Level – poziom lotu w setkach stóp przy ciśnieniu wzorcowym 1013,25 hPa (FL230 = 23 000 ft)"
+msgstr "Flight Level – altitude in hundreds of feet at standard pressure 1013.25 hPa (FL230 = 23,000 ft)"
+
+msgid "Altitude – wysokość"
+msgstr "Altitude"
+
+msgid "Above Ground Level – wysokość nad terenem"
+msgstr "Above Ground Level – height above terrain"
+
+msgid "Mean Sea Level – wysokość nad średnim poziomem morza"
+msgstr "Mean Sea Level – altitude above sea level"
+
+msgid "Above Mean Sea Level – wysokość nad poziomem morza"
+msgstr "Above Mean Sea Level"
+
+msgid "Elevation – wysokość lotniska nad poziomem morza"
+msgstr "Elevation – airport height above sea level"
+
+msgid "Transition Altitude – wysokość przejściowa (powyżej: ciśnienie wzorcowe 1013 hPa)"
+msgstr "Transition Altitude (above it: standard pressure 1013 hPa)"
+
+msgid "Transition Level – poziom przejściowy (poniżej: QNH lotniska)"
+msgstr "Transition Level (below it: airport QNH)"
+
+msgid "Vertical Speed – prędkość pionowa (ft/min)"
+msgstr "Vertical Speed (ft/min)"
+
+msgid "Rate of Climb – prędkość wznoszenia"
+msgstr "Rate of Climb"
+
+msgid "Rate of Descent – prędkość zniżania"
+msgstr "Rate of Descent"
+
+msgid "Minimum Descent Altitude – najniższa wysokość zniżania bez kontaktu wzrokowego z pasem"
+msgstr "Minimum Descent Altitude – lowest altitude without the runway in sight"
+
+msgid "Decision Altitude – wysokość decyzji na podejściu"
+msgstr "Decision Altitude on approach"
+
+msgid "Decision Height – wysokość decyzji nad progiem pasa"
+msgstr "Decision Height above the runway threshold"
+
+msgid "Ground Speed – prędkość względem ziemi (przy ILS: ścieżka schodzenia, glideslope)"
+msgstr "Ground Speed – speed over the ground (for ILS: glideslope)"
+
+msgid "True Airspeed – prędkość rzeczywista względem powietrza"
+msgstr "True Airspeed"
+
+msgid "Indicated Airspeed – prędkość przyrządowa (pokazywana przez prędkościomierz)"
+msgstr "Indicated Airspeed – shown by the airspeed indicator"
+
+msgid "Calibrated Airspeed – prędkość przyrządowa poprawiona o błędy instalacji"
+msgstr "Calibrated Airspeed – IAS corrected for installation errors"
+
+msgid "Liczba Macha – prędkość jako ułamek prędkości dźwięku (M.78 = 78% prędkości dźwięku)"
+msgstr "Mach number – speed as a fraction of the speed of sound (M.78 = 78% of the speed of sound)"
+
+msgid "Prędkość decyzji – powyżej niej start trzeba kontynuować"
+msgstr "Decision speed – above it the take-off must be continued"
+
+msgid "Prędkość rotacji – podniesienie przedniego podwozia"
+msgstr "Rotation speed – the nose is lifted"
+
+msgid "Bezpieczna prędkość wznoszenia po starcie (także z niesprawnym silnikiem)"
+msgstr "Take-off safety speed (also with one engine inoperative)"
+
+msgid "Prędkość odniesienia do lądowania (nad progiem pasa)"
+msgstr "Landing reference speed (over the threshold)"
+
+msgid "Prędkość podejścia (VREF plus poprawka na wiatr)"
+msgstr "Approach speed (VREF plus wind correction)"
+
+msgid "Węzły – mile morskie na godzinę (1 kt = 1,852 km/h)"
+msgstr "Knots – nautical miles per hour (1 kt = 1.852 km/h)"
+
+msgid "Stopy na minutę – prędkość pionowa"
+msgstr "Feet per minute – vertical speed"
+
+msgid "Stopy (1 ft = 0,3048 m)"
+msgstr "Feet (1 ft = 0.3048 m)"
+
+msgid "Nautical Mile – mila morska (1852 m)"
+msgstr "Nautical mile (1852 m)"
+
+msgid "Łączny dystans od startu w milach morskich"
+msgstr "Total distance from departure in nautical miles"
+
+msgid "Speed – prędkość"
+msgstr "Speed"
+
+msgid "Headwind – składowa wiatru czołowego"
+msgstr "Headwind component"
+
+msgid "Tailwind – składowa wiatru w ogon"
+msgstr "Tailwind component"
+
+msgid "Crosswind – składowa wiatru bocznego"
+msgstr "Crosswind component"
+
+msgid "Wiatr o zmiennym kierunku"
+msgstr "Variable wind direction"
+
+msgid "Cisza – wiatr słabszy niż 1 kt"
+msgstr "Calm – wind below 1 kt"
+
+msgid "Outside Air Temperature – temperatura powietrza na zewnątrz"
+msgstr "Outside Air Temperature"
+
+msgid "Static Air Temperature – temperatura powietrza (bez nagrzania od prędkości)"
+msgstr "Static Air Temperature"
+
+msgid "Total Air Temperature – temperatura powietrza z nagrzaniem od prędkości"
+msgstr "Total Air Temperature – including heating from speed"
+
+msgid "International Standard Atmosphere – odchyłka temperatury od atmosfery wzorcowej (ISA +5 = o 5 °C cieplej)"
+msgstr "International Standard Atmosphere – temperature deviation from the standard (ISA +5 = 5 °C warmer)"
+
+msgid "Ciśnienie zredukowane do poziomu morza – nastawione na wysokościomierzu daje wysokość nad poziomem morza"
+msgstr "Pressure reduced to sea level – set on the altimeter it shows altitude above sea level"
+
+msgid "Ciśnienie na poziomie lotniska – wysokościomierz pokazuje wysokość nad lotniskiem"
+msgstr "Pressure at airport level – the altimeter shows height above the airport"
+
+msgid "Hektopaskale – jednostka ciśnienia"
+msgstr "Hectopascals – pressure unit"
+
+msgid "Cale słupa rtęci – jednostka ciśnienia (USA)"
+msgstr "Inches of mercury – pressure unit (US)"
+
+msgid "Bieżąca depesza pogodowa z lotniska (zwykle co 30 albo 60 minut)"
+msgstr "Current airport weather report (usually every 30 or 60 minutes)"
+
+msgid "Terminal Aerodrome Forecast – prognoza pogody dla lotniska"
+msgstr "Terminal Aerodrome Forecast – airport weather forecast"
+
+msgid "Ostrzeżenie o niebezpiecznych zjawiskach pogodowych"
+msgstr "Warning of hazardous weather"
+
+msgid "Automatyczna informacja lotniskowa (pogoda, pas w użyciu)"
+msgstr "Automatic Terminal Information Service (weather, runway in use)"
+
+msgid "Notice to Airmen – komunikat o zmianach i utrudnieniach"
+msgstr "Notice to Airmen – changes and restrictions"
+
+msgid "Warunki VFR – lot z widocznością: pułap powyżej 3000 ft i widzialność powyżej 5 mil"
+msgstr "VFR conditions – visual flight: ceiling above 3000 ft and visibility above 5 miles"
+
+msgid "Marginalne VFR – pułap 1000–3000 ft albo widzialność 3–5 mil"
+msgstr "Marginal VFR – ceiling 1000–3000 ft or visibility 3–5 miles"
+
+msgid "Warunki IFR – lot według przyrządów: pułap 500–1000 ft albo widzialność 1–3 mile"
+msgstr "IFR conditions – instrument flight: ceiling 500–1000 ft or visibility 1–3 miles"
+
+msgid "Niskie IFR – pułap poniżej 500 ft albo widzialność poniżej 1 mili"
+msgstr "Low IFR – ceiling below 500 ft or visibility below 1 mile"
+
+msgid "Ceiling And Visibility OK – widzialność 10 km i więcej, bez chmur poniżej 5000 ft"
+msgstr "Ceiling And Visibility OK – visibility 10 km or more, no clouds below 5000 ft"
+
+msgid "Nieliczne chmury (1–2 oktanty)"
+msgstr "Few clouds (1–2 oktas)"
+
+msgid "Rozproszone chmury (3–4 oktanty)"
+msgstr "Scattered clouds (3–4 oktas)"
+
+msgid "Chmury z przerwami (5–7 oktantów) – liczy się jako pułap"
+msgstr "Broken clouds (5–7 oktas) – counts as a ceiling"
+
+msgid "Całkowite zachmurzenie (8 oktantów)"
+msgstr "Overcast (8 oktas)"
+
+msgid "Cumulonimbus – chmura burzowa"
+msgstr "Cumulonimbus – thunderstorm cloud"
+
+msgid "Towering Cumulus – wypiętrzony cumulus"
+msgstr "Towering Cumulus"
+
+msgid "Course – kurs odcinka trasy"
+msgstr "Course of the route leg"
+
+msgid "Heading – kurs (kierunek, w który skierowany jest nos samolotu)"
+msgstr "Heading – the direction the nose points"
+
+msgid "Track – tor (kierunek rzeczywistego ruchu nad ziemią)"
+msgstr "Track – actual direction over the ground"
+
+msgid "Bearing – namiar na punkt"
+msgstr "Bearing to a point"
+
+msgid "Direct – lot bezpośrednio do punktu"
+msgstr "Direct – straight to a point"
+
+msgid "Standard Instrument Departure – standardowa procedura odlotu"
+msgstr "Standard Instrument Departure"
+
+msgid "Standard Terminal Arrival Route – standardowa procedura dolotu"
+msgstr "Standard Terminal Arrival Route"
+
+msgid "Initial Approach Fix – punkt początkowy podejścia"
+msgstr "Initial Approach Fix"
+
+msgid "Final Approach Fix – punkt podejścia końcowego"
+msgstr "Final Approach Fix"
+
+msgid "Radiolatarnia VOR – podaje radial (kierunek od stacji)"
+msgstr "VOR beacon – gives the radial (direction from the station)"
+
+msgid "Radiolatarnia bezkierunkowa – wskazuje kierunek do stacji na ADF"
+msgstr "Non-Directional Beacon – the ADF points to the station"
+
+msgid "Distance Measuring Equipment – odległość do stacji w milach morskich"
+msgstr "Distance Measuring Equipment – distance to the station in NM"
+
+msgid "Instrument Landing System – system precyzyjnego podejścia (kierunek i ścieżka)"
+msgstr "Instrument Landing System – precision approach (course and glideslope)"
+
+msgid "Localizer – kierunek podejścia ILS"
+msgstr "Localizer – ILS course"
+
+msgid "Area Navigation – nawigacja obszarowa (GPS, FMS)"
+msgstr "Area Navigation (GPS, FMS)"
+
+msgid "Satelitarny system nawigacji"
+msgstr "Satellite navigation system"
+
+msgid "Automatic Direction Finder – radiokompas (wskazuje NDB)"
+msgstr "Automatic Direction Finder – points to an NDB"
+
+msgid "Flight Management System – komputer zarządzania lotem"
+msgstr "Flight Management System"
+
+msgid "Flight Management Computer – komputer zarządzania lotem"
+msgstr "Flight Management Computer"
+
+msgid "Panel z klawiaturą do obsługi FMS (Airbus)"
+msgstr "Keypad and display for the FMS (Airbus)"
+
+msgid "Course Deviation Indicator – wskaźnik odchylenia od kursu"
+msgstr "Course Deviation Indicator"
+
+msgid "Omni Bearing Selector – wybór radialu VOR"
+msgstr "Omni Bearing Selector – VOR radial selection"
+
+msgid "Horizontal Situation Indicator – wskaźnik sytuacji poziomej"
+msgstr "Horizontal Situation Indicator"
+
+msgid "Deklinacja magnetyczna – różnica między północą geograficzną a magnetyczną"
+msgstr "Magnetic variation – difference between true and magnetic north"
+
+msgid "Runway – pas startowy"
+msgstr "Runway"
+
+msgid "Taxiway – droga kołowania"
+msgstr "Taxiway"
+
+msgid "Threshold – próg pasa"
+msgstr "Runway threshold"
+
+msgid "Take-Off Run Available – rozporządzalna długość rozbiegu"
+msgstr "Take-Off Run Available"
+
+msgid "Take-Off Distance Available – rozporządzalna długość startu"
+msgstr "Take-Off Distance Available"
+
+msgid "Accelerate-Stop Distance Available – długość do przerwania startu"
+msgstr "Accelerate-Stop Distance Available"
+
+msgid "Landing Distance Available – rozporządzalna długość lądowania"
+msgstr "Landing Distance Available"
+
+msgid "Organizacja Międzynarodowego Lotnictwa Cywilnego; kod ICAO lotniska ma 4 litery (np. EPWA)"
+msgstr "International Civil Aviation Organization; airport ICAO codes have 4 letters (e.g. EPWA)"
+
+msgid "Międzynarodowe Zrzeszenie Przewoźników; kod IATA lotniska ma 3 litery (np. WAW)"
+msgstr "International Air Transport Association; airport IATA codes have 3 letters (e.g. WAW)"
+
+msgid "Air Traffic Control – kontrola ruchu lotniczego"
+msgstr "Air Traffic Control"
+
+msgid "Plan lotu ATC w formacie ICAO"
+msgstr "ATC flight plan in ICAO format"
+
+msgid "Operational Flight Plan – operacyjny plan lotu (paliwo, masy, trasa, pogoda)"
+msgstr "Operational Flight Plan (fuel, weights, route, weather)"
+
+msgid "Takeoff and Landing Report – raport osiągów startu i lądowania"
+msgstr "Takeoff and Landing Report – take-off and landing performance"
+
+msgid "Ustawienie klap"
+msgstr "Flap setting"
+
+msgid "Transponder – kod squawk dla kontroli ruchu"
+msgstr "Transponder – squawk code for ATC"
+
+msgid "Squawk – kod transpondera"
+msgstr "Squawk – transponder code"
+
+msgid "Radio do łączności głosowej"
+msgstr "Voice communication radio"
+
+msgid "Radio nawigacyjne (VOR, ILS)"
+msgstr "Navigation radio (VOR, ILS)"
+
+msgid "Autothrust – automatyczny ciąg (Airbus)"
+msgstr "Autothrust (Airbus)"
+
+msgid "Autothrottle – automatyczna przepustnica"
+msgstr "Autothrottle"
+
+msgid "Flight Director – wskazówki sterowania na PFD"
+msgstr "Flight Director – steering cues on the PFD"
+
+msgid "Lateral Navigation – prowadzenie po trasie z FMS"
+msgstr "Lateral Navigation – following the FMS route"
+
+msgid "Vertical Navigation – profil pionowy z FMS"
+msgstr "Vertical Navigation – FMS vertical profile"
+
+msgid "Primary Flight Display – główny wyświetlacz lotu"
+msgstr "Primary Flight Display"
+
+msgid "Navigation Display – wyświetlacz nawigacyjny"
+msgstr "Navigation Display"
+
+msgid "System monitorowania samolotu i ostrzeżeń (Airbus)"
+msgstr "Aircraft monitoring and warning system (Airbus)"
+
+msgid "System wskazań silników i ostrzeżeń załogi (Boeing, Embraer)"
+msgstr "Engine indication and crew alerting system (Boeing, Embraer)"
+
+msgid "Auxiliary Power Unit – pomocnicza jednostka napędowa (prąd i powietrze na ziemi)"
+msgstr "Auxiliary Power Unit – power and air on the ground"
+
+msgid "Obroty wentylatora silnika w % – główny wskaźnik ciągu"
+msgstr "Engine fan speed in % – main thrust indication"
+
+msgid "Obroty rdzenia silnika w %"
+msgstr "Engine core speed in %"
+
+msgid "Exhaust Gas Temperature – temperatura spalin"
+msgstr "Exhaust Gas Temperature"
+
+msgid "Inter-Turbine Temperature – temperatura między turbinami"
+msgstr "Inter-Turbine Temperature"
+
+msgid "Torque – moment obrotowy silnika turbośmigłowego"
+msgstr "Turboprop engine torque"
+
+msgid "Obroty na minutę"
+msgstr "Revolutions per minute"
+
+msgid "Cylinder Head Temperature – temperatura głowic cylindrów"
+msgstr "Cylinder Head Temperature"
+
+msgid "Radio Altimeter – radiowysokościomierz (w METAR: deszcz)"
+msgstr "Radio Altimeter (in a METAR: rain)"
+
+msgid "Microsoft Flight Simulator"
+msgstr "Microsoft Flight Simulator"

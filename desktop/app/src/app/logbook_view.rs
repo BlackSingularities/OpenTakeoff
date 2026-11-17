@@ -274,11 +274,11 @@ pub fn render_flight_map() {
     let Some(f) = st.detail.clone() else { return };
     let dark = ui.global::<Theme>().get_dark();
     let mut ov = Overlay::default();
-    ov.tracks.push(Track { pts: f.track.iter().map(|p| (p.lat, p.lon, p.alt_ft)).collect(), color: None, width: 3.0 });
+    ov.tracks.push(Track { pts: f.track.iter().map(|p| (p.lat, p.lon, p.alt_ft)).collect(), color: None, width: 3.0, wall: false });
     let db = airports::db();
     for code in [f.from.as_deref(), f.to.as_deref()].into_iter().flatten() {
         if let Some(a) = db.as_ref().and_then(|d| d.get(code)) {
-            ov.points.push(Point { lat: a.lat, lon: a.lon, label: a.ident.clone(), kind: 0 });
+            ov.points.push(Point { lat: a.lat, lon: a.lon, label: a.ident.clone(), kind: 0, alt: None });
             for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed) {
                 ov.runways.push((r.le_lat, r.le_lon, r.he_lat, r.he_lon));
             }
@@ -286,16 +286,16 @@ pub fn render_flight_map() {
     }
     for (i, l) in f.all_landings().iter().enumerate() {
         if let Some(p) = l.at.and_then(|at| f.track.iter().min_by_key(|p| (p.t - at).abs())) {
-            ov.points.push(Point { lat: p.lat, lon: p.lon, label: format!("{} {} · {}", tr("Lądowanie"), i + 1, l.score), kind: 2 });
+            ov.points.push(Point { lat: p.lat, lon: p.lon, label: format!("{} {} · {}", tr("Lądowanie"), i + 1, l.score), kind: 2, alt: None });
         }
     }
     for m in &f.markers {
         if let Some(p) = f.track.iter().min_by_key(|p| (p.t - m.t).abs()) {
-            ov.points.push(Point { lat: p.lat, lon: p.lon, label: m.label.clone(), kind: 2 });
+            ov.points.push(Point { lat: p.lat, lon: p.lon, label: m.label.clone(), kind: 2, alt: None });
         }
     }
     for s in crate::shots::for_flight(&f).iter().filter(|s| s.has_pos) {
-        ov.points.push(Point { lat: s.lat, lon: s.lon, label: format!("{} {}", tr("Zrzut"), fmt::time(s.time)), kind: 4 });
+        ov.points.push(Point { lat: s.lat, lon: s.lon, label: format!("{} {}", tr("Zrzut"), fmt::time(s.time)), kind: 4, alt: None });
     }
     if let Some(p) = replay_point(&f, st.replay) {
         ov.aircraft = Some((p.lat, p.lon, p.hdg.unwrap_or(0) as f64));

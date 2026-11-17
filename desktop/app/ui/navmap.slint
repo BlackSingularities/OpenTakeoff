@@ -5,14 +5,14 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, KV, RowV } from "state.slint";
-import { IconButton, Button, Field, Segmented } from "widgets.slint";
-import { Panel, Heading, Pair, Bar, Colors } from "parts.slint";
+import { IconButton, Button, Field, Segmented, AText } from "widgets.slint";
+import { Panel, Heading, Pair, Bar, Colors, MapCompass } from "parts.slint";
 
 component NavMapView inherits Rectangle {
     property <length> last-x;
     property <length> last-y;
     property <length> moved-by;
-    // pochylanie: prawy przycisk albo Ctrl + lewy (przeciąganie w pionie)
+    // obrót (w bok) i pochylanie (w pionie): prawy przycisk albo Ctrl + lewy
     property <bool> tilting;
     property <bool> right-down;
     clip: true;
@@ -52,16 +52,16 @@ component NavMapView inherits Rectangle {
         }
     }
     ta := TouchArea {
-        mouse-cursor: root.tilting || root.right-down ? MouseCursor.ns-resize : App.nav.tool != 0 ? MouseCursor.crosshair : self.pressed ? MouseCursor.grabbing : MouseCursor.default;
+        mouse-cursor: root.tilting || root.right-down ? MouseCursor.move : App.nav.tool != 0 ? MouseCursor.crosshair : self.pressed ? MouseCursor.grabbing : MouseCursor.default;
         pointer-event(e) => {
             if (e.kind == PointerEventKind.down) {
                 root.last-x = self.mouse-x;
                 root.last-y = self.mouse-y;
                 root.moved-by = 0;
                 if (e.button == PointerEventButton.right) {
-                    root.right-down = App.map-tilt;
+                    root.right-down = true;
                 } else if (e.button == PointerEventButton.left) {
-                    root.tilting = App.map-tilt && e.modifiers.control;
+                    root.tilting = e.modifiers.control;
                 }
             } else if (e.kind == PointerEventKind.up && e.button == PointerEventButton.right) {
                 root.right-down = false;
@@ -71,7 +71,7 @@ component NavMapView inherits Rectangle {
                 }
                 root.tilting = false;
             } else if (e.kind == PointerEventKind.move && root.right-down) {
-                App.map-event(4, "tilt", self.mouse-x / 1px, self.mouse-y / 1px, 0, (self.mouse-y - root.last-y) / 1px);
+                App.map-event(4, "orbit", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
                 root.last-x = self.mouse-x;
                 root.last-y = self.mouse-y;
             } else if (e.kind == PointerEventKind.move && !self.pressed) {
@@ -82,7 +82,7 @@ component NavMapView inherits Rectangle {
             if (self.pressed) {
                 root.moved-by += abs(self.mouse-x - root.last-x) + abs(self.mouse-y - root.last-y);
                 if (root.tilting) {
-                    App.map-event(4, "tilt", self.mouse-x / 1px, self.mouse-y / 1px, 0, (self.mouse-y - root.last-y) / 1px);
+                    App.map-event(4, "orbit", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
                 } else if (root.moved-by >= 5px) {
                     App.map-event(4, "pan", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
                 }
@@ -142,6 +142,12 @@ component NavMapView inherits Rectangle {
                 tip: @tr("Pochyl mapę albo wróć do widoku z góry (albo przeciągnij prawym przyciskiem w górę i w dół)");
                 clicked => {
                     App.map-event(4, "tilt-toggle", 0, 0, 0, 0);
+                }
+            }
+            MapCompass {
+                bearing: App.map-bearings[4];
+                clicked => {
+                    App.map-event(4, "north", 0, 0, 0, 0);
                 }
             }
             IconButton {
@@ -365,7 +371,7 @@ export component NavMap inherits Rectangle {
                 Box {
                     title: @tr("Kursor");
                     icon: Icons.crosshair;
-                    Text {
+                    AText {
                         height: 2 * Theme.fs-small * 1.45;
                         vertical-alignment: top;
                         text: App.nav-hover != "" ? App.nav-hover : @tr("Najedź na mapę");
@@ -378,7 +384,7 @@ export component NavMap inherits Rectangle {
                 Box {
                     title: @tr("Najbliższe VOR / NDB");
                     icon: Icons.radio-tower;
-                    if App.nav-vors.length == 0: Text {
+                    if App.nav-vors.length == 0: AText {
                         text: @tr("Baza pomocy nawigacyjnych wczytuje się razem z bazą lotnisk.");
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
@@ -395,7 +401,7 @@ export component NavMap inherits Rectangle {
                 Box {
                     title: @tr("Najbliższe lotniska");
                     icon: Icons.map-pin;
-                    Text {
+                    AText {
                         text: @tr("Kliknij lotnisko, żeby lecieć do niego (Direct To)");
                         font-family: Theme.font;
                         font-size: Theme.fs-small;

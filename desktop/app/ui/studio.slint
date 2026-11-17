@@ -5,7 +5,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, LandingCfgV, StreamCfgV, OverlayCfgV } from "state.slint";
-import { Button, Switch, Segmented, Slider, Field, IconButton, TipArea } from "widgets.slint";
+import { Button, Switch, Segmented, Slider, Field, IconButton, TipArea, AText } from "widgets.slint";
 import { Panel } from "parts.slint";
 import { Section, Option } from "settings.slint";
 
@@ -68,14 +68,14 @@ component Head inherits HorizontalLayout {
     VerticalLayout {
         alignment: center;
         horizontal-stretch: 1;
-        Text {
+        AText {
             text: root.title;
             font-family: Theme.cond;
             font-size: 16px * Theme.scale;
             font-weight: 700;
             color: Theme.text;
         }
-        Text {
+        AText {
             text: root.sub;
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -110,7 +110,7 @@ component SliderRow inherits HorizontalLayout {
             root.moved(v);
         }
     }
-    Text {
+    AText {
         text: root.text;
         font-family: Theme.mono;
         font-size: Theme.fs-small;
@@ -128,14 +128,14 @@ component ObsRow inherits HorizontalLayout {
     VerticalLayout {
         alignment: center;
         width: 190px * Theme.scale;
-        Text {
+        AText {
             text: root.title;
             font-family: Theme.font;
             font-size: Theme.fs;
             font-weight: 600;
             color: Theme.text;
         }
-        Text {
+        AText {
             text: root.note;
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -151,7 +151,7 @@ component ObsRow inherits HorizontalLayout {
         background: Theme.bg;
         border-width: 1px;
         border-color: Theme.line;
-        Text {
+        AText {
             x: 10px;
             width: parent.width - 20px;
             text: App.obs-base + root.path;
@@ -209,7 +209,7 @@ export component Studio inherits Rectangle {
                         y: (parent.height - self.height) / 2;
                         colorize: Theme.accent;
                     }
-                    Text {
+                    AText {
                         text: @tr("Nakładki pokazują się na wybranym ekranie nad symulatorem i nie zabierają mu klawiatury. Symulator musi działać w oknie albo w trybie pełnoekranowym bez ramki – w wyłącznym trybie pełnoekranowym Windows nie pokazuje innych okien.");
                         font-family: Theme.font;
                         font-size: Theme.fs;
@@ -405,7 +405,7 @@ export component Studio inherits Rectangle {
                                 }
                             }
                         }
-                        Text {
+                        AText {
                             text: @tr("Na karcie");
                             font-family: Theme.cond;
                             font-size: 13px * Theme.scale;
@@ -655,7 +655,7 @@ export component Studio inherits Rectangle {
                                 }
                             }
                         }
-                        Text {
+                        AText {
                             text: @tr("Pola paska – włącz i ułóż strzałkami");
                             font-family: Theme.cond;
                             font-size: 13px * Theme.scale;
@@ -864,7 +864,7 @@ export component Studio inherits Rectangle {
                                 }
                             }
                         }
-                        Text {
+                        AText {
                             text: App.shots-dir;
                             font-family: Theme.mono;
                             font-size: 10px * Theme.scale;

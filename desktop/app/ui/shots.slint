@@ -5,7 +5,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Button, TipArea } from "widgets.slint";
+import { Button, TipArea, AText } from "widgets.slint";
 import { Panel, Heading, Pair, Empty } from "parts.slint";
 
 export component Shots inherits Rectangle {
@@ -121,7 +121,7 @@ export component Shots inherits Rectangle {
                         }
                     }
                 }
-                Text {
+                AText {
                     text: App.shot.place;
                     font-family: Theme.cond;
                     font-size: 18px * Theme.scale;
@@ -129,7 +129,7 @@ export component Shots inherits Rectangle {
                     color: Theme.text;
                     wrap: word-wrap;
                 }
-                Text {
+                AText {
                     text: App.shot.date + "  " + App.shot.time + (App.shot.aircraft != "" ? "  ·  " + App.shot.aircraft : "");
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -154,7 +154,7 @@ export component Shots inherits Rectangle {
                         mono: true;
                     }
                 }
-                Text {
+                AText {
                     text: App.shot.info;
                     font-family: Theme.mono;
                     font-size: 10.5px * Theme.scale;

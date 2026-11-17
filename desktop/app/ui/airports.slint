@@ -5,7 +5,7 @@ import { ScrollView, ListView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, GroupV, BriefTileV, WxHistV, RwyV } from "state.slint";
-import { Button, IconButton, Field, Segmented, TipArea } from "widgets.slint";
+import { Button, IconButton, Field, Segmented, TipArea, AText } from "widgets.slint";
 import { Panel, Heading, Metric, Pair, CatBadge, MapView, ListRow, Empty, Colors, Bar } from "parts.slint";
 
 component Decoded inherits VerticalLayout {
@@ -16,7 +16,7 @@ component Decoded inherits VerticalLayout {
         border-radius: Theme.r-small;
         background: Theme.raised;
         height: rt.preferred-height + 14px;
-        rt := Text {
+        rt := AText {
             x: 8px;
             width: parent.width - 16px;
             text: root.raw == "" ? "—" : root.raw;
@@ -30,7 +30,7 @@ component Decoded inherits VerticalLayout {
         spacing: 10px;
         visible: g.meaning != "";
         height: g.meaning != "" ? max(gt.preferred-height, 18px) : 0;
-        Text {
+        AText {
             width: 110px * Theme.scale;
             text: g.token;
             font-family: Theme.mono;
@@ -38,7 +38,7 @@ component Decoded inherits VerticalLayout {
             color: Theme.accent;
             overflow: elide;
         }
-        gt := Text {
+        gt := AText {
             horizontal-stretch: 1;
             text: g.meaning;
             font-family: Theme.font;
@@ -93,7 +93,7 @@ component VizPanel inherits Panel {
                 y: (parent.height - self.height) / 2;
                 colorize: Theme.mode == 2 || Theme.mode == 5 ? #0a8fa3 : #4fd8eb;
             }
-            Text {
+            AText {
                 text: root.title.to-uppercase();
                 font-family: Theme.cond;
                 font-size: 11.5px * Theme.scale;
@@ -110,7 +110,7 @@ component VizPanel inherits Panel {
                     background: Theme.line;
                 }
             }
-            if root.note != "": Text {
+            if root.note != "": AText {
                 text: root.note;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -136,7 +136,7 @@ component BriefTile inherits Rectangle {
         padding: 10px;
         padding-top: 8px;
         spacing: 2px;
-        Text {
+        AText {
             text: root.t.label.to-uppercase();
             font-family: Theme.cond;
             font-size: 10.5px * Theme.scale;
@@ -145,7 +145,7 @@ component BriefTile inherits Rectangle {
             color: Theme.text-faint;
             overflow: elide;
         }
-        Text {
+        AText {
             text: root.t.value;
             font-family: Theme.mono;
             font-size: 17px * Theme.scale;
@@ -153,7 +153,7 @@ component BriefTile inherits Rectangle {
             color: root.tone;
             overflow: elide;
         }
-        Text {
+        AText {
             text: root.t.sub;
             font-family: Theme.font;
             font-size: 10.5px * Theme.scale;
@@ -174,7 +174,7 @@ component WindComp inherits Rectangle {
         padding-left: 6px;
         padding-right: 6px;
         spacing: 8px;
-        Text {
+        AText {
             width: 42px * Theme.scale;
             text: root.r.ident;
             font-family: Theme.mono;
@@ -209,7 +209,7 @@ component WindComp inherits Rectangle {
                 background: root.r.head >= 0 ? Colors.vfr : Colors.ifr;
             }
         }
-        Text {
+        AText {
             width: 46px * Theme.scale;
             text: (root.r.head >= 0 ? "HW " : "TW ") + round(abs(root.r.head));
             font-family: Theme.mono;
@@ -236,7 +236,7 @@ component WindComp inherits Rectangle {
                 background: abs(root.r.cross) >= 20 ? Colors.ifr : abs(root.r.cross) >= 12 ? Colors.warn : #4fd8eb;
             }
         }
-        Text {
+        AText {
             width: 40px * Theme.scale;
             text: "X " + round(abs(root.r.cross));
             font-family: Theme.mono;
@@ -262,7 +262,7 @@ component HistCell inherits Rectangle {
     vl := VerticalLayout {
         padding: 6px;
         spacing: 4px;
-        Text {
+        AText {
             text: root.m.time;
             horizontal-alignment: center;
             font-family: Theme.mono;
@@ -273,7 +273,7 @@ component HistCell inherits Rectangle {
             height: 18px * Theme.scale;
             border-radius: 3px;
             background: Colors.cat(root.m.cat).with-alpha(0.22);
-            Text {
+            AText {
                 text: root.m.cat;
                 font-family: Theme.cond;
                 font-size: 10.5px * Theme.scale;
@@ -290,12 +290,12 @@ component HistCell inherits Rectangle {
                 colorize: #4fd8eb;
                 rotation-angle: root.m.dir * 1deg;
             }
-            if !root.m.has-dir: Text {
+            if !root.m.has-dir: AText {
                 text: "○";
                 color: Theme.text-faint;
             }
         }
-        for v in [root.m.wind, root.m.ceiling, root.m.vis, root.m.temp + "  Q" + root.m.qnh]: Text {
+        for v in [root.m.wind, root.m.ceiling, root.m.vis, root.m.temp + "  Q" + root.m.qnh]: AText {
             text: v;
             horizontal-alignment: center;
             font-family: Theme.mono;
@@ -330,14 +330,14 @@ component TokenGrid inherits Rectangle {
                         padding: 7px;
                         padding-left: 9px;
                         spacing: 1px;
-                        Text {
+                        AText {
                             text: g.token;
                             font-family: Theme.mono;
                             font-size: Theme.fs-small;
                             font-weight: 700;
                             color: Theme.accent;
                         }
-                        Text {
+                        AText {
                             text: g.meaning;
                             font-family: Theme.font;
                             font-size: 10.5px * Theme.scale;
@@ -357,7 +357,7 @@ component RawStrip inherits Rectangle {
     height: rt.preferred-height + 16px;
     border-radius: Theme.r-small;
     background: #0b1016;
-    rt := Text {
+    rt := AText {
         x: 10px;
         width: parent.width - 20px;
         text: root.text == "" ? "—" : root.text;
@@ -380,7 +380,7 @@ component Briefing inherits ScrollView {
                 spacing: 2px;
                 HorizontalLayout {
                     spacing: 10px;
-                    Text {
+                    AText {
                         text: App.airport.ident;
                         font-family: Theme.font;
                         font-size: 26px * Theme.scale;
@@ -392,14 +392,14 @@ component Briefing inherits ScrollView {
                         y: (parent.height - self.height) / 2;
                     }
                 }
-                Text {
+                AText {
                     text: App.airport.name;
                     font-family: Theme.font;
                     font-size: Theme.fs-big;
                     color: Theme.text;
                     overflow: elide;
                 }
-                Text {
+                AText {
                     text: App.airport.place + " · " + App.airport.kind;
                     font-family: Theme.font;
                     font-size: Theme.fs;
@@ -562,7 +562,7 @@ component Briefing inherits ScrollView {
                                         padding-right: 9px;
                                         alignment: center;
                                         spacing: 1px;
-                                        Text {
+                                        AText {
                                             text: kv.k.to-uppercase();
                                             font-family: Theme.cond;
                                             font-size: 10px * Theme.scale;
@@ -571,7 +571,7 @@ component Briefing inherits ScrollView {
                                             color: Theme.text-faint;
                                             overflow: elide;
                                         }
-                                        Text {
+                                        AText {
                                             text: kv.v;
                                             font-family: Theme.mono;
                                             font-size: Theme.fs;
@@ -603,7 +603,7 @@ component Briefing inherits ScrollView {
                         rl := HorizontalLayout {
                             padding: 6px;
                             spacing: 12px;
-                            Text {
+                            AText {
                                 width: 70px * Theme.scale;
                                 text: r.ident;
                                 font-family: Theme.font;
@@ -615,14 +615,14 @@ component Briefing inherits ScrollView {
                             VerticalLayout {
                                 horizontal-stretch: 1;
                                 spacing: 2px;
-                                Text {
+                                AText {
                                     text: r.length + " · " + r.surface + " · " + r.heading;
                                     font-family: Theme.font;
                                     font-size: Theme.fs;
                                     color: Theme.text;
                                     overflow: elide;
                                 }
-                                Text {
+                                AText {
                                     text: r.ils;
                                     font-family: Theme.font;
                                     font-size: Theme.fs-small;
@@ -630,7 +630,7 @@ component Briefing inherits ScrollView {
                                     overflow: elide;
                                 }
                             }
-                            Text {
+                            AText {
                                 text: r.wind;
                                 font-family: Theme.font;
                                 font-size: Theme.fs;
@@ -642,7 +642,7 @@ component Briefing inherits ScrollView {
                             }
                         }
                     }
-                    Text {
+                    AText {
                         text: @tr("Składowe wiatru z bieżącego METAR-u: czołowy (+) / tylny (−) i boczny. Wyróżniony pas ma najkorzystniejszy wiatr.");
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
@@ -659,14 +659,14 @@ component Briefing inherits ScrollView {
                         text: @tr("Częstotliwości");
                         icon: Icons.radio;
                     }
-                    if App.airport-freqs.length == 0: Text {
+                    if App.airport-freqs.length == 0: AText {
                         text: "—";
                         color: Theme.text-faint;
                     }
                     for f in App.airport-freqs: HorizontalLayout {
                         height: 22px * Theme.scale;
                         spacing: 10px;
-                        Text {
+                        AText {
                             width: 80px * Theme.scale;
                             text: f.kind;
                             font-family: Theme.font;
@@ -675,7 +675,7 @@ component Briefing inherits ScrollView {
                             color: Theme.accent;
                             vertical-alignment: center;
                         }
-                        Text {
+                        AText {
                             horizontal-stretch: 1;
                             text: f.name;
                             font-family: Theme.font;
@@ -684,7 +684,7 @@ component Briefing inherits ScrollView {
                             vertical-alignment: center;
                             overflow: elide;
                         }
-                        Text {
+                        AText {
                             text: f.mhz;
                             font-family: Theme.mono;
                             font-size: Theme.fs;
@@ -706,7 +706,7 @@ component Briefing inherits ScrollView {
                         text: @tr("Procedury z bazy MSFS");
                         icon: Icons.route;
                     }
-                    Text {
+                    AText {
                         text: App.procedures-status;
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
@@ -723,7 +723,7 @@ component Briefing inherits ScrollView {
                         HorizontalLayout {
                             padding-left: p.kind < 0 ? 2px : 10px;
                             spacing: 8px;
-                            Text {
+                            AText {
                                 text: p.name;
                                 font-family: Theme.font;
                                 font-size: p.kind < 0 ? Theme.fs-small : Theme.fs;
@@ -733,7 +733,7 @@ component Briefing inherits ScrollView {
                                 horizontal-stretch: 1;
                                 overflow: elide;
                             }
-                            Text {
+                            AText {
                                 text: p.info;
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -754,7 +754,7 @@ component Briefing inherits ScrollView {
                         text: App.procedure-title != "" ? App.procedure-title : @tr("Odcinki procedury");
                         icon: Icons.list-ordered;
                     }
-                    if App.procedure-legs.length == 0: Text {
+                    if App.procedure-legs.length == 0: AText {
                         text: @tr("Wybierz procedurę z listy. Dane pochodzą z bazy nawigacyjnej MSFS, więc procedury są dostępne, gdy symulator działa (albo w trybie symulacji dla EPWA i EPGD).");
                         font-family: Theme.font;
                         font-size: Theme.fs;
@@ -768,7 +768,7 @@ component Briefing inherits ScrollView {
                         HorizontalLayout {
                             padding-left: 6px;
                             spacing: 8px;
-                            Text {
+                            AText {
                                 width: 70px * Theme.scale;
                                 text: l.fix;
                                 font-family: Theme.mono;
@@ -777,7 +777,7 @@ component Briefing inherits ScrollView {
                                 color: Theme.text;
                                 vertical-alignment: center;
                             }
-                            Text {
+                            AText {
                                 width: 34px * Theme.scale;
                                 text: l.kind;
                                 font-family: Theme.mono;
@@ -785,7 +785,7 @@ component Briefing inherits ScrollView {
                                 color: Theme.accent;
                                 vertical-alignment: center;
                             }
-                            Text {
+                            AText {
                                 horizontal-stretch: 1;
                                 text: l.alt;
                                 font-family: Theme.font;
@@ -793,7 +793,7 @@ component Briefing inherits ScrollView {
                                 color: Theme.text;
                                 vertical-alignment: center;
                             }
-                            Text {
+                            AText {
                                 width: 70px * Theme.scale;
                                 text: l.speed;
                                 font-family: Theme.font;
@@ -801,7 +801,7 @@ component Briefing inherits ScrollView {
                                 color: Theme.text-dim;
                                 vertical-alignment: center;
                             }
-                            Text {
+                            AText {
                                 width: 60px * Theme.scale;
                                 text: l.course;
                                 font-family: Theme.font;
@@ -809,7 +809,7 @@ component Briefing inherits ScrollView {
                                 color: Theme.text-dim;
                                 vertical-alignment: center;
                             }
-                            Text {
+                            AText {
                                 width: 60px * Theme.scale;
                                 text: l.dist;
                                 font-family: Theme.font;
@@ -839,7 +839,7 @@ component Briefing inherits ScrollView {
                         padding-left: 6px;
                         padding-right: 6px;
                         spacing: 10px;
-                        Text {
+                        AText {
                             width: 60px * Theme.scale;
                             text: a.ident;
                             font-family: Theme.font;
@@ -848,7 +848,7 @@ component Briefing inherits ScrollView {
                             color: Theme.text;
                             vertical-alignment: center;
                         }
-                        Text {
+                        AText {
                             horizontal-stretch: 1;
                             text: a.name;
                             font-family: Theme.font;
@@ -857,7 +857,7 @@ component Briefing inherits ScrollView {
                             vertical-alignment: center;
                             overflow: elide;
                         }
-                        Text {
+                        AText {
                             text: a.extra;
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -892,7 +892,7 @@ export component Airports inherits Rectangle {
                         App.cmd("airport-search-open", t);
                     }
                 }
-                Text {
+                AText {
                     text: App.db-status;
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -901,7 +901,7 @@ export component Airports inherits Rectangle {
                 }
                 if App.airport-results.length == 0 && App.watchlist.length > 0: VerticalLayout {
                     spacing: 2px;
-                    Text {
+                    AText {
                         text: @tr("Obserwowane");
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
@@ -916,7 +916,7 @@ export component Airports inherits Rectangle {
                         HorizontalLayout {
                             padding-left: 6px;
                             spacing: 8px;
-                            Text {
+                            AText {
                                 text: w.icao;
                                 font-family: Theme.font;
                                 font-size: Theme.fs;
@@ -928,7 +928,7 @@ export component Airports inherits Rectangle {
                                 cat: w.cat;
                                 y: (parent.height - self.height) / 2;
                             }
-                            Text {
+                            AText {
                                 text: w.name;
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -954,14 +954,14 @@ export component Airports inherits Rectangle {
                             alignment: center;
                             HorizontalLayout {
                                 spacing: 8px;
-                                Text {
+                                AText {
                                     text: a.ident;
                                     font-family: Theme.font;
                                     font-size: Theme.fs;
                                     font-weight: 700;
                                     color: Theme.text;
                                 }
-                                Text {
+                                AText {
                                     text: a.name;
                                     font-family: Theme.font;
                                     font-size: Theme.fs;
@@ -970,7 +970,7 @@ export component Airports inherits Rectangle {
                                     horizontal-stretch: 1;
                                 }
                             }
-                            Text {
+                            AText {
                                 text: a.place + " · " + a.kind;
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;

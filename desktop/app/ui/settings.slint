@@ -5,7 +5,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Button, Switch, Segmented, Swatch } from "widgets.slint";
+import { Button, Switch, Segmented, Swatch, AText } from "widgets.slint";
 import { Panel, Heading, Pair } from "parts.slint";
 
 export component Section inherits Panel {
@@ -30,14 +30,14 @@ export component Option inherits HorizontalLayout {
     VerticalLayout {
         width: 220px * Theme.scale;
         alignment: center;
-        Text {
+        AText {
             text: root.label;
             font-family: Theme.font;
             font-size: Theme.fs;
             color: Theme.text;
             wrap: word-wrap;
         }
-        if root.hint != "": Text {
+        if root.hint != "": AText {
             text: root.hint;
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -276,7 +276,7 @@ component SettingsRight inherits VerticalLayout {
     Section {
         title: @tr("Program");
         icon: Icons.info;
-        Text {
+        AText {
             text: App.about;
             font-family: Theme.font;
             font-size: Theme.fs;
@@ -290,7 +290,7 @@ component SettingsRight inherits VerticalLayout {
                 App.cmd("update-auto", App.update-auto ? "0" : "1");
             }
         }
-        Text {
+        AText {
             text: App.update-text;
             font-family: Theme.font;
             font-size: Theme.fs;
@@ -323,7 +323,7 @@ component SettingsRight inherits VerticalLayout {
                 }
             }
         }
-        Text {
+        AText {
             text: @tr("Tylko do symulacji lotów. Nie używaj do rzeczywistej nawigacji.");
             font-family: Theme.font;
             font-size: Theme.fs-small;

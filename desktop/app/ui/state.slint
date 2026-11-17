@@ -826,6 +826,10 @@ export global App {
     callback cmd(string, string);
     // Zdarzenia mapy: id mapy (0 na żywo, 1 lot, 2 lotnisko, 3 statystyki), rodzaj, x, y, dx, dy.
     callback map-event(int, string, float, float, float, float);
+    // Podpowiedź z wyjaśnieniem skrótów i kodów ICAO w tekście (pusta – brak skrótów). Drugi argument
+    // (`abbr-rev`) rośnie po wczytaniu bazy lotnisk, żeby podpowiedzi z nazwami lotnisk się przeliczyły.
+    pure callback abbr(string, int) -> string;
+    in-out property <int> abbr-rev;
     pure callback calc(string, [string]) -> [string];
 
     // Pasek stanu i Pulpit
@@ -999,6 +1003,8 @@ export global App {
     in property <int> map-style;
     // pochylanie map włączone w ustawieniach
     in property <bool> map-tilt: true;
+    // obrót każdej mapy (°, indeks = id mapy) – do kompasu przy przyciskach mapy
+    in property <[float]> map-bearings;
     in property <bool> auto-sync: true;
     in property <string> data-path;
     in property <string> logbook-size;

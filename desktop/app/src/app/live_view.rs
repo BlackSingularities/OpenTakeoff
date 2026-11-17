@@ -337,7 +337,7 @@ pub fn refresh_live(force_map: bool) {
         let track = st.host.live_track();
         let mut ov = Overlay::default();
         if track.len() > 1 {
-            ov.tracks.push(Track { pts: track.iter().map(|p| (p.lat, p.lon, p.alt)).collect(), color: None, width: 3.0 });
+            ov.tracks.push(Track { pts: track.iter().map(|p| (p.lat, p.lon, p.alt)).collect(), color: None, width: 3.0, wall: false });
         }
         if let Some(s) = &snap {
             ov.aircraft = Some((s.position.lat, s.position.lon, s.attitude.hdg_true_deg));
@@ -358,7 +358,7 @@ pub fn refresh_live(force_map: bool) {
                 if v.zoom > 7.0 {
                     let radius = (v.w.max(v.h) * 156_543.0 * v.lat.to_radians().cos() / 2f64.powf(v.zoom) / 1852.0).min(200.0);
                     for (_, a) in db.within(v.lat, v.lon, radius, false).into_iter().filter(|(_, a)| a.kind <= 1 || v.zoom > 9.5).take(80) {
-                        ov.points.push(Point { lat: a.lat, lon: a.lon, label: a.ident.clone(), kind: if a.kind <= 1 { 0 } else { 3 } });
+                        ov.points.push(Point { lat: a.lat, lon: a.lon, label: a.ident.clone(), kind: if a.kind <= 1 { 0 } else { 3 }, alt: None });
                         if v.zoom > 11.0 {
                             for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed) {
                                 ov.runways.push((r.le_lat, r.le_lon, r.he_lat, r.he_lon));

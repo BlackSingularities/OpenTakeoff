@@ -137,10 +137,10 @@ fn view_bounds(v: &View) -> (f64, f64, f64, f64) {
     b
 }
 
-/// Przekształcenie, które „kładzie” rysunek wokół punktu na pochylonej mapie (lokalnie wierne
-/// przybliżenie perspektywy); None – mapa płaska. `s` – piksele fizyczne na logiczny.
+/// Przekształcenie, które „kładzie” rysunek wokół punktu na pochylonej albo obróconej mapie (lokalnie
+/// wierne przybliżenie perspektywy); None – mapa płaska, północą do góry. `s` – piksele fizyczne na logiczny.
 fn ground_tf(v: &View, lat: f64, lon: f64, s: f32) -> Option<tiny_skia::Transform> {
-    if !v.tilted() {
+    if !v.projected() {
         return None;
     }
     let (cx, cy) = map::project(v.lat, v.lon, v.zoom);
@@ -328,6 +328,18 @@ pub fn event(kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
                 }
             }
             "tilt" => rerender = n.view.tilt_by(dy as f64),
+            "orbit" => {
+                let turned = n.view.rotate_by(dx as f64);
+                let tilted = n.view.tilt_by(dy as f64);
+                rerender = turned || tilted;
+                if turned {
+                    crate::app::publish_bearing(4, n.view.bearing);
+                }
+            }
+            "north" => {
+                n.view.reset_bearing();
+                crate::app::publish_bearing(4, 0.0);
+            }
             "tilt-toggle" => n.view.toggle_tilt(),
             "zoom" => n.view.zoom_at(dy as f64, x as f64, y as f64),
             "follow" => {
@@ -752,7 +764,7 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
     let var = mag_var(snap.as_ref());
     let mut ov = Overlay::default();
     if track.len() > 1 {
-        ov.tracks.push(Track { pts: track.iter().map(|p| (p.lat, p.lon, p.alt)).collect(), color: None, width: 3.0 });
+        ov.tracks.push(Track { pts: track.iter().map(|p| (p.lat, p.lon, p.alt)).collect(), color: None, width: 3.0, wall: false });
     }
     if let Some(st) = snap {
         ov.aircraft = Some((st.position.lat, st.position.lon, st.attitude.hdg_true_deg));
@@ -776,7 +788,7 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
     if let Some(db) = airports::db() {
         if lay & NAV_APT != 0 && v.zoom > 6.0 {
             for (_, a) in db.within(v.lat, v.lon, view_radius, false).into_iter().filter(|(_, a)| a.kind == 0 || (a.kind == 1 && v.zoom > 7.0) || v.zoom > 9.5).take(150) {
-                ov.points.push(Point { lat: a.lat, lon: a.lon, label: if v.zoom > 7.5 || a.kind == 0 { a.ident.clone() } else { String::new() }, kind: if a.kind <= 1 { 0 } else { 3 } });
+                ov.points.push(Point { lat: a.lat, lon: a.lon, label: if v.zoom > 7.5 || a.kind == 0 { a.ident.clone() } else { String::new() }, kind: if a.kind <= 1 { 0 } else { 3 }, alt: None });
                 if lay & NAV_RWY != 0 && v.zoom > 10.5 {
                     for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed) {
                         ov.runways.push((r.le_lat, r.le_lon, r.he_lat, r.he_lon));
@@ -794,17 +806,17 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
     if nav_plan {
         let pts = crate::flightplan::active_route();
         if pts.len() > 1 {
-            ov.tracks.push(Track { pts: pts.iter().map(|p| (p.0, p.1, p.2)).collect(), color: Some([79, 216, 235, 230]), width: 2.5 });
+            ov.tracks.push(Track { pts: pts.iter().map(|p| (p.0, p.1, p.2)).collect(), color: Some([79, 216, 235, 230]), width: 2.5, wall: true });
             if v.zoom > 5.0 {
                 for p in &pts {
-                    ov.points.push(Point { lat: p.0, lon: p.1, label: p.3.clone(), kind: 1 });
+                    ov.points.push(Point { lat: p.0, lon: p.1, label: p.3.clone(), kind: 1, alt: Some(p.2) });
                 }
             }
         }
     }
     if nav_shots {
         for (lat, lon, label) in crate::shots::points() {
-            ov.points.push(Point { lat, lon, label, kind: 2 });
+            ov.points.push(Point { lat, lon, label, kind: 2, alt: None });
         }
     }
     if lay & NAV_RADAR != 0 {
@@ -878,15 +890,31 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
             let (xf, yf) = to(la1, lo);
             let (xn, yn) = to(la_near.min(la0), lo);
             c.line(xf, yf, xn, yn, gcol, 1.0);
-            let (xl, _) = to(la_near, lo);
-            c.text_halo(&fmt_deg(lo, 'E', 'W'), xl + 3.0 * s, hpx - 30.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            if v.rotated() {
+                // na obróconej mapie południk nie jest pionowy – podpis przy środku ekranu
+                let (xl, yl) = to(v.lat, lo);
+                c.text_halo(&fmt_deg(lo, 'E', 'W'), xl + 3.0 * s, yl + 12.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            } else {
+                let (xl, _) = to(la_near, lo);
+                c.text_halo(&fmt_deg(lo, 'E', 'W'), xl + 3.0 * s, hpx - 30.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            }
             lo += step;
         }
         let mut la = (la0 / step).floor() * step;
         while la <= la1 {
-            let (_, y) = to(la, v.lon);
-            c.line(0.0, y, wpx, y, gcol, 1.0);
-            c.text_halo(&fmt_deg(la, 'N', 'S'), 70.0 * s, y - 6.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            if v.rotated() {
+                // równoleżnik to prosta także na obróconej mapie: od zachodniego do wschodniego skraju widoku
+                let pad = (lo1 - lo0).abs() * 0.5;
+                let (xa, ya) = to(la, lo0 - pad);
+                let (xb, yb) = to(la, lo1 + pad);
+                c.line(xa, ya, xb, yb, gcol, 1.0);
+                let (xl, yl) = to(la, v.lon);
+                c.text_halo(&fmt_deg(la, 'N', 'S'), xl + 3.0 * s, yl - 6.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            } else {
+                let (_, y) = to(la, v.lon);
+                c.line(0.0, y, wpx, y, gcol, 1.0);
+                c.text_halo(&fmt_deg(la, 'N', 'S'), 70.0 * s, y - 6.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            }
             la += step;
         }
     }
@@ -1009,7 +1037,7 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
             let col = crate::wxmap::category_color(&opentakeoff_core::aero::weather::flight_category(m));
             if let (Some(dir), Some(spd)) = (m.wind_dir, m.wind_kt) {
                 if spd >= 3 && !m.wind_variable {
-                    wind_barb(&mut c, x, y, dir as f32, spd, s, ink, halo);
+                    wind_barb(&mut c, x, y, v.screen_deg(dir as f64) as f32, spd, s, ink, halo);
                 }
             }
             c.circle(x, y, 7.0 * s, halo, 0.0);
@@ -1241,7 +1269,7 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
                 for k in 1..=4 {
                     let f = k as f32 / 5.0;
                     let (gx, gy) = (rx + (ex - rx) * f, ry + (ey - ry) * f);
-                    let ang = if inbound { brg + 180.0 } else { brg } as f32;
+                    let ang = v.screen_deg(if inbound { brg + 180.0 } else { brg }) as f32;
                     c.save();
                     c.rotate(ang, gx, gy);
                     c.poly(0xFFFF33E6, 0, 0.0, &[gx, gy - 7.0 * s, gx - 5.0 * s, gy + 4.0 * s, gx + 5.0 * s, gy + 4.0 * s]);
@@ -1278,7 +1306,7 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
         c.circle(wx, wy, 26.0 * s, 0x50FFFFFF, 1.0);
         if st.environment.wind_spd_kt >= 1.0 {
             c.save();
-            c.rotate((st.environment.wind_dir_deg + 180.0) as f32, wx, wy);
+            c.rotate(v.screen_deg(st.environment.wind_dir_deg + 180.0) as f32, wx, wy);
             c.line(wx, wy + 16.0 * s, wx, wy - 12.0 * s, 0xFFFFFFFF, 2.5 * s);
             c.poly(0xFFFFFFFF, 0, 0.0, &[wx, wy - 18.0 * s, wx - 6.0 * s, wy - 8.0 * s, wx + 6.0 * s, wy - 8.0 * s]);
             c.restore();

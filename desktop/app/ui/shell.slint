@@ -5,7 +5,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { TipArea, IconButton } from "widgets.slint";
+import { TipArea, IconButton, AText } from "widgets.slint";
 import { CatBadge, Score, Dot, Bar, ListRow, Colors } from "parts.slint";
 
 /// Karta w pasku tytułu: pigułka z ikoną i podpisem, wybrana – tło w kolorze akcentu.
@@ -204,7 +204,7 @@ component SideSection inherits VerticalLayout {
             y: (parent.height - self.height) / 2;
             colorize: Avi.cyan;
         }
-        Text {
+        AText {
             text: root.title.to-uppercase();
             font-family: Theme.cond;
             font-size: 11.5px * Theme.scale;
@@ -245,7 +245,7 @@ component SidePair inherits HorizontalLayout {
     in property <color> tone: Theme.text;
     spacing: 8px;
     height: 20px * Theme.scale;
-    Text {
+    AText {
         text: root.k.to-uppercase();
         font-family: Theme.cond;
         font-size: 10.5px * Theme.scale;
@@ -256,7 +256,7 @@ component SidePair inherits HorizontalLayout {
         width: 70px * Theme.scale;
         overflow: elide;
     }
-    Text {
+    AText {
         text: root.v == "" ? "–" : root.v;
         font-family: Theme.mono;
         font-size: Theme.fs-small;
@@ -278,7 +278,7 @@ component Chip inherits Rectangle {
     background: root.tone.with-alpha(0.12);
     border-width: 1px;
     border-color: root.tone.with-alpha(0.45);
-    ct := Text {
+    ct := AText {
         text: root.text.to-uppercase();
         font-family: Theme.cond;
         font-size: 10.5px * Theme.scale;
@@ -300,7 +300,7 @@ component ApCell inherits Rectangle {
     border-color: Theme.line;
     VerticalLayout {
         alignment: center;
-        Text {
+        AText {
             text: root.v;
             font-family: Theme.mono;
             font-size: 12px * Theme.scale;
@@ -309,7 +309,7 @@ component ApCell inherits Rectangle {
             horizontal-alignment: center;
             overflow: elide;
         }
-        Text {
+        AText {
             text: root.k;
             font-family: Theme.mono;
             font-size: 9px * Theme.scale;
@@ -328,7 +328,7 @@ component DataCell inherits VerticalLayout {
     horizontal-stretch: 1;
     min-width: 0;
     spacing: 0;
-    Text {
+    AText {
         text: root.k;
         font-family: Theme.cond;
         font-size: 10px * Theme.scale;
@@ -339,7 +339,7 @@ component DataCell inherits VerticalLayout {
     HorizontalLayout {
         spacing: 3px;
         alignment: start;
-        Text {
+        AText {
             text: root.v == "" ? "–" : root.v;
             font-family: Theme.mono;
             font-size: 17px * Theme.scale;
@@ -347,7 +347,7 @@ component DataCell inherits VerticalLayout {
             color: root.tone;
             overflow: elide;
         }
-        Text {
+        AText {
             text: root.unit;
             font-family: Theme.mono;
             font-size: 9.5px * Theme.scale;
@@ -364,7 +364,7 @@ component MiniCell inherits VerticalLayout {
     horizontal-stretch: 1;
     min-width: 0;
     spacing: 0;
-    Text {
+    AText {
         text: root.k;
         font-family: Theme.cond;
         font-size: 9px * Theme.scale;
@@ -373,7 +373,7 @@ component MiniCell inherits VerticalLayout {
         color: #6f7c8a;
         horizontal-alignment: center;
     }
-    Text {
+    AText {
         text: root.v == "" ? "–" : root.v;
         font-family: Theme.mono;
         font-size: 11px * Theme.scale;
@@ -401,7 +401,7 @@ component Lamp inherits Rectangle {
     VerticalLayout {
         alignment: center;
         spacing: 0;
-        Text {
+        AText {
             text: root.k;
             font-family: Theme.cond;
             font-size: 9px * Theme.scale;
@@ -410,7 +410,7 @@ component Lamp inherits Rectangle {
             color: root.on ? root.tone : #6f7c8a;
             horizontal-alignment: center;
         }
-        Text {
+        AText {
             text: root.v == "" ? "–" : root.v;
             font-family: Theme.mono;
             font-size: 10.5px * Theme.scale;
@@ -438,7 +438,7 @@ export component Sidebar inherits Rectangle {
             padding-left: 12px;
             padding-right: 6px;
             spacing: 6px;
-            Text {
+            AText {
                 text: @tr("Panel lotu").to-uppercase();
                 font-family: Theme.cond;
                 font-size: 10.5px * Theme.scale;
@@ -493,7 +493,7 @@ export component Sidebar inherits Rectangle {
                     cv := VerticalLayout {
                         padding: 10px;
                         spacing: 5px;
-                        Text {
+                        AText {
                             text: App.live.title;
                             font-family: Theme.font;
                             font-size: Theme.fs;
@@ -508,7 +508,7 @@ export component Sidebar inherits Rectangle {
                                 text: App.live.paused ? @tr("Pauza") : App.live.phase;
                                 tone: App.live.paused ? Colors.warn : Theme.accent;
                             }
-                            Text {
+                            AText {
                                 horizontal-stretch: 1;
                                 text: App.live.category + (App.simulation ? " · " + @tr("symulacja") : "");
                                 font-family: Theme.cond;
@@ -520,7 +520,7 @@ export component Sidebar inherits Rectangle {
                                 overflow: elide;
                             }
                         }
-                        if App.live.nearest != "": Text {
+                        if App.live.nearest != "": AText {
                             text: App.live.nearest;
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -609,7 +609,7 @@ export component Sidebar inherits Rectangle {
                 VerticalLayout {
                     spacing: 4px;
                     HorizontalLayout {
-                        Text {
+                        AText {
                             text: @tr("Paliwo").to-uppercase();
                             font-family: Theme.cond;
                             font-size: 10.5px * Theme.scale;
@@ -618,7 +618,7 @@ export component Sidebar inherits Rectangle {
                             color: Avi.cyan;
                             horizontal-stretch: 1;
                         }
-                        Text {
+                        AText {
                             text: App.live.fuel;
                             font-family: Theme.mono;
                             font-size: Theme.fs-small;
@@ -668,7 +668,7 @@ export component Sidebar inherits Rectangle {
                 }
                 HorizontalLayout {
                     spacing: 8px;
-                    Text {
+                    AText {
                         text: App.plan.origin;
                         font-family: Theme.mono;
                         font-size: 15px * Theme.scale;
@@ -682,7 +682,7 @@ export component Sidebar inherits Rectangle {
                             value: App.plan.progress;
                         }
                     }
-                    Text {
+                    AText {
                         text: App.plan.dest;
                         font-family: Theme.mono;
                         font-size: 15px * Theme.scale;
@@ -723,7 +723,7 @@ export component Sidebar inherits Rectangle {
                         text: App.live.ap-master ? "AP ON" : "AP OFF";
                         tone: App.live.ap-master ? Theme.ok : Theme.text-faint;
                     }
-                    Text {
+                    AText {
                         text: App.live.ap-line;
                         font-family: Theme.mono;
                         font-size: 10.5px * Theme.scale;
@@ -752,7 +752,7 @@ export component Sidebar inherits Rectangle {
                     spacing: 5px;
                     HorizontalLayout {
                         spacing: 6px;
-                        Text {
+                        AText {
                             text: App.live.next-wp;
                             font-family: Theme.font;
                             font-size: Theme.fs;
@@ -761,7 +761,7 @@ export component Sidebar inherits Rectangle {
                             overflow: elide;
                             horizontal-stretch: 1;
                         }
-                        Text {
+                        AText {
                             text: App.live.next-dist;
                             font-family: Theme.mono;
                             font-size: Theme.fs-small;
@@ -773,14 +773,14 @@ export component Sidebar inherits Rectangle {
                         value: App.live.wp-progress;
                     }
                     HorizontalLayout {
-                        Text {
+                        AText {
                             text: @tr("Do punktu ") + (App.live.next-ete == "" ? "–" : App.live.next-ete);
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
                             color: Theme.text-faint;
                             horizontal-stretch: 1;
                         }
-                        Text {
+                        AText {
                             text: @tr("Do celu ") + (App.live.dest-ete == "" ? "–" : App.live.dest-ete);
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -820,7 +820,7 @@ export component Sidebar inherits Rectangle {
                 go => {
                     App.cmd("watch-refresh", "");
                 }
-                if App.watchlist.length == 0: Text {
+                if App.watchlist.length == 0: AText {
                     text: @tr("Oznacz lotnisko gwiazdką na karcie Lotniska, a jego METAR pojawi się tutaj.");
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -843,7 +843,7 @@ export component Sidebar inherits Rectangle {
                                 horizontal-stretch: 1;
                                 HorizontalLayout {
                                     spacing: 6px;
-                                    Text {
+                                    AText {
                                         text: w.icao;
                                         font-family: Theme.mono;
                                         font-size: Theme.fs;
@@ -857,7 +857,7 @@ export component Sidebar inherits Rectangle {
                                         horizontal-stretch: 1;
                                     }
                                 }
-                                Text {
+                                AText {
                                     text: w.wind + "  " + w.temp;
                                     font-family: Theme.mono;
                                     font-size: 10px * Theme.scale;
@@ -865,7 +865,7 @@ export component Sidebar inherits Rectangle {
                                     overflow: elide;
                                 }
                             }
-                            Text {
+                            AText {
                                 text: w.qnh;
                                 font-family: Theme.mono;
                                 font-size: 11px * Theme.scale;
@@ -887,7 +887,7 @@ export component Sidebar inherits Rectangle {
                     App.tab = 2;
                     App.cmd("tab", 2);
                 }
-                if App.flights.length == 0: Text {
+                if App.flights.length == 0: AText {
                     text: @tr("Loty zapisują się same po starcie w MSFS albo w telefonie.");
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -914,7 +914,7 @@ export component Sidebar inherits Rectangle {
                             VerticalLayout {
                                 alignment: center;
                                 horizontal-stretch: 1;
-                                Text {
+                                AText {
                                     text: f.from + " → " + f.to;
                                     font-family: Theme.mono;
                                     font-size: Theme.fs-small;
@@ -922,7 +922,7 @@ export component Sidebar inherits Rectangle {
                                     color: Theme.text;
                                     overflow: elide;
                                 }
-                                Text {
+                                AText {
                                     text: f.date + "  " + f.aircraft;
                                     font-family: Theme.font;
                                     font-size: 10.5px * Theme.scale;
@@ -930,7 +930,7 @@ export component Sidebar inherits Rectangle {
                                     overflow: elide;
                                 }
                             }
-                            Text {
+                            AText {
                                 text: f.duration;
                                 font-family: Theme.mono;
                                 font-size: 10.5px * Theme.scale;
@@ -958,7 +958,7 @@ export component Sidebar inherits Rectangle {
                         state: App.phones > 0 ? 2 : 0;
                         y: (parent.height - self.height) / 2;
                     }
-                    Text {
+                    AText {
                         text: App.phones-text;
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
@@ -981,13 +981,13 @@ export component Sidebar inherits Rectangle {
                         VerticalLayout {
                             alignment: center;
                             horizontal-stretch: 1;
-                            Text {
+                            AText {
                                 text: @tr("Kod parowania");
                                 font-family: Theme.font;
                                 font-size: 10px * Theme.scale;
                                 color: Theme.text-faint;
                             }
-                            Text {
+                            AText {
                                 text: App.pairing-code;
                                 font-family: Theme.mono;
                                 font-size: 16px * Theme.scale;

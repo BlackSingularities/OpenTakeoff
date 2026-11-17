@@ -8,7 +8,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, LampV, EngineV } from "state.slint";
-import { Button, TipArea } from "widgets.slint";
+import { Button, TipArea, AText } from "widgets.slint";
 import { Panel, Bar, MapView, Empty, Colors, Dot } from "parts.slint";
 import { Screen } from "instruments.slint";
 
@@ -51,7 +51,7 @@ component Section inherits Panel {
                 y: (parent.height - self.height) / 2;
                 colorize: Cab.label;
             }
-            Text {
+            AText {
                 text: root.title.to-uppercase();
                 font-family: Theme.cond;
                 font-size: 11.5px * Theme.scale;
@@ -68,7 +68,7 @@ component Section inherits Panel {
                     background: Theme.line;
                 }
             }
-            if root.note != "": Text {
+            if root.note != "": AText {
                 text: root.note;
                 font-family: Theme.mono;
                 font-size: Theme.fs-small;
@@ -96,7 +96,7 @@ component Row inherits HorizontalLayout {
     in property <color> tone: Theme.text;
     spacing: 8px;
     height: 21px * Theme.scale;
-    Text {
+    AText {
         text: root.k.to-uppercase();
         font-family: Theme.cond;
         font-size: 10.5px * Theme.scale;
@@ -107,7 +107,7 @@ component Row inherits HorizontalLayout {
         width: 92px * Theme.scale;
         overflow: elide;
     }
-    Text {
+    AText {
         text: root.v == "" ? "–" : root.v;
         font-family: Theme.mono;
         font-size: Theme.fs-small;
@@ -160,7 +160,7 @@ component PhaseRail inherits Rectangle {
             drop-shadow-blur: now ? 8px : 0;
             drop-shadow-color: root.paused ? Colors.warn : Theme.accent;
         }
-        Text {
+        AText {
             y: 20px * Theme.scale;
             width: parent.width;
             text: s;
@@ -182,7 +182,7 @@ component Clock inherits VerticalLayout {
     alignment: center;
     spacing: 1px;
     min-width: 62px * Theme.scale;
-    Text {
+    AText {
         text: root.v == "" ? "–" : root.v;
         font-family: Theme.mono;
         font-size: 15px * Theme.scale;
@@ -190,7 +190,7 @@ component Clock inherits VerticalLayout {
         color: root.tone;
         horizontal-alignment: right;
     }
-    Text {
+    AText {
         text: root.k.to-uppercase();
         font-family: Theme.cond;
         font-size: 9.5px * Theme.scale;
@@ -212,7 +212,7 @@ component Chip inherits Rectangle {
     background: root.solid ? root.tone : root.tone.with-alpha(0.12);
     border-width: 1px;
     border-color: root.tone.with-alpha(0.5);
-    ct := Text {
+    ct := AText {
         text: root.text.to-uppercase();
         font-family: Theme.cond;
         font-size: 10.5px * Theme.scale;
@@ -233,7 +233,7 @@ component Fma inherits Screenlet {
     VerticalLayout {
         alignment: center;
         spacing: 1px;
-        Text {
+        AText {
             text: root.v == "" ? "–" : root.v;
             font-family: Theme.mono;
             font-size: 12px * Theme.scale;
@@ -242,7 +242,7 @@ component Fma inherits Screenlet {
             horizontal-alignment: center;
             overflow: elide;
         }
-        Text {
+        AText {
             text: root.k;
             font-family: Theme.cond;
             font-size: 8.5px * Theme.scale;
@@ -268,7 +268,7 @@ component Read inherits Screenlet {
         padding-right: 6px;
         alignment: center;
         spacing: 0;
-        Text {
+        AText {
             text: root.k;
             font-family: Theme.cond;
             font-size: 9.5px * Theme.scale;
@@ -279,7 +279,7 @@ component Read inherits Screenlet {
         HorizontalLayout {
             spacing: 3px;
             alignment: start;
-            Text {
+            AText {
                 text: root.v == "" ? "–" : root.v;
                 font-family: Theme.mono;
                 font-size: 17px * Theme.scale;
@@ -287,7 +287,7 @@ component Read inherits Screenlet {
                 color: root.tone;
                 overflow: elide;
             }
-            Text {
+            AText {
                 text: root.unit;
                 font-family: Theme.mono;
                 font-size: 9.5px * Theme.scale;
@@ -310,7 +310,7 @@ component Lamp inherits Rectangle {
     VerticalLayout {
         alignment: center;
         spacing: 0;
-        Text {
+        AText {
             text: root.lamp.k;
             font-family: Theme.cond;
             font-size: 9.5px * Theme.scale;
@@ -319,7 +319,7 @@ component Lamp inherits Rectangle {
             color: root.lamp.on ? root.tone : Cab.dim;
             horizontal-alignment: center;
         }
-        if root.lamp.v != "": Text {
+        if root.lamp.v != "": AText {
             text: root.lamp.v;
             font-family: Theme.mono;
             font-size: 10.5px * Theme.scale;
@@ -341,7 +341,7 @@ component Radio inherits Screenlet {
         padding-left: 9px;
         padding-right: 9px;
         spacing: 8px;
-        Text {
+        AText {
             text: root.k;
             font-family: Theme.cond;
             font-size: 10px * Theme.scale;
@@ -351,7 +351,7 @@ component Radio inherits Screenlet {
             vertical-alignment: center;
             width: 38px * Theme.scale;
         }
-        Text {
+        AText {
             text: root.active;
             font-family: Theme.mono;
             font-size: 14px * Theme.scale;
@@ -359,13 +359,13 @@ component Radio inherits Screenlet {
             color: Cab.green;
             vertical-alignment: center;
         }
-        if root.standby != "": Text {
+        if root.standby != "": AText {
             text: "⇄";
             font-size: 11px * Theme.scale;
             color: Cab.dim;
             vertical-alignment: center;
         }
-        Text {
+        AText {
             text: root.standby;
             font-family: Theme.mono;
             font-size: 12px * Theme.scale;
@@ -374,7 +374,7 @@ component Radio inherits Screenlet {
             horizontal-stretch: 1;
             overflow: elide;
         }
-        if root.note != "": Text {
+        if root.note != "": AText {
             text: root.note;
             font-family: Theme.mono;
             font-size: 10px * Theme.scale;
@@ -391,7 +391,7 @@ component Gauge inherits Screenlet {
         padding: 6px;
         padding-bottom: 8px;
         spacing: 4px;
-        Text {
+        AText {
             text: root.e.label.to-uppercase();
             font-family: Theme.cond;
             font-size: 9.5px * Theme.scale;
@@ -468,7 +468,7 @@ component Gauge inherits Screenlet {
                 border-width: 1px;
                 border-color: #ffffff40;
                 background: Cab.screen;
-                vt := Text {
+                vt := AText {
                     text: root.e.value;
                     font-family: Theme.mono;
                     font-size: 13px * Theme.scale;
@@ -476,7 +476,7 @@ component Gauge inherits Screenlet {
                     color: root.e.warn ? Cab.red : Cab.green;
                 }
             }
-            Text {
+            AText {
                 x: (parent.width - self.width) / 2;
                 y: parent.width * 0.36;
                 text: root.e.kind;
@@ -493,14 +493,14 @@ component Gauge inherits Screenlet {
             VerticalLayout {
                 horizontal-stretch: 1;
                 spacing: 1px;
-                Text {
+                AText {
                     text: "EGT";
                     font-family: Theme.cond;
                     font-size: 8.5px * Theme.scale;
                     font-weight: 700;
                     color: Cab.cyan;
                 }
-                Text {
+                AText {
                     text: root.e.egt;
                     font-family: Theme.mono;
                     font-size: 11px * Theme.scale;
@@ -510,7 +510,7 @@ component Gauge inherits Screenlet {
             VerticalLayout {
                 horizontal-stretch: 1;
                 spacing: 1px;
-                Text {
+                AText {
                     text: "FF";
                     font-family: Theme.cond;
                     font-size: 8.5px * Theme.scale;
@@ -518,7 +518,7 @@ component Gauge inherits Screenlet {
                     color: Cab.cyan;
                     horizontal-alignment: right;
                 }
-                Text {
+                AText {
                     text: root.e.ff;
                     font-family: Theme.mono;
                     font-size: 11px * Theme.scale;
@@ -539,7 +539,7 @@ component Gauge inherits Screenlet {
                 background: root.e.egt-level > 0.95 ? Cab.amber : Cab.green.with-alpha(0.7);
             }
         }
-        if root.e.n2 != "": Text {
+        if root.e.n2 != "": AText {
             text: (root.e.kind == "N1" ? "N2 " : "PROP ") + root.e.n2;
             font-family: Theme.mono;
             font-size: 9.5px * Theme.scale;
@@ -573,14 +573,14 @@ component Tank inherits VerticalLayout {
             animate height { duration: 600ms; }
         }
     }
-    Text {
+    AText {
         text: root.v;
         font-family: Theme.mono;
         font-size: Theme.fs-small;
         color: Theme.text;
         horizontal-alignment: center;
     }
-    Text {
+    AText {
         text: root.k;
         font-family: Theme.cond;
         font-size: 9.5px * Theme.scale;
@@ -661,7 +661,7 @@ component RouteRail inherits HorizontalLayout {
     in property <float> progress;
     spacing: 10px;
     height: 26px * Theme.scale;
-    Text {
+    AText {
         text: root.from == "" ? "–" : root.from;
         font-family: Theme.mono;
         font-size: 14px * Theme.scale;
@@ -721,7 +721,7 @@ component RouteRail inherits HorizontalLayout {
             }
         }
     }
-    Text {
+    AText {
         text: root.to == "" ? "–" : root.to;
         font-family: Theme.mono;
         font-size: 14px * Theme.scale;
@@ -739,7 +739,7 @@ component Stat inherits VerticalLayout {
     horizontal-stretch: 1;
     min-width: 0;
     spacing: 1px;
-    Text {
+    AText {
         text: root.v == "" ? "–" : root.v;
         font-family: Theme.mono;
         font-size: 14px * Theme.scale;
@@ -747,7 +747,7 @@ component Stat inherits VerticalLayout {
         color: root.tone;
         overflow: elide;
     }
-    Text {
+    AText {
         text: root.k.to-uppercase();
         font-family: Theme.cond;
         font-size: 9.5px * Theme.scale;
@@ -777,7 +777,7 @@ component FlightBar inherits Panel {
             spacing: 3px;
             horizontal-stretch: 1;
             min-width: 160px;
-            Text {
+            AText {
                 text: App.live.title;
                 font-family: Theme.font;
                 font-size: Theme.fs-big;
@@ -792,14 +792,14 @@ component FlightBar inherits Panel {
                     text: App.plan.callsign;
                     tone: Theme.accent;
                 }
-                if App.plan.loaded: Text {
+                if App.plan.loaded: AText {
                     text: App.plan.origin + " → " + App.plan.dest;
                     font-family: Theme.mono;
                     font-size: Theme.fs-small;
                     color: Theme.text-dim;
                     vertical-alignment: center;
                 }
-                Text {
+                AText {
                     text: (App.live.category != "" ? App.live.category + " · " : "") + App.live.source.to-uppercase() + (App.simulation ? " · " + @tr("symulacja") : "");
                     font-family: Theme.cond;
                     font-size: 10.5px * Theme.scale;
@@ -991,7 +991,7 @@ component Center inherits VerticalLayout {
                 spacing: 12px;
                 for c in [{ k: "HDG", v: App.live.hdg + "°" }, { k: "TRK", v: App.live.trk + "°" }, { k: "GS", v: App.live.gs + " kt" }, { k: "ALT", v: App.live.alt + " " + App.live.alt-unit }]: VerticalLayout {
                     spacing: 0;
-                    Text {
+                    AText {
                         text: c.k;
                         font-family: Theme.cond;
                         font-size: 9px * Theme.scale;
@@ -999,7 +999,7 @@ component Center inherits VerticalLayout {
                         letter-spacing: 0.7px;
                         color: Cab.cyan;
                     }
-                    Text {
+                    AText {
                         text: c.v;
                         font-family: Theme.mono;
                         font-size: 12px * Theme.scale;
@@ -1044,7 +1044,7 @@ component Center inherits VerticalLayout {
                         v: App.live.dest-ete;
                     }
                 }
-                if !App.live.has-route && !App.plan.loaded: Text {
+                if !App.live.has-route && !App.plan.loaded: AText {
                     text: @tr("Brak planu lotu – wczytaj go w symulatorze albo pobierz z SimBrief na karcie Plan.");
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -1057,7 +1057,7 @@ component Center inherits VerticalLayout {
                 horizontal-stretch: 2;
                 spacing: 3px;
                 HorizontalLayout {
-                    Text {
+                    AText {
                         text: @tr("Profil wysokości").to-uppercase();
                         font-family: Theme.cond;
                         font-size: 9.5px * Theme.scale;
@@ -1066,7 +1066,7 @@ component Center inherits VerticalLayout {
                         color: Theme.text-faint;
                         horizontal-stretch: 1;
                     }
-                    Text {
+                    AText {
                         text: App.live.alt-top != "" ? "▲ " + App.live.alt-top : "";
                         font-family: Theme.mono;
                         font-size: 10px * Theme.scale;
@@ -1075,7 +1075,7 @@ component Center inherits VerticalLayout {
                 }
                 Screenlet {
                     height: 62px * Theme.scale;
-                    if App.live.alt-line == "": Text {
+                    if App.live.alt-line == "": AText {
                         text: @tr("Profil pojawi się w locie");
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
@@ -1140,7 +1140,7 @@ component Systems inherits VerticalLayout {
                 background: l.on ? Cab.green.with-alpha(0.14) : Cab.screen;
                 border-width: 1px;
                 border-color: l.on ? Cab.green.with-alpha(0.55) : Cab.edge;
-                Text {
+                AText {
                     text: l.k;
                     font-family: Theme.cond;
                     font-size: 9px * Theme.scale;
@@ -1261,20 +1261,20 @@ component Systems inherits VerticalLayout {
             VerticalLayout {
                 alignment: center;
                 spacing: 2px;
-                Text {
+                AText {
                     text: App.live.wind;
                     font-family: Theme.mono;
                     font-size: 14px * Theme.scale;
                     font-weight: 700;
                     color: Theme.text;
                 }
-                Text {
+                AText {
                     text: App.live.wind-head;
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
                     color: Theme.text-dim;
                 }
-                Text {
+                AText {
                     text: App.live.wind-cross;
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -1305,7 +1305,7 @@ component Systems inherits VerticalLayout {
     if App.live.touchdown != "": Section {
         title: @tr("Przyziemienie");
         icon: Icons.plane-landing;
-        Text {
+        AText {
             text: App.live.touchdown;
             font-family: Theme.font;
             font-size: Theme.fs;
@@ -1318,7 +1318,7 @@ component Systems inherits VerticalLayout {
         icon: Icons.circle-dot;
         note: App.recording ? "● REC" : "";
         note-tone: Theme.rec;
-        Text {
+        AText {
             text: App.recording ? App.recording-text : @tr("Zapis zacznie się sam po starcie (w powietrzu, prędkość nad ziemią > 40 kt).");
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -1348,7 +1348,7 @@ component Systems inherits VerticalLayout {
     if App.live.controlled-by != "": Section {
         title: @tr("Steruje");
         icon: Icons.smartphone;
-        Text {
+        AText {
             text: App.live.controlled-by;
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -1394,7 +1394,7 @@ export component Live inherits Rectangle {
             background: Cab.red.with-alpha(0.16);
             border-width: 1px;
             border-color: Cab.red;
-            Text {
+            AText {
                 text: App.live.stall ? "STALL" : "OVERSPEED";
                 font-family: Theme.mono;
                 font-size: 14px * Theme.scale;

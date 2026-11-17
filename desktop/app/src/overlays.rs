@@ -731,12 +731,12 @@ fn render_overlay(w: &OverlayWindow, cfg: &OverlayCfg) {
                 ov.aircraft = Some((s.position.lat, s.position.lon, s.attitude.hdg_true_deg));
                 let track = state().borrow().host.live_track();
                 if track.len() > 1 {
-                    ov.tracks.push(crate::map::Track { pts: track.iter().map(|p| (p.lat, p.lon, p.alt)).collect(), color: None, width: 3.0 });
+                    ov.tracks.push(crate::map::Track { pts: track.iter().map(|p| (p.lat, p.lon, p.alt)).collect(), color: None, width: 3.0, wall: false });
                 }
             }
             let plan = crate::simbrief::route();
             if plan.len() > 1 {
-                ov.tracks.push(crate::map::Track { pts: plan.iter().map(|p| (p.0, p.1, p.2)).collect(), color: Some([79, 216, 235, 220]), width: 2.0 });
+                ov.tracks.push(crate::map::Track { pts: plan.iter().map(|p| (p.0, p.1, p.2)).collect(), color: Some([79, 216, 235, 220]), width: 2.0, wall: false });
             }
             let r = crate::map::render(&v, crate::map::Style::Dark, &ov, sf, true);
             w.set_image_a(r.image);

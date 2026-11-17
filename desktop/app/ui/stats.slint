@@ -8,7 +8,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, BarV, RowV, BadgeV, ChallengeV } from "state.slint";
-import { Segmented, TipArea, Button } from "widgets.slint";
+import { Segmented, TipArea, Button, AText } from "widgets.slint";
 import { Panel, Bar, MapView, ListRow, Colors } from "parts.slint";
 
 /// Kolory „lotnicze”: złoto pagonów, żółć tablicy odlotów, tło wyświetlaczy.
@@ -46,7 +46,7 @@ component Section inherits Panel {
                 y: (parent.height - self.height) / 2;
                 colorize: Av.cyan;
             }
-            Text {
+            AText {
                 text: root.title.to-uppercase();
                 font-family: Theme.cond;
                 font-size: 12px * Theme.scale;
@@ -63,7 +63,7 @@ component Section inherits Panel {
                     background: Theme.line;
                 }
             }
-            if root.note != "": Text {
+            if root.note != "": AText {
                 text: root.note;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -76,7 +76,7 @@ component Section inherits Panel {
 }
 
 /// Podpis wersalikami (rubryka dziennika, oś wykresu).
-component Caps inherits Text {
+component Caps inherits AText {
     font-family: Theme.cond;
     font-size: 9.5px * Theme.scale;
     font-weight: 700;
@@ -108,7 +108,7 @@ component Bars inherits Rectangle {
             horizontal-stretch: 1;
             min-width: 0;
             spacing: 2px;
-            Text {
+            AText {
                 height: 12px * Theme.scale;
                 text: root.values ? b.text : "";
                 font-family: Theme.mono;
@@ -131,7 +131,7 @@ component Bars inherits Rectangle {
                     tip: b.label + (b.text != "" ? ": " + b.text : "");
                 }
             }
-            Text {
+            AText {
                 text: b.label;
                 font-family: Theme.mono;
                 font-size: 9.5px * Theme.scale;
@@ -199,7 +199,7 @@ component Column inherits VerticalLayout {
             color: Theme.text-dim;
         }
     }
-    Text {
+    AText {
         text: root.v == "" ? "–" : root.v;
         font-family: Theme.mono;
         font-size: 22px * Theme.scale;
@@ -207,7 +207,7 @@ component Column inherits VerticalLayout {
         color: Theme.text;
         overflow: elide;
     }
-    Text {
+    AText {
         text: root.sub;
         font-family: Theme.font;
         font-size: Theme.fs-small;
@@ -229,7 +229,7 @@ component PilotCard inherits Panel {
                 y: (parent.height - self.height) / 2;
                 colorize: Av.cyan;
             }
-            Text {
+            AText {
                 text: @tr("Dziennik pilota").to-uppercase();
                 font-family: Theme.cond;
                 font-size: 13px * Theme.scale;
@@ -238,7 +238,7 @@ component PilotCard inherits Panel {
                 color: Theme.text;
                 vertical-alignment: center;
             }
-            Text {
+            AText {
                 text: "· " + App.stats.period;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -281,7 +281,7 @@ component PilotCard inherits Panel {
                     padding: 14px;
                     spacing: 8px;
                     HorizontalLayout {
-                        Text {
+                        AText {
                             text: @tr("Stopień").to-uppercase();
                             font-family: Theme.cond;
                             font-size: 9.5px * Theme.scale;
@@ -290,7 +290,7 @@ component PilotCard inherits Panel {
                             color: Av.gold;
                             horizontal-stretch: 1;
                         }
-                        Text {
+                        AText {
                             text: "OPENTAKEOFF";
                             font-family: Theme.mono;
                             font-size: 9px * Theme.scale;
@@ -306,7 +306,7 @@ component PilotCard inherits Panel {
                         VerticalLayout {
                             alignment: center;
                             spacing: 2px;
-                            Text {
+                            AText {
                                 text: App.stats.rank;
                                 font-family: Theme.cond;
                                 font-size: 19px * Theme.scale;
@@ -314,7 +314,7 @@ component PilotCard inherits Panel {
                                 color: #ffffff;
                                 wrap: word-wrap;
                             }
-                            Text {
+                            AText {
                                 text: App.stats.hours + " " + @tr("nalotu");
                                 font-family: Theme.mono;
                                 font-size: 11px * Theme.scale;
@@ -335,7 +335,7 @@ component PilotCard inherits Panel {
                             animate width { duration: 600ms; easing: ease-out; }
                         }
                     }
-                    Text {
+                    AText {
                         text: App.stats.rank-left;
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
@@ -405,7 +405,7 @@ component PilotCard inherits Panel {
                                 y: (parent.height - self.height) / 2;
                                 colorize: Av.cyan;
                             }
-                            Text {
+                            AText {
                                 text: c.t;
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -430,7 +430,7 @@ component Heatmap inherits Rectangle {
     property <length> cell: min(17px * Theme.scale, (self.width - self.label-w) / 26 - self.gap);
     property <[string]> days: [@tr("Pn"), "", @tr("Śr"), "", @tr("Pt"), "", @tr("Nd")];
     height: 16px * Theme.scale + 7 * (self.cell + self.gap) + 20px * Theme.scale;
-    for m[w] in App.stats-heat-months: Text {
+    for m[w] in App.stats-heat-months: AText {
         x: root.label-w + w * (root.cell + root.gap);
         y: 0;
         text: m;
@@ -439,7 +439,7 @@ component Heatmap inherits Rectangle {
         font-weight: 600;
         color: Theme.text-faint;
     }
-    for d[i] in root.days: Text {
+    for d[i] in root.days: AText {
         x: 0;
         y: 16px * Theme.scale + i * (root.cell + root.gap);
         height: root.cell;
@@ -547,7 +547,7 @@ component PhaseProfile inherits VerticalLayout {
             source: Icons.plane;
             colorize: Av.cruise;
         }
-        if !root.any: Text {
+        if !root.any: AText {
             text: @tr("Profil pojawi się po pierwszych lotach");
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -577,7 +577,7 @@ component PhaseProfile inherits VerticalLayout {
                     background: p.c;
                 }
             }
-            Text {
+            AText {
                 text: p.v == "" ? "–" : p.v;
                 font-family: Theme.mono;
                 font-size: 13px * Theme.scale;
@@ -633,7 +633,7 @@ component ScoreDial inherits Rectangle {
     VerticalLayout {
         alignment: center;
         spacing: 0;
-        Text {
+        AText {
             text: root.score < 0 ? "–" : root.score;
             font-family: Theme.mono;
             font-size: root.height * 0.27;
@@ -641,7 +641,7 @@ component ScoreDial inherits Rectangle {
             color: root.score < 0 ? Theme.text-faint : Colors.score(root.score);
             horizontal-alignment: center;
         }
-        Text {
+        AText {
             text: root.grade != "" ? root.grade : @tr("brak lądowań");
             font-family: Theme.cond;
             font-size: 11px * Theme.scale;
@@ -675,6 +675,7 @@ component Fact inherits Rectangle {
             overflow: elide;
         }
         Caps {
+            abbr: false;
             text: root.k;
         }
     }
@@ -743,7 +744,7 @@ component Landings inherits Section {
                     border-radius: 4px;
                     background: Colors.score(95 - i * 18);
                 }
-                Text {
+                AText {
                     text: g.name;
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -764,7 +765,7 @@ component Landings inherits Section {
                         animate width { duration: 450ms; easing: ease-out; }
                     }
                 }
-                Text {
+                AText {
                     text: g.a;
                     font-family: Theme.mono;
                     font-size: Theme.fs-small;
@@ -773,7 +774,7 @@ component Landings inherits Section {
                     horizontal-alignment: right;
                     width: 30px * Theme.scale;
                 }
-                Text {
+                AText {
                     text: g.b;
                     font-family: Theme.mono;
                     font-size: 10px * Theme.scale;
@@ -867,7 +868,7 @@ component Board inherits Rectangle {
                 y: (parent.height - self.height) / 2;
                 colorize: Av.amber;
             }
-            Text {
+            AText {
                 text: root.title.to-uppercase();
                 font-family: Theme.mono;
                 font-size: 13px * Theme.scale;
@@ -940,7 +941,7 @@ component Board inherits Rectangle {
 component Hangar inherits Section {
     title: @tr("Hangar");
     icon: Icons.plane;
-    if App.stats-aircraft.length == 0: Text {
+    if App.stats-aircraft.length == 0: AText {
         text: "–";
         color: Theme.text-faint;
     }
@@ -968,7 +969,7 @@ component Hangar inherits Section {
             horizontal-stretch: 1;
             HorizontalLayout {
                 spacing: 6px;
-                Text {
+                AText {
                     text: r.name;
                     font-family: Theme.font;
                     font-size: Theme.fs;
@@ -977,7 +978,7 @@ component Hangar inherits Section {
                     overflow: elide;
                     horizontal-stretch: 1;
                 }
-                Text {
+                AText {
                     text: r.a + " · " + r.b;
                     font-family: Theme.mono;
                     font-size: 10.5px * Theme.scale;
@@ -1014,6 +1015,7 @@ component Pass inherits Rectangle {
             alignment: center;
             spacing: 3px;
             Caps {
+                abbr: false;
                 text: root.k;
             }
             Text {
@@ -1202,7 +1204,7 @@ component ChallengeCard inherits Rectangle {
             spacing: 4px;
             alignment: center;
             horizontal-stretch: 1;
-            Text {
+            AText {
                 text: c.title;
                 font-family: Theme.font;
                 font-size: Theme.fs + 1px;
@@ -1210,7 +1212,7 @@ component ChallengeCard inherits Rectangle {
                 color: Theme.text;
                 overflow: elide;
             }
-            Text {
+            AText {
                 text: c.desc;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -1227,7 +1229,7 @@ component ChallengeCard inherits Rectangle {
                         tone: c.done ? Colors.vfr : Theme.accent;
                     }
                 }
-                Text {
+                AText {
                     text: c.status;
                     font-family: Theme.font;
                     font-size: Theme.fs-small;

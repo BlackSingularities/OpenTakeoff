@@ -1,3 +1,11 @@
+## 3.10.0
+
+- Mapy: każdą mapę w programie można obrócić – przeciągnięcie prawym przyciskiem (albo lewym z Ctrl) w bok obraca, w górę i w dół pochyla. Kompas przy przyciskach mapy pokazuje północ, a kliknięty obraca mapę z powrotem północą do góry. Samolot, siatka, wiatr, chorągiewki METAR, radiale i róże VOR obracają się razem z mapą.
+- Mapy pochylone: kafelki podkładu już nie znikają – pamięć kafelków zatrzymuje te, które są na ekranie, pobierane są najpierw kafelki bieżącego widoku, puste miejsca od razu wypełnia ogólniejszy kafelek, a nieudane pobranie jest ponawiane.
+- Plan lotu na pochylonej mapie (Plan lotu i Mapa) wisi na swojej wysokości, z półprzezroczystą ścianą do ziemi, cieniem trasy na gruncie i pionowymi kreskami przy punktach.
+- Podpowiedzi ze skrótami w całym programie: po najechaniu na tekst ze skrótem lotniczym (ZFW, TOC, ETE, METAR, V1, FL230, ISA, VFR…) pojawia się jego wyjaśnienie, a przy kodzie ICAO – nazwa lotniska. Po polsku, angielsku i hiszpańsku.
+- OFP SimBrief: wyrównane kolumny navlogu.
+
 ## 3.9.0
 
 - Jedna mapa z pochylaniem zamiast osobnych widoków 2D i 3D – na wszystkich mapach programu (Mapa, Na żywo, Pulpit, Dziennik, Lotniska, Statystyki, Plan lotu). Pochyla się przeciąganiem w górę i w dół prawym przyciskiem myszy (albo lewym z Ctrl, do 60°) lub przyciskiem z górą (widok z góry ↔ 45°). Na pochylonej mapie działa przesuwanie, przybliżanie, klikanie i narzędzia; pierścienie odległości, zasięgi, siatka i róże VOR leżą na ziemi. Pochylanie można wyłączyć w Ustawieniach („Pochylanie map”) – wtedy mapy są tylko z góry.

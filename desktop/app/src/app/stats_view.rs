@@ -414,6 +414,7 @@ pub fn render_stats_map() {
             pts: f.track.iter().step_by(step).map(|p| (p.lat, p.lon, p.alt_ft)).collect(),
             color: Some([(accent >> 16) as u8, (accent >> 8) as u8, accent as u8, 200]),
             width: 1.8,
+            wall: false,
         });
     }
     let r = map::render(&st.views[3], style(&st, dark), &ov, st.scale, dark);

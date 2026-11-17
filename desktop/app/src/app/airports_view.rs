@@ -203,7 +203,7 @@ pub fn render_airport_map() {
     let dark = ui.global::<Theme>().get_dark();
     let mut ov = Overlay::default();
     for (_, x) in db.within(a.lat, a.lon, 25.0, false).into_iter().take(40) {
-        ov.points.push(Point { lat: x.lat, lon: x.lon, label: x.ident.clone(), kind: if x.ident == a.ident { 2 } else if x.kind <= 1 { 0 } else { 3 } });
+        ov.points.push(Point { lat: x.lat, lon: x.lon, label: x.ident.clone(), kind: if x.ident == a.ident { 2 } else if x.kind <= 1 { 0 } else { 3 }, alt: None });
         for r in x.runways.iter().filter(|r| r.has_coords() && !r.closed) {
             ov.runways.push((r.le_lat, r.le_lon, r.he_lat, r.he_lon));
         }
@@ -212,10 +212,10 @@ pub fn render_airport_map() {
         let pts: Vec<(f64, f64, i32)> = st.legs.iter().filter_map(|l| Some((l.lat?, l.lon?, l.alt1_ft.unwrap_or(0.0) as i32))).collect();
         for l in &st.legs {
             if let (Some(la), Some(lo)) = (l.lat, l.lon) {
-                ov.points.push(Point { lat: la, lon: lo, label: l.fix.clone(), kind: 1 });
+                ov.points.push(Point { lat: la, lon: lo, label: l.fix.clone(), kind: 1, alt: None });
             }
         }
-        ov.tracks.push(Track { pts, color: Some([255, 0, 220, 230]), width: 2.5 });
+        ov.tracks.push(Track { pts, color: Some([255, 0, 220, 230]), width: 2.5, wall: false });
     }
     if let Some(s) = st.host.snapshot() {
         ov.aircraft = Some((s.position.lat, s.position.lon, s.attitude.hdg_true_deg));

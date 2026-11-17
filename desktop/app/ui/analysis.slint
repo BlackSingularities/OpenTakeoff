@@ -5,7 +5,7 @@ import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, MiniChartV, FactV, RwyViewV } from "state.slint";
 import { Panel, Heading, Score, Colors } from "parts.slint";
-import { Button } from "widgets.slint";
+import { Button, AText } from "widgets.slint";
 
 global Tones {
     pure public function fact(t: int) -> color {
@@ -28,7 +28,7 @@ component MiniChart inherits Rectangle {
     border-width: 1px;
     border-color: Theme.line;
     clip: true;
-    Text {
+    AText {
         x: root.pad-x;
         y: 6px;
         text: root.c.title;
@@ -37,7 +37,7 @@ component MiniChart inherits Rectangle {
         font-weight: 600;
         color: Theme.text-dim;
     }
-    Text {
+    AText {
         x: root.width - self.width - root.pad-x;
         y: 5px;
         text: root.c.value;
@@ -75,7 +75,7 @@ component MiniChart inherits Rectangle {
         stroke-width: 1.6px;
         fill: transparent;
     }
-    Text {
+    AText {
         x: root.pad-x;
         y: root.pad-t - 2px;
         text: root.c.top;
@@ -83,7 +83,7 @@ component MiniChart inherits Rectangle {
         font-size: 9px * Theme.scale;
         color: Theme.text-faint;
     }
-    Text {
+    AText {
         x: root.pad-x;
         y: root.pad-t + root.ph - self.height - 1px;
         text: root.c.bottom;
@@ -91,7 +91,7 @@ component MiniChart inherits Rectangle {
         font-size: 9px * Theme.scale;
         color: Theme.text-faint;
     }
-    Text {
+    AText {
         x: root.pad-x;
         y: root.height - root.pad-b + 2px;
         text: "−30 s";
@@ -99,7 +99,7 @@ component MiniChart inherits Rectangle {
         font-size: 9px * Theme.scale;
         color: Theme.text-faint;
     }
-    Text {
+    AText {
         x: root.pad-x + root.pw * root.c.td - self.width / 2;
         y: root.height - root.pad-b + 2px;
         text: "TD";
@@ -108,7 +108,7 @@ component MiniChart inherits Rectangle {
         font-weight: 700;
         color: Theme.text-dim;
     }
-    Text {
+    AText {
         x: root.width - self.width - root.pad-x;
         y: root.height - root.pad-b + 2px;
         text: "+6 s";
@@ -138,14 +138,14 @@ component FactRow inherits Rectangle {
             alignment: center;
             horizontal-stretch: 1;
             spacing: 1px;
-            Text {
+            AText {
                 text: root.f.label;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
                 color: Theme.text-dim;
                 overflow: elide;
             }
-            if root.f.note != "": Text {
+            if root.f.note != "": AText {
                 text: root.f.note;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -153,7 +153,7 @@ component FactRow inherits Rectangle {
                 wrap: word-wrap;
             }
         }
-        Text {
+        AText {
             text: root.f.value;
             font-family: Theme.mono;
             font-size: Theme.fs;
@@ -233,7 +233,7 @@ component RunwayTop inherits Rectangle {
         border-width: 2px;
         border-color: #ffffff;
     }
-    Text {
+    AText {
         x: 12px;
         y: 6px;
         text: root.v.title;
@@ -242,7 +242,7 @@ component RunwayTop inherits Rectangle {
         font-weight: 700;
         color: Theme.dark ? #e8eaee : #1a1d22;
     }
-    Text {
+    AText {
         x: root.width - self.width - 12px;
         y: root.height - self.height - 6px;
         text: root.v.scale-note;
@@ -276,7 +276,7 @@ component RunwaySide inherits Rectangle {
         height: 1px;
         background: Theme.line;
     }
-    Text {
+    AText {
         x: 14px;
         y: 6px + root.ih * root.v.line-50 - self.height;
         text: "50 ft";
@@ -291,7 +291,7 @@ component RunwaySide inherits Rectangle {
         height: root.ih * root.v.ground-line;
         background: Theme.line;
     }
-    Text {
+    AText {
         x: 10px + root.iw * root.v.threshold-x + 4px;
         y: 6px;
         text: @tr("próg");
@@ -325,7 +325,7 @@ component RunwaySide inherits Rectangle {
         stroke-width: 2px;
         fill: transparent;
     }
-    Text {
+    AText {
         x: root.width - self.width - 12px;
         y: 6px;
         text: @tr("ścieżka 3° do punktu celowania (1000 ft)");
@@ -346,7 +346,7 @@ export component LandingAnalysis inherits Panel {
                 icon: Icons.activity;
                 horizontal-stretch: 1;
             }
-            Text {
+            AText {
                 text: App.analysis.title;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -366,7 +366,7 @@ export component LandingAnalysis inherits Panel {
                 }
             }
         }
-        if !App.analysis.has: Text {
+        if !App.analysis.has: AText {
             text: @tr("Ten lot nie ma zapisanego przebiegu podejścia. Analiza powstaje dla lądowań nagranych na komputerze od wersji 3.3.");
             font-family: Theme.font;
             font-size: Theme.fs-small;

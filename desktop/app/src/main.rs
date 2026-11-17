@@ -4,6 +4,7 @@
 
 slint::include_modules!();
 
+mod abbr;
 mod analysis;
 mod app;
 mod avionics;
@@ -319,6 +320,7 @@ fn main() {
         });
     }
     app.on_map_event(|id, kind, x, y, dx, dy| app::map_event(id, kind.as_str(), x, y, dx, dy));
+    app.on_abbr(|text, _rev| abbr::explain(text.as_str()).into());
     app.on_calc(|kind, input| app::model_strings(app::calc(kind.as_str(), &app::strings_of(&input))));
     {
         let w = ui.as_weak();

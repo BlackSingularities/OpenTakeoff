@@ -257,6 +257,8 @@ pub fn refresh_status() {
     if !st.db_loaded {
         if let Some(db) = airports::db() {
             st.db_loaded = true;
+            // podpowiedzi z nazwą lotniska przy kodach ICAO – przelicz po wczytaniu bazy
+            app.set_abbr_rev(app.get_abbr_rev() + 1);
             app.set_db_status(ss(trf!("Baza lotnisk: {n} · {d}", n = db.len(), d = fmt::date(db.fetched_at))));
         }
     }
@@ -482,6 +484,20 @@ pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
                     return;
                 }
             }
+            "orbit" => {
+                let turned = v.rotate_by(dx as f64);
+                let tilted = v.tilt_by(dy as f64);
+                if !turned && !tilted {
+                    return;
+                }
+                if turned {
+                    publish_bearing(id, v.bearing);
+                }
+            }
+            "north" => {
+                v.reset_bearing();
+                publish_bearing(id, 0.0);
+            }
             "tilt-toggle" => v.toggle_tilt(),
             "pan" => {
                 v.drag(x as f64, y as f64, dx as f64, dy as f64);
@@ -534,6 +550,26 @@ pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
         2 => render_airport_map(),
         _ => render_stats_map(),
     }
+}
+
+/// Obrót mapy `id` do kompasu w interfejsie (`App.map-bearings[id]`, stopnie).
+pub fn publish_bearing(id: i32, deg: f64) {
+    let Some(u) = ui() else { return };
+    let app = u.global::<App>();
+    let Ok(idx) = usize::try_from(id) else { return };
+    let m = app.get_map_bearings();
+    if let Some(vm) = m.as_any().downcast_ref::<VecModel<f32>>() {
+        if idx < vm.row_count() {
+            vm.set_row_data(idx, deg as f32);
+            return;
+        }
+    }
+    let mut v: Vec<f32> = m.iter().collect();
+    if v.len() <= idx {
+        v.resize(idx + 1, 0.0);
+    }
+    v[idx] = deg as f32;
+    app.set_map_bearings(ModelRc::new(VecModel::from(v)));
 }
 
 pub fn model_strings(v: Vec<String>) -> ModelRc<SharedString> {

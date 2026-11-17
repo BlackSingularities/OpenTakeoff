@@ -14,7 +14,7 @@ Stan na listopad 2026 (wersja 3.7.0). Szczegóły każdego wydania są w [CHANGE
 ### Windows (Rust + Slint, folder `desktop/`)
 - Most MSFS 2020/2024 i X-Plane 11/12 ↔ telefon (SimConnect, UDP bez wtyczek), start razem z symulatorem.
 - Przyrządy w stylach kabin (A320, 737, 787, ATR, E190, G1000, zegary analogowe) z ekranami silników.
-- Mapa nawigacyjna z radialami, Direct To, nakładkami, radarem opadów i METAR-ami; mapę można pochylić.
+- Mapa nawigacyjna z radialami, Direct To, nakładkami, radarem opadów i METAR-ami; mapę można pochylić i obrócić.
 - Plan lotu z SID/STAR/podejściami, eksport do MSFS i X-Plane; SimBrief.
 - Dziennik lotów, analiza lądowania, odtwarzanie lotu na mapie, statystyki z osiągnięciami, eksport KML/GPX/CSV.
 - Nakładki: karta lądowania, pasek do transmisji, okno zawsze na wierzchu, strony dla OBS; zrzuty ekranu.

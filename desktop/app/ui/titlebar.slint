@@ -3,7 +3,7 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { TipArea } from "widgets.slint";
+import { TipArea, AText } from "widgets.slint";
 import { NavTab } from "shell.slint";
 import { Colors } from "parts.slint";
 
@@ -407,7 +407,7 @@ export component TopBar inherits Rectangle {
             height: 22px;
             y: (parent.height - self.height) / 2;
         }
-        if Theme.tabs-level == 0: Text {
+        if Theme.tabs-level == 0: AText {
             text: "OpenTakeoff";
             font-family: Theme.cond;
             font-size: 16px * Theme.scale;

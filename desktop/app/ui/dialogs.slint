@@ -3,7 +3,7 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Button, Card, Segmented } from "widgets.slint";
+import { Button, Card, Segmented, AText } from "widgets.slint";
 import { Dot } from "parts.slint";
 
 /// Klawisz w ramce (np. „Ctrl”, „F1”).
@@ -50,7 +50,7 @@ component Shortcut inherits HorizontalLayout {
     }
 }
 
-component SectionTitle inherits Text {
+component SectionTitle inherits AText {
     font-family: Theme.cond;
     font-size: 11px * Theme.scale;
     font-weight: 700;
@@ -100,6 +100,7 @@ export component HelpDialog inherits Rectangle {
                 VerticalLayout {
                     horizontal-stretch: 1;
                     SectionTitle {
+                        abbr: false;
                         text: @tr("Karty").to-uppercase();
                     }
                     Shortcut {
@@ -154,6 +155,7 @@ export component HelpDialog inherits Rectangle {
                 VerticalLayout {
                     horizontal-stretch: 1;
                     SectionTitle {
+                        abbr: false;
                         text: @tr("Lot").to-uppercase();
                     }
                     Shortcut {
@@ -173,6 +175,7 @@ export component HelpDialog inherits Rectangle {
                         text: @tr("ND w osobnym oknie");
                     }
                     SectionTitle {
+                        abbr: false;
                         text: @tr("Checklisty").to-uppercase();
                     }
                     Shortcut {
@@ -184,6 +187,7 @@ export component HelpDialog inherits Rectangle {
                         text: @tr("Następna i poprzednia lista");
                     }
                     SectionTitle {
+                        abbr: false;
                         text: @tr("Okno").to-uppercase();
                     }
                     Shortcut {

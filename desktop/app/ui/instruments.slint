@@ -6,6 +6,7 @@ import { Icons } from "icons.slint";
 import { App, ParamGroupV } from "state.slint";
 import { ScrollView } from "std-widgets.slint";
 import { Dot } from "parts.slint";
+import { AText } from "widgets.slint";
 
 /// Ekran przyrządu: czarne tło, obraz z Rusta, rozmiar zgłaszany do Rusta.
 export component Screen inherits Rectangle {
@@ -41,7 +42,7 @@ export component Screen inherits Rectangle {
         height: 18px;
         border-radius: 4px;
         background: #000000a0;
-        ct := Text {
+        ct := AText {
             text: root.caption;
             font-family: Theme.font;
             font-size: 10px;
@@ -65,7 +66,7 @@ component ParamCard inherits Rectangle {
         HorizontalLayout {
             spacing: 7px;
             height: 22px * Theme.scale;
-            Text {
+            AText {
                 text: root.group.title.to-uppercase();
                 font-family: Theme.cond;
                 font-size: 11.5px * Theme.scale;
@@ -86,7 +87,7 @@ component ParamCard inherits Rectangle {
         for p in root.group.items: HorizontalLayout {
             spacing: 8px;
             height: 20px * Theme.scale;
-            Text {
+            AText {
                 text: p.k;
                 font-family: Theme.cond;
                 font-size: 11px * Theme.scale;
@@ -98,7 +99,7 @@ component ParamCard inherits Rectangle {
                 min-width: 70px * Theme.scale;
                 horizontal-stretch: 0;
             }
-            Text {
+            AText {
                 text: p.v == "" ? "–" : p.v;
                 font-family: Theme.mono;
                 font-size: Theme.fs-small;
@@ -176,7 +177,7 @@ component DataArea inherits VerticalLayout {
     }
     if App.params.length == 0: Rectangle {
         vertical-stretch: 1;
-        Text {
+        AText {
             text: @tr("Parametry pojawią się po połączeniu z symulatorem");
             font-family: Theme.font;
             font-size: Theme.fs;
@@ -223,7 +224,7 @@ export component Instruments inherits Rectangle {
                 state: 2;
                 y: (parent.height - self.height) / 2;
             }
-            Text {
+            AText {
                 text: App.instr.has-data ? App.instr.title : "";
                 font-family: Theme.font;
                 font-size: Theme.fs-big;
@@ -233,7 +234,7 @@ export component Instruments inherits Rectangle {
                 overflow: elide;
                 horizontal-stretch: 1;
             }
-            Text {
+            AText {
                 text: @tr("Styl: ") + App.instr.style-name + "   ·   ND " + App.instr.range + (App.instr.rose ? " ROSE" : " ARC");
                 font-family: Theme.font;
                 font-size: Theme.fs;

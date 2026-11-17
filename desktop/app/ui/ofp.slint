@@ -6,7 +6,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Button, Field } from "widgets.slint";
+import { Button, Field, AText } from "widgets.slint";
 import { Panel } from "parts.slint";
 
 global OfpColors {
@@ -14,13 +14,36 @@ global OfpColors {
     out property <color> screen: #0b1016;
 }
 
-component Cap inherits Text {
+component Cap inherits AText {
     font-family: Theme.cond;
     font-size: 10.5px * Theme.scale;
     font-weight: 700;
     letter-spacing: 0.8px;
     color: Theme.text-faint;
     vertical-alignment: center;
+}
+
+// Komórki navlogu: zerowa szerokość preferowana sprawia, że szerokość kolumny zależy wyłącznie
+// od horizontal-stretch, a nie od długości tekstu — kolumny w nagłówku i we wszystkich
+// wierszach wypadają dokładnie w tych samych miejscach.
+component NavHead inherits Cap {
+    min-width: 0;
+    preferred-width: 0;
+    horizontal-stretch: 1;
+    horizontal-alignment: right;
+    overflow: elide;
+}
+
+component NavCell inherits AText {
+    min-width: 0;
+    preferred-width: 0;
+    horizontal-stretch: 1;
+    font-family: Theme.mono;
+    font-size: Theme.fs-small;
+    color: Theme.text-dim;
+    horizontal-alignment: right;
+    vertical-alignment: center;
+    overflow: elide;
 }
 
 /// Kafelek: podpis i wartość.
@@ -42,7 +65,7 @@ component Tile inherits Rectangle {
         Cap {
             text: root.k.to-uppercase();
         }
-        Text {
+        AText {
             text: root.v == "" ? "–" : root.v;
             font-family: Theme.mono;
             font-size: 14px * Theme.scale;
@@ -63,7 +86,7 @@ component Clock inherits VerticalLayout {
         text: root.k;
         horizontal-alignment: center;
     }
-    Text {
+    AText {
         text: root.v == "" ? "––:––" : root.v + "Z";
         font-family: Theme.mono;
         font-size: 17px * Theme.scale;
@@ -109,14 +132,14 @@ component Raw inherits Rectangle {
     rl := VerticalLayout {
         padding: 8px;
         spacing: 2px;
-        if root.label != "": Text {
+        if root.label != "": AText {
             text: root.label;
             font-family: Theme.cond;
             font-size: 9.5px * Theme.scale;
             font-weight: 700;
             color: #4fd8eb;
         }
-        Text {
+        AText {
             text: root.text == "" ? "–" : root.text;
             font-family: Theme.mono;
             font-size: 11px * Theme.scale;
@@ -137,7 +160,7 @@ export component OfpView inherits Rectangle {
             height: 40px;
             colorize: Theme.text-faint;
         }
-        Text {
+        AText {
             text: @tr("Brak planu SimBrief");
             font-family: Theme.font;
             font-size: Theme.fs-big;
@@ -145,7 +168,7 @@ export component OfpView inherits Rectangle {
             color: Theme.text-dim;
             horizontal-alignment: center;
         }
-        Text {
+        AText {
             text: @tr("Wpisz nazwę użytkownika albo Pilot ID z SimBrief – program pobierze najnowszy OFP: wagi, paliwo, navlog z wiatrem, pogodę lotnisk i prędkości startu.");
             font-family: Theme.font;
             font-size: Theme.fs;
@@ -193,14 +216,14 @@ export component OfpView inherits Rectangle {
                             spacing: 2px;
                             HorizontalLayout {
                                 spacing: 12px;
-                                Text {
+                                AText {
                                     text: App.ofp.callsign;
                                     font-family: Theme.mono;
                                     font-size: 26px * Theme.scale;
                                     font-weight: 700;
                                     color: Theme.accent;
                                 }
-                                Text {
+                                AText {
                                     text: App.ofp.title;
                                     font-family: Theme.cond;
                                     font-size: 26px * Theme.scale;
@@ -209,14 +232,14 @@ export component OfpView inherits Rectangle {
                                     overflow: elide;
                                 }
                             }
-                            Text {
+                            AText {
                                 text: App.ofp.origin-name + "  →  " + App.ofp.dest-name + (App.ofp.altn != "" ? "   ·   ALTN " + App.ofp.altn : "");
                                 font-family: Theme.font;
                                 font-size: Theme.fs;
                                 color: Theme.text-dim;
                                 overflow: elide;
                             }
-                            Text {
+                            AText {
                                 text: App.ofp.aircraft + (App.ofp.generated != "" ? "   ·   OFP " + App.ofp.generated : "");
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -293,7 +316,7 @@ export component OfpView inherits Rectangle {
                                     height: 2px;
                                     background: #4fd8eb80;
                                 }
-                                Text {
+                                AText {
                                     text: "ETE " + App.ofp.ete + "   ·   BLOCK " + App.ofp.block;
                                     font-family: Theme.mono;
                                     font-size: 11px * Theme.scale;
@@ -354,7 +377,7 @@ export component OfpView inherits Rectangle {
                         spacing: 3px;
                         HorizontalLayout {
                             spacing: 8px;
-                            Text {
+                            AText {
                                 text: b.k;
                                 font-family: Theme.mono;
                                 font-size: Theme.fs;
@@ -362,14 +385,14 @@ export component OfpView inherits Rectangle {
                                 color: Theme.text;
                                 width: 42px * Theme.scale;
                             }
-                            Text {
+                            AText {
                                 text: b.est;
                                 font-family: Theme.mono;
                                 font-size: Theme.fs;
                                 color: b.over ? Theme.danger : Theme.text;
                                 horizontal-stretch: 1;
                             }
-                            Text {
+                            AText {
                                 text: b.margin;
                                 font-family: Theme.mono;
                                 font-size: Theme.fs-small;
@@ -387,7 +410,7 @@ export component OfpView inherits Rectangle {
                                 background: b.over ? Theme.danger : b.frac > 0.95 ? #ffb547 : Theme.accent;
                             }
                         }
-                        Text {
+                        AText {
                             text: b.max;
                             font-family: Theme.font;
                             font-size: 10.5px * Theme.scale;
@@ -439,7 +462,7 @@ export component OfpView inherits Rectangle {
                             border-radius: 2px;
                             background: OfpColors.fuel[f.tone];
                         }
-                        Text {
+                        AText {
                             text: f.k;
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -447,7 +470,7 @@ export component OfpView inherits Rectangle {
                             vertical-alignment: center;
                             horizontal-stretch: 1;
                         }
-                        Text {
+                        AText {
                             text: f.v;
                             font-family: Theme.mono;
                             font-size: Theme.fs-small;
@@ -471,7 +494,7 @@ export component OfpView inherits Rectangle {
                             v: App.ofp.plan-land;
                         }
                     }
-                    if App.ofp.avg-ff != "": Text {
+                    if App.ofp.avg-ff != "": AText {
                         text: @tr("Średnie spalanie") + ": " + App.ofp.avg-ff;
                         font-family: Theme.font;
                         font-size: Theme.fs-small;
@@ -506,7 +529,7 @@ export component OfpView inherits Rectangle {
                         image-fit: fill;
                     }
                 }
-                if App.ofp.step != "": Text {
+                if App.ofp.step != "": AText {
                     text: @tr("Wznoszenia schodkowe") + ": " + App.ofp.step;
                     font-family: Theme.mono;
                     font-size: Theme.fs-small;
@@ -518,7 +541,7 @@ export component OfpView inherits Rectangle {
             if App.ofp.has-tlr: Section {
                 title: @tr("Start i lądowanie (TLR)");
                 icon: Icons.plane-takeoff;
-                if App.ofp.tlr-to != "": Text {
+                if App.ofp.tlr-to != "": AText {
                     text: App.ofp.tlr-to;
                     font-family: Theme.mono;
                     font-size: 14px * Theme.scale;
@@ -526,7 +549,7 @@ export component OfpView inherits Rectangle {
                     color: #4fd8eb;
                     wrap: word-wrap;
                 }
-                if App.ofp.tlr-ldg != "": Text {
+                if App.ofp.tlr-ldg != "": AText {
                     text: App.ofp.tlr-ldg;
                     font-family: Theme.mono;
                     font-size: 14px * Theme.scale;
@@ -540,57 +563,47 @@ export component OfpView inherits Rectangle {
                 title: @tr("Navlog");
                 icon: Icons.list-ordered;
                 HorizontalLayout {
-                    spacing: 6px;
-                    padding-left: 6px;
-                    padding-right: 6px;
+                    spacing: 8px;
+                    padding-left: 8px;
+                    padding-right: 8px;
                     height: 18px * Theme.scale;
-                    Cap {
+                    NavHead {
                         text: @tr("PUNKT");
-                        horizontal-stretch: 2;
+                        horizontal-stretch: 1.4;
+                        horizontal-alignment: left;
                     }
-                    Cap {
+                    NavHead {
                         text: @tr("DROGA");
-                        horizontal-stretch: 2;
+                        horizontal-stretch: 1.4;
+                        horizontal-alignment: left;
                     }
-                    Cap {
+                    NavHead {
                         text: "ALT";
-                        horizontal-stretch: 1;
-                        horizontal-alignment: right;
                     }
-                    Cap {
+                    NavHead {
                         text: @tr("WIATR");
-                        horizontal-stretch: 1;
-                        horizontal-alignment: right;
                     }
-                    Cap {
+                    NavHead {
                         text: "OAT";
-                        horizontal-stretch: 1;
-                        horizontal-alignment: right;
                     }
-                    Cap {
+                    NavHead {
                         text: "ISA";
-                        horizontal-stretch: 1;
-                        horizontal-alignment: right;
+                        horizontal-stretch: 0.6;
                     }
-                    Cap {
+                    NavHead {
                         text: "GS";
-                        horizontal-stretch: 1;
-                        horizontal-alignment: right;
+                        horizontal-stretch: 0.8;
                     }
-                    Cap {
+                    NavHead {
                         text: "Σ NM";
-                        horizontal-stretch: 1;
-                        horizontal-alignment: right;
+                        horizontal-stretch: 0.8;
                     }
-                    Cap {
+                    NavHead {
                         text: @tr("CZAS");
-                        horizontal-stretch: 1;
-                        horizontal-alignment: right;
+                        horizontal-stretch: 0.8;
                     }
-                    Cap {
+                    NavHead {
                         text: @tr("PALIWO t");
-                        horizontal-stretch: 1;
-                        horizontal-alignment: right;
                     }
                 }
                 for r[i] in App.ofp-navlog: Rectangle {
@@ -598,99 +611,51 @@ export component OfpView inherits Rectangle {
                     border-radius: 3px;
                     background: r.mark ? Theme.accent-soft : mod(i, 2) == 0 ? (Theme.dark ? #ffffff06 : #00000006) : transparent;
                     HorizontalLayout {
-                        spacing: 6px;
-                        padding-left: 6px;
-                        padding-right: 6px;
-                        Text {
+                        spacing: 8px;
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        NavCell {
                             text: r.ident;
-                            horizontal-stretch: 2;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
+                            horizontal-stretch: 1.4;
+                            horizontal-alignment: left;
                             font-weight: 700;
                             color: r.mark ? Theme.accent : Theme.text;
-                            vertical-alignment: center;
-                            overflow: elide;
                         }
-                        Text {
+                        NavCell {
                             text: r.via;
-                            horizontal-stretch: 2;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            vertical-alignment: center;
-                            overflow: elide;
+                            horizontal-stretch: 1.4;
+                            horizontal-alignment: left;
                         }
-                        Text {
+                        NavCell {
                             text: r.alt;
-                            horizontal-stretch: 1;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
                             color: r.stage == "CLB" ? #3ee07a : r.stage == "DSC" ? #e07cff : Theme.text;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
                         }
-                        Text {
+                        NavCell {
                             text: r.wind;
-                            horizontal-stretch: 1;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
                         }
-                        Text {
+                        NavCell {
                             text: r.oat;
-                            horizontal-stretch: 1;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
                         }
-                        Text {
+                        NavCell {
                             text: r.isa;
-                            horizontal-stretch: 1;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
+                            horizontal-stretch: 0.6;
                             color: r.isa.to-float() > 0 ? #ff8a5c : r.isa.to-float() < 0 ? #5b9cff : Theme.text-dim;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
                         }
-                        Text {
+                        NavCell {
                             text: r.gs;
-                            horizontal-stretch: 1;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
+                            horizontal-stretch: 0.8;
                         }
-                        Text {
+                        NavCell {
                             text: r.dist;
-                            horizontal-stretch: 1;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
+                            horizontal-stretch: 0.8;
                         }
-                        Text {
+                        NavCell {
                             text: r.time;
-                            horizontal-stretch: 1;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
-                            color: Theme.text-dim;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
+                            horizontal-stretch: 0.8;
                         }
-                        Text {
+                        NavCell {
                             text: r.fuel;
-                            horizontal-stretch: 1;
-                            font-family: Theme.mono;
-                            font-size: Theme.fs-small;
                             color: #ffb547;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
                         }
                     }
                 }
@@ -699,7 +664,7 @@ export component OfpView inherits Rectangle {
             for a in App.ofp-apts: Section {
                 title: a.role + " · " + a.icao + (a.rwy != "" ? " · " + a.rwy : "") + (a.info != "" ? " · " + a.info : "");
                 icon: Icons.map-pin;
-                Text {
+                AText {
                     text: a.name;
                     font-family: Theme.font;
                     font-size: Theme.fs;

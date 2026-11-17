@@ -1157,6 +1157,18 @@ pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
         match kind {
             "pan" => s.view.drag(x as f64, y as f64, dx as f64, dy as f64),
             "tilt" => return s.view.tilt_by(dy as f64),
+            "orbit" => {
+                let turned = s.view.rotate_by(dx as f64);
+                let tilted = s.view.tilt_by(dy as f64);
+                if turned {
+                    crate::app::publish_bearing(MAP, s.view.bearing);
+                }
+                return turned || tilted;
+            }
+            "north" => {
+                s.view.reset_bearing();
+                crate::app::publish_bearing(MAP, 0.0);
+            }
             "tilt-toggle" => s.view.toggle_tilt(),
             "zoom" => s.view.zoom_at(dy as f64, x as f64, y as f64),
             "fit" => {
@@ -1196,10 +1208,10 @@ pub fn render_map() {
             }
         };
         for w in s.legs.windows(2) {
-            ov.tracks.push(Track { pts: vec![(w[0].lat, w[0].lon, w[0].alt_plan as i32), (w[1].lat, w[1].lon, w[1].alt_plan as i32)], color: Some(seg_col(w[1].seg)), width: 2.6 });
+            ov.tracks.push(Track { pts: vec![(w[0].lat, w[0].lon, w[0].alt_plan as i32), (w[1].lat, w[1].lon, w[1].alt_plan as i32)], color: Some(seg_col(w[1].seg)), width: 2.6, wall: true });
         }
         for (i, l) in s.legs.iter().enumerate() {
-            ov.points.push(Point { lat: l.lat, lon: l.lon, label: l.ident.clone(), kind: if s.sel == i as i32 { 2 } else if l.kind == "apt" { 0 } else { 1 } });
+            ov.points.push(Point { lat: l.lat, lon: l.lon, label: l.ident.clone(), kind: if s.sel == i as i32 { 2 } else if l.kind == "apt" { 0 } else { 1 }, alt: Some(l.alt_plan as i32) });
         }
         if let Some(sn) = state().borrow().host.snapshot() {
             ov.aircraft = Some((sn.position.lat, sn.position.lon, sn.attitude.hdg_true_deg));

@@ -2,7 +2,7 @@
 // diagramy i znaczniki.
 
 import { Theme } from "theme.slint";
-import { Field } from "widgets.slint";
+import { Field, AText } from "widgets.slint";
 import { Panel } from "parts.slint";
 
 /// Kolory wyświetlaczy w kabinie.
@@ -20,7 +20,7 @@ export global Cab {
 }
 
 /// Podpis wersalikami.
-export component Caps inherits Text {
+export component Caps inherits AText {
     font-family: Theme.cond;
     font-size: 9.5px * Theme.scale;
     font-weight: 700;
@@ -50,7 +50,7 @@ export component In inherits VerticalLayout {
             placeholder: root.hint;
             text <=> root.text;
         }
-        if root.unit != "": Text {
+        if root.unit != "": AText {
             text: root.unit;
             font-family: Theme.mono;
             font-size: Theme.fs-small;
@@ -79,7 +79,7 @@ export component Out inherits Rectangle {
         padding-right: 8px;
         alignment: center;
         spacing: 1px;
-        Text {
+        AText {
             text: root.k.to-uppercase();
             font-family: Theme.cond;
             font-size: 9.5px * Theme.scale;
@@ -88,7 +88,7 @@ export component Out inherits Rectangle {
             color: Cab.cyan;
             overflow: elide;
         }
-        Text {
+        AText {
             text: root.v == "" ? "–" : root.v;
             font-family: Theme.mono;
             font-size: (root.big ? 22px : 16px) * Theme.scale;
@@ -111,6 +111,7 @@ export component Card inherits Panel {
             spacing: 8px;
             height: 18px * Theme.scale;
             Caps {
+                abbr: false;
                 text: root.title.to-uppercase();
                 color: Theme.text-dim;
                 vertical-alignment: center;
@@ -167,7 +168,7 @@ export component Table inherits VerticalLayout {
             spacing: 6px;
             padding-left: 8px;
             padding-right: 8px;
-            for c in root.shown: Text {
+            for c in root.shown: AText {
                 horizontal-stretch: 1;
                 text: root.data[root.start + r * root.cols + c];
                 font-family: Theme.mono;
@@ -199,7 +200,7 @@ export component Tag inherits Rectangle {
     height: tt.preferred-height + 4px;
     border-radius: 3px;
     background: #0b1016d0;
-    tt := Text {
+    tt := AText {
         text: root.text;
         font-family: Theme.mono;
         font-size: 10.5px * Theme.scale;

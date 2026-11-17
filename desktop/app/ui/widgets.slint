@@ -3,6 +3,7 @@
 
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
+import { App } from "state.slint";
 
 export global Tip {
     in-out property <string> text;
@@ -54,7 +55,23 @@ export component TipArea inherits TouchArea {
     }
 }
 
-export component Label inherits Text {
+/// Tekst, który po najechaniu wyjaśnia skróty (ZFW, TOC, METAR, V1…) i kody ICAO lotnisk – słownik jest
+/// w Rust (`abbr.rs`, tłumaczony jak reszta programu). Bez skrótu w tekście nie ma podpowiedzi ani obszaru
+/// myszy. `abbr: false` – tekst leży pod klikalnym obszarem i nie może przejmować kliknięć.
+export component AText inherits Text {
+    in property <bool> abbr: true;
+    property <string> abbr-tip: root.abbr && root.text != "" ? App.abbr(root.text, App.abbr-rev) : "";
+    if root.abbr-tip != "": TipArea {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        tip: root.abbr-tip;
+        accessible-role: none;
+    }
+}
+
+export component Label inherits AText {
     font-family: Theme.font;
     font-size: Theme.fs;
     color: Theme.text;
@@ -62,7 +79,7 @@ export component Label inherits Text {
     overflow: elide;
 }
 
-export component Dim inherits Text {
+export component Dim inherits AText {
     font-family: Theme.font;
     font-size: Theme.fs-small;
     color: Theme.text-dim;
@@ -305,7 +322,7 @@ export component Group inherits Rectangle {
             if root.titled: HorizontalLayout {
                 height: Theme.ribbon-title-h;
                 spacing: 2px;
-                Text {
+                AText {
                     horizontal-stretch: 1;
                     text: root.title;
                     horizontal-alignment: center;
@@ -410,7 +427,7 @@ export component Spin inherits Rectangle {
     height: 24px * Theme.scale;
     HorizontalLayout {
         spacing: root.label == "" ? 0 : 6px;
-        Text {
+        AText {
             text: root.label;
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -455,7 +472,7 @@ export component Spin inherits Rectangle {
                         }
                     }
                 }
-                if root.unit != "": Text {
+                if root.unit != "": AText {
                     text: root.unit;
                     font-size: Theme.fs-small;
                     color: Theme.text-faint;
@@ -631,7 +648,7 @@ export component Pane inherits Rectangle {
                     colorize: Theme.accent;
                 }
             }
-            Text {
+            AText {
                 text: root.title;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -747,7 +764,7 @@ export component IconSpin inherits Rectangle {
                 }
             }
         }
-        Text {
+        AText {
             text: root.unit;
             font-size: Theme.fs-small;
             color: Theme.text-faint;

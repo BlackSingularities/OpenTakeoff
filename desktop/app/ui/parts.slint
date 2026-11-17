@@ -3,7 +3,7 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App, LabelV, ChartV, MarkerV } from "state.slint";
-import { TipArea, IconButton } from "widgets.slint";
+import { TipArea, IconButton, AText } from "widgets.slint";
 
 export global Colors {
     out property <color> vfr: #3ccf7a;
@@ -44,7 +44,7 @@ export component Heading inherits HorizontalLayout {
         y: (parent.height - self.height) / 2;
         colorize: Theme.accent;
     }
-    Text {
+    AText {
         text: root.text;
         font-family: Theme.cond;
         font-size: 12px * Theme.scale;
@@ -75,7 +75,7 @@ export component Metric inherits Rectangle {
         padding: 10px * Theme.scale;
         padding-left: 12px * Theme.scale;
         spacing: 2px;
-        Text {
+        AText {
             text: root.label;
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -85,7 +85,7 @@ export component Metric inherits Rectangle {
         HorizontalLayout {
             spacing: 4px;
             alignment: start;
-            Text {
+            AText {
                 text: root.value == "" ? "—" : root.value;
                 font-family: Theme.mono;
                 font-size: root.big * 0.86;
@@ -93,7 +93,7 @@ export component Metric inherits Rectangle {
                 color: root.tone;
                 overflow: elide;
             }
-            if root.unit != "": Text {
+            if root.unit != "": AText {
                 text: root.unit;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -102,7 +102,7 @@ export component Metric inherits Rectangle {
                 height: root.big * 1.02;
             }
         }
-        if root.sub != "": Text {
+        if root.sub != "": AText {
             text: root.sub;
             font-family: Theme.font;
             font-size: Theme.fs-small;
@@ -119,7 +119,7 @@ export component Pair inherits HorizontalLayout {
     in property <bool> mono;
     spacing: 10px;
     height: 22px * Theme.scale;
-    Text {
+    AText {
         text: root.k;
         font-family: Theme.font;
         font-size: Theme.fs;
@@ -128,7 +128,7 @@ export component Pair inherits HorizontalLayout {
         width: 42%;
         overflow: elide;
     }
-    Text {
+    AText {
         text: root.v == "" ? "—" : root.v;
         font-family: root.mono ? Theme.mono : Theme.font;
         font-size: Theme.fs;
@@ -161,7 +161,7 @@ export component CatBadge inherits Rectangle {
             drop-shadow-blur: 4px;
             drop-shadow-color: Colors.cat(root.cat).with-alpha(0.8);
         }
-        Text {
+        AText {
             text: root.cat;
             font-family: Theme.cond;
             font-size: 11px * Theme.scale;
@@ -219,7 +219,45 @@ export component Bar inherits Rectangle {
     }
 }
 
+/// Kompas mapy: igła wskazuje północ obróconej mapy, kliknięcie obraca mapę z powrotem północą do góry.
+export component MapCompass inherits Rectangle {
+    in property <float> bearing;
+    callback clicked();
+    width: 28px * Theme.scale;
+    height: self.width;
+    border-radius: Theme.r-small;
+    background: ta.pressed ? Theme.press : ta.has-hover ? Theme.hover : transparent;
+    Rectangle {
+        width: 18px * Theme.scale;
+        height: self.width;
+        transform-rotation: -root.bearing * 1deg;
+        Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: 18;
+            viewbox-height: 18;
+            fill: #ff5a5f;
+            commands: "M 9 1 L 13 9 L 5 9 Z";
+        }
+        Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: 18;
+            viewbox-height: 18;
+            fill: Theme.text-dim;
+            commands: "M 5 9 L 13 9 L 9 17 Z";
+        }
+    }
+    ta := TipArea {
+        tip: @tr("Kompas – kliknij, żeby obrócić mapę północą do góry (obracanie: przeciągnij prawym przyciskiem w bok)");
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
 /// Mapa rysowana w Rust (kafelki + tor) z etykietami w Slint; przeciąganie przesuwa, kółko przybliża.
+/// Prawy przycisk (albo Ctrl + lewy): w bok obraca mapę, w górę i w dół ją pochyla.
 export component MapView inherits Rectangle {
     in property <int> id;
     in property <image> source;
@@ -228,7 +266,7 @@ export component MapView inherits Rectangle {
     in property <bool> show-follow;
     property <length> last-x;
     property <length> last-y;
-    // pochylanie: prawy przycisk albo Ctrl + lewy (przeciąganie w pionie)
+    // obrót i pochylanie: prawy przycisk albo Ctrl + lewy
     property <bool> tilting;
     property <bool> right-down;
     clip: true;
@@ -266,15 +304,15 @@ export component MapView inherits Rectangle {
         stroke-style: outside;
     }
     ta := TouchArea {
-        mouse-cursor: root.tilting || root.right-down ? MouseCursor.ns-resize : self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
+        mouse-cursor: root.tilting || root.right-down ? MouseCursor.move : self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
         pointer-event(e) => {
             if (e.kind == PointerEventKind.down) {
                 root.last-x = self.mouse-x;
                 root.last-y = self.mouse-y;
                 if (e.button == PointerEventButton.right) {
-                    root.right-down = App.map-tilt;
+                    root.right-down = true;
                 } else if (e.button == PointerEventButton.left) {
-                    root.tilting = App.map-tilt && e.modifiers.control;
+                    root.tilting = e.modifiers.control;
                 }
             } else if (e.kind == PointerEventKind.up) {
                 if (e.button == PointerEventButton.right) {
@@ -283,14 +321,14 @@ export component MapView inherits Rectangle {
                     root.tilting = false;
                 }
             } else if (e.kind == PointerEventKind.move && root.right-down) {
-                App.map-event(root.id, "tilt", self.mouse-x / 1px, self.mouse-y / 1px, 0, (self.mouse-y - root.last-y) / 1px);
+                App.map-event(root.id, "orbit", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
                 root.last-x = self.mouse-x;
                 root.last-y = self.mouse-y;
             }
         }
         moved => {
             if (self.pressed) {
-                App.map-event(root.id, root.tilting ? "tilt" : "pan", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
+                App.map-event(root.id, root.tilting ? "orbit" : "pan", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
                 root.last-x = self.mouse-x;
                 root.last-y = self.mouse-y;
             }
@@ -342,6 +380,12 @@ export component MapView inherits Rectangle {
                 tip: @tr("Pochyl mapę albo wróć do widoku z góry (albo przeciągnij prawym przyciskiem w górę i w dół)");
                 clicked => {
                     App.map-event(root.id, "tilt-toggle", 0, 0, 0, 0);
+                }
+            }
+            MapCompass {
+                bearing: App.map-bearings[root.id];
+                clicked => {
+                    App.map-event(root.id, "north", 0, 0, 0, 0);
                 }
             }
             if root.show-follow: IconButton {
@@ -626,7 +670,7 @@ export component Empty inherits VerticalLayout {
             colorize: Theme.text-faint;
         }
     }
-    Text {
+    AText {
         text: root.title;
         font-family: Theme.font;
         font-size: Theme.fs-big;
@@ -634,7 +678,7 @@ export component Empty inherits VerticalLayout {
         color: Theme.text-dim;
         horizontal-alignment: center;
     }
-    Text {
+    AText {
         text: root.text;
         font-family: Theme.font;
         font-size: Theme.fs;

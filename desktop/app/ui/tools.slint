@@ -6,7 +6,7 @@ import { ScrollView, TextEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Field, Segmented, Button, TipArea, MenuItem, Card as WCard } from "widgets.slint";
+import { Field, Segmented, Button, TipArea, MenuItem, Card as WCard, AText } from "widgets.slint";
 import { Panel, Colors } from "parts.slint";
 import { Cab, Caps, In, Out, Card, Table, Scope, Tag } from "tool_parts.slint";
 
@@ -417,7 +417,7 @@ export component Tools inherits Rectangle {
                         alignment: center;
                         spacing: 2px;
                         horizontal-stretch: 1;
-                        Text {
+                        AText {
                             text: root.cur.t;
                             font-family: Theme.cond;
                             font-size: 20px * Theme.scale;
@@ -425,7 +425,7 @@ export component Tools inherits Rectangle {
                             color: Theme.text;
                             overflow: elide;
                         }
-                        Text {
+                        AText {
                             text: root.cur.g.to-uppercase() + " · " + root.cur.d;
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -487,7 +487,7 @@ export component Tools inherits Rectangle {
                                 text <=> root.rw-limit;
                                 unit: "kt";
                             }
-                            Text {
+                            AText {
                                 text: @tr("Numer pasa (np. 29) albo kurs w stopniach. Limit to największy wiatr boczny, przy jakim lądujesz danym samolotem.");
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -535,7 +535,7 @@ export component Tools inherits Rectangle {
                                             fill: transparent;
                                             commands: "M 5 18 L 5 26 M 5 32 L 5 40 M 5 46 L 5 54 M 5 60 L 5 68 M 5 74 L 5 82";
                                         }
-                                        Text {
+                                        AText {
                                             y: parent.height - self.height - 3px;
                                             text: round(root.rw-h / 10) < 10 ? "0" + round(root.rw-h / 10) : "" + round(root.rw-h / 10);
                                             font-family: Theme.mono;
@@ -623,7 +623,7 @@ export component Tools inherits Rectangle {
                                 text <=> root.rw-icao;
                                 w: 80px * Theme.scale;
                             }
-                            Text {
+                            AText {
                                 text: @tr("Wiatr z danych powyżej. Podświetlony – najkorzystniejszy kierunek, przygaszone – z wiatrem tylnym.");
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -641,7 +641,7 @@ export component Tools inherits Rectangle {
                             rows: (root.aw.length - 1) / 6;
                             heads: [@tr("Pas"), @tr("Kurs"), @tr("Czołowy (kt)"), @tr("Boczny (kt)"), @tr("Długość")];
                         }
-                        if root.aw.length > 0 && root.aw[0] == "": Text {
+                        if root.aw.length > 0 && root.aw[0] == "": AText {
                             text: @tr("Nie znaleziono lotniska o tym kodzie.");
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -808,7 +808,7 @@ export component Tools inherits Rectangle {
                                     unit: "kg/h";
                                 }
                             }
-                            if root.ro[0] == "": Text {
+                            if root.ro[0] == "": AText {
                                 text: root.ro.length > 1 ? root.ro[1] : "";
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -850,7 +850,7 @@ export component Tools inherits Rectangle {
                                     background: Cab.screen;
                                     border-width: 2.5px;
                                     border-color: Cab.cyan;
-                                    Text {
+                                    AText {
                                         y: 18px;
                                         text: e.t.to-uppercase();
                                         font-family: Theme.mono;
@@ -876,7 +876,7 @@ export component Tools inherits Rectangle {
                             }
                             if root.ro[0] == "1": VerticalLayout {
                                 spacing: 2px;
-                                Text {
+                                AText {
                                     text: root.ro[1] + "  →  " + root.ro[2];
                                     font-family: Theme.font;
                                     font-size: Theme.fs-small;
@@ -954,7 +954,7 @@ export component Tools inherits Rectangle {
                             unit: "h:mm";
                             hint: "1:30";
                         }
-                        Text {
+                        AText {
                             text: @tr("Wpisz dwie wartości, a trzecią zostaw pustą – zostanie policzona.");
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -1000,14 +1000,14 @@ export component Tools inherits Rectangle {
                                     border-color: Theme.line;
                                     VerticalLayout {
                                         alignment: center;
-                                        Text {
+                                        AText {
                                             text: s + " kt";
                                             font-family: Theme.mono;
                                             font-size: 10.5px * Theme.scale;
                                             color: Theme.text-dim;
                                             horizontal-alignment: center;
                                         }
-                                        Text {
+                                        AText {
                                             text: (s / 60) + " NM/min";
                                             font-family: Theme.mono;
                                             font-size: 12px * Theme.scale;
@@ -1048,7 +1048,7 @@ export component Tools inherits Rectangle {
                             v: root.tu[0];
                             tone: Cab.green;
                         }
-                        Text {
+                        AText {
                             text: @tr("Zakręt standardowy (rate 1) to 3°/s – pełny okrąg w 2 minuty. Przybliżenie pamięciowe: TAS / 10 + 7.");
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -1385,7 +1385,7 @@ export component Tools inherits Rectangle {
                                 unit: "%";
                             }
                         }
-                        Text {
+                        AText {
                             text: @tr("Procedury odlotu (SID) podają minimalny gradient wznoszenia – zwykle 3,3 % albo więcej przy przeszkodach.");
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -1461,7 +1461,7 @@ export component Tools inherits Rectangle {
                                 unit: "kt";
                             }
                         }
-                        Text {
+                        AText {
                             text: @tr("Wysoka wysokość gęstościowa wydłuża rozbieg i osłabia wznoszenie – samolot „czuje się” jak wyżej.");
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -1595,7 +1595,7 @@ export component Tools inherits Rectangle {
                                 }
                             }
                         }
-                        Text {
+                        AText {
                             text: @tr("Szacunek do symulatora z prostego modelu typu samolotu – nie zastępuje danych z AFM ani EFB.");
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -1652,7 +1652,7 @@ export component Tools inherits Rectangle {
                                 width: parent.width * min(1, root.tko[12].to-float());
                                 background: root.tko[0] == "1" ? Cab.green.with-alpha(0.55) : Cab.red.with-alpha(0.65);
                             }
-                            Text {
+                            AText {
                                 horizontal-alignment: center;
                                 vertical-alignment: center;
                                 text: root.tko[0] == "1" ? @tr("Pas wystarcza") : @tr("Pas za krótki");
@@ -1686,7 +1686,7 @@ export component Tools inherits Rectangle {
                                 v: root.tko[10];
                             }
                         }
-                        if root.tko[11] != "": Text {
+                        if root.tko[11] != "": AText {
                             text: root.tko[11];
                             font-family: Theme.font;
                             font-size: Theme.fs;
@@ -1795,7 +1795,7 @@ export component Tools inherits Rectangle {
                                 }
                             }
                         }
-                        Text {
+                        AText {
                             text: @tr("Szacunek do symulatora z prostego modelu typu samolotu – nie zastępuje danych z AFM ani EFB.");
                             font-family: Theme.font;
                             font-size: Theme.fs-small;
@@ -1851,7 +1851,7 @@ export component Tools inherits Rectangle {
                                 width: parent.width * min(1, root.ld[12].to-float());
                                 background: root.ld[0] == "1" ? Cab.green.with-alpha(0.55) : Cab.red.with-alpha(0.65);
                             }
-                            Text {
+                            AText {
                                 horizontal-alignment: center;
                                 vertical-alignment: center;
                                 text: root.ld[0] == "1" ? @tr("Pas wystarcza") : @tr("Pas za krótki");
@@ -1885,7 +1885,7 @@ export component Tools inherits Rectangle {
                                 v: root.ld[10];
                             }
                         }
-                        if root.ld[11] != "": Text {
+                        if root.ld[11] != "": AText {
                             text: root.ld[11];
                             font-family: Theme.font;
                             font-size: Theme.fs;
@@ -2253,7 +2253,7 @@ export component Tools inherits Rectangle {
                                 border-color: Cab.edge;
                                 VerticalLayout {
                                     alignment: center;
-                                    Text {
+                                    AText {
                                         text: root.ph[i * 2];
                                         font-family: Theme.mono;
                                         font-size: 16px * Theme.scale;
@@ -2261,7 +2261,7 @@ export component Tools inherits Rectangle {
                                         color: Cab.cyan;
                                         horizontal-alignment: center;
                                     }
-                                    Text {
+                                    AText {
                                         text: root.ph[i * 2 + 1];
                                         font-family: Theme.mono;
                                         font-size: 11px * Theme.scale;
@@ -2291,7 +2291,7 @@ export component Tools inherits Rectangle {
                                 background: Cab.screen;
                                 border-width: 1px;
                                 border-color: c.tone.with-alpha(0.6);
-                                Text {
+                                AText {
                                     text: c.code;
                                     font-family: Theme.mono;
                                     font-size: 15px * Theme.scale;
@@ -2300,7 +2300,7 @@ export component Tools inherits Rectangle {
                                     color: c.tone;
                                 }
                             }
-                            Text {
+                            AText {
                                 text: c.t;
                                 font-family: Theme.font;
                                 font-size: Theme.fs;
@@ -2327,7 +2327,7 @@ export component Tools inherits Rectangle {
                     }
                     Card {
                         title: @tr("Opis grup");
-                        if root.decoded.length == 0: Text {
+                        if root.decoded.length == 0: AText {
                             text: "–";
                             color: Theme.text-faint;
                         }
@@ -2340,7 +2340,7 @@ export component Tools inherits Rectangle {
                                 background: Cab.screen;
                                 border-width: 1px;
                                 border-color: Cab.edge;
-                                Text {
+                                AText {
                                     x: 8px;
                                     width: parent.width - 16px;
                                     text: root.decoded[i * 2];
@@ -2352,7 +2352,7 @@ export component Tools inherits Rectangle {
                                     overflow: elide;
                                 }
                             }
-                            Text {
+                            AText {
                                 text: root.decoded[i * 2 + 1];
                                 font-family: Theme.font;
                                 font-size: Theme.fs;

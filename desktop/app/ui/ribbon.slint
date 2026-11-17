@@ -4,7 +4,7 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { BigButton, Card, Col, Group, MenuItem, MenuSep, Row } from "widgets.slint";
+import { BigButton, Card, Col, Group, MenuItem, MenuSep, Row, AText } from "widgets.slint";
 
 /// Checklisty: zestaw dla samolotu – duży przycisk wstążki z menu (Auto – rozpoznany z samolotu).
 component ChecklistSetButton inherits Rectangle {
@@ -181,7 +181,7 @@ component CabinStyleButton inherits Rectangle {
                     }
                 }
                 MenuSep { }
-                Text {
+                AText {
                     x: 10px;
                     height: 20px * Theme.scale;
                     text: @tr("Wyświetlacze kabiny").to-uppercase();
@@ -202,7 +202,7 @@ component CabinStyleButton inherits Rectangle {
                     }
                 }
                 MenuSep { }
-                Text {
+                AText {
                     x: 10px;
                     height: 20px * Theme.scale;
                     text: @tr("Zegary analogowe").to-uppercase();

@@ -6,7 +6,7 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { App } from "state.slint";
-import { Button, IconButton, TipArea, Switch, Field } from "widgets.slint";
+import { Button, IconButton, TipArea, Switch, Field, AText } from "widgets.slint";
 import { Panel, Heading, Metric, CatBadge, Score, MapView, ListRow, Colors } from "parts.slint";
 
 /// Duży kod lotniska z nazwą i pasem pod spodem.
@@ -16,7 +16,7 @@ component Airport inherits VerticalLayout {
     in property <string> rwy;
     in property <bool> right;
     spacing: 2px;
-    Text {
+    AText {
         text: root.code;
         font-family: Theme.mono;
         font-size: 34px * Theme.scale;
@@ -24,7 +24,7 @@ component Airport inherits VerticalLayout {
         color: Theme.text;
         horizontal-alignment: root.right ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
     }
-    Text {
+    AText {
         text: root.name;
         font-family: Theme.font;
         font-size: Theme.fs-small;
@@ -32,7 +32,7 @@ component Airport inherits VerticalLayout {
         overflow: elide;
         horizontal-alignment: root.right ? TextHorizontalAlignment.right : TextHorizontalAlignment.left;
     }
-    if root.rwy != "": Text {
+    if root.rwy != "": AText {
         text: "RWY " + root.rwy;
         font-family: Theme.mono;
         font-size: 10.5px * Theme.scale;
@@ -48,7 +48,7 @@ component PlanStat inherits VerticalLayout {
     in property <color> tone: Theme.text;
     spacing: 1px;
     horizontal-stretch: 1;
-    Text {
+    AText {
         text: root.value == "" ? "–" : root.value;
         font-family: Theme.mono;
         font-size: 14px * Theme.scale;
@@ -56,7 +56,7 @@ component PlanStat inherits VerticalLayout {
         color: root.tone;
         overflow: elide;
     }
-    Text {
+    AText {
         text: root.label;
         font-family: Theme.font;
         font-size: 10.5px * Theme.scale;
@@ -76,7 +76,7 @@ component Tag inherits Rectangle {
     background: root.tone.with-alpha(0.12);
     border-width: 1px;
     border-color: root.tone.with-alpha(0.45);
-    tt := Text {
+    tt := AText {
         text: root.text;
         font-family: Theme.mono;
         font-size: 11px * Theme.scale;
@@ -96,7 +96,7 @@ component StatGroup inherits Rectangle {
     gv := VerticalLayout {
         padding: 10px;
         spacing: 8px;
-        Text {
+        AText {
             text: root.title.to-uppercase();
             font-family: Theme.cond;
             font-size: 10.5px * Theme.scale;
@@ -131,7 +131,7 @@ component PlanHero inherits Panel {
             Rectangle {
                 horizontal-stretch: 1;
             }
-            if App.plan.loaded: Text {
+            if App.plan.loaded: AText {
                 text: @tr("SimBrief, ") + App.plan.fetched;
                 font-family: Theme.font;
                 font-size: Theme.fs-small;
@@ -177,14 +177,14 @@ component PlanHero inherits Panel {
                 horizontal-stretch: 1;
                 spacing: 4px;
                 alignment: center;
-                Text {
+                AText {
                     text: @tr("Pobierz plan z SimBrief");
                     font-family: Theme.cond;
                     font-size: 22px * Theme.scale;
                     font-weight: 700;
                     color: Theme.text;
                 }
-                Text {
+                AText {
                     text: @tr("Trasa pojawi się na mapie, w panelu bocznym i na pasku do transmisji, a w czasie lotu zobaczysz następny punkt, odległość do celu i paliwo względem planu.");
                     font-family: Theme.font;
                     font-size: Theme.fs;
@@ -215,7 +215,7 @@ component PlanHero inherits Panel {
                         }
                     }
                 }
-                Text {
+                AText {
                     text: @tr("Pilot ID znajdziesz w SimBrief w Account Settings.");
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -257,7 +257,7 @@ component PlanHero inherits Panel {
                         transform-rotation: 45deg;
                     }
                 }
-                Text {
+                AText {
                     text: App.plan.live ? @tr("Następny: ") + App.plan.next + "  " + App.plan.next-dist + "   ·   " + @tr("do celu ") + App.plan.remaining : App.plan.distance + "   ·   " + App.plan.ete + (App.plan.cruise != "" ? "   ·   " + App.plan.cruise : "");
                     font-family: Theme.mono;
                     font-size: 11.5px * Theme.scale;
@@ -394,7 +394,7 @@ component PlanHero inherits Panel {
             height: rt.preferred-height + 14px;
             border-radius: Theme.r-small;
             background: #0b1016;
-            rt := Text {
+            rt := AText {
                 x: 10px;
                 width: parent.width - 20px;
                 text: App.plan.route;
@@ -410,7 +410,7 @@ component PlanHero inherits Panel {
             padding-right: 12px;
             spacing: 10px;
             height: 14px * Theme.scale;
-            for c[i] in [@tr("PUNKT"), @tr("DROGA"), "ALT", "Σ NM", @tr("WIATR"), @tr("PALIWO")]: Text {
+            for c[i] in [@tr("PUNKT"), @tr("DROGA"), "ALT", "Σ NM", @tr("WIATR"), @tr("PALIWO")]: AText {
                 width: i == 5 ? -1px : (i == 0 ? 90px : 70px) * Theme.scale;
                 horizontal-stretch: i == 5 ? 1 : 0;
                 text: c;
@@ -441,7 +441,7 @@ component PlanHero inherits Panel {
                             padding-left: 8px;
                             padding-right: 8px;
                             spacing: 10px;
-                            Text {
+                            AText {
                                 text: f.ident;
                                 width: 90px * Theme.scale;
                                 font-family: Theme.mono;
@@ -450,7 +450,7 @@ component PlanHero inherits Panel {
                                 color: f.passed ? Theme.text-faint : f.next ? Theme.accent : Theme.text;
                                 vertical-alignment: center;
                             }
-                            Text {
+                            AText {
                                 text: f.via;
                                 width: 70px * Theme.scale;
                                 font-family: Theme.mono;
@@ -459,7 +459,7 @@ component PlanHero inherits Panel {
                                 vertical-alignment: center;
                                 overflow: elide;
                             }
-                            Text {
+                            AText {
                                 text: f.alt;
                                 width: 70px * Theme.scale;
                                 font-family: Theme.mono;
@@ -468,7 +468,7 @@ component PlanHero inherits Panel {
                                 vertical-alignment: center;
                                 horizontal-alignment: right;
                             }
-                            Text {
+                            AText {
                                 text: f.dist + " NM";
                                 width: 70px * Theme.scale;
                                 font-family: Theme.mono;
@@ -477,7 +477,7 @@ component PlanHero inherits Panel {
                                 vertical-alignment: center;
                                 horizontal-alignment: right;
                             }
-                            Text {
+                            AText {
                                 text: f.wind;
                                 width: 70px * Theme.scale;
                                 font-family: Theme.mono;
@@ -486,7 +486,7 @@ component PlanHero inherits Panel {
                                 vertical-alignment: center;
                                 horizontal-alignment: right;
                             }
-                            Text {
+                            AText {
                                 text: f.fuel;
                                 horizontal-stretch: 1;
                                 font-family: Theme.mono;
@@ -523,7 +523,7 @@ component LandingPanel inherits Panel {
                 }
             }
         }
-        if !App.last-landing.has: Text {
+        if !App.last-landing.has: AText {
             text: @tr("Po przyziemieniu pojawi się tu ocena, a na ekranie symulatora – karta lądowania.");
             font-family: Theme.font;
             font-size: Theme.fs;
@@ -541,20 +541,20 @@ component LandingPanel inherits Panel {
                 alignment: center;
                 spacing: 2px;
                 horizontal-stretch: 1;
-                Text {
+                AText {
                     text: App.last-landing.grade;
                     font-family: Theme.cond;
                     font-size: 20px * Theme.scale;
                     font-weight: 700;
                     color: Colors.score(App.last-landing.score);
                 }
-                Text {
+                AText {
                     text: App.last-landing.vs + (App.last-landing.g != "" ? "   " + App.last-landing.g : "");
                     font-family: Theme.mono;
                     font-size: Theme.fs;
                     color: Theme.text;
                 }
-                Text {
+                AText {
                     text: App.last-landing.airport + " " + App.last-landing.runway + (App.last-landing.along != "" ? "  ·  " + App.last-landing.along : "");
                     font-family: Theme.font;
                     font-size: Theme.fs-small;
@@ -677,7 +677,7 @@ export component Dashboard inherits Rectangle {
                                     }
                                 }
                             }
-                            if App.shots.length == 0: Text {
+                            if App.shots.length == 0: AText {
                                 text: @tr("Naciśnij F12 w symulatorze – zrzut zapamięta miejsce samolotu.");
                                 font-family: Theme.font;
                                 font-size: Theme.fs-small;
@@ -738,7 +738,7 @@ export component Dashboard inherits Rectangle {
                                 }
                             }
                         }
-                        if App.watchlist.length == 0: Text {
+                        if App.watchlist.length == 0: AText {
                             text: @tr("Dodaj lotniska na karcie Lotniska (gwiazdka), żeby widzieć tu ich bieżącą pogodę.");
                             font-family: Theme.font;
                             font-size: Theme.fs;
@@ -758,7 +758,7 @@ export component Dashboard inherits Rectangle {
                                     alignment: center;
                                     HorizontalLayout {
                                         spacing: 6px;
-                                        Text {
+                                        AText {
                                             text: w.icao;
                                             font-family: Theme.mono;
                                             font-size: Theme.fs-big;
@@ -770,7 +770,7 @@ export component Dashboard inherits Rectangle {
                                             y: (parent.height - self.height) / 2;
                                         }
                                     }
-                                    Text {
+                                    AText {
                                         text: w.age;
                                         font-family: Theme.font;
                                         font-size: 10.5px * Theme.scale;
@@ -781,21 +781,21 @@ export component Dashboard inherits Rectangle {
                                     alignment: center;
                                     horizontal-stretch: 1;
                                     spacing: 2px;
-                                    Text {
+                                    AText {
                                         text: w.name;
                                         font-family: Theme.font;
                                         font-size: Theme.fs-small;
                                         color: Theme.text-dim;
                                         overflow: elide;
                                     }
-                                    Text {
+                                    AText {
                                         text: w.wind + "   " + w.vis + "   " + w.temp + "   " + w.qnh;
                                         font-family: Theme.mono;
                                         font-size: Theme.fs-small;
                                         color: Theme.text;
                                         overflow: elide;
                                     }
-                                    Text {
+                                    AText {
                                         text: w.raw;
                                         font-family: Theme.mono;
                                         font-size: 10px * Theme.scale;
@@ -875,13 +875,13 @@ export component Dashboard inherits Rectangle {
                                 spacing: 14px;
                                 VerticalLayout {
                                     spacing: 2px;
-                                    Text {
+                                    AText {
                                         text: @tr("Kod parowania");
                                         font-family: Theme.font;
                                         font-size: Theme.fs-small;
                                         color: Theme.text-dim;
                                     }
-                                    Text {
+                                    AText {
                                         text: App.pairing-code;
                                         font-family: Theme.mono;
                                         font-size: 28px * Theme.scale;
@@ -894,14 +894,14 @@ export component Dashboard inherits Rectangle {
                                     horizontal-stretch: 1;
                                     alignment: center;
                                     spacing: 4px;
-                                    Text {
+                                    AText {
                                         text: @tr("W aplikacji OpenTakeoff na telefonie otwórz Kokpit → Połącz. Telefon sam znajdzie ten komputer w sieci Wi-Fi; jeśli nie – wpisz adres ręcznie.");
                                         font-family: Theme.font;
                                         font-size: Theme.fs-small;
                                         color: Theme.text-dim;
                                         wrap: word-wrap;
                                     }
-                                    Text {
+                                    AText {
                                         text: @tr("Adres: ") + App.addresses + " · " + @tr("port ") + App.port;
                                         font-family: Theme.mono;
                                         font-size: 10.5px * Theme.scale;

@@ -6,10 +6,9 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use crossbeam_channel::{unbounded, Sender};
-use parking_lot::Mutex;
+use parking_lot::{Condvar, Mutex};
 use tiny_skia::{Color, FillRule, FilterQuality, LineCap, LineJoin, Paint, PathBuilder, Pattern, Pixmap, PixmapPaint, SpreadMode, Stroke, Transform};
 
 const TILE: f64 = 256.0;
@@ -52,11 +51,8 @@ pub fn set_radar_frame(host: &str, path: &str) {
     *r = Some((host.to_string(), path.to_string()));
     drop(r);
     let t = tiles();
-    let mut m = t.mem.lock();
-    m.0.retain(|k, _| k.0 != Style::Radar);
-    m.1.retain(|k| k.0 != Style::Radar);
-    drop(m);
-    t.failed.lock().retain(|k| k.0 != Style::Radar);
+    t.mem.lock().map.retain(|k, _| k.0 != Style::Radar);
+    t.failed.lock().retain(|k, _| k.0 != Style::Radar);
     TILES_SERIAL.fetch_add(1, Ordering::SeqCst);
 }
 
@@ -105,12 +101,27 @@ impl Style {
 
 type Key = (Style, u32, u32, u32);
 
-struct Tiles {
-    mem: Mutex<(HashMap<Key, Arc<Pixmap>>, VecDeque<Key>)>,
-    pending: Mutex<HashSet<Key>>,
-    failed: Mutex<HashSet<Key>>,
-    queue: Sender<Key>,
+/// Kafelki w pamięci z „zegarem” ostatniego użycia – przy przepełnieniu wypada najdawniej używany
+/// (nie najdawniej wczytany: pochylona mapa trzyma naraz kafelki wielu poziomów i FIFO wyrzucało
+/// te, które właśnie są na ekranie, przez co znikały i wczytywały się w kółko).
+struct Mem {
+    map: HashMap<Key, (Arc<Pixmap>, u64)>,
+    clock: u64,
 }
+
+struct Tiles {
+    mem: Mutex<Mem>,
+    pending: Mutex<HashSet<Key>>,
+    /// Nieudane pobrania z czasem – po [`RETRY_FAILED`] próba jest ponawiana.
+    failed: Mutex<HashMap<Key, Instant>>,
+    /// Zlecenia: najnowsze na końcu i obsługiwane najpierw (to, co jest teraz na ekranie), najstarsze
+    /// odpadają ponad [`MAX_QUEUE`] – przy przesuwaniu i pochylaniu nie narasta zaległa kolejka.
+    queue: Mutex<VecDeque<Key>>,
+    ready: Condvar,
+}
+
+const MAX_QUEUE: usize = 256;
+const RETRY_FAILED: Duration = Duration::from_secs(30);
 
 /// Rośnie, gdy dotrze nowy kafelek – widoki rysują się wtedy od nowa.
 pub static TILES_SERIAL: AtomicU64 = AtomicU64::new(0);
@@ -134,13 +145,20 @@ fn tile_path(k: &Key) -> PathBuf {
 fn tiles() -> &'static Tiles {
     static T: OnceLock<Tiles> = OnceLock::new();
     T.get_or_init(|| {
-        let (tx, rx) = unbounded::<Key>();
         for i in 0..4 {
-            let rx = rx.clone();
             let _ = std::thread::Builder::new().name(format!("tiles-{i}")).spawn(move || {
                 let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(20)).user_agent(&format!("OpenTakeoff-Windows/{} (+https://redzikowski.com)", opentakeoff_core::version())).build();
-                while let Ok(k) = rx.recv() {
-                    let t = tiles();
+                let t = tiles();
+                loop {
+                    let k = {
+                        let mut q = t.queue.lock();
+                        loop {
+                            if let Some(k) = q.pop_back() {
+                                break k;
+                            }
+                            t.ready.wait(&mut q);
+                        }
+                    };
                     let path = tile_path(&k);
                     let disk = k.0 != Style::Radar;
                     let bytes = std::fs::read(&path).ok().filter(|_| disk).or_else(|| {
@@ -165,16 +183,16 @@ fn tiles() -> &'static Tiles {
                     match bytes.and_then(|b| decode(&b)) {
                         Some(p) => {
                             let mut m = t.mem.lock();
-                            m.0.insert(k, Arc::new(p));
-                            m.1.push_back(k);
-                            while m.1.len() > MEMORY_TILES {
-                                if let Some(old) = m.1.pop_front() {
-                                    m.0.remove(&old);
-                                }
+                            m.clock += 1;
+                            let now = m.clock;
+                            m.map.insert(k, (Arc::new(p), now));
+                            while m.map.len() > MEMORY_TILES {
+                                let Some(old) = m.map.iter().min_by_key(|(_, v)| v.1).map(|(k, _)| *k) else { break };
+                                m.map.remove(&old);
                             }
                         }
                         None => {
-                            t.failed.lock().insert(k);
+                            t.failed.lock().insert(k, Instant::now());
                         }
                     }
                     t.pending.lock().remove(&k);
@@ -182,46 +200,95 @@ fn tiles() -> &'static Tiles {
                 }
             });
         }
-        Tiles { mem: Mutex::new((HashMap::new(), VecDeque::new())), pending: Mutex::new(HashSet::new()), failed: Mutex::new(HashSet::new()), queue: tx }
+        Tiles {
+            mem: Mutex::new(Mem { map: HashMap::new(), clock: 0 }),
+            pending: Mutex::new(HashSet::new()),
+            failed: Mutex::new(HashMap::new()),
+            queue: Mutex::new(VecDeque::new()),
+            ready: Condvar::new(),
+        }
     })
+}
+
+/// Zlecenie pobrania na szczyt kolejki (także ponowione – przesuwa się wtedy na szczyt).
+fn request(k: Key) {
+    let t = tiles();
+    let fresh = t.pending.lock().insert(k);
+    let mut dropped = None;
+    {
+        let mut q = t.queue.lock();
+        if !fresh {
+            match q.iter().rposition(|x| *x == k) {
+                // już pobierany przez wątek – nic do zrobienia
+                None => return,
+                Some(i) if i + 1 == q.len() => return,
+                Some(i) => {
+                    q.remove(i);
+                }
+            }
+        }
+        q.push_back(k);
+        if q.len() > MAX_QUEUE {
+            dropped = q.pop_front();
+        }
+    }
+    if let Some(old) = dropped {
+        t.pending.lock().remove(&old);
+    }
+    t.ready.notify_one();
 }
 
 /// Kafelek z pamięci; brak – zlecenie pobrania (z dysku albo z sieci) i None.
 fn tile(k: Key) -> Option<Arc<Pixmap>> {
+    if let Some(p) = cached(k) {
+        return Some(p);
+    }
     let t = tiles();
-    if let Some(p) = t.mem.lock().0.get(&k) {
-        return Some(p.clone());
+    {
+        let mut f = t.failed.lock();
+        match f.get(&k) {
+            Some(at) if at.elapsed() < RETRY_FAILED => return None,
+            Some(_) => {
+                f.remove(&k);
+            }
+            None => {}
+        }
     }
-    if t.failed.lock().contains(&k) {
-        return None;
-    }
-    if t.pending.lock().insert(k) {
-        let _ = t.queue.send(k);
-    }
+    request(k);
     None
 }
 
+/// Kafelek z pamięci (bez zlecania pobrania); odświeża jego czas użycia.
 fn cached(k: Key) -> Option<Arc<Pixmap>> {
-    tiles().mem.lock().0.get(&k).cloned()
+    let mut m = tiles().mem.lock();
+    m.clock += 1;
+    let now = m.clock;
+    m.map.get_mut(&k).map(|v| {
+        v.1 = now;
+        v.0.clone()
+    })
 }
 
 /// Kafelek do teksturowania (widok 3D): obraz i fragment (x, y, rozmiar w pikselach obrazu). Gdy kafelka
-/// jeszcze nie ma, zleca pobranie i zwraca powiększony fragment kafelka z niższego poziomu.
+/// jeszcze nie ma, zleca pobranie i zwraca powiększony fragment kafelka z niższego poziomu – szukanego
+/// aż do samej góry drzewa, a gdy żadnego nie ma, zleca też ogólniejszy kafelek (wczytuje się szybciej
+/// i od razu wypełnia dziurę, zanim dotrze szczegółowy).
 pub fn texture(style: Style, z: u32, x: u32, y: u32) -> Option<(Arc<Pixmap>, f32, f32, f32)> {
     let z = z.min(style.max_zoom());
     if let Some(t) = tile((style, z, x, y)) {
         return Some((t, 0.0, 0.0, TILE as f32));
     }
-    for up in 1..=6u32 {
-        if z < up {
-            break;
-        }
+    for up in 1..=z {
         let (pz, px, py) = (z - up, x >> up, y >> up);
         if let Some(t) = cached((style, pz, px, py)) {
             let f = (1u32 << up) as f32;
             let size = TILE as f32 / f;
             return Some((t, (x - (px << up)) as f32 * size, (y - (py << up)) as f32 * size, size));
         }
+    }
+    let up = z.min(3);
+    if up > 0 {
+        let _ = tile((style, z - up, x >> up, y >> up));
     }
     None
 }
@@ -256,17 +323,74 @@ pub struct View {
     pub h: f64,
     pub follow: bool,
     pub user_moved: bool,
-    /// Pochylenie (°): 0 – widok z góry, do [`MAX_TILT`] – mapa oglądana pod kątem, północ zostaje u góry.
+    /// Pochylenie (°): 0 – widok z góry, do [`MAX_TILT`] – mapa oglądana pod kątem.
     pub tilt: f64,
+    /// Obrót mapy (°, 0–360): kierunek geograficzny, który jest u góry ekranu (0 – północ).
+    pub bearing: f64,
 }
 
 impl Default for View {
     fn default() -> Self {
-        Self { lat: 52.0, lon: 19.0, zoom: 5.5, w: 600.0, h: 400.0, follow: true, user_moved: false, tilt: 0.0 }
+        Self { lat: 52.0, lon: 19.0, zoom: 5.5, w: 600.0, h: 400.0, follow: true, user_moved: false, tilt: 0.0, bearing: 0.0 }
     }
 }
 
+/// Przewyższenie wysokości trasy nad mapą (w skali 1:1 wysokość przelotowa ginie wobec długości trasy).
+const ALT_EXAGGERATION: f64 = 4.0;
+
 impl View {
+    /// Mapa obrócona (północ nie u góry).
+    pub fn rotated(&self) -> bool {
+        let b = self.bearing.rem_euclid(360.0);
+        b > 0.05 && b < 359.95
+    }
+
+    /// Mapa pochylona albo obrócona – kafelki i rysunki „na ziemi” trzeba rzutować, nie wystarczy przesunięcie.
+    pub fn projected(&self) -> bool {
+        self.tilted() || self.rotated()
+    }
+
+    /// Obrót przeciąganiem w poziomie (prawy przycisk). Zwraca, czy się zmienił.
+    pub fn rotate_by(&mut self, dx: f64) -> bool {
+        if dx.abs() < 1e-9 {
+            return false;
+        }
+        self.bearing = (self.bearing - dx * 0.4).rem_euclid(360.0);
+        true
+    }
+
+    /// Kompas: z powrotem północą do góry.
+    pub fn reset_bearing(&mut self) {
+        self.bearing = 0.0;
+    }
+
+    /// Przesunięcie na płaskiej mapie (wschód, południe) → układ obróconej mapy (w prawo, w dół ekranu).
+    fn rot(&self, fx: f64, fy: f64) -> (f64, f64) {
+        if !self.rotated() {
+            return (fx, fy);
+        }
+        let (s, c) = self.bearing.to_radians().sin_cos();
+        (fx * c + fy * s, -fx * s + fy * c)
+    }
+
+    fn unrot(&self, rx: f64, ry: f64) -> (f64, f64) {
+        if !self.rotated() {
+            return (rx, ry);
+        }
+        let (s, c) = self.bearing.to_radians().sin_cos();
+        (rx * c - ry * s, rx * s + ry * c)
+    }
+
+    /// Kąt na ekranie dla kierunku geograficznego `deg` (do obracania symboli).
+    pub fn screen_deg(&self, deg: f64) -> f64 {
+        deg - self.bearing
+    }
+
+    /// Wysokość (ft) w pikselach logicznych mapy przy bieżącym zoomie, z przewyższeniem.
+    pub fn alt_px(&self, alt_ft: f64) -> f64 {
+        let m_per_px = 156_543.03392 * self.lat.to_radians().cos().max(0.05) / 2f64.powf(self.zoom);
+        alt_ft.max(0.0) * 0.3048 / m_per_px * ALT_EXAGGERATION
+    }
     /// Pochylenie użyte do rysowania: 0, gdy pochylanie jest wyłączone w ustawieniach.
     pub fn tilt_deg(&self) -> f64 {
         if tilt_enabled() && self.tilt >= 0.5 {
@@ -288,6 +412,13 @@ impl View {
     /// Przesunięcie na płaskiej mapie względem środka (px logiczne, y w dół) → punkt ekranu.
     /// Kamera patrzy na środek mapy z odległości równej ogniskowej, pochylona o `tilt` od pionu.
     pub fn flat_to_screen(&self, fx: f64, fy: f64) -> (f64, f64) {
+        self.flat_to_screen_h(fx, fy, 0.0)
+    }
+
+    /// Jak [`Self::flat_to_screen`], ale punkt wisi `hp` pikseli logicznych nad ziemią (widać to tylko
+    /// na pochylonej mapie – z góry wysokość nie przesuwa punktu).
+    pub fn flat_to_screen_h(&self, fx: f64, fy: f64, hp: f64) -> (f64, f64) {
+        let (fx, fy) = self.rot(fx, fy);
         let t = self.tilt_deg();
         if t == 0.0 {
             return (self.w / 2.0 + fx, self.h / 2.0 + fy);
@@ -296,8 +427,8 @@ impl View {
         let d = self.focal();
         let gy = -fy;
         // punkty za kamerą lądują daleko pod ekranem (nie zawijają się na drugą stronę)
-        let z = (gy * s + d).max(d * 0.04);
-        (self.w / 2.0 + d * fx / z, self.h / 2.0 - d * gy * c / z)
+        let z = (gy * s - hp * c + d).max(d * 0.04);
+        (self.w / 2.0 + d * fx / z, self.h / 2.0 - d * (gy * c + hp * s) / z)
     }
 
     /// Punkt ekranu → przesunięcie na płaskiej mapie względem środka. Nad horyzontem (i tuż pod nim)
@@ -305,14 +436,14 @@ impl View {
     pub fn screen_to_flat(&self, x: f64, y: f64) -> (f64, f64) {
         let t = self.tilt_deg();
         if t == 0.0 {
-            return (x - self.w / 2.0, y - self.h / 2.0);
+            return self.unrot(x - self.w / 2.0, y - self.h / 2.0);
         }
         let (s, c) = t.to_radians().sin_cos();
         let d = self.focal();
         let xx = (x - self.w / 2.0) / d;
         let yy = ((self.h / 2.0 - y) / d).min((c - 0.08) / s);
         let gy = yy * d / (c - yy * s);
-        (xx * (gy * s + d), -gy)
+        self.unrot(xx * (gy * s + d), -gy)
     }
 
     /// Szerokość i długość geograficzna punktu ekranu (także na pochylonej mapie).
@@ -324,6 +455,11 @@ impl View {
     }
 
     pub fn to_screen(&self, lat: f64, lon: f64) -> (f64, f64) {
+        self.to_screen_alt(lat, lon, 0.0)
+    }
+
+    /// Punkt na wysokości `alt_ft` nad ziemią (z przewyższeniem [`ALT_EXAGGERATION`]).
+    pub fn to_screen_alt(&self, lat: f64, lon: f64, alt_ft: f64) -> (f64, f64) {
         let (cx, cy) = project(self.lat, self.lon, self.zoom);
         let (x, y) = project(lat, lon, self.zoom);
         let w = world(self.zoom);
@@ -333,13 +469,14 @@ impl View {
         } else if dx < -w / 2.0 {
             dx += w;
         }
-        self.flat_to_screen(dx, y - cy)
+        let hp = if alt_ft > 0.0 && self.tilted() { self.alt_px(alt_ft) } else { 0.0 };
+        self.flat_to_screen_h(dx, y - cy, hp)
     }
 
     /// Przeciągnięcie myszą z (x - dx, y - dy) do (x, y): punkt mapy pod wskaźnikiem idzie za nim,
-    /// także na pochylonej mapie.
+    /// także na pochylonej i obróconej mapie.
     pub fn drag(&mut self, x: f64, y: f64, dx: f64, dy: f64) {
-        if !self.tilted() {
+        if !self.projected() {
             self.pan(dx, dy);
             return;
         }
@@ -431,15 +568,20 @@ pub struct Track {
     /// None – kolory wysokości; Some – jeden kolor.
     pub color: Option<[u8; 4]>,
     pub width: f32,
+    /// Plan lotu: na pochylonej mapie linia wisi na swojej wysokości, a pod nią półprzezroczysta ściana
+    /// do ziemi z cieniem trasy na gruncie i pionowymi kreskami przy punktach.
+    pub wall: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Point {
     pub lat: f64,
     pub lon: f64,
     pub label: String,
     /// 0 lotnisko, 1 punkt nawigacyjny, 2 wyróżniony (znacznik/przyziemienie), 3 lotnisko małe, 4 zrzut ekranu
     pub kind: i32,
+    /// Wysokość punktu planu (ft) – na pochylonej mapie punkt wisi razem z trasą; None – na ziemi.
+    pub alt: Option<i32>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -543,10 +685,22 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
         let step = (t.pts.len() / 4000).max(1);
         let pts: Vec<&(f64, f64, i32)> = t.pts.iter().step_by(step).chain(t.pts.last()).collect();
         let stroke = Stroke { width: t.width * sc, line_cap: LineCap::Round, line_join: LineJoin::Round, ..Default::default() };
+        let lift = t.wall && v.tilted();
+        let pos = |p: &(f64, f64, i32)| -> (f32, f32) {
+            if lift {
+                let (x, y) = v.to_screen_alt(p.0, p.1, p.2 as f64);
+                ((x * s) as f32, (y * s) as f32)
+            } else {
+                to(p.0, p.1)
+            }
+        };
+        if lift {
+            draw_wall(&mut pm, v, &pts, t.color, max_alt, s, dark);
+        }
         // Obrys dla czytelności na podkładzie
         let mut outline = PathBuilder::new();
         for (i, p) in pts.iter().enumerate() {
-            let (x, y) = to(p.0, p.1);
+            let (x, y) = pos(*p);
             if i == 0 {
                 outline.move_to(x, y)
             } else {
@@ -569,7 +723,7 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
             }
         }
         for w in pts.windows(2) {
-            let (a, b) = (to(w[0].0, w[0].1), to(w[1].0, w[1].1));
+            let (a, b) = (pos(w[0]), pos(w[1]));
             if (a.0 - b.0).abs() > pw as f32 && (a.1 - b.1).abs() > ph as f32 {
                 continue;
             }
@@ -587,7 +741,13 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
     // Punkty i etykiety
     let mut labels = Vec::new();
     for p in &ov.points {
-        let (x, y) = to(p.lat, p.lon);
+        let (x, y) = match p.alt {
+            Some(a) if v.tilted() => {
+                let (x, y) = v.to_screen_alt(p.lat, p.lon, a as f64);
+                ((x * s) as f32, (y * s) as f32)
+            }
+            _ => to(p.lat, p.lon),
+        };
         if x < -20.0 || y < -20.0 || x > pw as f32 + 20.0 || y > ph as f32 + 20.0 {
             continue;
         }
@@ -636,7 +796,7 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
         }
         pb.close();
         if let Some(p) = pb.finish() {
-            let t = Transform::from_rotate(hdg as f32).post_scale(1.25 * sc, 1.25 * sc).post_translate(x, y);
+            let t = Transform::from_rotate(v.screen_deg(hdg) as f32).post_scale(1.25 * sc, 1.25 * sc).post_translate(x, y);
             let mut paint = Paint::default();
             paint.anti_alias = true;
             paint.set_color(Color::from_rgba8(0, 0, 0, 200));
@@ -648,9 +808,64 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
     (pm, labels)
 }
 
+/// Ściana pod trasą planu na pochylonej mapie: półprzezroczyste pasy od linii w powietrzu do ziemi,
+/// cień trasy na gruncie i pionowe kreski przy punktach (łatwo ocenić, gdzie i jak wysoko leci samolot).
+fn draw_wall(pm: &mut Pixmap, v: &View, pts: &[&(f64, f64, i32)], col: Option<[u8; 4]>, max_alt: i32, s: f64, dark: bool) {
+    let sp = |p: (f64, f64)| ((p.0 * s) as f32, (p.1 * s) as f32);
+    let ground: Vec<(f32, f32)> = pts.iter().map(|p| sp(v.to_screen(p.0, p.1))).collect();
+    let air: Vec<(f32, f32)> = pts.iter().map(|p| sp(v.to_screen_alt(p.0, p.1, p.2 as f64))).collect();
+    let tone = |i: usize| col.unwrap_or_else(|| alt_color(pts[i].2, max_alt));
+    let mut paint = Paint::default();
+    paint.anti_alias = true;
+    for i in 0..pts.len().saturating_sub(1) {
+        if pts[i].2 <= 0 && pts[i + 1].2 <= 0 {
+            continue;
+        }
+        let mut pb = PathBuilder::new();
+        pb.move_to(ground[i].0, ground[i].1);
+        pb.line_to(ground[i + 1].0, ground[i + 1].1);
+        pb.line_to(air[i + 1].0, air[i + 1].1);
+        pb.line_to(air[i].0, air[i].1);
+        pb.close();
+        if let Some(path) = pb.finish() {
+            let c = tone(i);
+            paint.set_color(Color::from_rgba8(c[0], c[1], c[2], 48));
+            pm.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+        }
+    }
+    // cień trasy na ziemi
+    let mut pb = PathBuilder::new();
+    for (i, g) in ground.iter().enumerate() {
+        if i == 0 {
+            pb.move_to(g.0, g.1)
+        } else {
+            pb.line_to(g.0, g.1)
+        }
+    }
+    if let Some(path) = pb.finish() {
+        paint.set_color(if dark { Color::from_rgba8(0, 0, 0, 150) } else { Color::from_rgba8(40, 46, 58, 110) });
+        let st = Stroke { width: 1.4 * s as f32, line_join: LineJoin::Round, dash: tiny_skia::StrokeDash::new(vec![6.0 * s as f32, 4.0 * s as f32], 0.0), ..Default::default() };
+        pm.stroke_path(&path, &paint, &st, Transform::identity(), None);
+    }
+    // pionowe kreski od punktu do ziemi
+    for i in 0..pts.len() {
+        if pts[i].2 <= 0 {
+            continue;
+        }
+        let mut pb = PathBuilder::new();
+        pb.move_to(ground[i].0, ground[i].1);
+        pb.line_to(air[i].0, air[i].1);
+        if let Some(path) = pb.finish() {
+            let c = tone(i);
+            paint.set_color(Color::from_rgba8(c[0], c[1], c[2], 150));
+            pm.stroke_path(&path, &paint, &Stroke { width: 1.0 * s as f32, ..Default::default() }, Transform::identity(), None);
+        }
+    }
+}
+
 /// Kafelki stylu `style` na obrazie (podkład albo nakładka z przezroczystością `opacity`).
 pub fn draw_tiles(pm: &mut Pixmap, v: &View, style: Style, scale: f32, opacity: f32) {
-    if v.tilted() {
+    if v.projected() {
         draw_tiles_tilted(pm, v, style, scale, opacity);
         return;
     }
@@ -905,6 +1120,31 @@ mod tests {
         // północ jest wyżej na ekranie
         let (_, yn) = v.to_screen(52.3, 21.0);
         assert!(yn < 300.0);
+    }
+
+    #[test]
+    fn rotated_view_roundtrip_and_altitude() {
+        let mut v = View { lat: 52.0, lon: 21.0, zoom: 8.0, w: 800.0, h: 600.0, bearing: 90.0, ..Default::default() };
+        // obrót o 90°: wschód u góry ekranu
+        let (_, ye) = v.to_screen(52.0, 21.3);
+        assert!(ye < 300.0);
+        for tilt in [0.0, 40.0] {
+            v.tilt = tilt;
+            let (x, y) = v.to_screen(52.1, 21.2);
+            let (la, lo) = v.from_screen(x, y);
+            assert!((la - 52.1).abs() < 1e-6 && (lo - 21.2).abs() < 1e-6);
+            let (px, py) = v.to_screen(52.05, 21.1);
+            v.drag(px + 25.0, py + 15.0, 25.0, 15.0);
+            let (qx, qy) = v.to_screen(52.05, 21.1);
+            assert!((qx - px - 25.0).abs() < 0.5 && (qy - py - 15.0).abs() < 0.5);
+        }
+        // na pochylonej mapie punkt w powietrzu jest wyżej na ekranie niż jego rzut na ziemię
+        let (_, yg) = v.to_screen(52.0, 21.0);
+        let (_, ya) = v.to_screen_alt(52.0, 21.0, 30_000.0);
+        assert!(ya < yg - 1.0);
+        v.rotate_by(30.0);
+        v.reset_bearing();
+        assert!(!v.rotated());
     }
 
     #[test]
