@@ -51,10 +51,8 @@ pub struct State {
     pub detail: Option<Arc<FlightLog>>,
     pub replay: f64,
     pub playing: bool,
-    /// Odtwarzanie lotu w 3D (zamiast mapy 2D), mnożnik prędkości i kamera.
-    pub replay_3d: bool,
+    /// Mnożnik prędkości odtwarzania lotu.
     pub replay_speed: f64,
-    pub replay_cam: crate::scene3d::Camera,
     pub logbook_rev: u64,
     pub airport: Option<String>,
     pub weather: HashMap<String, (Vec<Metar>, Option<Taf>, String)>,
@@ -435,20 +433,6 @@ pub fn rerender_maps() {
 
 /// Zdarzenia mapy z interfejsu.
 pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
-    // Odtwarzanie 3D w dzienniku: przeciąganie obraca kamerę, kółko zmienia odległość
-    if id == 1 && matches!(kind, "pan" | "zoom" | "fit") && state().borrow().replay_3d {
-        {
-            let st = state();
-            let mut s = st.borrow_mut();
-            match kind {
-                "pan" => s.replay_cam.drag(dx as f64, dy as f64),
-                "zoom" => s.replay_cam.zoom(dy as f64),
-                _ => s.replay_cam = crate::scene3d::Camera::default(),
-            }
-        }
-        render_flight_map();
-        return;
-    }
     if id == 4 {
         crate::navmap::event(kind, x, y, dx, dy);
         return;
@@ -493,8 +477,14 @@ pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
                 v.w = (x as f64).max(16.0);
                 v.h = (y as f64).max(16.0);
             }
+            "tilt" => {
+                if !v.tilt_by(dy as f64) {
+                    return;
+                }
+            }
+            "tilt-toggle" => v.toggle_tilt(),
             "pan" => {
-                v.pan(dx as f64, dy as f64);
+                v.drag(x as f64, y as f64, dx as f64, dy as f64);
                 if id == 0 {
                     v.follow = false;
                     if let Some(u) = ui() {

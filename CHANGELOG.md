@@ -1,3 +1,10 @@
+## 3.9.0
+
+- Jedna mapa z pochylaniem zamiast osobnych widoków 2D i 3D – na wszystkich mapach programu (Mapa, Na żywo, Pulpit, Dziennik, Lotniska, Statystyki, Plan lotu). Pochyla się przeciąganiem w górę i w dół prawym przyciskiem myszy (albo lewym z Ctrl, do 60°) lub przyciskiem z górą (widok z góry ↔ 45°). Na pochylonej mapie działa przesuwanie, przybliżanie, klikanie i narzędzia; pierścienie odległości, zasięgi, siatka i róże VOR leżą na ziemi. Pochylanie można wyłączyć w Ustawieniach („Pochylanie map”) – wtedy mapy są tylko z góry.
+- Usunięty dawny widok 3D z kamerami (za samolotem, swobodna, z góry, z kabiny, po orbicie) i przełącznik 2D/3D przy odtwarzaniu lotu w Dzienniku – lot odtwarza się na zwykłej mapie, którą też można pochylić.
+- Plan lotu: profil pionowy z T/C i T/D rysuje wznoszenie do T/C, przelot i zniżanie od T/D zamiast skośnej linii między punktami, a znaczniki T/C i T/D leżą na linii profilu.
+- Narzędzia: poprawione wyrównanie tekstu w dekoderze METAR.
+
 ## 3.8.0
 
 - OFP SimBrief na karcie Plan lotu (przełącznik „Mapa i profil / OFP SimBrief”): znak wywoławczy, trasa i lotniska, czasy OUT/OFF/ON/IN z ETE i blokiem, przelot, prędkość, cost index, średni wiatr i odchyłka ISA; wagi ZFW/TOW/LDW na paskach wobec limitów z zapasem; paliwo bloku rozłożone na kołowanie, trasę, rezerwy, zapasowe, ETOPS i dodatkowe; profil trasy z etapami, chorągiewkami wiatru, paskiem temperatury (ISA) i paliwem na pokładzie; navlog z wiatrem, OAT, ISA, GS, czasem i paliwem; METAR/TAF lotnisk z OFP i plan lotu ATC; prędkości startu i lądowania z raportu TLR (gdy jest w OFP).

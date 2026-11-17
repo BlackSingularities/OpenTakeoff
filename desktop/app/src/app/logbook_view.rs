@@ -300,77 +300,9 @@ pub fn render_flight_map() {
     if let Some(p) = replay_point(&f, st.replay) {
         ov.aircraft = Some((p.lat, p.lon, p.hdg.unwrap_or(0) as f64));
     }
-    if st.replay_3d {
-        let img = render_flight_3d(&f, &st, dark);
-        app.set_map_flight(img);
-        app.set_map_flight_labels(model(Vec::new()));
-        return;
-    }
     let r = map::render(&st.views[1], style(&st, dark), &ov, st.scale, dark);
     app.set_map_flight(r.image);
     app.set_map_flight_labels(labels(r.labels));
-}
-
-/// Odtwarzanie lotu w 3D: kamera za samolotem w interpolowanej pozycji, cały ślad i pasy lotnisk.
-pub(super) fn render_flight_3d(f: &FlightLog, st: &State, dark: bool) -> slint::Image {
-    use crate::scene3d::{self, Label3};
-    let v = &st.views[1];
-    let w = ((v.w * st.scale as f64) as u32).max(16);
-    let h = ((v.h * st.scale as f64) as u32).max(16);
-    let Some((p, alt)) = replay_interp(f, st.replay) else {
-        return slint::Image::default();
-    };
-    // Teren pod samolotem: z AGL, a bez niego najniższy punkt na ziemi (albo całego śladu)
-    let ground = match p.agl_ft {
-        Some(agl) => alt - agl as f64,
-        None => f.track.iter().filter(|t| t.on_ground == Some(true)).map(|t| t.alt_ft).min().or_else(|| f.track.iter().map(|t| t.alt_ft).min()).unwrap_or(0) as f64,
-    };
-    let mut runways = Vec::new();
-    let mut points = Vec::new();
-    let db = airports::db();
-    for code in [f.from.as_deref(), f.to.as_deref()].into_iter().flatten() {
-        if let Some(a) = db.as_ref().and_then(|d| d.get(code)) {
-            points.push(Label3 { lat: a.lat, lon: a.lon, text: a.ident.clone(), kind: 0 });
-            for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed) {
-                runways.push((r.le_lat, r.le_lon, r.he_lat, r.he_lon, r.width_ft.max(60) as f64));
-            }
-        }
-    }
-    let track: Vec<(f64, f64, i32)> = f.track.iter().map(|t| (t.lat, t.lon, t.alt_ft)).collect();
-    let u = units(&st.s);
-    let el = (p.t - f.track[0].t).max(0) / 1000;
-    let hud = vec![
-        format!("{} · ×{}", f.aircraft.clone().filter(|a| !a.is_empty()).unwrap_or_else(|| "OpenTakeoff".into()), st.replay_speed as i64),
-        format!("{}:{:02}:{:02} · ALT {} · GS {}", el / 3600, el % 3600 / 60, el % 60, u.alt_full(alt), u.spd(p.gs_kt as f64)),
-        format!("HDG {:03}° · V/S {:+} ft/min", p.hdg.unwrap_or(0).rem_euclid(360), p.vs_fpm.unwrap_or(0)),
-    ];
-    let sc = scene3d::Scene {
-        style: style(st, dark),
-        dark,
-        w,
-        h,
-        scale: st.scale,
-        lat: p.lat,
-        lon: p.lon,
-        alt_ft: alt,
-        hdg: p.hdg.unwrap_or(0) as f64,
-        pitch: p.pitch_deg.unwrap_or(0.0) as f64,
-        bank: p.bank_deg.unwrap_or(0.0) as f64,
-        ground_ft: ground,
-        mag_var: 0.0,
-        show_aircraft: true,
-        track: &track,
-        runways: &runways,
-        points: &points,
-        route: &[],
-        plan: &[],
-        hud,
-        compass: false,
-        curtain: true,
-        lines: &[],
-        sun: None,
-    };
-    scene3d::render(&sc, &st.replay_cam)
 }
 
 pub(super) fn replay_point(f: &FlightLog, pos: f64) -> Option<opentakeoff_core::logbook::TrackPoint> {

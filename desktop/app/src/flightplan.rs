@@ -1155,7 +1155,9 @@ pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
             return false;
         }
         match kind {
-            "pan" => s.view.pan(dx as f64, dy as f64),
+            "pan" => s.view.drag(x as f64, y as f64, dx as f64, dy as f64),
+            "tilt" => return s.view.tilt_by(dy as f64),
+            "tilt-toggle" => s.view.toggle_tilt(),
             "zoom" => s.view.zoom_at(dy as f64, x as f64, y as f64),
             "fit" => {
                 if let Some(b) = map::bounds(s.legs.iter().map(|l| (l.lat, l.lon))) {
@@ -1175,7 +1177,7 @@ pub fn map_event(id: i32, kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
     }
 }
 
-fn render_map() {
+pub fn render_map() {
     let Some(u) = ui() else { return };
     let app = u.global::<App>();
     let dark = u.global::<Theme>().get_dark();
@@ -1251,16 +1253,40 @@ fn draw_profile(c: &mut Canvas, legs: &[Leg], cruise: f64, sel: i32, w: f32, h: 
     }
     // teren pod trasą: tylko linia odniesienia
     c.line(l, b, r, b, 0xFF3C5A44, 1.4 * k);
+    // T/C i T/D jako punkty załamania profilu, żeby przelot był poziomy aż do T/D,
+    // a znaczniki leżały na linii (a nie nad skosem między punktami trasy)
+    let (e0, e1) = (legs[0].alt_plan, legs[legs.len() - 1].alt_plan);
+    let toc = ((cruise - e0) / 300.0).clamp(0.0, total);
+    let tod = (total - (cruise - e1) / 318.0).clamp(0.0, total);
+    let marks: Vec<(f64, &str)> = if toc < tod {
+        vec![(toc, "T/C"), (tod, "T/D")]
+    } else {
+        Vec::new()
+    };
+    let mut pts: Vec<(f64, f64)> = legs.iter().map(|g| (g.cum, g.alt_plan)).collect();
+    let mut mark_alt = Vec::with_capacity(marks.len());
+    for &(d, _) in &marks {
+        // między sąsiednimi punktami: poziom przelotowy, ale nie wyżej niż wyższy z sąsiadów
+        // (gdy oba są niżej przez ograniczenia procedur, nie robimy szpica)
+        let i = pts.iter().position(|p| p.0 >= d).unwrap_or(pts.len() - 1);
+        if i > 0 && d > pts[i - 1].0 && d < pts[i].0 {
+            let a = cruise.min(pts[i - 1].1.max(pts[i].1));
+            pts.insert(i, (d, a));
+            mark_alt.push(a);
+        } else {
+            mark_alt.push(pts[i].1);
+        }
+    }
     // wypełnienie pod profilem
     let mut poly = vec![x(0.0), b];
-    for g in legs {
-        poly.push(x(g.cum));
-        poly.push(y(g.alt_plan));
+    for &(d, a) in &pts {
+        poly.push(x(d));
+        poly.push(y(a));
     }
     poly.push(x(total));
     poly.push(b);
     c.poly(alpha(CY, 0x22), 0, 0.0, &poly);
-    let line: Vec<f32> = legs.iter().flat_map(|g| [x(g.cum), y(g.alt_plan)]).collect();
+    let line: Vec<f32> = pts.iter().flat_map(|&(d, a)| [x(d), y(a)]).collect();
     c.polyline(CY, 2.2 * k, &line);
     // ograniczenia i punkty
     for (i, g) in legs.iter().enumerate() {
@@ -1282,17 +1308,11 @@ fn draw_profile(c: &mut Canvas, legs: &[Leg], cruise: f64, sel: i32, w: f32, h: 
             c.text_f(&g.ident, px, b + 12.0 * k, 9.5 * k, if sel == i as i32 { WHITE } else { DIM }, Align::Center, Face::Mono);
         }
     }
-    // TOC / TOD
-    if let (Some(f), Some(e)) = (legs.first(), legs.last()) {
-        let toc = ((cruise - f.alt_plan) / 300.0).clamp(0.0, total);
-        let tod = (total - (cruise - e.alt_plan) / 318.0).clamp(0.0, total);
-        if toc < tod {
-            for (d, lbl) in [(toc, "T/C"), (tod, "T/D")] {
-                let (px, py) = (x(d), y(cruise));
-                c.circle(px, py, 4.0 * k, 0xFF3CCF7A, 1.6 * k);
-                c.text_f(lbl, px, py - 11.0 * k, 10.0 * k, 0xFF3CCF7A, Align::Center, Face::CondBold);
-            }
-        }
+    // TOC / TOD — na linii profilu
+    for (&(d, lbl), &a) in marks.iter().zip(&mark_alt) {
+        let (px, py) = (x(d), y(a));
+        c.circle(px, py, 4.0 * k, 0xFF3CCF7A, 1.6 * k);
+        c.text_f(lbl, px, py - 11.0 * k, 10.0 * k, 0xFF3CCF7A, Align::Center, Face::CondBold);
     }
 }
 

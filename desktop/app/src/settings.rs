@@ -65,8 +65,8 @@ pub struct Settings {
     pub nd_layers: u32,
     /// Warstwy mapy nawigacyjnej (maska bitowa NAV_*).
     pub nav_layers: u32,
-    pub nav_3d: bool,
-    pub nav_cam: i32,
+    /// Mapy można pochylać (prawy przycisk albo Ctrl + przeciąganie); wyłączone – wszystkie mapy płaskie.
+    pub map_tilt: bool,
     /// Panel boczny ze stanem lotu: widoczny i jego szerokość w pikselach logicznych.
     pub sidebar: bool,
     pub sidebar_w: i32,
@@ -278,8 +278,7 @@ impl Default for Settings {
             nd_rose: false,
             nd_layers: 0b111,
             nav_layers: NAV_DEFAULT,
-            nav_3d: false,
-            nav_cam: 0,
+            map_tilt: true,
             sidebar: true,
             sidebar_w: 276,
             ui_version: UI_VERSION,

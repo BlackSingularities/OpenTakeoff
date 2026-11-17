@@ -267,6 +267,10 @@ impl Canvas {
     pub fn rotate(&mut self, deg: f32, cx: f32, cy: f32) {
         self.st.tf = self.st.tf.pre_concat(Transform::from_rotate_at(deg, cx, cy));
     }
+    /// Dowolne przekształcenie afiniczne złożone z bieżącym (np. położenie rysunku na pochylonej mapie).
+    pub fn concat(&mut self, t: Transform) {
+        self.st.tf = self.st.tf.pre_concat(t);
+    }
     pub fn transform(&self) -> Transform {
         self.st.tf
     }

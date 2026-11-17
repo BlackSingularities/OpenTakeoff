@@ -788,8 +788,8 @@ msgstr "Mapa de vuelos"
 msgid "Mapa nawigacyjna"
 msgstr "Mapa de navegación"
 
-msgid "Mapa nawigacyjna z radialami i różami VOR oraz widok 3D"
-msgstr "Mapa de navegación con radiales y rosas VOR, y vista 3D"
+msgid "Mapa nawigacyjna z radialami i różami VOR; można ją pochylić"
+msgstr "Mapa de navegación con radiales y rosas VOR; se puede inclinar"
 
 msgid "Mapa wszystkich lotów"
 msgstr "Mapa de todos los vuelos"
@@ -3498,8 +3498,8 @@ msgstr "De SimBrief"
 msgid "Przenieś pobrany plan SimBrief do edycji"
 msgstr "Cargar el plan de SimBrief para editarlo"
 
-msgid "Pokaż plan na karcie Mapa (2D i 3D)"
-msgstr "Mostrar el plan en la pestaña Mapa (2D y 3D)"
+msgid "Pokaż plan na karcie Mapa"
+msgstr "Mostrar el plan en la pestaña Mapa"
 
 msgid "Plan do wczytania w MSFS 2020 i 2024 (z SID, STAR i podejściem)"
 msgstr "Plan para MSFS 2020 y 2024 (con SID, STAR y aproximación)"
@@ -4167,8 +4167,8 @@ msgstr "Mapa base"
 msgid "Przeciągnij – rozglądanie się z kabiny"
 msgstr "Arrastra – mirar alrededor desde la cabina"
 
-msgid "Przedłużone osie pasów na 10 NM; w 3D ścieżki podejścia 3°"
-msgstr "Ejes de pista prolongados 10 NM; en 3D sendas de aproximación de 3°"
+msgid "Przedłużone osie pasów na 10 NM"
+msgstr "Ejes de pista prolongados 10 NM"
 
 msgid "Siatka"
 msgstr "Cuadrícula"
@@ -4491,8 +4491,8 @@ msgstr "Navlog"
 msgid "Nawierzchnia"
 msgstr "Superficie"
 
-msgid "Nawigacja z radialami, Direct To, pogoda i widok 3D."
-msgstr "Navegación con radiales, Direct To, meteorología y vista 3D."
+msgid "Nawigacja z radialami, Direct To i pogodą; mapę można pochylić."
+msgstr "Navegación con radiales, Direct To y meteorología; el mapa se puede inclinar."
 
 msgid "Nie udało się zapisać briefingu: {e}"
 msgstr "No se pudo guardar el briefing: {e}"
@@ -4509,8 +4509,8 @@ msgstr "Distancia de aterrizaje"
 msgid "Ograniczenie"
 msgstr "Restricción"
 
-msgid "OpenTakeoff łączy symulator (MSFS 2020/2024 albo X-Plane 11/12) z komputerem i telefonem. Na komputerze masz przyrządy w stylu kabiny, mapę z widokiem 3D, plan lotu, checklisty, dziennik lotów ze statystykami i analizą lądowania oraz nakładki do transmisji."
-msgstr "OpenTakeoff conecta el simulador (MSFS 2020/2024 o X-Plane 11/12) con el PC y el teléfono. En el PC tienes instrumentos de cabina, un mapa con vista 3D, plan de vuelo, listas de comprobación, un diario con estadísticas y análisis del aterrizaje y superposiciones para transmisiones."
+msgid "OpenTakeoff łączy symulator (MSFS 2020/2024 albo X-Plane 11/12) z komputerem i telefonem. Na komputerze masz przyrządy w stylu kabiny, mapę, którą można pochylić, plan lotu, checklisty, dziennik lotów ze statystykami i analizą lądowania oraz nakładki do transmisji."
+msgstr "OpenTakeoff conecta el simulador (MSFS 2020/2024 o X-Plane 11/12) con el PC y el teléfono. En el PC tienes instrumentos de cabina, un mapa que se puede inclinar, plan de vuelo, listas de comprobación, un diario con estadísticas y análisis del aterrizaje y superposiciones para transmisiones."
 
 msgid "OpenTakeoff – tylko do symulacji lotów. Nie używać do rzeczywistej nawigacji."
 msgstr "OpenTakeoff – solo para simulación de vuelo. No usar para navegación real."
@@ -4778,3 +4778,18 @@ msgstr "Ningún teléfono conectado"
 
 msgid "„Symulacja” to lot pokazowy bez symulatora – dobry do obejrzenia programu. Start razem z symulatorem włączysz na karcie Telefony albo w ustawieniach."
 msgstr "«Simulación» es un vuelo de demostración sin simulador, ideal para conocer el programa. El arranque junto con el simulador se activa en la pestaña Teléfonos o en Ajustes."
+
+msgid "Pochyl"
+msgstr "Inclinar"
+
+msgid "Pochyl mapę albo wróć do widoku z góry (albo przeciągnij prawym przyciskiem w górę i w dół)"
+msgstr "Inclinar el mapa o volver a la vista desde arriba (o arrastra arriba y abajo con el botón derecho)"
+
+msgid "Pochyl mapę albo wróć do widoku z góry. Płynnie: przeciągnij prawym przyciskiem (albo z Ctrl) w górę i w dół."
+msgstr "Inclinar el mapa o volver a la vista desde arriba. De forma gradual: arrastra arriba y abajo con el botón derecho (o con Ctrl)."
+
+msgid "Pochylanie map"
+msgstr "Inclinación de mapas"
+
+msgid "Mapę można pochylić prawym przyciskiem albo z Ctrl (przeciąganie w górę i w dół) lub przyciskiem z górą. Wyłączone – wszystkie mapy tylko z góry (2D)."
+msgstr "Inclina un mapa arrastrando arriba y abajo con el botón derecho o con Ctrl, o con el botón de la montaña. Desactivado: todos los mapas solo desde arriba (2D)."

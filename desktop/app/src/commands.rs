@@ -57,7 +57,6 @@ pub(crate) fn cmd(ui: &AppWindow, id: &str, arg: &str) {
                     let st = state();
                     let mut b = st.borrow_mut();
                     b.s.nav_plan = true;
-                    b.s.nav_3d = false;
                 }
                 navmap::fit_points(&pts);
                 app.set_tab(9);
@@ -336,11 +335,6 @@ pub(crate) fn cmd(ui: &AppWindow, id: &str, arg: &str) {
             };
             app.set_replay_playing(playing);
         }
-        "replay-3d" => {
-            state().borrow_mut().replay_3d = arg == "1";
-            app.set_replay_3d(arg == "1");
-            app::render_flight_map();
-        }
         "replay-speed" => {
             let v = arg.parse::<f64>().unwrap_or(60.0).clamp(1.0, 3600.0);
             state().borrow_mut().replay_speed = v;
@@ -379,6 +373,15 @@ pub(crate) fn cmd(ui: &AppWindow, id: &str, arg: &str) {
             apply_settings(ui, &s);
             save();
             app::rerender_maps();
+        }
+        "map-tilt" => {
+            let on = arg == "1";
+            state().borrow_mut().s.map_tilt = on;
+            map::set_tilt_enabled(on);
+            save();
+            apply_settings(ui, &state().borrow().s.clone());
+            app::rerender_maps();
+            crate::flightplan::render_map();
         }
         "language" => {
             state().borrow_mut().s.language = arg.to_string();

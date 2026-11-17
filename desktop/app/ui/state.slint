@@ -316,8 +316,8 @@ export struct NavV {
     curtain: bool,
     rwy: bool,
     tool: int,
-    view3d: bool,
-    cam: int,
+    // mapa pochylona (przycisk „Pochyl”)
+    tilted: bool,
     inbound: bool,
     has-ref: bool,
     has-sel: bool,
@@ -876,7 +876,7 @@ export global App {
     in property <image> instr-panel;
     in property <image> instr-engines;
     in property <image> instr-sd;
-    // Mapa nawigacyjna i 3D
+    // Mapa nawigacyjna
     in property <NavV> nav;
     in property <image> map-nav;
     in property <[LabelV]> map-nav-labels;
@@ -915,7 +915,6 @@ export global App {
     in property <[LabelV]> map-flight-labels;
     in-out property <float> replay: 0;
     in property <bool> replay-playing;
-    in property <bool> replay-3d;
     in-out property <int> replay-speed: 1;
     in-out property <int> chart-mode: 0;
     in property <int> selected-count;
@@ -998,6 +997,8 @@ export global App {
     in property <int> units-alt;
     in property <int> units-speed;
     in property <int> map-style;
+    // pochylanie map włączone w ustawieniach
+    in property <bool> map-tilt: true;
     in property <bool> auto-sync: true;
     in property <string> data-path;
     in property <string> logbook-size;

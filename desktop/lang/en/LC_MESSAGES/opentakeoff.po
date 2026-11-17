@@ -788,8 +788,8 @@ msgstr "Flight map"
 msgid "Mapa nawigacyjna"
 msgstr "Navigation map"
 
-msgid "Mapa nawigacyjna z radialami i różami VOR oraz widok 3D"
-msgstr "Navigation map with VOR radials and roses, plus 3D view"
+msgid "Mapa nawigacyjna z radialami i różami VOR; można ją pochylić"
+msgstr "Navigation map with VOR radials and roses; it can be tilted"
 
 msgid "Mapa wszystkich lotów"
 msgstr "Map of all flights"
@@ -3498,8 +3498,8 @@ msgstr "From SimBrief"
 msgid "Przenieś pobrany plan SimBrief do edycji"
 msgstr "Load the fetched SimBrief plan for editing"
 
-msgid "Pokaż plan na karcie Mapa (2D i 3D)"
-msgstr "Show the plan on the Map tab (2D and 3D)"
+msgid "Pokaż plan na karcie Mapa"
+msgstr "Show the plan on the Map tab"
 
 msgid "Plan do wczytania w MSFS 2020 i 2024 (z SID, STAR i podejściem)"
 msgstr "Plan for MSFS 2020 and 2024 (with SID, STAR and approach)"
@@ -4167,8 +4167,8 @@ msgstr "Base map"
 msgid "Przeciągnij – rozglądanie się z kabiny"
 msgstr "Drag – look around from the cockpit"
 
-msgid "Przedłużone osie pasów na 10 NM; w 3D ścieżki podejścia 3°"
-msgstr "Extended runway centrelines to 10 NM; 3° approach paths in 3D"
+msgid "Przedłużone osie pasów na 10 NM"
+msgstr "Extended runway centrelines to 10 NM"
 
 msgid "Siatka"
 msgstr "Grid"
@@ -4491,8 +4491,8 @@ msgstr "Navlog"
 msgid "Nawierzchnia"
 msgstr "Surface"
 
-msgid "Nawigacja z radialami, Direct To, pogoda i widok 3D."
-msgstr "Navigation with radials, Direct To, weather and the 3D view."
+msgid "Nawigacja z radialami, Direct To i pogodą; mapę można pochylić."
+msgstr "Navigation with radials, Direct To and weather; the map can be tilted."
 
 msgid "Nie udało się zapisać briefingu: {e}"
 msgstr "Could not save the briefing: {e}"
@@ -4509,8 +4509,8 @@ msgstr "Landing distance"
 msgid "Ograniczenie"
 msgstr "Constraint"
 
-msgid "OpenTakeoff łączy symulator (MSFS 2020/2024 albo X-Plane 11/12) z komputerem i telefonem. Na komputerze masz przyrządy w stylu kabiny, mapę z widokiem 3D, plan lotu, checklisty, dziennik lotów ze statystykami i analizą lądowania oraz nakładki do transmisji."
-msgstr "OpenTakeoff connects the simulator (MSFS 2020/2024 or X-Plane 11/12) with your PC and phone. On the PC you get cockpit-style instruments, a map with a 3D view, a flight plan, checklists, a logbook with statistics and landing analysis, and streaming overlays."
+msgid "OpenTakeoff łączy symulator (MSFS 2020/2024 albo X-Plane 11/12) z komputerem i telefonem. Na komputerze masz przyrządy w stylu kabiny, mapę, którą można pochylić, plan lotu, checklisty, dziennik lotów ze statystykami i analizą lądowania oraz nakładki do transmisji."
+msgstr "OpenTakeoff connects the simulator (MSFS 2020/2024 or X-Plane 11/12) with your PC and phone. On the PC you get cockpit-style instruments, a map you can tilt, a flight plan, checklists, a logbook with statistics and landing analysis, and streaming overlays."
 
 msgid "OpenTakeoff – tylko do symulacji lotów. Nie używać do rzeczywistej nawigacji."
 msgstr "OpenTakeoff – for flight simulation only. Not for real-world navigation."
@@ -4778,3 +4778,18 @@ msgstr "No phone connected"
 
 msgid "„Symulacja” to lot pokazowy bez symulatora – dobry do obejrzenia programu. Start razem z symulatorem włączysz na karcie Telefony albo w ustawieniach."
 msgstr "“Simulation” is a demo flight without a simulator – good for a look around. Starting together with the simulator is set on the Phones tab or in Settings."
+
+msgid "Pochyl"
+msgstr "Tilt"
+
+msgid "Pochyl mapę albo wróć do widoku z góry (albo przeciągnij prawym przyciskiem w górę i w dół)"
+msgstr "Tilt the map or go back to the top-down view (or drag up and down with the right mouse button)"
+
+msgid "Pochyl mapę albo wróć do widoku z góry. Płynnie: przeciągnij prawym przyciskiem (albo z Ctrl) w górę i w dół."
+msgstr "Tilt the map or go back to the top-down view. Smoothly: drag up and down with the right mouse button (or with Ctrl)."
+
+msgid "Pochylanie map"
+msgstr "Map tilting"
+
+msgid "Mapę można pochylić prawym przyciskiem albo z Ctrl (przeciąganie w górę i w dół) lub przyciskiem z górą. Wyłączone – wszystkie mapy tylko z góry (2D)."
+msgstr "Tilt a map by dragging up and down with the right mouse button or with Ctrl, or with the mountain button. Off – all maps are top-down only (2D)."

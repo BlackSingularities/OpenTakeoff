@@ -335,7 +335,7 @@ export component Ribbon inherits Rectangle {
             BigButton {
                 icon: Icons.map;
                 label: @tr("Na mapie");
-                tip: @tr("Pokaż plan na karcie Mapa (2D i 3D)");
+                tip: @tr("Pokaż plan na karcie Mapa");
                 clicked => {
                     App.cmd("plan-to-map", "");
                 }
@@ -547,22 +547,13 @@ export component Ribbon inherits Rectangle {
         }
         if App.tab == 9: Group {
             title: @tr("Widok");
-            BigButton {
-                icon: Icons.map;
-                label: "2D";
-                active: !App.nav.view3d;
-                tip: @tr("Mapa nawigacyjna");
-                clicked => {
-                    App.cmd("nav-3d", "0");
-                }
-            }
-            BigButton {
+            if App.map-tilt: BigButton {
                 icon: Icons.mountain;
-                label: "3D";
-                active: App.nav.view3d;
-                tip: @tr("Widok 3D z podkładem mapy, śladem i samolotem");
+                label: @tr("Pochyl");
+                active: App.nav.tilted;
+                tip: @tr("Pochyl mapę albo wróć do widoku z góry. Płynnie: przeciągnij prawym przyciskiem (albo z Ctrl) w górę i w dół.");
                 clicked => {
-                    App.cmd("nav-3d", "1");
+                    App.map-event(4, "tilt-toggle", 0, 0, 0, 0);
                 }
             }
             BigButton {
@@ -580,7 +571,7 @@ export component Ribbon inherits Rectangle {
             title: @tr("Nakładki");
             Col {
                 Row {
-                    if !App.nav.view3d: BigButton {
+                    BigButton {
                         slim: true;
                         icon: Icons.fuel;
                         label: @tr("Zasięg");
@@ -595,14 +586,14 @@ export component Ribbon inherits Rectangle {
                         icon: Icons.plane-landing;
                         label: @tr("Osie pasów");
                         active: App.nav.appr;
-                        tip: @tr("Przedłużone osie pasów na 10 NM; w 3D ścieżki podejścia 3°");
+                        tip: @tr("Przedłużone osie pasów na 10 NM");
                         clicked => {
                             App.cmd("nav-layer", "appr");
                         }
                     }
                 }
                 Row {
-                    if !App.nav.view3d: BigButton {
+                    BigButton {
                         slim: true;
                         icon: Icons.moon;
                         label: @tr("Noc");
@@ -612,7 +603,7 @@ export component Ribbon inherits Rectangle {
                             App.cmd("nav-layer", "night");
                         }
                     }
-                    if !App.nav.view3d: BigButton {
+                    BigButton {
                         slim: true;
                         icon: Icons.grid-3x3;
                         label: @tr("Siatka");
@@ -622,60 +613,6 @@ export component Ribbon inherits Rectangle {
                             App.cmd("nav-layer", "grid");
                         }
                     }
-                }
-            }
-        }
-        if App.tab == 9 && App.nav.view3d: Group {
-            title: @tr("Kamera");
-            BigButton {
-                icon: Icons.plane;
-                label: @tr("Za samolotem");
-                active: App.nav.cam == 0;
-                clicked => {
-                    App.cmd("nav-cam", "0");
-                }
-            }
-            BigButton {
-                icon: Icons.rotate-cw;
-                label: @tr("Swobodna");
-                active: App.nav.cam == 1;
-                clicked => {
-                    App.cmd("nav-cam", "1");
-                }
-            }
-            BigButton {
-                icon: Icons.scan;
-                label: @tr("Z góry");
-                active: App.nav.cam == 2;
-                clicked => {
-                    App.cmd("nav-cam", "2");
-                }
-            }
-            BigButton {
-                icon: Icons.eye;
-                label: @tr("Kokpit");
-                active: App.nav.cam == 3;
-                tip: @tr("Widok z kabiny: z pochyleniem i przechyleniem samolotu (przeciągnij, żeby rozejrzeć się)");
-                clicked => {
-                    App.cmd("nav-cam", "3");
-                }
-            }
-            BigButton {
-                icon: Icons.refresh-ccw;
-                label: @tr("Orbita");
-                active: App.nav.cam == 4;
-                tip: @tr("Kamera sama okrąża samolot");
-                clicked => {
-                    App.cmd("nav-cam", "4");
-                }
-            }
-            BigButton {
-                icon: Icons.chart-area;
-                label: @tr("Kurtyna");
-                active: App.nav.curtain;
-                tip: @tr("Pionowa kurtyna pod śladem do ziemi");
-                clicked => {
-                    App.cmd("nav-layer", "curtain");
                 }
             }
         }
@@ -710,7 +647,7 @@ export component Ribbon inherits Rectangle {
                             App.cmd("nav-layer", "ndb");
                         }
                     }
-                    if !App.nav.view3d: BigButton {
+                    BigButton {
                         slim: true;
                         icon: Icons.radius;
                         label: @tr("Róże VOR");
@@ -732,7 +669,7 @@ export component Ribbon inherits Rectangle {
                     }
                 }
                 Row {
-                    if !App.nav.view3d: BigButton {
+                    BigButton {
                         slim: true;
                         icon: Icons.circle;
                         label: @tr("Pierścienie");
@@ -742,7 +679,7 @@ export component Ribbon inherits Rectangle {
                             App.cmd("nav-layer", "rings");
                         }
                     }
-                    if !App.nav.view3d: BigButton {
+                    BigButton {
                         slim: true;
                         icon: Icons.spline;
                         label: @tr("Wektor");
@@ -783,7 +720,7 @@ export component Ribbon inherits Rectangle {
                 }
             }
         }
-        if App.tab == 9 && !App.nav.view3d: Group {
+        if App.tab == 9: Group {
             title: @tr("Narzędzia");
             BigButton {
                 icon: Icons.radio-tower;
@@ -1037,7 +974,7 @@ export component Ribbon inherits Rectangle {
                 }
             }
         }
-        if App.tab == 9 && !App.nav.view3d: Group {
+        if App.tab == 9: Group {
             title: @tr("Pogoda");
             BigButton {
                 slim: true;

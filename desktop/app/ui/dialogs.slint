@@ -303,7 +303,7 @@ export component WelcomeDialog inherits Rectangle {
             if root.step == 0: VerticalLayout {
                 spacing: 10px;
                 Text {
-                    text: @tr("OpenTakeoff łączy symulator (MSFS 2020/2024 albo X-Plane 11/12) z komputerem i telefonem. Na komputerze masz przyrządy w stylu kabiny, mapę z widokiem 3D, plan lotu, checklisty, dziennik lotów ze statystykami i analizą lądowania oraz nakładki do transmisji.");
+                    text: @tr("OpenTakeoff łączy symulator (MSFS 2020/2024 albo X-Plane 11/12) z komputerem i telefonem. Na komputerze masz przyrządy w stylu kabiny, mapę, którą można pochylić, plan lotu, checklisty, dziennik lotów ze statystykami i analizą lądowania oraz nakładki do transmisji.");
                     font-family: Theme.font;
                     font-size: Theme.fs;
                     color: Theme.text-dim;
@@ -435,7 +435,7 @@ export component WelcomeDialog inherits Rectangle {
                 TabInfo {
                     icon: Icons.map;
                     title: @tr("Mapa");
-                    text: @tr("Nawigacja z radialami, Direct To, pogoda i widok 3D.");
+                    text: @tr("Nawigacja z radialami, Direct To i pogodą; mapę można pochylić.");
                 }
                 TabInfo {
                     icon: Icons.route;

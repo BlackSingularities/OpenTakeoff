@@ -23,7 +23,6 @@ mod params;
 mod perf;
 mod planbrief;
 mod popout;
-mod scene3d;
 mod screen;
 mod settings;
 mod shots;
@@ -73,6 +72,8 @@ fn apply_settings(ui: &AppWindow, s: &Settings) {
     app.set_units_alt(s.units_alt);
     app.set_units_speed(s.units_speed);
     app.set_map_style(s.map_style);
+    app.set_map_tilt(s.map_tilt);
+    map::set_tilt_enabled(s.map_tilt);
     app.set_auto_sync(s.auto_sync);
     app.set_look_sensitivity(s.look_sensitivity);
     let langs = lang::available();
@@ -288,9 +289,7 @@ fn main() {
             detail: None,
             replay: 0.0,
             playing: false,
-            replay_3d: false,
             replay_speed: 60.0,
-            replay_cam: scene3d::Camera::default(),
             logbook_rev: 0,
             airport: None,
             weather: Default::default(),
@@ -592,18 +591,18 @@ fn snapshots(ui: &AppWindow, dir: std::path::PathBuf) {
                 let _ = image::save_buffer(&path, buf.as_bytes(), buf.width(), buf.height(), image::ExtendedColorType::Rgba8);
             }
         }
-        // Karty 0–13 (12: Plan lotu, 13: Checklisty), potem 99: Mapa w widoku 3D (OPENTAKEOFF_SNAPSHOT_TABS="1,8,9,99" – wybrane)
+        // Karty 0–13 (12: Plan lotu, 13: Checklisty), potem 99: pochylona Mapa (OPENTAKEOFF_SNAPSHOT_TABS="1,8,9,99" – wybrane)
         let order: Vec<i32> = std::env::var("OPENTAKEOFF_SNAPSHOT_TABS").ok().map(|t| t.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_else(|| (0..=13).chain([99]).collect());
         if i as usize >= order.len() {
-            cmd(&ui, "nav-3d", "0");
+            navmap::set_tilt(0.0);
             quit();
             return;
         }
         let tab = order[i as usize];
-        let three_d = tab == 99;
-        let tab = if three_d { 9 } else { tab };
+        let tilted = tab == 99;
+        let tab = if tilted { 9 } else { tab };
         if tab == 9 {
-            cmd(&ui, "nav-3d", if three_d { "1" } else { "0" });
+            navmap::set_tilt(if tilted { 45.0 } else { 0.0 });
         }
         ui.global::<App>().set_tab(tab);
         cmd(&ui, "tab", &tab.to_string());
@@ -620,7 +619,7 @@ fn snapshots(ui: &AppWindow, dir: std::path::PathBuf) {
         if tab == 4 {
             cmd(&ui, "airport-open", "EPGD");
         }
-        // OPENTAKEOFF_SNAPSHOT_CMDS="replay-3d:1;replay-seek:0.6" – polecenia po przejściu na kartę
+        // OPENTAKEOFF_SNAPSHOT_CMDS="replay-speed:300;replay-seek:0.6" – polecenia po przejściu na kartę
         if let Ok(list) = std::env::var("OPENTAKEOFF_SNAPSHOT_CMDS") {
             for c in list.split(';').filter(|c| !c.trim().is_empty()) {
                 let (id, arg) = c.split_once(':').unwrap_or((c, ""));

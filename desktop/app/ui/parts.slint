@@ -228,6 +228,9 @@ export component MapView inherits Rectangle {
     in property <bool> show-follow;
     property <length> last-x;
     property <length> last-y;
+    // pochylanie: prawy przycisk albo Ctrl + lewy (przeciąganie w pionie)
+    property <bool> tilting;
+    property <bool> right-down;
     clip: true;
     border-radius: Theme.r;
     background: Theme.dark ? #0e1116 : #e8ebef;
@@ -263,16 +266,31 @@ export component MapView inherits Rectangle {
         stroke-style: outside;
     }
     ta := TouchArea {
-        mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
+        mouse-cursor: root.tilting || root.right-down ? MouseCursor.ns-resize : self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
         pointer-event(e) => {
             if (e.kind == PointerEventKind.down) {
+                root.last-x = self.mouse-x;
+                root.last-y = self.mouse-y;
+                if (e.button == PointerEventButton.right) {
+                    root.right-down = App.map-tilt;
+                } else if (e.button == PointerEventButton.left) {
+                    root.tilting = App.map-tilt && e.modifiers.control;
+                }
+            } else if (e.kind == PointerEventKind.up) {
+                if (e.button == PointerEventButton.right) {
+                    root.right-down = false;
+                } else if (e.button == PointerEventButton.left) {
+                    root.tilting = false;
+                }
+            } else if (e.kind == PointerEventKind.move && root.right-down) {
+                App.map-event(root.id, "tilt", self.mouse-x / 1px, self.mouse-y / 1px, 0, (self.mouse-y - root.last-y) / 1px);
                 root.last-x = self.mouse-x;
                 root.last-y = self.mouse-y;
             }
         }
         moved => {
             if (self.pressed) {
-                App.map-event(root.id, "pan", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
+                App.map-event(root.id, root.tilting ? "tilt" : "pan", self.mouse-x / 1px, self.mouse-y / 1px, (self.mouse-x - root.last-x) / 1px, (self.mouse-y - root.last-y) / 1px);
                 root.last-x = self.mouse-x;
                 root.last-y = self.mouse-y;
             }
@@ -317,6 +335,13 @@ export component MapView inherits Rectangle {
                 tip: @tr("Pokaż całość");
                 clicked => {
                     App.map-event(root.id, "fit", 0, 0, 0, 0);
+                }
+            }
+            if App.map-tilt: IconButton {
+                icon: Icons.mountain;
+                tip: @tr("Pochyl mapę albo wróć do widoku z góry (albo przeciągnij prawym przyciskiem w górę i w dół)");
+                clicked => {
+                    App.map-event(root.id, "tilt-toggle", 0, 0, 0, 0);
                 }
             }
             if root.show-follow: IconButton {

@@ -4,17 +4,31 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use crossbeam_channel::{unbounded, Sender};
 use parking_lot::Mutex;
-use tiny_skia::{Color, FillRule, LineCap, LineJoin, Paint, PathBuilder, Pixmap, PixmapPaint, Stroke, Transform};
+use tiny_skia::{Color, FillRule, FilterQuality, LineCap, LineJoin, Paint, PathBuilder, Pattern, Pixmap, PixmapPaint, SpreadMode, Stroke, Transform};
 
 const TILE: f64 = 256.0;
 const MAX_ZOOM: f64 = 18.0;
 const MEMORY_TILES: usize = 600;
+/// Największe pochylenie mapy (°) i połowa kąta widzenia kamery w pionie.
+pub const MAX_TILT: f64 = 60.0;
+const HALF_FOV: f64 = 25.0;
+
+/// Pochylanie map włączone w ustawieniach; wyłączone – każda mapa jest płaska (widok z góry).
+static TILT_ON: AtomicBool = AtomicBool::new(true);
+
+pub fn set_tilt_enabled(on: bool) {
+    TILT_ON.store(on, Ordering::SeqCst);
+}
+
+pub fn tilt_enabled() -> bool {
+    TILT_ON.load(Ordering::SeqCst)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Style {
@@ -242,15 +256,73 @@ pub struct View {
     pub h: f64,
     pub follow: bool,
     pub user_moved: bool,
+    /// Pochylenie (°): 0 – widok z góry, do [`MAX_TILT`] – mapa oglądana pod kątem, północ zostaje u góry.
+    pub tilt: f64,
 }
 
 impl Default for View {
     fn default() -> Self {
-        Self { lat: 52.0, lon: 19.0, zoom: 5.5, w: 600.0, h: 400.0, follow: true, user_moved: false }
+        Self { lat: 52.0, lon: 19.0, zoom: 5.5, w: 600.0, h: 400.0, follow: true, user_moved: false, tilt: 0.0 }
     }
 }
 
 impl View {
+    /// Pochylenie użyte do rysowania: 0, gdy pochylanie jest wyłączone w ustawieniach.
+    pub fn tilt_deg(&self) -> f64 {
+        if tilt_enabled() && self.tilt >= 0.5 {
+            self.tilt.min(MAX_TILT)
+        } else {
+            0.0
+        }
+    }
+
+    pub fn tilted(&self) -> bool {
+        self.tilt_deg() > 0.0
+    }
+
+    /// Ogniskowa kamery w pikselach logicznych; w środku ekranu skala jest taka sama jak bez pochylenia.
+    fn focal(&self) -> f64 {
+        (self.h / 2.0) / HALF_FOV.to_radians().tan()
+    }
+
+    /// Przesunięcie na płaskiej mapie względem środka (px logiczne, y w dół) → punkt ekranu.
+    /// Kamera patrzy na środek mapy z odległości równej ogniskowej, pochylona o `tilt` od pionu.
+    pub fn flat_to_screen(&self, fx: f64, fy: f64) -> (f64, f64) {
+        let t = self.tilt_deg();
+        if t == 0.0 {
+            return (self.w / 2.0 + fx, self.h / 2.0 + fy);
+        }
+        let (s, c) = t.to_radians().sin_cos();
+        let d = self.focal();
+        let gy = -fy;
+        // punkty za kamerą lądują daleko pod ekranem (nie zawijają się na drugą stronę)
+        let z = (gy * s + d).max(d * 0.04);
+        (self.w / 2.0 + d * fx / z, self.h / 2.0 - d * gy * c / z)
+    }
+
+    /// Punkt ekranu → przesunięcie na płaskiej mapie względem środka. Nad horyzontem (i tuż pod nim)
+    /// wynik jest ograniczony do najdalszego sensownego miejsca.
+    pub fn screen_to_flat(&self, x: f64, y: f64) -> (f64, f64) {
+        let t = self.tilt_deg();
+        if t == 0.0 {
+            return (x - self.w / 2.0, y - self.h / 2.0);
+        }
+        let (s, c) = t.to_radians().sin_cos();
+        let d = self.focal();
+        let xx = (x - self.w / 2.0) / d;
+        let yy = ((self.h / 2.0 - y) / d).min((c - 0.08) / s);
+        let gy = yy * d / (c - yy * s);
+        (xx * (gy * s + d), -gy)
+    }
+
+    /// Szerokość i długość geograficzna punktu ekranu (także na pochylonej mapie).
+    pub fn from_screen(&self, x: f64, y: f64) -> (f64, f64) {
+        let (fx, fy) = self.screen_to_flat(x, y);
+        let (cx, cy) = project(self.lat, self.lon, self.zoom);
+        let (lat, lon) = unproject(cx + fx, cy + fy, self.zoom);
+        (lat, ((lon + 540.0) % 360.0) - 180.0)
+    }
+
     pub fn to_screen(&self, lat: f64, lon: f64) -> (f64, f64) {
         let (cx, cy) = project(self.lat, self.lon, self.zoom);
         let (x, y) = project(lat, lon, self.zoom);
@@ -261,7 +333,36 @@ impl View {
         } else if dx < -w / 2.0 {
             dx += w;
         }
-        (self.w / 2.0 + dx, self.h / 2.0 + (y - cy))
+        self.flat_to_screen(dx, y - cy)
+    }
+
+    /// Przeciągnięcie myszą z (x - dx, y - dy) do (x, y): punkt mapy pod wskaźnikiem idzie za nim,
+    /// także na pochylonej mapie.
+    pub fn drag(&mut self, x: f64, y: f64, dx: f64, dy: f64) {
+        if !self.tilted() {
+            self.pan(dx, dy);
+            return;
+        }
+        let a = self.screen_to_flat(x - dx, y - dy);
+        let b = self.screen_to_flat(x, y);
+        let lim = (self.w + self.h) * 2.0;
+        self.pan((b.0 - a.0).clamp(-lim, lim), (b.1 - a.1).clamp(-lim, lim));
+    }
+
+    /// Zmiana pochylenia przeciąganiem w pionie (w górę – bardziej pochylona). Zwraca, czy się zmieniło.
+    pub fn tilt_by(&mut self, dy: f64) -> bool {
+        if !tilt_enabled() {
+            return false;
+        }
+        let old = self.tilt;
+        let t = (self.tilt - dy * 0.3).clamp(0.0, MAX_TILT);
+        self.tilt = if t < 2.0 { 0.0 } else { t };
+        (self.tilt - old).abs() > 1e-6
+    }
+
+    /// Przycisk pochylenia: płasko ↔ 45°.
+    pub fn toggle_tilt(&mut self) {
+        self.tilt = if self.tilted() { 0.0 } else { 45.0 };
     }
 
     pub fn pan(&mut self, dx: f64, dy: f64) {
@@ -274,14 +375,15 @@ impl View {
 
     /// Przybliżenie kółkiem: punkt pod wskaźnikiem zostaje na miejscu.
     pub fn zoom_at(&mut self, delta: f64, mx: f64, my: f64) {
+        let (gx, gy) = self.screen_to_flat(mx, my);
         let (lat, lon) = {
             let (cx, cy) = project(self.lat, self.lon, self.zoom);
-            unproject(cx + mx - self.w / 2.0, cy + my - self.h / 2.0, self.zoom)
+            unproject(cx + gx, cy + gy, self.zoom)
         };
         let nz = (self.zoom + delta / 120.0 * 0.5).clamp(1.5, MAX_ZOOM);
         self.zoom = nz;
         let (px, py) = project(lat, lon, nz);
-        let (lat2, lon2) = unproject(px - (mx - self.w / 2.0), py - (my - self.h / 2.0), nz);
+        let (lat2, lon2) = unproject(px - gx, py - gy, nz);
         self.lat = lat2;
         self.lon = lon2;
         self.user_moved = true;
@@ -393,6 +495,7 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
     if ov.radar > 0.0 {
         draw_tiles(&mut pm, v, Style::Radar, scale, ov.radar);
     }
+    draw_haze(&mut pm, v, dark);
     let to = |lat: f64, lon: f64| -> (f32, f32) {
         let (x, y) = v.to_screen(lat, lon);
         ((x * s) as f32, (y * s) as f32)
@@ -547,6 +650,10 @@ pub fn render_pm(v: &View, style: Style, ov: &Overlay, scale: f32, dark: bool) -
 
 /// Kafelki stylu `style` na obrazie (podkład albo nakładka z przezroczystością `opacity`).
 pub fn draw_tiles(pm: &mut Pixmap, v: &View, style: Style, scale: f32, opacity: f32) {
+    if v.tilted() {
+        draw_tiles_tilted(pm, v, style, scale, opacity);
+        return;
+    }
     let (pw, ph) = (pm.width(), pm.height());
     let s = scale as f64;
     // Kafelki: poziom dopasowany do gęstości ekranu
@@ -593,6 +700,164 @@ pub fn draw_tiles(pm: &mut Pixmap, v: &View, style: Style, scale: f32, opacity: 
     }
 }
 
+/// Pochylona mapa: kafelki rozpięte w perspektywie. Bliżej kamery szczegółowe, dalej coraz ogólniejsze
+/// (drzewo czwórkowe: kafelek dzieli się, dopóki na ekranie jest większy niż ok. 1,4 kafelka).
+fn draw_tiles_tilted(pm: &mut Pixmap, v: &View, style: Style, scale: f32, opacity: f32) {
+    let s = scale as f64;
+    let zt = ((v.zoom + s.log2()).round().clamp(0.0, MAX_ZOOM) as u32).min(style.max_zoom());
+    let z0 = zt.saturating_sub(7);
+    // Widoczny obszar płaskiej mapy (względem środka, px logiczne przy v.zoom)
+    let corners = [(0.0, 0.0), (v.w, 0.0), (0.0, v.h), (v.w, v.h), (v.w / 2.0, 0.0)];
+    let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for (x, y) in corners.iter().map(|&(x, y)| v.screen_to_flat(x, y)) {
+        x0 = x0.min(x);
+        y0 = y0.min(y);
+        x1 = x1.max(x);
+        y1 = y1.max(y);
+    }
+    let (cx, cy) = project(v.lat, v.lon, v.zoom);
+    let k0 = 2f64.powf(v.zoom - z0 as f64);
+    let n0 = 1i64 << z0;
+    let tx0 = ((cx + x0) / k0 / TILE).floor() as i64;
+    let tx1 = ((cx + x1) / k0 / TILE).floor() as i64;
+    let ty0 = (((cy + y0) / k0 / TILE).floor() as i64).max(0);
+    let ty1 = (((cy + y1) / k0 / TILE).floor() as i64).min(n0 - 1);
+    let t = Tilted { v, style, scale, opacity, zt, c: (cx, cy), vis: (x0, y0, x1, y1) };
+    let mut budget = 900usize;
+    for ty in ty0..=ty1 {
+        for tx in tx0..=tx1 {
+            t.tile(pm, z0, tx, ty, &mut budget);
+        }
+    }
+}
+
+struct Tilted<'a> {
+    v: &'a View,
+    style: Style,
+    scale: f32,
+    opacity: f32,
+    /// Najszczegółowszy poziom kafelków (przy środku ekranu).
+    zt: u32,
+    /// Środek widoku we współrzędnych świata przy v.zoom.
+    c: (f64, f64),
+    /// Widoczny prostokąt płaskiej mapy względem środka.
+    vis: (f64, f64, f64, f64),
+}
+
+impl Tilted<'_> {
+    fn screen(&self, fx: f64, fy: f64) -> (f32, f32) {
+        let (x, y) = self.v.flat_to_screen(fx, fy);
+        let s = self.scale as f64;
+        ((x * s) as f32, (y * s) as f32)
+    }
+
+    fn tile(&self, pm: &mut Pixmap, z: u32, tx: i64, ty: i64, budget: &mut usize) {
+        if *budget == 0 {
+            return;
+        }
+        let k = 2f64.powf(self.v.zoom - z as f64);
+        let size = TILE * k;
+        let (fx0, fy0) = (tx as f64 * size - self.c.0, ty as f64 * size - self.c.1);
+        let vis = self.vis;
+        if fx0 > vis.2 || fx0 + size < vis.0 || fy0 > vis.3 || fy0 + size < vis.1 {
+            return;
+        }
+        let q = [self.screen(fx0, fy0), self.screen(fx0 + size, fy0), self.screen(fx0 + size, fy0 + size), self.screen(fx0, fy0 + size)];
+        let edge = |a: (f32, f32), b: (f32, f32)| ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt();
+        let big = edge(q[0], q[1]).max(edge(q[3], q[2])).max(edge(q[0], q[3])).max(edge(q[1], q[2]));
+        if z < self.zt && big > (TILE * 1.4) as f32 {
+            for (ix, iy) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
+                self.tile(pm, z + 1, tx * 2 + ix, ty * 2 + iy, budget);
+            }
+            return;
+        }
+        *budget -= 1;
+        let n = 1i64 << z;
+        let Some((tex, ox, oy, tsize)) = texture(self.style, z, tx.rem_euclid(n) as u32, ty as u32) else { return };
+        // siatka, żeby perspektywa była gładka (pojedyncze trójkąty są afiniczne)
+        let g = if big > 600.0 { 8 } else { 4 };
+        let mut grid = Vec::with_capacity((g + 1) * (g + 1));
+        for j in 0..=g {
+            for i in 0..=g {
+                grid.push(self.screen(fx0 + size * i as f64 / g as f64, fy0 + size * j as f64 / g as f64));
+            }
+        }
+        let (pw, ph) = (pm.width() as f32, pm.height() as f32);
+        let uv = |i: usize, j: usize| (ox + tsize * i as f32 / g as f32, oy + tsize * j as f32 / g as f32);
+        let ix = |i: usize, j: usize| j * (g + 1) + i;
+        for j in 0..g {
+            for i in 0..g {
+                let (a, b, cc, d) = (grid[ix(i, j)], grid[ix(i + 1, j)], grid[ix(i + 1, j + 1)], grid[ix(i, j + 1)]);
+                let minx = a.0.min(b.0).min(cc.0).min(d.0);
+                let maxx = a.0.max(b.0).max(cc.0).max(d.0);
+                let miny = a.1.min(b.1).min(cc.1).min(d.1);
+                let maxy = a.1.max(b.1).max(cc.1).max(d.1);
+                if maxx < 0.0 || minx > pw || maxy < 0.0 || miny > ph {
+                    continue;
+                }
+                let (ta, tb, tc, td) = (uv(i, j), uv(i + 1, j), uv(i + 1, j + 1), uv(i, j + 1));
+                fill_tex(pm, &tex, [ta, tb, tc], [a, b, cc], self.opacity);
+                fill_tex(pm, &tex, [ta, tc, td], [a, cc, d], self.opacity);
+            }
+        }
+    }
+}
+
+/// Trójkąt tekstury (u, v) rozpięty na trójkącie ekranu.
+fn fill_tex(pm: &mut Pixmap, tex: &Arc<Pixmap>, t: [(f32, f32); 3], s: [(f32, f32); 3], opacity: f32) {
+    let (du1, dv1) = (t[1].0 - t[0].0, t[1].1 - t[0].1);
+    let (du2, dv2) = (t[2].0 - t[0].0, t[2].1 - t[0].1);
+    let det = du1 * dv2 - du2 * dv1;
+    if det.abs() < 1e-9 {
+        return;
+    }
+    let (dx1, dy1) = (s[1].0 - s[0].0, s[1].1 - s[0].1);
+    let (dx2, dy2) = (s[2].0 - s[0].0, s[2].1 - s[0].1);
+    let a = (dx1 * dv2 - dx2 * dv1) / det;
+    let c = (dx2 * du1 - dx1 * du2) / det;
+    let b = (dy1 * dv2 - dy2 * dv1) / det;
+    let d = (dy2 * du1 - dy1 * du2) / det;
+    let e = s[0].0 - a * t[0].0 - c * t[0].1;
+    let f = s[0].1 - b * t[0].0 - d * t[0].1;
+    let mut pb = PathBuilder::new();
+    pb.move_to(s[0].0, s[0].1);
+    pb.line_to(s[1].0, s[1].1);
+    pb.line_to(s[2].0, s[2].1);
+    pb.close();
+    let Some(path) = pb.finish() else { return };
+    let mut paint = Paint::default();
+    // bez wygładzania krawędzi – inaczej między trójkątami widać szwy
+    paint.anti_alias = false;
+    paint.shader = Pattern::new(tex.as_ref().as_ref(), SpreadMode::Pad, FilterQuality::Bilinear, opacity, Transform::from_row(a, b, c, d, e, f));
+    pm.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+}
+
+/// Pochylona mapa: mgiełka u góry (daleki plan), mocniejsza przy większym pochyleniu.
+pub fn draw_haze(pm: &mut Pixmap, v: &View, dark: bool) {
+    let t = v.tilt_deg();
+    if t == 0.0 {
+        return;
+    }
+    let (w, h) = (pm.width() as f32, pm.height() as f32);
+    let k = (t / MAX_TILT) as f32;
+    let a = (k * 235.0) as u8;
+    let (r, g, b) = if dark { (14, 17, 22) } else { (214, 224, 236) };
+    let band = h * (0.12 + 0.22 * k);
+    let Some(rect) = tiny_skia::Rect::from_xywh(0.0, 0.0, w, band) else { return };
+    let Some(sh) = tiny_skia::LinearGradient::new(
+        tiny_skia::Point::from_xy(0.0, 0.0),
+        tiny_skia::Point::from_xy(0.0, band),
+        vec![tiny_skia::GradientStop::new(0.0, Color::from_rgba8(r, g, b, a)), tiny_skia::GradientStop::new(1.0, Color::from_rgba8(r, g, b, 0))],
+        SpreadMode::Pad,
+        Transform::identity(),
+    ) else {
+        return;
+    };
+    let mut paint = Paint::default();
+    paint.shader = sh;
+    pm.fill_rect(rect, &paint, Transform::identity(), None);
+}
+
 /// Granice zbioru punktów (lat0, lon0, lat1, lon1) albo None.
 pub fn bounds(pts: impl Iterator<Item = (f64, f64)>) -> Option<(f64, f64, f64, f64)> {
     let mut b: Option<(f64, f64, f64, f64)> = None;
@@ -618,6 +883,28 @@ mod tests {
         let (x, y) = project(54.38, 18.47, 10.0);
         let (la, lo) = unproject(x, y, 10.0);
         assert!((la - 54.38).abs() < 1e-9 && (lo - 18.47).abs() < 1e-9);
+    }
+
+    #[test]
+    fn tilted_view_roundtrip_and_zoom() {
+        let mut v = View { lat: 52.0, lon: 21.0, zoom: 8.0, w: 800.0, h: 600.0, tilt: 45.0, ..Default::default() };
+        // środek ekranu to nadal środek mapy
+        let (x, y) = v.to_screen(52.0, 21.0);
+        assert!((x - 400.0).abs() < 1e-6 && (y - 300.0).abs() < 1e-6);
+        let (x, y) = v.to_screen(52.1, 21.2);
+        let (la, lo) = v.from_screen(x, y);
+        assert!((la - 52.1).abs() < 1e-6 && (lo - 21.2).abs() < 1e-6);
+        v.zoom_at(120.0, x, y);
+        let (x2, y2) = v.to_screen(52.1, 21.2);
+        assert!((x - x2).abs() < 0.5 && (y - y2).abs() < 0.5);
+        // przeciąganie: punkt pod wskaźnikiem idzie za myszą
+        let (px, py) = v.to_screen(52.05, 21.1);
+        v.drag(px + 30.0, py - 20.0, 30.0, -20.0);
+        let (qx, qy) = v.to_screen(52.05, 21.1);
+        assert!((qx - px - 30.0).abs() < 0.5 && (qy - py + 20.0).abs() < 0.5);
+        // północ jest wyżej na ekranie
+        let (_, yn) = v.to_screen(52.3, 21.0);
+        assert!(yn < 300.0);
     }
 
     #[test]

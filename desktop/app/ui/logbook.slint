@@ -225,13 +225,6 @@ component Detail inherits ScrollView {
                 horizontal-stretch: 1;
             }
             Segmented {
-                items: ["2D", "3D"];
-                current: App.replay-3d ? 1 : 0;
-                picked(i) => {
-                    App.cmd("replay-3d", i == 1 ? "1" : "0");
-                }
-            }
-            Segmented {
                 items: ["×10", "×60", "×300"];
                 current: App.replay-speed;
                 picked(i) => {

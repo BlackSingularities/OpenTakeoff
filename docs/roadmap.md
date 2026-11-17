@@ -14,9 +14,9 @@ Stan na listopad 2026 (wersja 3.7.0). Szczegóły każdego wydania są w [CHANGE
 ### Windows (Rust + Slint, folder `desktop/`)
 - Most MSFS 2020/2024 i X-Plane 11/12 ↔ telefon (SimConnect, UDP bez wtyczek), start razem z symulatorem.
 - Przyrządy w stylach kabin (A320, 737, 787, ATR, E190, G1000, zegary analogowe) z ekranami silników.
-- Mapa nawigacyjna z radialami, Direct To, nakładkami, radarem opadów i METAR-ami; widok 3D z kamerami.
+- Mapa nawigacyjna z radialami, Direct To, nakładkami, radarem opadów i METAR-ami; mapę można pochylić.
 - Plan lotu z SID/STAR/podejściami, eksport do MSFS i X-Plane; SimBrief.
-- Dziennik lotów, analiza lądowania, odtwarzanie w 3D, statystyki z osiągnięciami, eksport KML/GPX/CSV.
+- Dziennik lotów, analiza lądowania, odtwarzanie lotu na mapie, statystyki z osiągnięciami, eksport KML/GPX/CSV.
 - Nakładki: karta lądowania, pasek do transmisji, okno zawsze na wierzchu, strony dla OBS; zrzuty ekranu.
 - Checklisty (3.7.0): 11 zestawów, odhaczanie przez symulator, własne pliki JSON ([opis](checklists.md)).
 
@@ -27,7 +27,7 @@ Kolejność to propozycja – priorytety ustala autor.
 ### Najbliżej
 1. **Callouty i checklisty na głos (Windows).** Wysokości 1000/500/minimums/100…10, „V1”, „Rotate”,
    „Retard”, STALL i OVERSPEED przez syntezator mowy Windows (SAPI); czytanie pozycji checklisty.
-2. **Ruch VATSIM/IVAO.** Samoloty w pobliżu na mapie, ND i w 3D; stacje ATC z częstotliwościami, ATIS
+2. **Ruch VATSIM/IVAO.** Samoloty w pobliżu na mapie i ND; stacje ATC z częstotliwościami, ATIS
    w briefingu (publiczne dane, bez kont).
 3. **ECAM/EICAS.** Strony ELEC, HYD, FUEL i DOOR (belki ILS na PFD – zrobione).
 

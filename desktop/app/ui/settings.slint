@@ -112,6 +112,16 @@ component SettingsLeft inherits VerticalLayout {
                 }
             }
         }
+        Option {
+            label: @tr("Pochylanie map");
+            hint: @tr("Mapę można pochylić prawym przyciskiem albo z Ctrl (przeciąganie w górę i w dół) lub przyciskiem z górą. Wyłączone – wszystkie mapy tylko z góry (2D).");
+            Switch {
+                on: App.map-tilt;
+                toggled => {
+                    App.cmd("map-tilt", App.map-tilt ? "0" : "1");
+                }
+            }
+        }
     }
     Section {
         title: @tr("Język i jednostki");

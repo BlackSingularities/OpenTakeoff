@@ -1,14 +1,14 @@
-//! Karta Mapa: rozbudowana mapa nawigacyjna 2D i widok 3D.
+//! Karta Mapa: rozbudowana mapa nawigacyjna. Jedna mapa, którą można pochylić (prawy przycisk albo
+//! Ctrl + przeciąganie, przycisk „Pochyl”); w ustawieniach pochylanie da się wyłączyć.
 //!
-//! 2D: podkład z kafelków, lotniska, pasy, VOR/NDB z bazy OurAirports (róże VOR z radialami względem
+//! Zawartość: podkład z kafelków, lotniska, pasy, VOR/NDB z bazy OurAirports (róże VOR z radialami względem
 //! deklinacji stacji), róża kursowa na samolocie (kurs, tor, nastawa AP, namiar na punkt), pierścienie
 //! odległości, wektor przewidywanego toru (1, 2, 5 min, z bieżącym zakrętem), ślad i trasa z GPS.
 //! Narzędzia: radiale od punktu (jak w telefonie: radial i odległość samolotu, wybrany radial IN/OUT
 //! z kursem przechwycenia i poprawką na wiatr) oraz pomiar odległości i namiaru.
 //! Dodatkowo: Direct To (linia, kurs z poprawką na wiatr, czas, ETA, paliwo, zniżanie), pierścienie zasięgu
 //! paliwa i szybowania, przedłużone osie pasów, granica dnia i nocy z czasu symulatora, siatka współrzędnych.
-//! 3D: [`crate::scene3d`] – kamera za samolotem, swobodna, z góry, z kabiny albo po orbicie; niebo wg pory dnia,
-//! ścieżki podejścia 3° i linia Direct To.
+//! Na pochylonej mapie pierścienie i siatka są liczone w terenie, a róże „położone” na mapie.
 
 use std::cell::RefCell;
 use std::time::Instant;
@@ -23,7 +23,6 @@ use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use crate::app::{self, state, ui};
 use crate::avionics::gfx::{alpha, Align, Canvas};
 use crate::map::{self, Overlay, Point, Style, Track, View};
-use crate::scene3d::{self, CamMode, Camera, Label3};
 use crate::settings::*;
 use crate::*;
 
@@ -48,7 +47,6 @@ struct Direct {
 struct Nav {
     direct: Option<Direct>,
     view: View,
-    cam: Camera,
     tool: i32,
     ref_pt: Option<RefPt>,
     sel_radial: Option<i32>,
@@ -63,7 +61,6 @@ thread_local! {
     static NAV: RefCell<Nav> = RefCell::new(Nav {
         direct: None,
         view: View { zoom: 8.0, ..Default::default() },
-        cam: Camera::default(),
         tool: 0,
         ref_pt: None,
         sel_radial: None,
@@ -127,9 +124,49 @@ fn dms(lat: f64, lon: f64) -> String {
 }
 
 fn from_screen(v: &View, x: f64, y: f64) -> (f64, f64) {
+    v.from_screen(x, y)
+}
+
+/// Granice widocznego obszaru (lat0, lon0, lat1, lon1) – na pochylonej mapie sięgają daleko w górę ekranu.
+fn view_bounds(v: &View) -> (f64, f64, f64, f64) {
+    let mut b = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for (x, y) in [(0.0, 0.0), (v.w, 0.0), (0.0, v.h), (v.w, v.h)] {
+        let (la, lo) = from_screen(v, x, y);
+        b = (b.0.min(la), b.1.min(lo), b.2.max(la), b.3.max(lo));
+    }
+    b
+}
+
+/// Przekształcenie, które „kładzie” rysunek wokół punktu na pochylonej mapie (lokalnie wierne
+/// przybliżenie perspektywy); None – mapa płaska. `s` – piksele fizyczne na logiczny.
+fn ground_tf(v: &View, lat: f64, lon: f64, s: f32) -> Option<tiny_skia::Transform> {
+    if !v.tilted() {
+        return None;
+    }
     let (cx, cy) = map::project(v.lat, v.lon, v.zoom);
-    let (lat, lon) = map::unproject(cx + x - v.w / 2.0, cy + y - v.h / 2.0, v.zoom);
-    (lat, ((lon + 540.0) % 360.0) - 180.0)
+    let (px, py) = map::project(lat, lon, v.zoom);
+    let (fx, fy) = (px - cx, py - cy);
+    let p0 = v.flat_to_screen(fx, fy);
+    let p1 = v.flat_to_screen(fx + 1.0, fy);
+    let p2 = v.flat_to_screen(fx, fy + 1.0);
+    let (x, y) = ((p0.0 * s as f64) as f32, (p0.1 * s as f64) as f32);
+    let m = tiny_skia::Transform::from_row((p1.0 - p0.0) as f32, (p1.1 - p0.1) as f32, (p2.0 - p0.0) as f32, (p2.1 - p0.1) as f32, 0.0, 0.0);
+    Some(m.pre_translate(-x, -y).post_translate(x, y))
+}
+
+fn path_of(pts: &[f32], close: bool) -> Option<tiny_skia::Path> {
+    let mut pb = tiny_skia::PathBuilder::new();
+    for (i, p) in pts.chunks_exact(2).enumerate() {
+        if i == 0 {
+            pb.move_to(p[0], p[1]);
+        } else {
+            pb.line_to(p[0], p[1]);
+        }
+    }
+    if close {
+        pb.close();
+    }
+    pb.finish()
 }
 
 fn style(dark: bool) -> Style {
@@ -271,7 +308,6 @@ fn direct_rows(s: Option<&FlightState>, d: &Direct) -> Vec<(String, String)> {
 // ---------- zdarzenia ----------
 
 pub fn event(kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
-    let three_d = state().borrow().s.nav_3d;
     let mut rerender = true;
     NAV.with(|n| {
         let mut n = n.borrow_mut();
@@ -285,23 +321,15 @@ pub fn event(kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
                 n.view.h = (y as f64).max(16.0);
             }
             "pan" => {
-                if three_d {
-                    n.cam.drag(dx as f64, dy as f64);
-                } else {
-                    n.view.pan(dx as f64, dy as f64);
-                    n.view.follow = false;
-                    if let Some(u) = ui() {
-                        u.global::<App>().set_follow(false);
-                    }
+                n.view.drag(x as f64, y as f64, dx as f64, dy as f64);
+                n.view.follow = false;
+                if let Some(u) = ui() {
+                    u.global::<App>().set_follow(false);
                 }
             }
-            "zoom" => {
-                if three_d {
-                    n.cam.zoom(dy as f64);
-                } else {
-                    n.view.zoom_at(dy as f64, x as f64, y as f64);
-                }
-            }
+            "tilt" => rerender = n.view.tilt_by(dy as f64),
+            "tilt-toggle" => n.view.toggle_tilt(),
+            "zoom" => n.view.zoom_at(dy as f64, x as f64, y as f64),
             "follow" => {
                 n.view.follow = x > 0.5;
                 n.view.user_moved = false;
@@ -312,15 +340,8 @@ pub fn event(kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
                     n.view.fit(b);
                     n.view.follow = false;
                 }
-                n.cam.dist = 1800.0;
-                n.cam.pitch = 18.0;
-                n.cam.yaw = 0.0;
             }
             "hover" => {
-                if three_d {
-                    rerender = false;
-                    return;
-                }
                 n.hover = Some(from_screen(&n.view, x as f64, y as f64));
                 rerender = n.tool == 2 && n.measure.len() == 1;
                 if !rerender {
@@ -335,10 +356,6 @@ pub fn event(kind: &str, x: f32, y: f32, dx: f32, dy: f32) {
                 side_hover();
             }
             "click" => {
-                if three_d {
-                    rerender = false;
-                    return;
-                }
                 let (lat, lon) = from_screen(&n.view, x as f64, y as f64);
                 let snap = snap(&n.view, x as f64, y as f64);
                 match n.tool {
@@ -579,33 +596,6 @@ pub fn cmd(id: &str, arg: &str) -> bool {
             }
             s.s.save();
         }
-        "nav-3d" => {
-            let st = state();
-            let mut s = st.borrow_mut();
-            s.s.nav_3d = arg == "1";
-            s.s.save();
-        }
-        "nav-cam" => {
-            let m: i32 = arg.parse().unwrap_or(0);
-            state().borrow_mut().s.nav_cam = m;
-            state().borrow().s.save();
-            NAV.with(|n| {
-                let mut n = n.borrow_mut();
-                n.cam.mode = cam_mode(m);
-                n.cam.yaw = 0.0;
-                match m {
-                    2 => n.cam.dist = n.cam.dist.max(8000.0),
-                    // z kabiny: patrzymy prosto, lekko w dół
-                    3 => n.cam.pitch = 4.0,
-                    4 => n.cam.pitch = n.cam.pitch.max(16.0),
-                    _ => {
-                        if n.cam.pitch < 6.0 {
-                            n.cam.pitch = 18.0;
-                        }
-                    }
-                }
-            });
-        }
         "nav-tool" => {
             let t: i32 = arg.parse().unwrap_or(0);
             NAV.with(|n| {
@@ -707,16 +697,6 @@ pub fn cmd(id: &str, arg: &str) -> bool {
     true
 }
 
-fn cam_mode(m: i32) -> CamMode {
-    match m {
-        1 => CamMode::Free,
-        2 => CamMode::Top,
-        3 => CamMode::Cockpit,
-        4 => CamMode::Orbit,
-        _ => CamMode::Chase,
-    }
-}
-
 // ---------- rysowanie ----------
 
 pub fn render(force: bool) {
@@ -740,11 +720,6 @@ pub fn render(force: bool) {
     let lay = set.nav_layers;
     NAV.with(|n| {
         let mut n = n.borrow_mut();
-        n.cam.mode = cam_mode(set.nav_cam);
-        // Orbita: kamera sama okrąża samolot
-        if set.nav_3d && set.nav_cam == 4 {
-            n.cam.yaw = (n.cam.yaw + 1.2).rem_euclid(360.0);
-        }
         if let Some(s) = &snap {
             if n.view.follow {
                 n.view.lat = s.position.lat;
@@ -757,16 +732,21 @@ pub fn render(force: bool) {
     });
     let track = if lay & NAV_TRACK != 0 { host.live_track() } else { Vec::new() };
     let st_style = style(dark);
-    let image = if set.nav_3d { render_3d(&snap, &track, st_style, dark, scale, lay) } else { render_2d(&snap, &track, st_style, dark, scale, lay) };
+    let image = render_map(&snap, &track, st_style, dark, scale, lay);
     app.set_map_nav(image.0);
     app.set_map_nav_labels(model(image.1.into_iter().map(|(x, y, t, k)| LabelV { x, y, text: ss(t), kind: k }).collect()));
-    app.set_map_nav_scale(ss(if set.nav_3d { String::new() } else { NAV.with(|n| n.borrow().view.scale_text()) }));
-    let attribution = if lay & NAV_RADAR != 0 && !set.nav_3d { format!("{} · RainViewer", st_style.attribution()) } else { st_style.attribution().to_string() };
+    // podziałka ma sens tylko na płaskiej mapie (na pochylonej skala zmienia się w głąb)
+    let (tilted, scale_txt) = NAV.with(|n| {
+        let n = n.borrow();
+        (n.view.tilted(), if n.view.tilted() { String::new() } else { n.view.scale_text() })
+    });
+    app.set_map_nav_scale(ss(scale_txt));
+    let attribution = if lay & NAV_RADAR != 0 { format!("{} · RainViewer", st_style.attribution()) } else { st_style.attribution().to_string() };
     app.set_map_attribution(ss(attribution));
-    side_panel(&snap, set.nav_3d);
+    side_panel(&snap, tilted);
 }
 
-fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style: Style, dark: bool, scale: f32, lay: u32) -> (slint::Image, Vec<(f32, f32, String, i32)>) {
+fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style: Style, dark: bool, scale: f32, lay: u32) -> (slint::Image, Vec<(f32, f32, String, i32)>) {
     let v = NAV.with(|n| n.borrow().view.clone());
     let s = scale;
     let var = mag_var(snap.as_ref());
@@ -784,7 +764,15 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
             }
         }
     }
-    let view_radius = (v.w.max(v.h) * 156_543.0 * v.lat.to_radians().cos() / 2f64.powf(v.zoom) / 1852.0).min(400.0);
+    // promień zapytań: do najdalszego rogu ekranu (na pochylonej mapie górne rogi są daleko)
+    let view_radius = [(0.0, 0.0), (v.w, 0.0), (0.0, v.h), (v.w, v.h)]
+        .iter()
+        .map(|&(x, y)| {
+            let (la, lo) = from_screen(&v, x, y);
+            distance_nm(v.lat, v.lon, la, lo)
+        })
+        .fold(0.0, f64::max)
+        .min(400.0);
     if let Some(db) = airports::db() {
         if lay & NAV_APT != 0 && v.zoom > 6.0 {
             for (_, a) in db.within(v.lat, v.lon, view_radius, false).into_iter().filter(|(_, a)| a.kind == 0 || (a.kind == 1 && v.zoom > 7.0) || v.zoom > 9.5).take(150) {
@@ -869,8 +857,9 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
 
     // ---------- siatka współrzędnych ----------
     if lay & NAV_GRID != 0 {
-        let (la0, lo0) = from_screen(&v, 0.0, v.h);
-        let (la1, lo1) = from_screen(&v, v.w, 0.0);
+        let (la0, lo0, la1, lo1) = view_bounds(&v);
+        // dolna krawędź ekranu (podpisy południków)
+        let la_near = from_screen(&v, v.w / 2.0, v.h).0;
         let span = (lo1 - lo0).abs().max((la1 - la0).abs());
         let step = [30.0, 15.0, 10.0, 5.0, 2.0, 1.0, 0.5, 0.25, 1.0 / 6.0, 1.0 / 12.0].into_iter().find(|st| span / st >= 3.0).unwrap_or(1.0 / 12.0);
         let gcol = if dark { 0x40FFFFFF } else { 0x50202836 };
@@ -885,9 +874,12 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
         };
         let mut lo = (lo0 / step).floor() * step;
         while lo <= lo1 {
-            let (x, _) = to(0.0, lo);
-            c.line(x, 0.0, x, hpx, gcol, 1.0);
-            c.text_halo(&fmt_deg(lo, 'E', 'W'), x + 3.0 * s, hpx - 30.0 * s, 10.0 * s, ink, halo, Align::Left, false);
+            // południk to prosta także w perspektywie: od najdalszego do najbliższego punktu
+            let (xf, yf) = to(la1, lo);
+            let (xn, yn) = to(la_near.min(la0), lo);
+            c.line(xf, yf, xn, yn, gcol, 1.0);
+            let (xl, _) = to(la_near, lo);
+            c.text_halo(&fmt_deg(lo, 'E', 'W'), xl + 3.0 * s, hpx - 30.0 * s, 10.0 * s, ink, halo, Align::Left, false);
             lo += step;
         }
         let mut la = (la0 / step).floor() * step;
@@ -913,8 +905,9 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                             continue;
                         }
                         c.dash_line(tx, ty, ex, ey, col, 1.4 * s, 7.0 * s, 5.0 * s);
-                        let t = (out as f32).to_radians();
-                        let (nx, ny) = (t.cos(), t.sin());
+                        // kreski poprzeczne prostopadle do osi na ekranie (także na pochylonej mapie)
+                        let l = ((ex - tx).powi(2) + (ey - ty).powi(2)).sqrt().max(1.0);
+                        let (nx, ny) = (-(ey - ty) / l, (ex - tx) / l);
                         for k in 1..=10 {
                             let f = k as f32 / 10.0;
                             let (mx, my) = (tx + (ex - tx) * f, ty + (ey - ty) * f);
@@ -957,6 +950,10 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                     let free = roses.iter().all(|(rx, ry, rr)| ((rx - x).powi(2) + (ry - y).powi(2)).sqrt() > (rr + r) * 0.92);
                     if lay & NAV_VOR_ROSE != 0 && v.zoom > 7.0 && roses.len() < 14 && a.kind.is_vor() && free {
                         roses.push((x, y, r));
+                        c.save();
+                        if let Some(t) = ground_tf(&v, a.lat, a.lon, s) {
+                            c.concat(t);
+                        }
                         c.circle(x, y, r, alpha(col, 0x90), 1.2 * s);
                         for d in (0..360).step_by(10) {
                             let ang = (d as f64 + a.mag_var) as f32;
@@ -972,6 +969,7 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                         let t = (a.mag_var as f32).to_radians();
                         let (tx, ty) = (x + t.sin() * r, y - t.cos() * r);
                         c.poly(col, 0, 0.0, &[tx + t.sin() * 9.0 * s, ty - t.cos() * 9.0 * s, tx + t.cos() * 4.0 * s, ty + t.sin() * 4.0 * s, tx - t.cos() * 4.0 * s, ty - t.sin() * 4.0 * s]);
+                        c.restore();
                     }
                     let hex: Vec<f32> = (0..6).flat_map(|k| {
                         let a2 = (60.0 * k as f32).to_radians();
@@ -992,8 +990,7 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
 
     // ---------- METAR: kategoria lotu i wiatr przy stacjach ----------
     if lay & NAV_METAR != 0 {
-        let (la0, lo0) = from_screen(&v, 0.0, v.h);
-        let (la1, lo1) = from_screen(&v, v.w, 0.0);
+        let (la0, lo0, la1, lo1) = view_bounds(&v);
         crate::wxmap::ensure_metars(la0, lo0, la1, lo1);
         let list = crate::wxmap::metars();
         let mut placed: Vec<(f32, f32)> = Vec::new();
@@ -1040,15 +1037,29 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
         let hdg_t = st.attitude.hdg_true_deg;
         let trk_t = st.attitude.track_true_deg;
         let gs = st.speed.gs_kt;
+        // okrąg w terenie (na pochylonej mapie wychodzi spłaszczony i mniejszy w głębi)
+        let (alat, alon) = (st.position.lat, st.position.lon);
+        let ring = |nm: f64| -> Vec<f32> {
+            (0..72)
+                .flat_map(|k| {
+                    let (la, lo) = dest(alat, alon, k as f64 * 5.0, nm);
+                    let p = to(la, lo);
+                    [p.0, p.1]
+                })
+                .collect()
+        };
         if lay & NAV_RINGS != 0 {
             let target = wpx.min(hpx) / 8.0;
             let steps = [0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0];
             let step = steps.iter().copied().find(|st| st * px_per_nm >= target).unwrap_or(200.0);
             for k in 1..=4 {
-                let r = step * k as f32 * px_per_nm;
-                c.dash_circle(ax, ay, r, alpha(ink, 0x70), 1.2 * s, 6.0 * s, 5.0 * s);
+                let nm = (step * k as f32) as f64;
+                if let Some(p) = path_of(&ring(nm), true) {
+                    c.stroke_path_dash(&p, alpha(ink, 0x70), 1.2 * s, 6.0 * s, 5.0 * s);
+                }
                 let lbl = if step < 1.0 { format!("{:.2} NM", step * k as f32) } else { format!("{} NM", step * k as f32) };
-                c.text_halo(&lbl, ax + r * 0.7071 + 3.0 * s, ay + r * 0.7071, 10.0 * s, ink, halo, Align::Left, false);
+                let (lx, ly) = { let (la, lo) = dest(alat, alon, 135.0, nm); to(la, lo) };
+                c.text_halo(&lbl, lx + 3.0 * s, ly, 10.0 * s, ink, halo, Align::Left, false);
             }
         }
         if lay & NAV_VECTOR != 0 && gs > 20.0 {
@@ -1085,9 +1096,12 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                 for (h, lbl, col) in [(hours, tr("paliwo"), 0xD0FFB547u32), ((hours - 0.75).max(0.0), tr("z rezerwą 45 min"), 0xD03CCF7A)] {
                     let r = (gs * h) as f32 * px_per_nm;
                     if r > 8.0 * s && r < 40.0 * (wpx + hpx) {
-                        c.circle(ax, ay, r, alpha(col, 0x18), 0.0);
-                        c.dash_circle(ax, ay, r, col, 2.0 * s, 10.0 * s, 6.0 * s);
-                        c.text_halo(&format!("{} {:.0} NM", lbl, gs * h), ax, ay - r - 8.0 * s, 11.0 * s, col, halo, Align::Center, true);
+                        if let Some(p) = path_of(&ring(gs * h), true) {
+                            c.fill_path(&p, alpha(col, 0x18));
+                            c.stroke_path_dash(&p, col, 2.0 * s, 10.0 * s, 6.0 * s);
+                        }
+                        let (lx, ly) = { let (la, lo) = dest(alat, alon, 0.0, gs * h); to(la, lo) };
+                        c.text_halo(&format!("{} {:.0} NM", lbl, gs * h), lx, ly - 8.0 * s, 11.0 * s, col, halo, Align::Center, true);
                     }
                 }
             }
@@ -1095,14 +1109,22 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                 let nm = st.position.alt_agl_ft * glide_ratio(st) / 6076.12;
                 let r = nm as f32 * px_per_nm;
                 if r > 6.0 * s {
-                    c.circle(ax, ay, r, 0x184FD8EB, 0.0);
-                    c.circle(ax, ay, r, 0xE04FD8EB, 1.8 * s);
-                    c.text_halo(&format!("{} {:.1} NM", tr("szybowanie"), nm), ax, ay + r + 12.0 * s, 11.0 * s, 0xFF4FD8EB, halo, Align::Center, true);
+                    if let Some(p) = path_of(&ring(nm), true) {
+                        c.fill_path(&p, 0x184FD8EB);
+                        c.stroke_path(&p, 0xE04FD8EB, 1.8 * s);
+                    }
+                    let (lx, ly) = { let (la, lo) = dest(alat, alon, 180.0, nm); to(la, lo) };
+                    c.text_halo(&format!("{} {:.1} NM", tr("szybowanie"), nm), lx, ly + 12.0 * s, 11.0 * s, 0xFF4FD8EB, halo, Align::Center, true);
                 }
             }
         }
         if lay & NAV_ROSE != 0 {
             let r = wpx.min(hpx) * 0.28;
+            // na pochylonej mapie róża leży na ziemi wokół samolotu
+            c.save();
+            if let Some(t) = ground_tf(&v, alat, alon, s) {
+                c.concat(t);
+            }
             let rose_ink = if dark { 0xE6E8EEF6 } else { 0xE6202836 };
             c.circle(ax, ay, r, alpha(rose_ink, 0x60), 1.4 * s);
             for d in (0..360).step_by(5) {
@@ -1153,6 +1175,7 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                     c.restore();
                 }
             }
+            c.restore();
         }
     }
 
@@ -1182,6 +1205,10 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
             let (rx, ry) = to(r.lat, r.lon);
             let col = 0xFF2EC4D6;
             let rr = (wpx.min(hpx) * 0.22).max(90.0 * s);
+            c.save();
+            if let Some(t) = ground_tf(&v, r.lat, r.lon, s) {
+                c.concat(t);
+            }
             c.circle(rx, ry, rr, alpha(col, 0xA0), 1.4 * s);
             for d in (0..360).step_by(5) {
                 let ang = (d as f64 + r.var) as f32;
@@ -1192,6 +1219,7 @@ fn render_2d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style
                     c.text_halo(&format!("{:03}", if d == 0 { 360 } else { d }), rx + t.sin() * rr * 0.82, ry - t.cos() * rr * 0.82, 10.5 * s, col, halo, Align::Center, true);
                 }
             }
+            c.restore();
             c.circle(rx, ry, 5.0 * s, col, 0.0);
             c.text_halo(&r.name, rx, ry + rr * 0.25, 12.0 * s, col, halo, Align::Center, true);
             let o = snap.as_ref().map(|s| (s.position.lat, s.position.lon)).or(hover);
@@ -1307,120 +1335,6 @@ fn wind_barb(c: &mut Canvas, x: f32, y: f32, dir: f32, kt: i32, s: f32, ink: u32
     }
 }
 
-fn render_3d(snap: &Option<FlightState>, track: &[crate::host::LivePoint], style: Style, dark: bool, scale: f32, lay: u32) -> (slint::Image, Vec<(f32, f32, String, i32)>) {
-    let (v, cam) = NAV.with(|n| (n.borrow().view.clone(), n.borrow().cam));
-    let w = ((v.w * scale as f64) as u32).max(16);
-    let h = ((v.h * scale as f64) as u32).max(16);
-    let (lat, lon, alt, hdg, pitch, bank, ground, show) = match snap {
-        Some(s) => (s.position.lat, s.position.lon, s.position.alt_msl_ft, s.attitude.hdg_true_deg, s.attitude.pitch_deg, s.attitude.bank_deg, (s.position.alt_msl_ft - s.position.alt_agl_ft).max(-1000.0), true),
-        None => (v.lat, v.lon, 3000.0, 0.0, 0.0, 0.0, 0.0, false),
-    };
-    let radius = (cam.dist / 1852.0 * 14.0).clamp(8.0, 160.0);
-    let mut points = Vec::new();
-    let mut runways = Vec::new();
-    if let Some(db) = airports::db() {
-        if lay & NAV_APT != 0 {
-            for (_, a) in db.within(lat, lon, radius, false).into_iter().filter(|(_, a)| a.kind <= 1 || cam.dist < 15_000.0).take(80) {
-                points.push(Label3 { lat: a.lat, lon: a.lon, text: a.ident.clone(), kind: 0 });
-            }
-        }
-        if lay & NAV_RWY != 0 {
-            for (_, a) in db.within(lat, lon, radius.min(60.0), false).into_iter().take(60) {
-                for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed) {
-                    runways.push((r.le_lat, r.le_lon, r.he_lat, r.he_lon, r.width_ft.max(60) as f64));
-                }
-            }
-        }
-    }
-    if let Some(db) = navaids::db() {
-        for (_, a) in db.within(lat, lon, radius).into_iter().take(80) {
-            let ndb = a.kind.is_ndb();
-            if (ndb && lay & NAV_NDB != 0) || (!ndb && lay & NAV_VOR != 0) {
-                points.push(Label3 { lat: a.lat, lon: a.lon, text: a.ident.clone(), kind: if ndb { 2 } else { 1 } });
-            }
-        }
-    }
-    let route: Vec<(f64, f64)> = snap
-        .as_ref()
-        .and_then(|s| s.avionics.as_ref())
-        .filter(|a| lay & NAV_ROUTE != 0 && a.gps.next_lat != 0.0 && a.gps.prev_lat != 0.0)
-        .map(|a| vec![(a.gps.prev_lat, a.gps.prev_lon), (a.gps.next_lat, a.gps.next_lon)])
-        .unwrap_or_default();
-    let pts: Vec<(f64, f64, i32)> = track.iter().map(|p| (p.lat, p.lon, p.alt)).collect();
-    let plan = if state().borrow().s.nav_plan { crate::flightplan::active_route() } else { Vec::new() };
-    let sub = subsolar(sim_unix(snap.as_ref()));
-    let sun = snap.as_ref().map(|_| sun_elev(lat, lon, sub));
-    let direct = NAV.with(|n| n.borrow().direct.clone());
-    let mut hud = match snap {
-        Some(s) => vec![
-            if s.aircraft.title.is_empty() { "OpenTakeoff 3D".to_string() } else { s.aircraft.title.clone() },
-            format!("ALT {:.0} ft · AGL {:.0} ft", s.position.alt_ind_ft, s.position.alt_agl_ft),
-            format!("HDG {}° · GS {:.0} kt · V/S {:+.0}", deg3(s.attitude.hdg_mag_deg), s.speed.gs_kt, s.speed.vs_fpm),
-        ],
-        None => vec![tr("Brak danych z symulatora – widok mapy").to_string()],
-    };
-    if let (Some(s), Some(d)) = (snap, &direct) {
-        let var = mag_var(Some(s));
-        let dist = distance_nm(s.position.lat, s.position.lon, d.lat, d.lon);
-        hud.push(format!("DCT {} · {}°M · {:.1} NM", d.name.split_whitespace().next().unwrap_or(""), deg3(bearing_deg(s.position.lat, s.position.lon, d.lat, d.lon) - var), dist));
-    }
-    if let Some(e) = sun {
-        hud.push(format!("{} {:+.0}° · {}", tr("Słońce"), e, sun_word(e)));
-    }
-    // Linie w przestrzeni: Direct To (od samolotu do celu na 1500 ft nad lotniskiem) i ścieżki podejścia 3°
-    let mut lines: Vec<(Vec<(f64, f64, f64)>, u32, bool)> = Vec::new();
-    if let (Some(s), Some(d)) = (snap, &direct) {
-        let end = (d.elev.unwrap_or(ground) + 1500.0) * 0.3048;
-        lines.push((vec![(s.position.lat, s.position.lon, s.position.alt_msl_ft * 0.3048), (d.lat, d.lon, end)], 0xFFFF33E6, false));
-        lines.push((vec![(d.lat, d.lon, d.elev.unwrap_or(ground) * 0.3048), (d.lat, d.lon, end)], 0xC0FF33E6, true));
-    }
-    if lay & NAV_APPR != 0 {
-        if let Some(db) = airports::db() {
-            for (_, a) in db.within(lat, lon, 30.0, false).into_iter().filter(|(_, a)| a.kind <= 1).take(6) {
-                for r in a.runways.iter().filter(|r| r.has_coords() && !r.closed && r.length_ft >= 3000) {
-                    for (th_la, th_lo, el, out) in [(r.le_lat, r.le_lon, r.le_elev, bearing_deg(r.he_lat, r.he_lon, r.le_lat, r.le_lon)), (r.he_lat, r.he_lon, r.he_elev, bearing_deg(r.le_lat, r.le_lon, r.he_lat, r.he_lon))] {
-                        let elev = el.or(a.elev_ft).map(|e| e as f64).unwrap_or(ground);
-                        let pts: Vec<(f64, f64, f64)> = (0..=10)
-                            .map(|k| {
-                                let (la, lo) = dest(th_la, th_lo, out, k as f64);
-                                (la, lo, (elev + 50.0 + k as f64 * 318.0) * 0.3048)
-                            })
-                            .collect();
-                        lines.push((pts, 0xE03EE07A, false));
-                    }
-                }
-            }
-        }
-    }
-    let sc = scene3d::Scene {
-        style,
-        dark,
-        w,
-        h,
-        scale,
-        lat,
-        lon,
-        alt_ft: alt,
-        hdg,
-        pitch,
-        bank,
-        ground_ft: ground,
-        mag_var: mag_var(snap.as_ref()),
-        show_aircraft: show,
-        track: &pts,
-        runways: &runways,
-        points: &points,
-        route: &route,
-        plan: &plan,
-        hud,
-        compass: lay & NAV_ROSE != 0,
-        curtain: lay & NAV_CURTAIN != 0,
-        lines: &lines,
-        sun,
-    };
-    (scene3d::render(&sc, &cam), Vec::new())
-}
-
 // ---------- panel boczny ----------
 
 fn side_hover() {
@@ -1440,7 +1354,7 @@ fn side_hover() {
     u.global::<App>().set_nav_hover(ss(txt.unwrap_or_default()));
 }
 
-fn side_panel(snap: &Option<FlightState>, three_d: bool) {
+fn side_panel(snap: &Option<FlightState>, tilted: bool) {
     let Some(u) = ui() else { return };
     let app = u.global::<App>();
     let set = state().borrow().s.clone();
@@ -1596,8 +1510,7 @@ fn side_panel(snap: &Option<FlightState>, three_d: bool) {
         curtain: lay & NAV_CURTAIN != 0,
         rwy: lay & NAV_RWY != 0,
         tool,
-        view3d: three_d,
-        cam: set.nav_cam,
+        tilted,
         inbound,
         has_ref,
         has_sel,
@@ -1612,7 +1525,7 @@ fn side_panel(snap: &Option<FlightState>, three_d: bool) {
         grid: lay & NAV_GRID != 0,
         style: set.map_style,
         has_direct: direct.is_some(),
-        wx: ss(if three_d { String::new() } else { wx_status(lay) }),
+        wx: ss(wx_status(lay)),
     });
 }
 
@@ -1650,4 +1563,9 @@ pub fn show_at(lat: f64, lon: f64) {
 #[allow(dead_code)]
 pub fn reset() {
     NAV.with(|n| n.borrow_mut().view.follow = true);
+}
+
+/// Pochylenie mapy (°, 0 – płaska); używane przy zrzutach testowych interfejsu.
+pub fn set_tilt(t: f64) {
+    NAV.with(|n| n.borrow_mut().view.tilt = t.clamp(0.0, map::MAX_TILT));
 }

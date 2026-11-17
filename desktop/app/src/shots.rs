@@ -330,7 +330,6 @@ pub fn cmd(id: &str, arg: &str) -> bool {
                     let st = state();
                     let mut b = st.borrow_mut();
                     b.s.nav_shots = true;
-                    b.s.nav_3d = false;
                 }
                 crate::navmap::show_at(s.lat, s.lon);
                 if let Some(u) = ui() {
