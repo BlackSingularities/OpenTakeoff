@@ -261,7 +261,7 @@ impl E190Pfd {
         }
         c.poly(BLACK, WHITE, 3.0, &[l - 20.0, CY, l - 2.0, CY - 14.0, l - 2.0, CY - 32.0, r + 14.0, CY - 32.0, r + 14.0, CY + 32.0, l - 2.0, CY + 32.0, l - 2.0, CY + 14.0]);
         let hundreds = (a / 100.0).floor() as i32;
-        c.text_r(&if hundreds < 0 { format!("-{}", hundreds.abs()) } else { hundreds.to_string() }, l + 62.0, CY, 44.0, WHITE);
+        c.text_r(&if hundreds < 0 { format!("-{}", hundreds.abs()) } else { hundreds.to_string() }, l + 62.0, CY, 40.0, WHITE);
         c.drum(l + 64.0, CY - 30.0, r + 12.0, CY + 30.0, a / 20.0, 26.0, 28.0, WHITE, l + 84.0, Align::Left, |kk| format!("{:02}", imod(kk * 20, 100)));
     }
 

@@ -288,7 +288,7 @@ class B787Pfd : PfdRenderer {
             l - 24, CY - 34, l - 4, CY, l - 24, CY + 34, r + 6, CY + 34, r + 6, CY - 34)
         val hundreds = floor(a / 100f).toInt()
         p.text(c, if (hundreds < 0) "-" + abs(hundreds) else hundreds.toString(),
-            l + 62, CY, 46f, Col.WHITE, Paint.Align.RIGHT)
+            l + 62, CY, 42f, Col.WHITE, Paint.Align.RIGHT)
         p.drum(c, l + 64, CY - 32, r + 4, CY + 32, a / 20f, 28f, 28f, Col.WHITE, l + 86,
             Paint.Align.LEFT) { kk -> String.format(Locale.US, "%02d", mod(kk * 20, 100)) }
     }

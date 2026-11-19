@@ -208,10 +208,17 @@ impl AirbusPfd {
             let sel = if d.std && d.alt_bug >= 1000.0 { format!("FL{}", roundi(d.alt_bug / 100.0)) } else { roundi(d.alt_bug).to_string() };
             c.text(&sel, (l + r) / 2.0, t - 26.0, 38.0, CYAN);
         }
-        c.poly(BLACK, YEL, 4.0, &[l + 2.0, CY - 30.0, 822.0, CY - 30.0, 822.0, CY - 50.0, 878.0, CY - 50.0, 878.0, CY + 50.0, 822.0, CY + 50.0, 822.0, CY + 30.0, l + 2.0, CY + 30.0]);
+        // Okno wysokości jak w A320: stała szerokość na trzy cyfry setek (do FL390 i „-5”), żółta ramka
+        // z wyższą częścią bębna; wcześniej okno mieściło dwie cyfry i od 10 000 ft setki wychodziły
+        // w lewo poza ramkę na taśmę.
+        let wl = l - 10.0;
+        c.poly(BLACK, YEL, 4.0, &[wl, CY - 30.0, 822.0, CY - 30.0, 822.0, CY - 50.0, 878.0, CY - 50.0, 878.0, CY + 50.0, 822.0, CY + 50.0, 822.0, CY + 30.0, wl, CY + 30.0]);
         let hundreds = (a / 100.0).floor() as i32;
         let big = if hundreds < 0 { format!("-{}", hundreds.abs()) } else { hundreds.to_string() };
-        c.text_r(&big, 818.0, CY, 56.0, GREEN);
+        c.save();
+        c.clip_rect(wl + 2.0, CY - 28.0, 820.0, CY + 28.0);
+        c.text_r(&big, 818.0, CY, if big.chars().count() > 3 { 42.0 } else { 50.0 }, GREEN);
+        c.restore();
         c.drum(824.0, CY - 48.0, 876.0, CY + 48.0, a / 20.0, 38.0, 36.0, GREEN, 850.0, Align::Center, |kk| format!("{:02}", imod(kk * 20, 100)));
     }
 

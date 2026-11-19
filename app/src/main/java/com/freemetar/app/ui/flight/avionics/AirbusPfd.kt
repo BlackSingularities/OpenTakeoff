@@ -310,13 +310,18 @@ class AirbusPfd(private val vr: AirbusVariant = AirbusVariant.A320) : PfdRendere
             p.text(c, sel, (l + r) / 2, t - 26, 38f, CYAN)
         }
 
-        // okno odczytu: setki + bęben 20 ft
+        // okno odczytu jak w A320: stała szerokość na trzy cyfry setek (do FL390) + bęben 20 ft;
+        // dawniej okno mieściło dwie cyfry i od 10 000 ft setki wychodziły w lewo na taśmę
+        val wl = l - 10f
         p.poly(c, Col.BLACK, YELLOW, 4f,
-            l + 2, CY - 30, 822f, CY - 30, 822f, CY - 50, 878f, CY - 50,
-            878f, CY + 50, 822f, CY + 50, 822f, CY + 30, l + 2, CY + 30)
+            wl, CY - 30, 822f, CY - 30, 822f, CY - 50, 878f, CY - 50,
+            878f, CY + 50, 822f, CY + 50, 822f, CY + 30, wl, CY + 30)
         val hundreds = floor(a / 100f).toInt()
         val big = if (hundreds < 0) "-" + abs(hundreds) else hundreds.toString()
-        p.text(c, big, 818f, CY, 56f, GREEN, Paint.Align.RIGHT)
+        c.save()
+        c.clipRect(wl + 2, CY - 28, 820f, CY + 28)
+        p.text(c, big, 818f, CY, if (big.length > 3) 42f else 50f, GREEN, Paint.Align.RIGHT)
+        c.restore()
         p.drum(c, 824f, CY - 48, 876f, CY + 48, a / 20f, 38f, 36f, GREEN, 850f, Paint.Align.CENTER) { kk ->
             String.format(Locale.US, "%02d", mod(kk * 20, 100))
         }

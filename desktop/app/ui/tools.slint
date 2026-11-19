@@ -616,7 +616,10 @@ export component Tools inherits Rectangle {
                     Card {
                         title: @tr("Pasy lotniska");
                         note: root.aw.length > 0 ? root.aw[0] : "";
+                        // Bez rozciągania: wcześniej wiersz z polem ICAO zajmował całą wolną wysokość
+                        // karty, a tabela pasów lądowała na samym dole
                         HorizontalLayout {
+                            vertical-stretch: 0;
                             spacing: 10px;
                             In {
                                 label: "ICAO";

@@ -131,11 +131,12 @@ component PlanRow inherits Rectangle {
             padding-left: 6px;
             padding-right: 8px;
             spacing: 8px;
+            // Kolor odcinka trasy jako kropka (bez pionowego paska po lewej)
             Rectangle {
-                width: 4px;
-                height: 14px;
+                width: 8px;
+                height: 8px;
                 y: (parent.height - self.height) / 2;
-                border-radius: 2px;
+                border-radius: 4px;
                 background: root.seg;
             }
             Text {
@@ -383,13 +384,14 @@ export component PlanView inherits Rectangle {
                             ot := Text {
                                 horizontal-alignment: center;
                                 vertical-alignment: center;
-                                text: o.name + "  " + o.sub;
+                                // Sama nazwa – z odległością i pasem pięć propozycji nie mieściło się w wierszu
+                                text: o.name;
                                 font-family: Theme.mono;
                                 font-size: Theme.fs-small;
                                 color: o.selected ? Theme.accent : Theme.text-dim;
                             }
                             ota := TipArea {
-                                tip: @tr("Ustaw jako lotnisko zapasowe");
+                                tip: o.sub + " – " + @tr("Ustaw jako lotnisko zapasowe");
                                 clicked => {
                                     App.cmd("plan-altn", o.name);
                                 }

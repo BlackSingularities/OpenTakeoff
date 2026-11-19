@@ -1,3 +1,14 @@
+## 3.10.2
+
+- PFD Airbusa (Windows i Android): okno wysokości ma stałą szerokość na trzy cyfry setek jak w A320 – od 10 000 ft cyfry nie wychodzą już poza żółtą ramkę na taśmę. W PFD 787 i E190 setki nie zahaczają o ramkę.
+- Wstążka: przyciski z menu (styl kabiny, osobne okna, podkład mapy, zestaw checklist) stoją równo z resztą zamiast nachodzić na pasek kart.
+- Przewodnik pierwszego uruchomienia: przyciski Pomiń i Dalej nie wypadają poza okno.
+- Lotniska: briefing mieści się obok mapy także w oknie 1920 px (kafelki, profil nieba, ostatnie godziny).
+- Plan lotu: kolor odcinka trasy jako kropka przy punkcie, propozycje lotnisk zapasowych mieszczą się w wierszu (odległość i pas w podpowiedzi).
+- Narzędzia → Wiatr na pasie: tabela pasów lotniska tuż pod polem ICAO zamiast na dole karty.
+- Panel boczny: pełne etykiety planu lotu (np. TO DESTINATION).
+- Lot pokazowy: samolot nazywa się „OpenTakeoff Sim A320” we wszystkich językach.
+
 ## 3.10.1
 
 - Windows: angielski i hiszpański obejmują znów cały interfejs – wybór języka działał tylko dla części tekstów, a napisy kart, przycisków i paneli zostawały po polsku (albo w języku Windows zamiast wybranego w Ustawieniach).

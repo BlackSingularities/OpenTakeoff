@@ -198,7 +198,7 @@ impl B787Pfd {
         }
         c.poly(BLACK, WHITE, 3.0, &[l - 24.0, CY - 34.0, l - 4.0, CY, l - 24.0, CY + 34.0, r + 6.0, CY + 34.0, r + 6.0, CY - 34.0]);
         let hundreds = (a / 100.0).floor() as i32;
-        c.text_r(&if hundreds < 0 { format!("-{}", hundreds.abs()) } else { hundreds.to_string() }, l + 62.0, CY, 46.0, WHITE);
+        c.text_r(&if hundreds < 0 { format!("-{}", hundreds.abs()) } else { hundreds.to_string() }, l + 62.0, CY, 42.0, WHITE);
         c.drum(l + 64.0, CY - 32.0, r + 4.0, CY + 32.0, a / 20.0, 28.0, 28.0, WHITE, l + 86.0, Align::Left, |kk| format!("{:02}", imod(kk * 20, 100)));
     }
 

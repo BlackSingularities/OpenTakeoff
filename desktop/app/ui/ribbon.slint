@@ -9,6 +9,9 @@ import { BigButton, Card, Col, Group, MenuItem, MenuSep, Row, AText } from "widg
 /// Checklisty: zestaw dla samolotu – duży przycisk wstążki z menu (Auto – rozpoznany z samolotu).
 component ChecklistSetButton inherits Rectangle {
     width: bb.min-width;
+    // Wysokość jak zwykłego dużego przycisku – bez niej opakowanie nie podaje wysokości układowi wstążki
+    // i przycisk z menu stoi wyżej niż reszta (nachodzi na pasek kart).
+    height: bb.height;
     bb := BigButton {
         width: parent.width;
         icon: Icons.plane;
@@ -57,6 +60,9 @@ component ChecklistSetButton inherits Rectangle {
 component PopoutButton inherits Rectangle {
     property <[string]> names: ["PFD", "ND", @tr("Silniki"), @tr("Systemy"), @tr("Zegary")];
     width: bb.min-width;
+    // Wysokość jak zwykłego dużego przycisku – bez niej opakowanie nie podaje wysokości układowi wstążki
+    // i przycisk z menu stoi wyżej niż reszta (nachodzi na pasek kart).
+    height: bb.height;
     bb := BigButton {
         width: parent.width;
         icon: Icons.external-link;
@@ -103,6 +109,9 @@ component PopoutButton inherits Rectangle {
 component MapStyleButton inherits Rectangle {
     property <[string]> names: [@tr("Wg motywu"), @tr("Ciemny"), @tr("Jasny"), "OpenStreetMap", @tr("Satelita")];
     width: bb.min-width;
+    // Wysokość jak zwykłego dużego przycisku – bez niej opakowanie nie podaje wysokości układowi wstążki
+    // i przycisk z menu stoi wyżej niż reszta (nachodzi na pasek kart).
+    height: bb.height;
     bb := BigButton {
         width: parent.width;
         icon: Icons.layers;
@@ -151,6 +160,9 @@ component CabinStyleButton inherits Rectangle {
         @tr("zegary szybowca"),
     ];
     width: bb.min-width;
+    // Wysokość jak zwykłego dużego przycisku – bez niej opakowanie nie podaje wysokości układowi wstążki
+    // i przycisk z menu stoi wyżej niż reszta (nachodzi na pasek kart).
+    height: bb.height;
     bb := BigButton {
         width: parent.width;
         icon: Icons.gauge;

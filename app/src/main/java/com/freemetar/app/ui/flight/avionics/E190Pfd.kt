@@ -323,7 +323,7 @@ class E190Pfd : PfdRenderer {
             r + 14, CY + 32, l - 2, CY + 32, l - 2, CY + 14)
         val hundreds = floor(a / 100f).toInt()
         p.text(c, if (hundreds < 0) "-" + abs(hundreds) else hundreds.toString(),
-            l + 62, CY, 44f, Col.WHITE, Paint.Align.RIGHT)
+            l + 62, CY, 40f, Col.WHITE, Paint.Align.RIGHT)
         p.drum(c, l + 64, CY - 30, r + 12, CY + 30, a / 20f, 26f, 28f, Col.WHITE, l + 84,
             Paint.Align.LEFT) { kk -> String.format(Locale.US, "%02d", mod(kk * 20, 100)) }
     }

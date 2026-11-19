@@ -278,11 +278,15 @@ component TabInfo inherits HorizontalLayout {
 export component WelcomeDialog inherits Rectangle {
     property <int> step: App.welcome-step;
     property <[string]> titles: [@tr("Witaj w OpenTakeoff"), @tr("Połączenie z symulatorem"), @tr("Telefon"), @tr("Karty programu")];
+    // Wysokość z zawartości zaniża zawijany tekst (liczony jak jedna linia), a przyciski wypadały poza
+    // ramkę – każdy krok ma więc wysokość co najmniej taką, w jakiej mieści się po polsku, angielsku
+    // i hiszpańsku; nadmiar idzie w odstęp nad przyciskami.
+    property <[length]> step-min: [300px, 380px, 330px, 470px];
     background: #000000aa;
     TouchArea { }
     Card {
         width: min(640px * Theme.scale, parent.width - 40px);
-        height: min(wl.preferred-height, parent.height - 40px);
+        height: min(max(wl.preferred-height, root.step-min[max(0, root.step)] * Theme.scale), parent.height - 40px);
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
         wl := VerticalLayout {
@@ -463,7 +467,11 @@ export component WelcomeDialog inherits Rectangle {
                     color: Theme.text-faint;
                 }
             }
+            Rectangle {
+                vertical-stretch: 1;
+            }
             HorizontalLayout {
+                vertical-stretch: 0;
                 spacing: 8px;
                 Button {
                     label: @tr("Pomiń");

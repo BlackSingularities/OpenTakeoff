@@ -109,7 +109,7 @@ impl FlightSimulation {
         let s = &mut self.s;
         s.source = "simulation".into();
         s.aircraft = AircraftInfo {
-            title: "OpenTakeoff Sim A320 (symulacja)".into(),
+            title: "OpenTakeoff Sim A320".into(),
             on_ground: true,
             paused: false,
             engine_type: "jet".into(),

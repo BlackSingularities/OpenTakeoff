@@ -126,7 +126,8 @@ component VizPanel inherits Panel {
 component BriefTile inherits Rectangle {
     in property <BriefTileV> t;
     property <color> tone: t.cat != "" ? Colors.cat(t.cat) : t.tone == 3 ? Colors.ifr : t.tone == 2 ? Colors.warn : Theme.text;
-    min-width: 112px * Theme.scale;
+    // Siedem kafelków musi się zmieścić obok mapy także w oknie 1920 px – przy 112 px briefing wychodził pod mapę
+    min-width: 88px * Theme.scale;
     height: vl.preferred-height;
     border-radius: Theme.r;
     background: t.cat != "" ? root.tone.with-alpha(0.12) : Theme.raised;
@@ -253,7 +254,7 @@ component HistCell inherits Rectangle {
     in property <WxHistV> m;
     in property <bool> last;
     horizontal-stretch: 1;
-    min-width: 74px * Theme.scale;
+    min-width: 62px * Theme.scale;
     height: vl.preferred-height;
     border-radius: Theme.r-small;
     background: root.last ? Theme.raised : transparent;
@@ -476,7 +477,7 @@ component Briefing inherits ScrollView {
                     title: @tr("Składowe wiatru");
                     icon: Icons.wind;
                     note: "kt";
-                    width: 400px * Theme.scale;
+                    width: 360px * Theme.scale;
                     VerticalLayout {
                         spacing: 2px;
                         alignment: start;
@@ -999,7 +1000,7 @@ export component Airports inherits Rectangle {
                 }
                 MapView {
                     id: 2;
-                    width: 400px * Theme.scale;
+                    width: 360px * Theme.scale;
                     source: App.map-airport;
                     labels: App.map-airport-labels;
                 }
