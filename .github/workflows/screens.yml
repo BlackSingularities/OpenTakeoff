@@ -65,7 +65,7 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swangle_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: python3 tools/android_shots.py app.apk ci-data shots ${{ matrix.lang }}
 
       - name: Log rdzenia

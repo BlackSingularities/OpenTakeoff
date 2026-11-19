@@ -189,6 +189,13 @@ class Run:
         # Dolny pasek nawigacji: najniższe dopasowanie
         n = ui.find(label, pick=lambda n: -n["y1"])
         if not n:
+            # Aplikacja zniknęła z ekranu (awaria, okno systemu) – uruchom ją ponownie i spróbuj jeszcze raz
+            self.crashlog(f"zakladka-{key}")
+            sh(f"am start -n {PKG}/.MainActivity")
+            time.sleep(6)
+            dismiss(ui)
+            n = ui.find(label, pick=lambda n: -n["y1"])
+        if not n:
             log(f"  ! brak zakładki „{label}”")
             return False
         ui.tap_node(n)
