@@ -151,7 +151,8 @@ def set_locale(tag):
 
 def dismiss(ui):
     """Systemowe „nie odpowiada” po zimnym starcie i ewentualne okna aplikacji (aktualizacja, zgody)."""
-    labels = {"Wait", "Czekaj", "Esperar", "OK", ui.s("common.later") if "common.later" in ui.t else "Later", "Później", "Allow", "Zezwól"}
+    labels = {"Wait", "Czekaj", "Esperar", "OK", "Later", "Później", "Allow", "Zezwól"}
+    labels |= {v for k, v in ui.t.items() if k.endswith((".dont_send", ".don_t_send", ".later"))}
     for _ in range(3):
         n = next((n for n in ui.nodes() if n["text"] in labels), None)
         if not n:
@@ -173,6 +174,14 @@ class Run:
         with open(f, "wb") as fh:
             fh.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=60).stdout)
         log(f"  zrzut {os.path.basename(f)} ({os.path.getsize(f) // 1024} kB)")
+
+    def crashlog(self, name):
+        """Stos wywołań awarii aplikacji (bufor crash) – do pliku obok zrzutów."""
+        txt = adb("logcat", "-d", "-b", "crash", timeout=60)
+        if txt.strip():
+            open(os.path.join(self.out, f"crash-{name}.txt"), "w", encoding="utf-8").write(txt)
+            log(f"  ! awaria aplikacji – zapisano crash-{name}.txt")
+            adb("logcat", "-c", "-b", "crash")
 
     def tab(self, key):
         ui = self.ui
@@ -260,6 +269,7 @@ class Run:
             swipe_up()
             self.shot("briefing-3")
             back()
+        self.crashlog("po-briefingu")
 
         # Połączenie z rdzeniem w trybie symulacji: kokpit, synchronizacja dziennika
         self.launch()
@@ -308,6 +318,7 @@ class Run:
                 break
             swipe_up()
         self.shot("o-programie")
+        self.crashlog("koniec")
 
 
 def main():
