@@ -190,6 +190,12 @@ class Run:
         sh(f"am force-stop {PKG}")
         sh(f"am start -W -n {PKG}/.MainActivity")
         ui = self.ui
+        # Ekran powitalny przy pierwszym uruchomieniu
+        for _ in range(3):
+            if not ui.wait(ui.s("welcome.get_started"), 8):
+                break
+            ui.tap(ui.s("welcome.get_started"))
+            time.sleep(3)
         # Pierwsze uruchomienie pobiera bazę lotnisk
         ui.wait(ui.s("home.airport_icao_iata_or_city"), 120, contains=True)
         time.sleep(4)
