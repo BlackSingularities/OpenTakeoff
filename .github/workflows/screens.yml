@@ -38,6 +38,9 @@ jobs:
 
       - name: Rdzeń OpenTakeoff bez okna
         working-directory: desktop
+        # rust-toolchain.toml wskazuje kompilator dla Windows – na Linuksie zwykły stable
+        env:
+          RUSTUP_TOOLCHAIN: stable
         run: cargo build --release -p opentakeoff-core --example headless
 
       - name: APK z wydania
