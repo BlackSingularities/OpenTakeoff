@@ -1,3 +1,7 @@
+## 3.10.1
+
+- Windows: angielski i hiszpański obejmują znów cały interfejs – wybór języka działał tylko dla części tekstów, a napisy kart, przycisków i paneli zostawały po polsku (albo w języku Windows zamiast wybranego w Ustawieniach).
+
 ## 3.10.0
 
 - Mapy: każdą mapę w programie można obrócić – przeciągnięcie prawym przyciskiem (albo lewym z Ctrl) w bok obraca, w górę i w dół pochyla. Kompas przy przyciskach mapy pokazuje północ, a kliknięty obraca mapę z powrotem północą do góry. Samolot, siatka, wiatr, chorągiewki METAR, radiale i róże VOR obracają się razem z mapą.

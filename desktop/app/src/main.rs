@@ -235,7 +235,6 @@ fn main() {
     }
     let settings = Settings::load();
     let code = lang::init(&settings.language);
-    let _ = slint::select_bundled_translation(&code);
     feedback::install("opentakeoff", "OpenTakeoff", opentakeoff_core::version(), opentakeoff_core::paths::cache(), || lang::current() == "pl", true);
     // Jedna kopia programu: druga tylko pokazuje okno pierwszej
     // Tryb zrzutów (diagnostyka) działa obok uruchomionego programu
@@ -264,6 +263,12 @@ fn main() {
     let host = host::Host::start(sim, settings.sim_kind as i64, &settings.xplane_host, settings.look_sensitivity, settings.record_flights, settings.interval_ms());
     host.set_sync_enabled(settings.auto_sync);
     let ui = AppWindow::new().expect("okno");
+    // Tłumaczenia .slint Slint rejestruje dopiero przy pierwszym komponencie (wcześniej wybór języka
+    // kończy się błędem NoTranslationsBundled), a sam dobiera je wtedy z języka Windows. Dlatego wybór
+    // po utworzeniu okna; polski to język źródłowy – pusty kod przywraca teksty z plików .slint.
+    if let Err(e) = slint::select_bundled_translation(if code == "pl" { "" } else { code.as_str() }) {
+        log::warn(&format!("Język interfejsu {code}: {e}"));
+    }
     let app = ui.global::<App>();
     app.set_version(opentakeoff_core::version().into());
     app.set_tab(settings.tab.clamp(0, 7));
