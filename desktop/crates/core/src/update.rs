@@ -118,6 +118,7 @@ pub fn download(rel: &Release, progress: impl Fn(u64, u64)) -> Result<PathBuf, S
 
 /// Wersja przenośna: wyciąga nowy OpenDTP.exe z archiwum i podmienia go po zamknięciu programu
 /// (skrypt czeka na koniec procesu, kopiuje plik i uruchamia program ponownie).
+#[cfg(windows)]
 pub fn apply_portable(zip_path: &std::path::Path) -> Result<(), String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let f = std::fs::File::open(zip_path).map_err(|e| e.to_string())?;
@@ -149,6 +150,7 @@ pub fn apply_portable(zip_path: &std::path::Path) -> Result<(), String> {
 
 /// Uruchamia instalator po cichu z uprawnieniami administratora (UAC – instalacja w Program Files).
 /// Instalator zamyka OpenTakeoff, podmienia pliki i – gdy `restart` – uruchamia program ponownie.
+#[cfg(windows)]
 pub fn apply(setup: &std::path::Path, restart: bool) -> Result<(), String> {
     use windows::core::{HSTRING, PCWSTR};
     use windows::Win32::UI::Shell::ShellExecuteW;
@@ -177,6 +179,17 @@ pub fn apply(setup: &std::path::Path, restart: bool) -> Result<(), String> {
     } else {
         Err(crate::lang::tr("Instalacja anulowana albo brak uprawnień administratora").to_string())
     }
+}
+
+/// Poza Windows (rdzeń uruchamiany na Linuksie w CI do zrzutów Androida) aktualizacji się nie instaluje.
+#[cfg(not(windows))]
+pub fn apply_portable(_zip_path: &std::path::Path) -> Result<(), String> {
+    Err("Aktualizacja tylko w Windows".into())
+}
+
+#[cfg(not(windows))]
+pub fn apply(_setup: &std::path::Path, _restart: bool) -> Result<(), String> {
+    Err("Aktualizacja tylko w Windows".into())
 }
 
 /// Program zainstalowany instalatorem (aktualizacja możliwa) czy przenośny.

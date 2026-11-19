@@ -1,0 +1,76 @@
+name: Zrzuty ekranu (Android)
+
+# Ręcznie: zrzuty aplikacji na Androida z emulatora na serwerze GitHuba (bez okna), do strony
+# flightsim.to, README i plakatów. Obok emulatora działa rdzeń OpenTakeoff bez okna (examples/headless)
+# w trybie symulacji z dziennikiem pokazowym – telefon łączy się z nim pod 10.0.2.2 jak z programem na PC.
+# APK z najnowszego wydania. Wynik: artefakt „zrzuty-<język>”.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Wydanie z APK (puste = najnowsze)"
+        required: false
+        default: ""
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [pl, en]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: KVM dla emulatora
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Rust
+        run: rustup toolchain install stable --profile minimal
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+
+      - name: Rdzeń OpenTakeoff bez okna
+        working-directory: desktop
+        run: cargo build --release -p opentakeoff-core --example headless
+
+      - name: APK z wydania
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download ${{ inputs.tag }} --pattern 'OpenTakeoff-*.apk' --output app.apk
+          ls -la app.apk
+
+      - name: Dziennik pokazowy i start rdzenia
+        run: |
+          python3 tools/demo-logbook.py ci-data/logbook ${{ matrix.lang }}
+          nohup desktop/target/release/examples/headless ci-data > headless.log 2>&1 &
+          for i in $(seq 1 30); do [ -f ci-data/code.txt ] && break; sleep 1; done
+          cat headless.log
+
+      - name: Emulator i zrzuty
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: python3 tools/android_shots.py app.apk ci-data shots ${{ matrix.lang }}
+
+      - name: Log rdzenia
+        if: always()
+        run: cp headless.log shots/ 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zrzuty-${{ matrix.lang }}
+          path: shots/
