@@ -40,8 +40,9 @@ pub struct Discovery {
 }
 
 impl Discovery {
-    /// `message` – treść `announce` (budowana od nowa co 2 s: źródło i adresy mogą się zmienić).
-    pub fn start(message: impl Fn() -> String + Send + 'static) -> Discovery {
+    /// `message` – treść `announce` (budowana od nowa co 2 s: źródło i adresy mogą się zmienić);
+    /// `None` = nic nie rozgłaszaj (np. serwer nie nasłuchuje, bo port był zajęty).
+    pub fn start(message: impl Fn() -> Option<String> + Send + 'static) -> Discovery {
         let stop = Arc::new(AtomicBool::new(false));
         let s = stop.clone();
         std::thread::Builder::new()
@@ -54,14 +55,15 @@ impl Discovery {
                 let _ = sock.set_broadcast(true);
                 let mut warned = false;
                 while !s.load(Ordering::SeqCst) {
-                    let payload = message();
-                    let mut targets: HashSet<Ipv4Addr> = HashSet::from([Ipv4Addr::BROADCAST]);
-                    targets.extend(local_ipv4().into_iter().map(|(_, b)| b));
-                    for t in targets {
-                        if let Err(e) = sock.send_to(payload.as_bytes(), SocketAddrV4::new(t, DISCOVERY_PORT)) {
-                            if !warned {
-                                warned = true;
-                                crate::log::warn(&crate::trf!("Rozgłaszanie w sieci nie działa: {e}"));
+                    if let Some(payload) = message() {
+                        let mut targets: HashSet<Ipv4Addr> = HashSet::from([Ipv4Addr::BROADCAST]);
+                        targets.extend(local_ipv4().into_iter().map(|(_, b)| b));
+                        for t in targets {
+                            if let Err(e) = sock.send_to(payload.as_bytes(), SocketAddrV4::new(t, DISCOVERY_PORT)) {
+                                if !warned {
+                                    warned = true;
+                                    crate::log::warn(&crate::trf!("Rozgłaszanie w sieci nie działa: {e}"));
+                                }
                             }
                         }
                     }

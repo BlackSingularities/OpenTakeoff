@@ -127,8 +127,12 @@ impl Host {
                 Some(h) => (h.server.source_name(), h.server.port()),
                 None => ("none", WEBSOCKET_PORT),
             };
+            // Port 0 = serwer nie wystartował (port zajęty): nie zapraszaj telefonów pod martwy adres
+            if port == 0 {
+                return None;
+            }
             let host = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "PC".into());
-            proto::announce(version(), &host, port, &local_addresses(), src)
+            Some(proto::announce(version(), &host, port, &local_addresses(), src))
         }));
         host.switch_source(simulation);
         log::info(&trf!("Rozgłaszanie na UDP {port}", port = proto::DISCOVERY_PORT));

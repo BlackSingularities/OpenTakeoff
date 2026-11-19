@@ -322,6 +322,14 @@ component SettingsRight inherits VerticalLayout {
                     App.cmd("open-url", "https://redzikowski.com/portfolio/opentakeoff");
                 }
             }
+            Button {
+                label: @tr("Postaw kawę");
+                icon: Icons.coffee;
+                tip: @tr("Wesprzyj rozwój programu · buycoffee.to");
+                clicked => {
+                    App.cmd("open-url", "https://buycoffee.to/adamredzikowski");
+                }
+            }
         }
         AText {
             text: @tr("Tylko do symulacji lotów. Nie używaj do rzeczywistej nawigacji.");

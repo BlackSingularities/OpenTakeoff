@@ -1,3 +1,12 @@
+## 3.10.3
+
+- Android: aplikacja nie zamyka się już przy łączeniu z komputerem, na którym OpenTakeoff nie uruchomił serwera (port 47810 zajęty, np. przez drugą kopię programu). Taki komputer nie pojawia się na liście, a błędny adres kończy się komunikatem zamiast awarii.
+- Windows: gdy port 47810 jest zajęty, program nie ogłasza się w sieci pod adresem, pod którym telefon i tak by się nie połączył.
+- Ustawienia: przycisk „Postaw kawę” (buycoffee.to) do wsparcia rozwoju programu.
+- Lotniska: trend pogody pokazuje sześć ostatnich depesz METAR – mieści się obok składowych wiatru także w oknie 1920 px.
+- Narzędzia → Wiatr na pasie: tabela pasów nie rozjeżdża się po wysokości karty.
+- Android: teksty o połączeniu mówią o OpenTakeoff na Windows zamiast dawnego OpenTakeoff Link.
+
 ## 3.10.2
 
 - PFD Airbusa (Windows i Android): okno wysokości ma stałą szerokość na trzy cyfry setek jak w A320 – od 10 000 ft cyfry nie wychodzą już poza żółtą ramkę na taśmę. W PFD 787 i E190 setki nie zahaczają o ramkę.

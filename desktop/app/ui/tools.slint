@@ -650,6 +650,10 @@ export component Tools inherits Rectangle {
                             font-size: Theme.fs-small;
                             color: Theme.text-faint;
                         }
+                        // Wolna wysokość karty pod tabelą (bez tego dzieliła się między wiersz ICAO i tabelę)
+                        Rectangle {
+                            vertical-stretch: 1;
+                        }
                     }
                 }
 

@@ -34,7 +34,7 @@ fn main() {
     src.start();
     server.set_source(Some(src.clone()));
     let port = server.start(WEBSOCKET_PORT).expect("port serwera");
-    let _discovery = Discovery::start(move || proto::announce(version, "CI", port, &local_addresses(), "simulation"));
+    let _discovery = Discovery::start(move || Some(proto::announce(version, "CI", port, &local_addresses(), "simulation")));
     let code = pairing.code();
     std::fs::write(dir.join("code.txt"), &code).expect("code.txt");
     println!("OpenTakeoff {version} bez okna: port {port}, kod {code}, lotów w dzienniku {}", logbook.len());

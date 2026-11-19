@@ -5262,3 +5262,9 @@ msgstr "Radio Altimeter – radioaltímetro (en un METAR: lluvia)"
 
 msgid "Microsoft Flight Simulator"
 msgstr "Microsoft Flight Simulator"
+
+msgid "Postaw kawę"
+msgstr "Invítame a un café"
+
+msgid "Wesprzyj rozwój programu · buycoffee.to"
+msgstr "Apoya el desarrollo del programa · buycoffee.to"

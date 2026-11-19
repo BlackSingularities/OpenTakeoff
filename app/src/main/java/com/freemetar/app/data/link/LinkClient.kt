@@ -119,7 +119,8 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
                             val p = DatagramPacket(buf, buf.size)
                             sock.receive(p)
                             val a = runCatching { LinkJson.decodeFromString(Announce.serializer(), String(p.data, 0, p.length, Charsets.UTF_8)) }.getOrNull()
-                            if (a != null && a.type == "announce" && a.v == 1) {
+                            // Port 0 wysyła Link, gdy jego port był zajęty — taki serwer i tak nie przyjmie połączenia
+                            if (a != null && a.type == "announce" && a.v == 1 && a.port in 1..65535) {
                                 val ip = p.address?.hostAddress ?: a.ips.firstOrNull() ?: continue
                                 val s = LinkServer(a.name, a.host ?: ip, ip, a.port, a.source, a.version, System.currentTimeMillis())
                                 _servers.update { list -> (list.filterNot { it.ip == ip } + s).sortedBy { it.host } }
@@ -174,7 +175,16 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
                 _status.value = LinkStatus.NeedsCode(ip, port)
                 return@launch
             }
-            val req = Request.Builder().url("ws://$ip:$port/").build()
+            // Zły adres (port 0, śmieci w IP) nie może wywalić aplikacji — wyjątek w tym wątku to awaria
+            val req = try {
+                Request.Builder().url("ws://$ip:$port/").build()
+            } catch (e: IllegalArgumentException) {
+                wantConnected = false
+                target = null
+                _status.value = LinkStatus.Lost(ip, loc("link_client.connection_error"))
+                _lastError.value = e.message
+                return@launch
+            }
             socket = http.newWebSocket(req, Listener(ip, port, code, token))
         }
     }

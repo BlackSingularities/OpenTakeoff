@@ -245,11 +245,12 @@ fn publish() {
         }
         app.set_brief_tiles(model(tiles));
 
-        // Trend: od najstarszej do najnowszej depeszy
+        // Trend: od najstarszej do najnowszej depeszy; sześć ostatnich mieści się obok składowych wiatru
+        // także w oknie 1920 px (osiem wychodziło poza briefing)
         let hist: Vec<WxHistV> = d
             .metars
             .iter()
-            .take(8)
+            .take(6)
             .rev()
             .map(|m| {
                 let t = chrono::DateTime::from_timestamp(m.obs_time, 0).map(|t| t.format("%H:%MZ").to_string()).unwrap_or_default();
