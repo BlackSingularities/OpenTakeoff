@@ -1,69 +1,69 @@
 {
   "slug": "opentakeoff",
   "name": "OpenTakeoff",
-  "label": "pogoda, lotniska i kokpit dla symulatorów lotu",
+  "label": "kokpit, mapa i dziennik lotów dla symulatorów",
   "icon": "icon.png",
   "url": "https://redzikowski.com/portfolio/opentakeoff",
   "posters": [
     {
       "platform": "android",
       "file": "android.png",
-      "title": "Odprawa przed lotem *w kieszeni*",
-      "lead": "Aktualna pogoda lotniskowa, pas w użyciu, planowanie trasy i checklisty, a po połączeniu z MSFS cały kokpit na telefonie.",
+      "title": "Kokpit i odprawa *w kieszeni*",
+      "lead": "Pogoda lotniskowa, briefing i dziennik lotów, a po połączeniu z komputerem cały kokpit z autopilotem i sterowaniem żyroskopem.",
       "shots": [
         {
-          "src": "../screenshots/android/01-lotniska.png",
-          "caption": "Lotniska"
+          "src": "../screenshots/android/01-kokpit.png",
+          "caption": "Kokpit"
         },
         {
-          "src": "../screenshots/android/02-odprawa.png",
-          "caption": "METAR"
+          "src": "../screenshots/android/02-mapa.png",
+          "caption": "Mapa 3D"
         },
         {
-          "src": "../screenshots/android/03-trasa.png",
-          "caption": "Trasa"
+          "src": "../screenshots/android/03-briefing.png",
+          "caption": "Briefing"
         },
         {
-          "src": "../screenshots/android/04-checklista.png",
-          "caption": "Checklisty"
+          "src": "../screenshots/android/04-dziennik.png",
+          "caption": "Dziennik"
         }
       ],
       "features": [
-        "METAR, TAF i SIGMET",
-        "ATIS czytany na głos",
-        "pas wg wiatru",
-        "kokpit dla MSFS 2024",
+        "PFD, ND i autopilot",
+        "sterowanie żyroskopem",
+        "METAR, TAF i ATIS",
         "mapa 3D ze śladem lotu",
-        "dziennik lotów"
+        "ocena lądowania",
+        "synchronizacja z PC"
       ],
-      "meta": "Android 8 lub nowszy"
+      "meta": "Android 8 lub nowszy · aktualizacje w aplikacji"
     },
     {
       "platform": "windows",
       "file": "windows.png",
       "title": "Kabina, mapa i dziennik *na drugim ekranie*",
-      "lead": "Most między MSFS albo X-Plane a telefonem, a na komputerze przyrządy w stylu kabiny, mapa nawigacyjna z radarem i METAR-ami, analiza lądowania i odtwarzanie lotów w 3D.",
+      "lead": "Przyrządy jak w kabinie, mapa nawigacyjna do pochylania i obracania, OFP SimBrief, checklisty, analiza lądowania i statystyki pilota – dla MSFS 2020/2024 i X-Plane.",
       "shots": [
         {
-          "src": "../screenshots/windows/01-mapa.png",
-          "caption": "Mapa z radarem i METAR"
+          "src": "../screenshots/windows/01-na-zywo.png",
+          "caption": "Na żywo"
         },
         {
-          "src": "../screenshots/windows/02-przyrzady.png",
-          "caption": "PFD i ND"
+          "src": "../screenshots/windows/02-mapa.png",
+          "caption": "Mapa z radialami"
         },
         {
-          "src": "../screenshots/windows/04-statystyki.png",
-          "caption": "Osiągnięcia"
+          "src": "../screenshots/windows/03-statystyki.png",
+          "caption": "Statystyki pilota"
         }
       ],
       "features": [
-        "MSFS 2024 i X-Plane 11/12",
+        "MSFS 2020/2024 i X-Plane",
         "PFD, ND, ECAM/EICAS",
-        "radar opadów i METAR",
+        "OFP SimBrief i plan lotu",
+        "checklisty z symulatora",
         "analiza lądowania",
-        "odtwarzanie lotu w 3D",
-        "strony dla OBS"
+        "nakładki dla OBS"
       ],
       "meta": "Windows 10 i 11 · instalator z aktualizacjami"
     }
