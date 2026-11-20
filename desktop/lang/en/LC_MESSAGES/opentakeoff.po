@@ -1475,6 +1475,9 @@ msgstr "Port 47810 is busy – phones won't connect (is the old OpenTakeoff Link
 msgid "Port {port} zajęty – telefony nie połączą się: {e}"
 msgstr "Port {port} is busy – phones won't connect: {e}"
 
+msgid "Port {port} niedostępny – serwer telefonów działa na porcie {bound}"
+msgstr "Port {port} unavailable – the phone server is running on port {bound}"
+
 msgid "Poza zasięgiem lotnisk"
 msgstr "Out of range of airports"
 

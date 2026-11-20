@@ -242,7 +242,14 @@ class LinkClient(private val context: Context, private val tokens: LinkTokenStor
             if (wantConnected) {
                 _status.value = LinkStatus.Lost(ip, reason)
                 reconnectJob?.cancel()
-                reconnectJob = scope.launch { delay(3000); if (wantConnected) open(ip, port, null, retry = true) }
+                // Komputer po restarcie może nasłuchiwać na innym (zapasowym) porcie — bierz ten z ogłoszenia
+                reconnectJob = scope.launch {
+                    delay(3000)
+                    if (!wantConnected) return@launch
+                    val p = _servers.value.firstOrNull { it.ip == ip }?.port ?: port
+                    target = ip to p
+                    open(ip, p, null, retry = true)
+                }
             } else {
                 _status.value = LinkStatus.Idle
             }

@@ -1,3 +1,8 @@
+## 3.10.4
+
+- Windows: gdy port 47810 jest zajęty albo zarezerwowany przez system (Hyper-V, WSL, Docker), serwer telefonów uruchamia się na jednym z kolejnych portów (47811–47819, w ostateczności dowolnym wolnym) zamiast nie działać wcale. Telefon sam dostaje właściwy port z ogłoszenia w sieci, a numer portu widać w programie.
+- Android: ponowne łączenie po restarcie komputera używa portu z bieżącego ogłoszenia, a w polu ręcznego adresu można wpisać też „IP:port”.
+
 ## 3.10.3
 
 - Android: aplikacja nie zamyka się już przy łączeniu z komputerem, na którym OpenTakeoff nie uruchomił serwera (port 47810 zajęty, np. przez drugą kopię programu). Taki komputer nie pojawia się na liście, a błędny adres kończy się komunikatem zamiast awarii.

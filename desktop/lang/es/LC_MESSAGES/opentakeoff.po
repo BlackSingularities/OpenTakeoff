@@ -1475,6 +1475,9 @@ msgstr "El puerto 47810 está ocupado – los teléfonos no se conectarán (¿se
 msgid "Port {port} zajęty – telefony nie połączą się: {e}"
 msgstr "El puerto {port} está ocupado – los teléfonos no se conectarán: {e}"
 
+msgid "Port {port} niedostępny – serwer telefonów działa na porcie {bound}"
+msgstr "Puerto {port} no disponible – el servidor de teléfonos funciona en el puerto {bound}"
+
 msgid "Poza zasięgiem lotnisk"
 msgstr "Fuera del alcance de aeropuertos"
 

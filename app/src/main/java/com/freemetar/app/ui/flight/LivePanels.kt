@@ -120,7 +120,10 @@ fun ConnectionSection(vm: MainViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
                 OutlinedTextField(manual, { manual = it.trim() }, Modifier.weight(1f), label = { Text(loc("live.pc_ip_address")) }, singleLine = true,
                     shape = RoundedCornerShape(8.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
-                OutlinedButton({ vm.linkConnect(manual) }, enabled = manual.count { it == '.' } == 3) { Text(loc("live.connect")) }
+                // „IP” albo „IP:port” – port inny niż 47810, gdy komputer musiał wybrać zapasowy
+                val host = manual.substringBefore(':')
+                val port = manual.substringAfter(':', "47810").toIntOrNull()
+                OutlinedButton({ vm.linkConnect(host, port ?: 47810) }, enabled = host.count { it == '.' } == 3 && port != null && port in 1..65535) { Text(loc("live.connect")) }
             }
         }
     }

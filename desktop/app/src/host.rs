@@ -114,12 +114,25 @@ impl Host {
                 host.logbook.put(draft, "pc");
             }
         }
-        match host.server.start(WEBSOCKET_PORT) {
-            Ok(_) => {}
-            Err(e) => {
-                host.link_ok.store(false, Ordering::SeqCst);
-                log::error(&trf!("Port {port} zajęty – telefony nie połączą się: {e}", port = WEBSOCKET_PORT));
+        // 47810 bywa zajęty (drugi program) albo zarezerwowany przez Windows (Hyper-V/WSL: „excludedportrange”,
+        // błąd 10013) – wtedy kolejne porty, na końcu dowolny wolny. Telefon bierze port z ogłoszenia UDP.
+        let candidates = (WEBSOCKET_PORT..WEBSOCKET_PORT + 10).chain(std::iter::once(0));
+        let mut last_err = None;
+        for p in candidates {
+            match host.server.start(p) {
+                Ok(bound) => {
+                    if bound != WEBSOCKET_PORT {
+                        log::warn(&trf!("Port {port} niedostępny – serwer telefonów działa na porcie {bound}", port = WEBSOCKET_PORT));
+                    }
+                    last_err = None;
+                    break;
+                }
+                Err(e) => last_err = Some(e),
             }
+        }
+        if let Some(e) = last_err {
+            host.link_ok.store(false, Ordering::SeqCst);
+            log::error(&trf!("Port {port} zajęty – telefony nie połączą się: {e}", port = WEBSOCKET_PORT));
         }
         let weak = Arc::downgrade(&host);
         *host._discovery.lock() = Some(Discovery::start(move || {
