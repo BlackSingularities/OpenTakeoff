@@ -277,6 +277,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val inbound: Boolean = true,
         val camera: org.maplibre.android.camera.CameraPosition? = null,
         val flight: Long? = null,
+        /** Mapa lotniska (drogi kołowania, stanowiska) po przybliżeniu. */
+        val showLayout: Boolean = true,
+        /** Tryb kołowania: na ziemi poniżej ok. 40 kt mapa sama przybliża się do lotniska. */
+        val taxiMode: Boolean = true,
+        /** Pierścienie 5, 10 i 20 NM wokół samolotu. */
+        val showRings: Boolean = false,
+        /** Karta trasy kołowania. */
+        val taxiOpen: Boolean = false,
+        val taxiText: String = "",
+        val taxiRoute: com.freemetar.app.domain.TaxiRoute? = null,
+        val taxiError: String? = null,
     )
     private val _mapTools = MutableStateFlow(MapTools())
     val mapTools = _mapTools.asStateFlow()
@@ -695,6 +706,51 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (_mapSigmets.value.isEmpty()) runCatching { WeatherApi.sigmets() }.onSuccess { _mapSigmets.value = it }
         }
     }
+
+    // ---------- mapy lotnisk i kołowanie ----------
+
+    /** Mapy lotnisk z OpenStreetMap wczytane do pamięci (ident → mapa). */
+    val airportLayouts = com.freemetar.app.data.AirportLayouts.layouts
+    private val layoutDir by lazy { File(getApplication<Application>().filesDir, "airport-layouts") }
+
+    /** Mapa jest blisko ziemi: wczytaj mapy lotnisk w pobliżu punktu (najwyżej trzech). */
+    fun requestLayouts(lat: Double, lon: Double, zoom: Double) {
+        if (zoom < 12.5 || !_mapTools.value.showLayout) return
+        val radius = if (zoom >= 14) 3.0 else 6.0
+        db.nearby(lat, lon, radius, 3).forEach { (a, _) ->
+            val rw = db.runways(a.ident)
+            if (rw.isNotEmpty()) com.freemetar.app.data.AirportLayouts.ensure(viewModelScope, layoutDir, a, rw)
+        }
+    }
+
+    /** Mapa lotniska, na którym leży punkt (do 6 km od środka danych). */
+    fun layoutAt(lat: Double, lon: Double): com.freemetar.app.domain.AirportLayout? =
+        airportLayouts.value.values
+            .mapNotNull { l -> l.center?.let { c -> l to com.freemetar.app.domain.Geo.distanceNm(lat, lon, c.lat, c.lon) } }
+            .filter { it.second < 3.3 && !it.first.isEmpty }
+            .minByOrNull { it.second }?.first
+
+    /** Liczy trasę kołowania od samolotu (bez niego — od [fromLat]/[fromLon], np. środka mapy). */
+    fun planTaxi(text: String, fromLat: Double, fromLon: Double) {
+        val pos = flightState.value?.position
+        val la = pos?.lat ?: fromLat; val lo = pos?.lon ?: fromLon
+        val layout = layoutAt(la, lo)
+        if (layout == null) {
+            updateMapTools { it.copy(taxiText = text, taxiRoute = null, taxiError = loc("taxi.no_layout")) }
+            return
+        }
+        viewModelScope.launch {
+            val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { layout.route(la, lo, text) }
+            updateMapTools {
+                when (r) {
+                    is com.freemetar.app.domain.RouteResult.Ok -> it.copy(taxiText = text, taxiRoute = r.route, taxiError = null)
+                    is com.freemetar.app.domain.RouteResult.Error -> it.copy(taxiText = text, taxiRoute = null, taxiError = r.message)
+                }
+            }
+        }
+    }
+
+    fun clearTaxi() = updateMapTools { it.copy(taxiText = "", taxiRoute = null, taxiError = null) }
 
     /** Punkt startowy mapy: ostatnio otwarte lotnisko albo pierwsze ulubione. */
     fun mapHome(): LatLon? {

@@ -475,7 +475,7 @@ fn main() {
                     app::refresh_stats();
                 }
                 // Nowe kafelki mapy
-                let ts = map::TILES_SERIAL.load(Ordering::SeqCst);
+                let ts = map::TILES_SERIAL.load(Ordering::SeqCst).wrapping_add(opentakeoff_core::aero::layout::SERIAL.load(Ordering::SeqCst));
                 if ts != st.borrow().tiles_serial {
                     st.borrow_mut().tiles_serial = ts;
                     app::rerender_maps();

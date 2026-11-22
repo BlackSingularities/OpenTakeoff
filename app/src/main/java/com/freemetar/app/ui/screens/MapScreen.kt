@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.TrackChanges
+import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -194,6 +195,10 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     val showRose = tools.showRose; val radialMode = tools.radialMode
     val ref = tools.ref; val selRadial = tools.selRadial; val inbound = tools.inbound
     var layersMenu by remember { mutableStateOf(false) }
+    // Mapy lotnisk: środek i przybliżenie kamery po zatrzymaniu (do wyboru, którą mapę lotniska pokazać)
+    val layouts by vm.airportLayouts.collectAsStateWithLifecycle()
+    var camTarget by remember { mutableStateOf<LatLng?>(null) }
+    var camZoom by remember { mutableStateOf(0.0) }
     // Metry na 100 dp ekranu (w poziomie, w środku mapy) — róże mają stałą wielkość na ekranie
     var roseScale by remember { mutableStateOf(0.0) }
     var center by remember { mutableStateOf<LatLng?>(null) }
@@ -205,6 +210,8 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     // Mapa zawsze w 3D - domyślne pochylenie 50°
     val defaultTilt = 50.0
     val lastFollowAt = remember { longArrayOf(0L) }
+    val wasTaxiing = remember { booleanArrayOf(false) }
+    val preTaxiZoom = remember { doubleArrayOf(-1.0) }
     var picked by remember { mutableStateOf<Metar?>(null) }
     var style by remember { mutableStateOf<Style?>(null) }
     var wired by remember { mutableStateOf(false) }
@@ -215,6 +222,9 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     val mv = magVar ?: 0.0
     val mvLatest by rememberUpdatedState(mv)
     val planeLat = live?.position?.lat; val planeLon = live?.position?.lon
+    // Na ziemi (albo tuż nad nią) poniżej 40 kt: tryb kołowania
+    val onGround = live?.aircraft?.onGround ?: ((live?.position?.altAglFt ?: 9999.0) < 15)
+    val taxiing = tools.taxiMode && planeLat != null && planeLon != null && onGround && (live?.speed?.gsKt ?: 0.0) < 40
     // Bez samolotu radial liczony od środka mapy (krzyżyk)
     val needCenter by rememberUpdatedState(radialMode && (planeLat == null || planeLon == null))
 
@@ -267,7 +277,11 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             }
             if (wired) return@getMapAsync
             wired = true
-            map.addOnCameraIdleListener { requestArea(map, vm); vm.saveMapCamera(map.cameraPosition) }
+            map.addOnCameraIdleListener {
+                requestArea(map, vm); vm.saveMapCamera(map.cameraPosition)
+                val cp = map.cameraPosition
+                cp.target?.let { t -> camTarget = t; camZoom = cp.zoom; vm.requestLayouts(t.latitude, t.longitude, cp.zoom) }
+            }
             fun measure() {
                 val w = mapView.width; val h = mapView.height
                 if (w == 0 || h == 0) return
@@ -302,6 +316,18 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             }
             map.addOnMapClickListener { ll ->
                 val t = vm.mapTools.value
+                if (t.taxiOpen) {
+                    // Dotknięte stanowisko albo bramka — cel trasy kołowania
+                    val q = map.projection.toScreenLocation(ll)
+                    val spot = map.queryRenderedFeatures(android.graphics.RectF(q.x - 22, q.y - 22, q.x + 22, q.y + 22), "oab-lay-spot")
+                        .firstOrNull { it.hasProperty("dest") }?.getStringProperty("dest")
+                    if (spot != null) {
+                        val words = t.taxiText.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+                        val text = (words.filter { w -> layouts.values.none { l -> l.spots.any { it.ref.equals(w, ignoreCase = true) } } } + spot).joinToString(" ")
+                        vm.planTaxi(text, camTarget?.latitude ?: ll.latitude, camTarget?.longitude ?: ll.longitude)
+                        return@addOnMapClickListener true
+                    }
+                }
                 if (t.radialMode) {
                     val r = t.ref
                     // Bez punktu dotknięcie go wybiera; z punktem — ustawia radial, na którym leży dotknięte miejsce
@@ -346,15 +372,28 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         // Śledzenie: kamera najwyżej ~3 razy na sekundę, z płynnym przejściem — przesuwanie przy każdym stanie
         // (10–20 Hz) razem z perspektywą 3D przeciążało renderer, a i tak nie było widać różnicy
         val nowMs = System.currentTimeMillis()
-        if (follow && lat != null && lon != null && nowMs - lastFollowAt[0] >= 330) {
+        val taxiNow = taxiing
+        val enterTaxi = taxiNow && !wasTaxiing[0]
+        val exitTaxi = !taxiNow && wasTaxiing[0]
+        wasTaxiing[0] = taxiNow
+        if (follow && lat != null && lon != null && (enterTaxi || exitTaxi || nowMs - lastFollowAt[0] >= 330)) {
             lastFollowAt[0] = nowMs
             mapView.getMapAsync { m ->
                 val b = CameraPosition.Builder()
                     .target(LatLng(lat, lon))
-                    .tilt(defaultTilt)
-                // Kamera patrzy w kierunku lotu
-                (live?.attitude?.trackTrueDeg ?: live?.attitude?.hdgTrueDeg)?.let { b.bearing(it) }
-                m.easeCamera(CameraUpdateFactory.newCameraPosition(b.build()), 320)
+                    .tilt(if (taxiNow) 40.0 else defaultTilt)
+                // Kamera patrzy w kierunku lotu; przy kołowaniu w kierunku nosa (tor przy małej prędkości skacze)
+                (if (taxiNow) live?.attitude?.hdgTrueDeg else live?.attitude?.trackTrueDeg ?: live?.attitude?.hdgTrueDeg)?.let { b.bearing(it) }
+                // Wejście w kołowanie: przybliżenie do lotniska (potem przybliżenie zostaje takie, jak ustawi pilot)
+                if (enterTaxi) {
+                    preTaxiZoom[0] = m.cameraPosition.zoom
+                    if (m.cameraPosition.zoom < 15.5) b.zoom(16.3)
+                }
+                // Po starcie: z powrotem dawne przybliżenie
+                if (exitTaxi && preTaxiZoom[0] > 0) {
+                    b.zoom(minOf(preTaxiZoom[0], m.cameraPosition.zoom)); preTaxiZoom[0] = -1.0
+                }
+                m.easeCamera(CameraUpdateFactory.newCameraPosition(b.build()), if (enterTaxi || exitTaxi) 900 else 320)
             }
         }
     }
@@ -424,6 +463,36 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         (style?.getSource(SRC_SIGMET) as? GeoJsonSource)?.setGeoJson(sigmetFeatures(if (showSigmets) sigmets else emptyList()))
     }
 
+    // ---------- mapa lotniska i kołowanie ----------
+    val latKey = planeLat?.let { (it * 2000).roundToInt() }; val lonKey = planeLon?.let { (it * 2000).roundToInt() }
+    // Mapa lotniska pod samolotem i w środku mapy
+    val planeLayout = remember(layouts, latKey, lonKey) { if (planeLat != null && planeLon != null) vm.layoutAt(planeLat, planeLon) else null }
+    val centerLayout = remember(layouts, camTarget) { camTarget?.let { vm.layoutAt(it.latitude, it.longitude) } }
+    LaunchedEffect(taxiing, latKey, lonKey) {
+        if (taxiing && planeLat != null && planeLon != null) vm.requestLayouts(planeLat, planeLon, 16.0)
+    }
+    val hdgKey = live?.attitude?.hdgTrueDeg?.let { (it / 4).roundToInt() }
+    val posKey5 = planeLat?.let { la -> planeLon?.let { lo -> (la * 1e5).roundToInt() to (lo * 1e5).roundToInt() } }
+    val taxiInfo = remember(planeLayout, posKey5, hdgKey, taxiing) {
+        if (!taxiing || planeLat == null || planeLon == null) null
+        else planeLayout?.taxiInfo(planeLat, planeLon, live?.attitude?.hdgTrueDeg ?: 0.0)
+    }
+    LaunchedEffect(style, layouts, c.isNight) {
+        val st = style ?: return@LaunchedEffect
+        val data = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { layoutData(layouts.values, c.isNight) }
+        applyLayoutData(st, data)
+    }
+    // Pełniejsza mapa z Overpass zastępuje drogi z kafelków
+    LaunchedEffect(style, tools.showLayout, centerLayout != null, planeLayout != null) {
+        val st = style ?: return@LaunchedEffect
+        setLayersVisible(st, OMT_AIRPORT_LAYERS, tools.showLayout && centerLayout == null && planeLayout == null)
+        setLayersVisible(st, LAYOUT_LAYERS, tools.showLayout)
+    }
+    LaunchedEffect(style, tools.taxiRoute, c) {
+        val st = style ?: return@LaunchedEffect
+        applyTaxiRoute(st, tools.taxiRoute, c)
+    }
+
     // Róża kursów na samolocie, róża punktu odniesienia i wybrany radial
     val ink = hex(c.ink); val ink2 = hex(c.ink2); val navHex = hex(c.magenta); val bugHex = hex(c.accent); val trkHex = hex(c.green)
     val origin = if (planeLat != null && planeLon != null) LatLng(planeLat, planeLon) else if (radialMode) center else null
@@ -434,11 +503,16 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                 live?.speed?.tasKt?.takeIf { planeLat != null })
         }
     }
-    LaunchedEffect(style, roseScale, showRose, radialMode, ref, selRadial, inbound, origin, live?.attitude, live?.autopilot?.hdgDeg, mv, c) {
+    LaunchedEffect(style, roseScale, showRose, radialMode, ref, selRadial, inbound, origin, live?.attitude, live?.autopilot?.hdgDeg, mv, c, tools.showRings) {
         val st = style ?: return@LaunchedEffect
         val lines = ArrayList<Feature>(); val labels = ArrayList<Feature>(); val tags = ArrayList<Feature>(); val dash = ArrayList<Feature>()
         val scale = roseScale
         val r = ref?.takeIf { radialMode }
+        // Pierścienie 5, 10 i 20 NM wokół samolotu
+        if (tools.showRings && planeLat != null && planeLon != null) {
+            val (ringLines, ringTags) = rangeRings(planeLat, planeLon, ink2, ink2)
+            lines += ringLines; tags += ringTags
+        }
         if (scale > 0 && showRose && planeLat != null && planeLon != null) {
             val rM = scale * 1.5
             val rose = compassRose(planeLat, planeLon, rM, mv, ink)
@@ -521,17 +595,40 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                     item("SIGMET", showSigmets) { setTools { it.copy(showSigmets = !it.showSigmets) } }
                     item(loc("map.simulator_flight_plan_gps"), showRoute) { setTools { it.copy(showRoute = !it.showRoute) } }
                     item(loc("map.navaids_from_msfs") + if (nearbyNav.isEmpty()) loc("map.no_data") else "", showNav) { setTools { it.copy(showNav = !it.showNav) } }
+                    item(loc("map.airport_layout"), tools.showLayout) { setTools { it.copy(showLayout = !it.showLayout) } }
+                    item(loc("map.taxi_mode"), tools.taxiMode) { setTools { it.copy(taxiMode = !it.taxiMode) } }
+                    item(loc("map.range_rings"), tools.showRings) { setTools { it.copy(showRings = !it.showRings) } }
                 }
             }
             if (live != null) MapKey(Icons.Outlined.MyLocation, loc("map.follow_aircraft"), follow) { setTools { it.copy(follow = !it.follow) } }
             if (live != null) MapKey(Icons.Outlined.Explore, loc("map.heading_rose_on_the_aircraft"), showRose) { setTools { it.copy(showRose = !it.showRose) } }
             MapKey(Icons.Outlined.TrackChanges, loc("map.radials_from_a_point"), radialMode) {
                 picked = null
-                setTools { if (it.radialMode) it.copy(radialMode = false, ref = null, selRadial = null) else it.copy(radialMode = true) }
+                setTools { if (it.radialMode) it.copy(radialMode = false, ref = null, selRadial = null) else it.copy(radialMode = true, taxiOpen = false) }
+            }
+            MapKey(Icons.Outlined.Route, loc("taxi.title"), tools.taxiOpen) {
+                picked = null
+                setTools { if (it.taxiOpen) it.copy(taxiOpen = false) else it.copy(taxiOpen = true, radialMode = false, ref = null, selRadial = null) }
+                // Karta bez mapy lotniska w pamięci: wczytaj ją dla środka mapy
+                camTarget?.let { t -> vm.requestLayouts(t.latitude, t.longitude, maxOf(camZoom, 13.0)) }
             }
             MapKey(Icons.Outlined.Add, loc("map.zoom_in"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomIn(), 250) } }
             MapKey(Icons.Outlined.Remove, loc("map.zoom_out"), false) { mapView.getMapAsync { it.animateCamera(CameraUpdateFactory.zoomOut(), 250) } }
         }
+
+        // Kołowanie: pasek na górze (droga, skrzyżowanie, pas przed samolotem)
+        if (taxiing && tools.showLayout && planeLayout != null) TaxiStrip(
+            taxiInfo, tools.taxiRoute, planeLat, planeLon,
+            Modifier.align(Alignment.TopStart).statusBarsPadding().padding(top = 48.dp, end = 56.dp),
+        )
+        if (tools.taxiOpen) TaxiCard(
+            layout = planeLayout ?: centerLayout, text = tools.taxiText, route = tools.taxiRoute, error = tools.taxiError,
+            loading = com.freemetar.app.data.AirportLayouts.loading(),
+            onPlan = { t -> val tg = camTarget; vm.planTaxi(t, tg?.latitude ?: 0.0, tg?.longitude ?: 0.0) },
+            onClear = { vm.clearTaxi() },
+            onClose = { setTools { it.copy(taxiOpen = false) } },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
 
         if (radialMode) RadialCard(
             ref, fix, guide, selRadial, inbound, magnetic = magVar != null, hasAircraft = planeLat != null && planeLon != null,
@@ -582,6 +679,8 @@ private fun requestArea(map: MapLibreMap, vm: MainViewModel) {
 }
 
 private fun addOverlay(st: Style, c: FmColors) {
+    // Mapa lotniska najniżej — pod pogodą, trasą, śladem i samolotem
+    addAirportLayers(st, c)
     st.addSource(GeoJsonSource(SRC_SIGMET))
     st.addLayer(FillLayer("oab-sigmet-fill", SRC_SIGMET).withProperties(
         PropertyFactory.fillColor(hex(c.caution)), PropertyFactory.fillOpacity(0.16f),

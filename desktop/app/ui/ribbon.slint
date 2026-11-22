@@ -603,6 +603,16 @@ export component Ribbon inherits Rectangle {
                             App.cmd("nav-layer", "appr");
                         }
                     }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.map;
+                        label: @tr("Lotnisko");
+                        active: App.nav.layout;
+                        tip: @tr("Mapa lotniska z OpenStreetMap po przybliżeniu: drogi kołowania z oznaczeniami, stanowiska, bramki i miejsca oczekiwania");
+                        clicked => {
+                            App.cmd("nav-layer", "layout");
+                        }
+                    }
                 }
                 Row {
                     BigButton {
@@ -623,6 +633,16 @@ export component Ribbon inherits Rectangle {
                         tip: @tr("Siatka współrzędnych z opisem");
                         clicked => {
                             App.cmd("nav-layer", "grid");
+                        }
+                    }
+                    BigButton {
+                        slim: true;
+                        icon: Icons.navigation;
+                        label: @tr("Kołowanie");
+                        active: App.nav.taxi;
+                        tip: @tr("Tryb kołowania: na ziemi poniżej 40 kt mapa przybliża się do lotniska i obraca zgodnie z kursem samolotu");
+                        clicked => {
+                            App.cmd("nav-layer", "taxi");
                         }
                     }
                 }

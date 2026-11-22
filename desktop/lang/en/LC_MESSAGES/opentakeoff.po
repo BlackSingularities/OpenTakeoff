@@ -5271,3 +5271,84 @@ msgstr "Buy me a coffee"
 
 msgid "Wesprzyj rozwój programu · buycoffee.to"
 msgstr "Support the program's development · buycoffee.to"
+
+msgid "Na tym lotnisku w OpenStreetMap nie ma dróg kołowania."
+msgstr "This airport has no taxiways in OpenStreetMap."
+
+msgid "Wpisz drogi kołowania i cel, np. A B2 27."
+msgstr "Enter taxiways and a destination, e.g. A B2 27."
+
+msgid "Nie ma drogi, pasa ani stanowiska „{t}”."
+msgstr "No taxiway, runway or stand “{t}”."
+
+msgid "Punkt startu jest za daleko od dróg kołowania."
+msgstr "The starting point is too far from the taxiways."
+
+msgid "Nie da się dojechać do stanowiska {code}."
+msgstr "Stand {code} can't be reached."
+
+msgid "Tą trasą nie da się dojechać do pasa {k}."
+msgstr "This route doesn't lead to runway {k}."
+
+msgid "Nie da się wyznaczyć trasy tymi drogami."
+msgstr "No route can be found along these taxiways."
+
+msgid "Bramka"
+msgstr "Gate"
+
+msgid "Na pasie {r}"
+msgstr "On runway {r}"
+
+msgid "Na drodze {o}"
+msgstr "On taxiway {o}"
+
+msgid "dalej {nx} za {d}"
+msgstr "next {nx} in {d}"
+
+msgid "Poza drogą kołowania"
+msgstr "Off the taxiways"
+
+msgid "Przed tobą pas {rw} · {d}"
+msgstr "Runway {rw} ahead · {d}"
+
+msgid "Miejsce oczekiwania · {d}"
+msgstr "Holding point · {d}"
+
+msgid "Do celu {d}"
+msgstr "To go {d}"
+
+msgid "Brak mapy lotniska w pobliżu – przybliż mapę do lotniska."
+msgstr "No airport map nearby – zoom the map in to an airport."
+
+msgid "Teraz"
+msgstr "Now"
+
+msgid "{len} · ok. {min} min przy 15 kt"
+msgstr "{len} · about {min} min at 15 kt"
+
+msgid "Przecina pas"
+msgstr "Crosses runway"
+
+msgid "Na końcu"
+msgstr "At the end"
+
+msgid "zatrzymaj się przed pasem {p}"
+msgstr "hold short of runway {p}"
+
+msgid "pobieranie…"
+msgstr "downloading…"
+
+msgid "np. A B2 H 27, samo 27 albo stanowisko"
+msgstr "e.g. A B2 H 27, just 27 or a stand"
+
+msgid "Pas jako cel trasy kołowania"
+msgstr "Runway as the taxi route destination"
+
+msgid "Pokaż trasę"
+msgstr "Show route"
+
+msgid "Mapa lotniska z OpenStreetMap po przybliżeniu: drogi kołowania z oznaczeniami, stanowiska, bramki i miejsca oczekiwania"
+msgstr "Airport map from OpenStreetMap when zoomed in: labelled taxiways, stands, gates and holding points"
+
+msgid "Tryb kołowania: na ziemi poniżej 40 kt mapa przybliża się do lotniska i obraca zgodnie z kursem samolotu"
+msgstr "Taxi mode: on the ground below 40 kt the map zooms in to the airport and turns with the aircraft heading"

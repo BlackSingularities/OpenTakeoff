@@ -5271,3 +5271,84 @@ msgstr "Invítame a un café"
 
 msgid "Wesprzyj rozwój programu · buycoffee.to"
 msgstr "Apoya el desarrollo del programa · buycoffee.to"
+
+msgid "Na tym lotnisku w OpenStreetMap nie ma dróg kołowania."
+msgstr "Este aeropuerto no tiene calles de rodaje en OpenStreetMap."
+
+msgid "Wpisz drogi kołowania i cel, np. A B2 27."
+msgstr "Escribe las calles de rodaje y el destino, p. ej. A B2 27."
+
+msgid "Nie ma drogi, pasa ani stanowiska „{t}”."
+msgstr "No existe la calle, pista ni puesto «{t}»."
+
+msgid "Punkt startu jest za daleko od dróg kołowania."
+msgstr "El punto de partida está demasiado lejos de las calles de rodaje."
+
+msgid "Nie da się dojechać do stanowiska {code}."
+msgstr "No se puede llegar al puesto {code}."
+
+msgid "Tą trasą nie da się dojechać do pasa {k}."
+msgstr "Esta ruta no lleva a la pista {k}."
+
+msgid "Nie da się wyznaczyć trasy tymi drogami."
+msgstr "No se puede trazar una ruta por estas calles."
+
+msgid "Bramka"
+msgstr "Puerta"
+
+msgid "Na pasie {r}"
+msgstr "En la pista {r}"
+
+msgid "Na drodze {o}"
+msgstr "En la calle {o}"
+
+msgid "dalej {nx} za {d}"
+msgstr "luego {nx} a {d}"
+
+msgid "Poza drogą kołowania"
+msgstr "Fuera de las calles de rodaje"
+
+msgid "Przed tobą pas {rw} · {d}"
+msgstr "Pista {rw} delante · {d}"
+
+msgid "Miejsce oczekiwania · {d}"
+msgstr "Punto de espera · {d}"
+
+msgid "Do celu {d}"
+msgstr "Faltan {d}"
+
+msgid "Brak mapy lotniska w pobliżu – przybliż mapę do lotniska."
+msgstr "No hay mapa de aeropuerto cerca: acerca el mapa a un aeropuerto."
+
+msgid "Teraz"
+msgstr "Ahora"
+
+msgid "{len} · ok. {min} min przy 15 kt"
+msgstr "{len} · unos {min} min a 15 kt"
+
+msgid "Przecina pas"
+msgstr "Cruza la pista"
+
+msgid "Na końcu"
+msgstr "Al final"
+
+msgid "zatrzymaj się przed pasem {p}"
+msgstr "espera antes de la pista {p}"
+
+msgid "pobieranie…"
+msgstr "descargando…"
+
+msgid "np. A B2 H 27, samo 27 albo stanowisko"
+msgstr "p. ej. A B2 H 27, solo 27 o un puesto"
+
+msgid "Pas jako cel trasy kołowania"
+msgstr "Pista como destino de la ruta de rodaje"
+
+msgid "Pokaż trasę"
+msgstr "Mostrar ruta"
+
+msgid "Mapa lotniska z OpenStreetMap po przybliżeniu: drogi kołowania z oznaczeniami, stanowiska, bramki i miejsca oczekiwania"
+msgstr "Mapa del aeropuerto de OpenStreetMap al acercar: calles de rodaje con su nombre, puestos, puertas y puntos de espera"
+
+msgid "Tryb kołowania: na ziemi poniżej 40 kt mapa przybliża się do lotniska i obraca zgodnie z kursem samolotu"
+msgstr "Modo rodaje: en tierra por debajo de 40 kt el mapa se acerca al aeropuerto y gira con el rumbo del avión"

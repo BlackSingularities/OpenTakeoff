@@ -359,6 +359,73 @@ export component NavMap inherits Rectangle {
                         }
                     }
                 }
+                if App.taxi-airport != "": Box {
+                    title: @tr("Kołowanie") + " · " + App.taxi-airport;
+                    icon: Icons.route;
+                    for kv in App.taxi-info: Pair {
+                        k: kv.k;
+                        v: kv.v;
+                    }
+                    Rectangle {
+                        height: 30px * Theme.scale;
+                        Field {
+                            y: (parent.height - self.height) / 2;
+                            w: parent.width;
+                            text <=> App.taxi-query;
+                            placeholder: @tr("np. A B2 H 27, samo 27 albo stanowisko");
+                            accepted(t) => {
+                                App.cmd("taxi-route", t);
+                            }
+                        }
+                    }
+                    if App.taxi-runways-a.length > 0: HorizontalLayout {
+                        spacing: 4px;
+                        alignment: start;
+                        for r in App.taxi-runways-a: Button {
+                            label: r;
+                            tip: @tr("Pas jako cel trasy kołowania");
+                            clicked => {
+                                App.cmd("taxi-runway", r);
+                            }
+                        }
+                    }
+                    if App.taxi-runways-b.length > 0: HorizontalLayout {
+                        spacing: 4px;
+                        alignment: start;
+                        for r in App.taxi-runways-b: Button {
+                            label: r;
+                            tip: @tr("Pas jako cel trasy kołowania");
+                            clicked => {
+                                App.cmd("taxi-runway", r);
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        padding-top: 2px;
+                        alignment: start;
+                        Button {
+                            label: @tr("Pokaż trasę");
+                            icon: Icons.route;
+                            primary: true;
+                            clicked => {
+                                App.cmd("taxi-route", App.taxi-query);
+                            }
+                        }
+                        Button {
+                            label: @tr("Wyczyść");
+                            icon: Icons.x;
+                            clicked => {
+                                App.taxi-query = "";
+                                App.cmd("taxi-route", "");
+                            }
+                        }
+                    }
+                    for kv in App.taxi-rows: Pair {
+                        k: kv.k;
+                        v: kv.v;
+                    }
+                }
                 if App.nav-info.length > 0: Box {
                     title: @tr("Samolot");
                     icon: Icons.plane;

@@ -324,6 +324,10 @@ pub const NAV_APPR: u32 = 16384;
 pub const NAV_NIGHT: u32 = 32768;
 /// Siatka współrzędnych.
 pub const NAV_GRID: u32 = 65536;
+/// Mapa lotniska z OpenStreetMap wyłączona (bit odwrócony – u dotychczasowych użytkowników warstwa jest włączona).
+pub const NAV_LAYOUT_OFF: u32 = 1 << 17;
+/// Tryb kołowania wyłączony (bit odwrócony jak wyżej).
+pub const NAV_TAXI_OFF: u32 = 1 << 18;
 pub const NAV_DEFAULT: u32 = NAV_APT | NAV_VOR | NAV_NDB | NAV_VOR_ROSE | NAV_ROSE | NAV_VECTOR | NAV_TRACK | NAV_ROUTE | NAV_CURTAIN | NAV_RWY;
 
 pub const UI_VERSION: i32 = 2;

@@ -332,6 +332,9 @@ export struct NavV {
     appr: bool,
     night: bool,
     grid: bool,
+    // mapa lotniska z OpenStreetMap i tryb kołowania
+    layout: bool,
+    taxi: bool,
     // podkład mapy: 0 wg motywu, 1 ciemny, 2 jasny, 3 OSM, 4 satelita
     style: int,
     has-direct: bool,
@@ -893,6 +896,13 @@ export global App {
     in property <[KV]> nav-direct;
     in property <string> nav-hover;
     in-out property <string> nav-query;
+    // Kołowanie: lotnisko z mapą (pusty – panel ukryty), pasy jako cele, położenie samolotu, wynik trasy
+    in property <string> taxi-airport;
+    in property <[string]> taxi-runways-a;
+    in property <[string]> taxi-runways-b;
+    in property <[KV]> taxi-info;
+    in property <[KV]> taxi-rows;
+    in-out property <string> taxi-query;
     in-out property <bool> follow: true;
     in property <string> map-live-scale;
     in property <string> map-attribution: "© Esri, HERE, Garmin, © OpenStreetMap";

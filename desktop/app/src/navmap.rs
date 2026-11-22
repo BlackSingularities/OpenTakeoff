@@ -13,6 +13,7 @@
 use std::cell::RefCell;
 use std::time::Instant;
 
+use opentakeoff_core::aero::layout::{self, AreaKind, LineKind, SpotKind};
 use opentakeoff_core::aero::{airports, navaids};
 use opentakeoff_core::lang::tr;
 use opentakeoff_core::navdata::math::{bearing_deg, distance_nm};
@@ -55,6 +56,14 @@ struct Nav {
     hover: Option<(f64, f64)>,
     pick: Option<Vec<(String, String)>>,
     last: Instant,
+    /// Trasa kołowania (albo komunikat, dlaczego nie da się jej wyznaczyć) i wpisany tekst.
+    taxi_route: Option<layout::Route>,
+    taxi_error: Option<String>,
+    taxi_text: String,
+    /// Samolot kołuje (na ziemi poniżej 40 kt) – mapa przybliżona do lotniska i obrócona kursem.
+    taxi_active: bool,
+    /// Przybliżenie sprzed kołowania – wraca po starcie.
+    taxi_prev_zoom: Option<f64>,
 }
 
 thread_local! {
@@ -69,6 +78,11 @@ thread_local! {
         hover: None,
         pick: None,
         last: Instant::now(),
+        taxi_route: None,
+        taxi_error: None,
+        taxi_text: String::new(),
+        taxi_active: false,
+        taxi_prev_zoom: None,
     });
 }
 
@@ -595,6 +609,8 @@ pub fn cmd(id: &str, arg: &str) -> bool {
         "appr" => NAV_APPR,
         "night" => NAV_NIGHT,
         "grid" => NAV_GRID,
+        "layout" => NAV_LAYOUT_OFF,
+        "taxi" => NAV_TAXI_OFF,
         _ => 0,
     };
     match id {
@@ -666,6 +682,18 @@ pub fn cmd(id: &str, arg: &str) -> bool {
             let base = n.sel_radial.unwrap_or(360);
             n.sel_radial = Some(radial_of((base + d) as f64));
         }),
+        // Trasa kołowania: drogi i cel („A B2 H 27”, „27”, stanowisko); pusty tekst – bez trasy
+        "taxi-route" => plan_taxi(arg),
+        // Pas jako cel: zastępuje (albo dopisuje) ostatnie słowo trasy
+        "taxi-runway" => {
+            let cur = ui().map(|u| u.global::<App>().get_taxi_query().to_string()).unwrap_or_default();
+            let mut words: Vec<String> = cur.split_whitespace().map(|w| w.to_string()).collect();
+            if words.last().is_some_and(|w| layout::runway_key(w).is_some()) {
+                words.pop();
+            }
+            words.push(arg.to_string());
+            plan_taxi(&words.join(" "));
+        }
         "nav-find" => {
             let q = arg.trim().to_uppercase();
             if q.is_empty() {
@@ -733,13 +761,33 @@ pub fn render(force: bool) {
     NAV.with(|n| {
         let mut n = n.borrow_mut();
         if let Some(s) = &snap {
+            let taxi = lay & NAV_TAXI_OFF == 0 && s.aircraft.on_ground && s.speed.gs_kt < 40.0;
             if n.view.follow {
                 n.view.lat = s.position.lat;
                 n.view.lon = s.position.lon;
                 if !n.view.user_moved && n.view.zoom < 7.0 {
                     n.view.zoom = 9.0;
                 }
+                if taxi {
+                    // Kołowanie: przybliżenie do lotniska i mapa obrócona kursem samolotu
+                    if !n.taxi_active {
+                        n.taxi_prev_zoom = Some(n.view.zoom);
+                        n.view.zoom = n.view.zoom.max(16.0);
+                    }
+                    n.view.bearing = s.attitude.hdg_true_deg.rem_euclid(360.0);
+                    crate::app::publish_bearing(4, n.view.bearing);
+                } else if n.taxi_active {
+                    // Po starcie: znów północą do góry i z dawnym przybliżeniem
+                    n.view.reset_bearing();
+                    crate::app::publish_bearing(4, 0.0);
+                    if let Some(z) = n.taxi_prev_zoom.take() {
+                        n.view.zoom = z.min(n.view.zoom);
+                    }
+                }
             }
+            n.taxi_active = taxi;
+        } else {
+            n.taxi_active = false;
         }
     });
     let track = if lay & NAV_TRACK != 0 { host.live_track() } else { Vec::new() };
@@ -753,7 +801,11 @@ pub fn render(force: bool) {
         (n.view.tilted(), if n.view.tilted() { String::new() } else { n.view.scale_text() })
     });
     app.set_map_nav_scale(ss(scale_txt));
-    let attribution = if lay & NAV_RADAR != 0 { format!("{} · RainViewer", st_style.attribution()) } else { st_style.attribution().to_string() };
+    let mut attribution = if lay & NAV_RADAR != 0 { format!("{} · RainViewer", st_style.attribution()) } else { st_style.attribution().to_string() };
+    // Mapy lotnisk pochodzą z OpenStreetMap (licencja ODbL wymaga podpisu)
+    if lay & NAV_LAYOUT_OFF == 0 && NAV.with(|n| n.borrow().view.zoom >= 12.0) && !layout::all().is_empty() && !attribution.contains("OpenStreetMap") {
+        attribution.push_str(" · © OpenStreetMap");
+    }
     app.set_map_attribution(ss(attribution));
     side_panel(&snap, tilted);
 }
@@ -835,6 +887,18 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
     let (wpx, hpx) = (c.width(), c.height());
     let ink = if dark { 0xFFE8EEF6 } else { 0xFF1A2230 };
     let halo = if dark { 0xC0000000 } else { 0xD0FFFFFF };
+
+    // ---------- mapa lotniska i trasa kołowania ----------
+    if lay & NAV_LAYOUT_OFF == 0 {
+        layout::request_near(v.lat, v.lon, v.zoom);
+        if let Some(st) = snap.as_ref().filter(|st| st.aircraft.on_ground && st.speed.gs_kt < 40.0) {
+            layout::request_near(st.position.lat, st.position.lon, 16.0);
+        }
+        draw_layouts(&mut c, &v, s, dark);
+    }
+    if let Some(r) = NAV.with(|n| n.borrow().taxi_route.clone()) {
+        draw_taxi_route(&mut c, &v, s, dark, &r);
+    }
 
     // ---------- granica dnia i nocy ----------
     if lay & NAV_NIGHT != 0 {
@@ -1299,6 +1363,25 @@ fn render_map(snap: &Option<FlightState>, track: &[crate::host::LivePoint], styl
         }
     }
 
+    // ---------- kołowanie: pasek u góry mapy ----------
+    if let Some(st) = snap {
+        let active = NAV.with(|n| n.borrow().taxi_active);
+        if active && lay & NAV_LAYOUT_OFF == 0 {
+            if let Some((lines, warn)) = taxi_lines(st) {
+                let face = crate::avionics::gfx::Face::CondBold;
+                let w = lines.iter().map(|l| crate::avionics::gfx::text_width(l, 13.0 * s, face)).fold(0.0f32, f32::max) + 24.0 * s;
+                let h = (16.0 + 18.0 * lines.len() as f32) * s;
+                let (l, t) = ((wpx - w) / 2.0, 10.0 * s);
+                let edge = if warn { HOLD_RED } else if dark { 0x60FFFFFF } else { 0x50202836 };
+                c.round_rect(l, t, l + w, t + h, 10.0 * s, if dark { 0xE6101418 } else { 0xF0FFFFFF }, edge, if warn { 2.0 } else { 1.0 } * s);
+                for (i, line) in lines.iter().enumerate() {
+                    let (size, col) = if i == 0 { (14.0, if warn { HOLD_RED } else { ink }) } else { (12.5, ink) };
+                    c.text_f(line, wpx / 2.0, t + (17.0 + 18.0 * i as f32) * s, size * s, col, Align::Center, face);
+                }
+            }
+        }
+    }
+
     // ---------- wiatr i północ ----------
     if let Some(st) = snap {
         let (wx, wy) = (36.0 * s, 36.0 * s);
@@ -1360,6 +1443,306 @@ fn wind_barb(c: &mut Canvas, x: f32, y: f32, dir: f32, kt: i32, s: f32, ink: u32
     }
     for t in &tris {
         c.poly(ink, halo, 1.0 * s, t);
+    }
+}
+
+// ---------- mapa lotniska ----------
+
+fn fmt_m(m: f64) -> String {
+    if m >= 1000.0 {
+        format!("{:.1} km", m / 1000.0)
+    } else {
+        format!("{} m", ((m / 10.0).round() * 10.0) as i64)
+    }
+}
+
+/// Barwy mapy lotniska – takie same jak w telefonie.
+struct AptInk {
+    apron: u32,
+    terminal: u32,
+    hangar: u32,
+    taxiway: u32,
+    runway: u32,
+    label: u32,
+    label_halo: u32,
+    name: u32,
+    name_halo: u32,
+}
+
+fn apt_ink(dark: bool) -> AptInk {
+    if dark {
+        AptInk { apron: 0xFF262C34, terminal: 0xFF3A4352, hangar: 0xFF333A44, taxiway: 0xFF4A525E, runway: 0xFF6B7480, label: 0xFFFFD23F, label_halo: 0xFF000000, name: 0xFFC9D1DC, name_halo: 0xFF0E1216 }
+    } else {
+        AptInk { apron: 0xFFDCDFE4, terminal: 0xFFBFC6D1, hangar: 0xFFC9CED6, taxiway: 0xFFA9AFB8, runway: 0xFF7A818B, label: 0xFF1A1A1A, label_halo: 0xFFFFD23F, name: 0xFF3A4250, name_halo: 0xFFFFFFFF }
+    }
+}
+
+const HOLD_RED: u32 = 0xFFE5484D;
+const STAND_CYAN: u32 = 0xFF4FD1E8;
+const GATE_AMBER: u32 = 0xFFFFB020;
+const TAXI_MAGENTA: u32 = 0xFFFF33E6;
+
+/// Punkt mapy na obrazie (piksele fizyczne).
+fn screen_px(v: &View, s: f32, p: layout::LL) -> (f32, f32) {
+    let (x, y) = v.to_screen(p.0, p.1);
+    ((x * s as f64) as f32, (y * s as f64) as f32)
+}
+
+/// Mapa lotniska z OpenStreetMap (od przybliżenia 12): płyty, budynki, pasy, drogi kołowania z oznaczeniami,
+/// miejsca oczekiwania, stanowiska i bramki.
+fn draw_layouts(c: &mut Canvas, v: &View, s: f32, dark: bool) {
+    if v.zoom < 12.0 {
+        return;
+    }
+    let lays = layout::all();
+    if lays.is_empty() {
+        return;
+    }
+    let k = apt_ink(dark);
+    let (wpx, hpx) = (c.width(), c.height());
+    let to = |p: layout::LL| screen_px(v, s, p);
+    let m_per_px = 156_543.03 * v.lat.to_radians().cos() / 2f64.powf(v.zoom);
+    let px_m = s / m_per_px as f32;
+    // Punkty na obrazie albo None, gdy całość jest poza widokiem
+    let flat = |pts: &[layout::LL]| -> Option<Vec<f32>> {
+        let f: Vec<f32> = pts
+            .iter()
+            .flat_map(|&p| {
+                let (x, y) = to(p);
+                [x, y]
+            })
+            .collect();
+        let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+        for q in f.chunks_exact(2) {
+            x0 = x0.min(q[0]);
+            x1 = x1.max(q[0]);
+            y0 = y0.min(q[1]);
+            y1 = y1.max(q[1]);
+        }
+        let m = 60.0 * s;
+        (f.len() >= 4 && x1 >= -m && y1 >= -m && x0 <= wpx + m && y0 <= hpx + m).then_some(f)
+    };
+    for l in &lays {
+        // płyty pod budynkami
+        for kind in [AreaKind::Apron, AreaKind::Runway, AreaKind::Hangar, AreaKind::Terminal] {
+            let col = match kind {
+                AreaKind::Apron => k.apron,
+                AreaKind::Runway => k.runway,
+                AreaKind::Hangar => k.hangar,
+                AreaKind::Terminal => k.terminal,
+            };
+            for a in l.areas.iter().filter(|a| a.kind == kind) {
+                if let Some(f) = flat(&a.ring) {
+                    c.poly(col, 0, 0.0, &f);
+                }
+            }
+        }
+        // nawierzchnie dróg i pasów w skali mapy
+        for kind in [LineKind::Taxilane, LineKind::Taxiway, LineKind::Runway] {
+            for ln in l.lines.iter().filter(|x| x.kind == kind) {
+                let Some(f) = flat(&ln.pts) else { continue };
+                let Some(p) = path_of(&f, false) else { continue };
+                let wm = ln.width_m.unwrap_or(match kind {
+                    LineKind::Runway => 45.0,
+                    LineKind::Taxiway => 23.0,
+                    _ => 15.0,
+                });
+                if kind == LineKind::Runway {
+                    c.stroke_path(&p, k.runway, (wm as f32 * px_m).max(2.5 * s));
+                } else {
+                    c.stroke_path_round(&p, k.taxiway, (wm as f32 * px_m).max(1.5 * s));
+                }
+            }
+        }
+        // osie dróg (żółte), pasów (biała przerywana) i linie oczekiwania (czerwone)
+        for ln in &l.lines {
+            let draw = match ln.kind {
+                LineKind::Taxiway | LineKind::Taxilane | LineKind::Hold => v.zoom >= 15.0,
+                LineKind::Runway => v.zoom >= 14.0,
+            };
+            if !draw {
+                continue;
+            }
+            let Some(f) = flat(&ln.pts) else { continue };
+            let Some(p) = path_of(&f, false) else { continue };
+            match ln.kind {
+                LineKind::Taxiway | LineKind::Taxilane => c.stroke_path(&p, alpha(0xFFF2C230, 0xE0), 1.2 * s),
+                LineKind::Runway => c.stroke_path_dash(&p, 0xD8FFFFFF, 1.4 * s, 6.0 * s, 5.0 * s),
+                LineKind::Hold => c.stroke_path(&p, HOLD_RED, 2.6 * s),
+            }
+        }
+        // stanowiska, bramki i miejsca oczekiwania
+        if v.zoom >= 15.0 {
+            let r = if v.zoom >= 17.0 { 4.5 } else { 2.6 } * s;
+            for sp in &l.spots {
+                let (x, y) = to((sp.lat, sp.lon));
+                if x < -20.0 || y < -20.0 || x > wpx + 20.0 || y > hpx + 20.0 {
+                    continue;
+                }
+                let col = match sp.kind {
+                    SpotKind::Hold => HOLD_RED,
+                    SpotKind::Stand => STAND_CYAN,
+                    SpotKind::Gate => GATE_AMBER,
+                };
+                c.circle(x, y, r + 1.0 * s, k.name_halo, 0.0);
+                c.circle(x, y, r, col, 0.0);
+                if v.zoom >= 16.0 && !sp.code.is_empty() {
+                    let t = if sp.kind == SpotKind::Gate { format!("{} {}", tr("Bramka"), sp.code) } else { sp.code.clone() };
+                    c.text_halo(&t, x, y + r + 9.0 * s, 10.0 * s, col, k.name_halo, Align::Center, false);
+                }
+            }
+        }
+        // nazwy terminali i hangarów
+        if v.zoom >= 15.0 {
+            for a in l.areas.iter().filter(|a| matches!(a.kind, AreaKind::Terminal | AreaKind::Hangar) && !a.name.is_empty() && !a.ring.is_empty()) {
+                let n = a.ring.len() as f64;
+                let (la, lo) = (a.ring.iter().map(|p| p.0).sum::<f64>() / n, a.ring.iter().map(|p| p.1).sum::<f64>() / n);
+                let (x, y) = to((la, lo));
+                if x < 0.0 || y < 0.0 || x > wpx || y > hpx {
+                    continue;
+                }
+                c.text_halo(&a.name, x, y, 11.0 * s, k.name, k.name_halo, Align::Center, false);
+            }
+        }
+        // oznaczenia dróg kołowania (jak tabliczki: żółte na czarnym albo czarne na żółtym) i pasów
+        let mut placed: Vec<(f32, f32, String)> = Vec::new();
+        let seg = |a: (f32, f32), b: (f32, f32)| ((b.0 - a.0).powi(2) + (b.1 - a.1).powi(2)).sqrt();
+        for ln in &l.lines {
+            let rwy = ln.kind == LineKind::Runway;
+            if ln.code.is_empty() || ln.kind == LineKind::Hold || (rwy && v.zoom < 13.0) || (!rwy && v.zoom < 14.0) {
+                continue;
+            }
+            let Some(f) = flat(&ln.pts) else { continue };
+            let pts: Vec<(f32, f32)> = f.chunks_exact(2).map(|q| (q[0], q[1])).collect();
+            let total: f32 = pts.windows(2).map(|w| seg(w[0], w[1])).sum();
+            if total < 36.0 * s {
+                continue;
+            }
+            let spacing = if rwy { 420.0 } else { 260.0 } * s;
+            let count = ((total / spacing).floor() as usize).max(1);
+            for i in 0..count {
+                let target = total * (i as f32 + 0.5) / count as f32;
+                let mut acc = 0.0;
+                let mut at = pts[0];
+                for w in pts.windows(2) {
+                    let d = seg(w[0], w[1]);
+                    if acc + d >= target && d > 0.0 {
+                        let t = (target - acc) / d;
+                        at = (w[0].0 + (w[1].0 - w[0].0) * t, w[0].1 + (w[1].1 - w[0].1) * t);
+                        break;
+                    }
+                    acc += d;
+                }
+                if at.0 < 0.0 || at.1 < 0.0 || at.0 > wpx || at.1 > hpx {
+                    continue;
+                }
+                let crowded = placed.iter().any(|(x, y, code)| {
+                    let d = seg((*x, *y), at);
+                    d < 22.0 * s || (code == &ln.code && d < 140.0 * s)
+                });
+                if crowded {
+                    continue;
+                }
+                placed.push((at.0, at.1, ln.code.clone()));
+                if rwy {
+                    c.text_halo(&ln.code, at.0, at.1, 12.0 * s, 0xFFFFFFFF, 0xFF000000, Align::Center, true);
+                } else {
+                    let size = if v.zoom >= 16.0 { 13.0 } else { 11.0 } * s;
+                    c.text_halo(&ln.code, at.0, at.1, size, k.label, k.label_halo, Align::Center, true);
+                }
+            }
+        }
+    }
+}
+
+/// Trasa kołowania: magenta z obwódką, przed przecinanymi pasami czerwone znaczniki „HOLD SHORT”.
+fn draw_taxi_route(c: &mut Canvas, v: &View, s: f32, dark: bool, r: &layout::Route) {
+    let f: Vec<f32> = r
+        .pts
+        .iter()
+        .flat_map(|&p| {
+            let (x, y) = screen_px(v, s, p);
+            [x, y]
+        })
+        .collect();
+    if let Some(p) = path_of(&f, false) {
+        c.stroke_path_round(&p, if dark { 0xC00E1116 } else { 0xD0FFFFFF }, 8.0 * s);
+        c.stroke_path_round(&p, TAXI_MAGENTA, 4.5 * s);
+    }
+    let halo = if dark { 0xC0000000 } else { 0xD0FFFFFF };
+    let mut marks: Vec<(&layout::Mark, String)> = r.crossings.iter().map(|m| (m, format!("HOLD SHORT {}", m.label))).collect();
+    if let Some(e) = &r.end {
+        marks.push((e, if e.runway { format!("RWY {}", e.label) } else { e.label.clone() }));
+    }
+    for (m, label) in marks {
+        let (x, y) = screen_px(v, s, (m.lat, m.lon));
+        let col = if m.runway { HOLD_RED } else { TAXI_MAGENTA };
+        c.circle(x, y, 7.5 * s, halo, 0.0);
+        c.circle(x, y, 5.5 * s, col, 0.0);
+        c.text_halo(&label, x, y - 13.0 * s, 12.0 * s, col, halo, Align::Center, true);
+    }
+}
+
+/// Wiersze paska kołowania (pierwszy – gdzie jest samolot) i czy ostrzegać (pas tuż przed samolotem albo pod nim).
+fn taxi_lines(st: &FlightState) -> Option<(Vec<String>, bool)> {
+    let l = layout::at(st.position.lat, st.position.lon)?;
+    let t = l.taxi_info(st.position.lat, st.position.lon, st.attitude.hdg_true_deg)?;
+    let mut warn = false;
+    let main = match (&t.on_runway, &t.on) {
+        (Some(r), _) => {
+            warn = true;
+            trf!("Na pasie {r}")
+        }
+        (None, Some(o)) => match &t.next {
+            Some((nx, d)) => format!("{} · {}", trf!("Na drodze {o}"), trf!("dalej {nx} za {d}", d = fmt_m(*d))),
+            None => trf!("Na drodze {o}"),
+        },
+        _ => tr("Poza drogą kołowania").to_string(),
+    };
+    let mut out = vec![main];
+    if let Some((rw, d)) = &t.runway_ahead {
+        if *d < 150.0 {
+            warn = true;
+        }
+        out.push(trf!("Przed tobą pas {rw} · {d}", d = fmt_m(*d)));
+    }
+    if let Some(d) = t.hold_ahead_m {
+        if d < 40.0 {
+            warn = true;
+        }
+        out.push(trf!("Miejsce oczekiwania · {d}", d = fmt_m(d)));
+    }
+    let route = NAV.with(|n| n.borrow().taxi_route.clone());
+    if let Some(rem) = route.and_then(|r| r.remaining_from(st.position.lat, st.position.lon)) {
+        out.push(trf!("Do celu {d}", d = fmt_m(rem)));
+    }
+    Some((out, warn))
+}
+
+/// Liczy trasę kołowania od samolotu (bez niego – od środka mapy).
+fn plan_taxi(text: &str) {
+    let snap = state().borrow().host.snapshot();
+    let (la, lo) = snap.as_ref().map(|s| (s.position.lat, s.position.lon)).unwrap_or_else(|| NAV.with(|n| (n.borrow().view.lat, n.borrow().view.lon)));
+    let t = text.trim().to_string();
+    let (route, error) = if t.is_empty() {
+        (None, None)
+    } else {
+        match layout::at(la, lo) {
+            None => (None, Some(tr("Brak mapy lotniska w pobliżu – przybliż mapę do lotniska.").to_string())),
+            Some(l) => match l.route((la, lo), &t) {
+                Ok(r) => (Some(r), None),
+                Err(e) => (None, Some(e)),
+            },
+        }
+    };
+    NAV.with(|n| {
+        let mut n = n.borrow_mut();
+        n.taxi_text = t.clone();
+        n.taxi_route = route;
+        n.taxi_error = error;
+    });
+    if let Some(u) = ui() {
+        u.global::<App>().set_taxi_query(ss(t));
     }
 }
 
@@ -1521,6 +1904,49 @@ fn side_panel(snap: &Option<FlightState>, tilted: bool) {
     app.set_nav_tool_title(ss(title));
     app.set_nav_tool(model(rows.into_iter().map(|(k, v)| KV { k: ss(k), v: ss(v) }).collect()));
     let lay = set.nav_layers;
+    // ---------- kołowanie ----------
+    let (vlat, vlon, vzoom, taxi_route, taxi_error) = NAV.with(|n| {
+        let n = n.borrow();
+        (n.view.lat, n.view.lon, n.view.zoom, n.taxi_route.clone(), n.taxi_error.clone())
+    });
+    let taxi_layout = if lay & NAV_LAYOUT_OFF != 0 {
+        None
+    } else {
+        snap.as_ref().and_then(|s| layout::at(s.position.lat, s.position.lon)).or_else(|| if vzoom >= 12.5 { layout::at(vlat, vlon) } else { None })
+    };
+    let mut taxi_info: Vec<KV> = Vec::new();
+    if let Some(s) = snap.as_ref().filter(|_| NAV.with(|n| n.borrow().taxi_active)) {
+        if let Some((lines, _)) = taxi_lines(s) {
+            taxi_info = lines.into_iter().enumerate().map(|(i, l)| kv(if i == 0 { tr("Teraz") } else { "" }, l)).collect();
+        }
+    }
+    let mut taxi_rows: Vec<KV> = Vec::new();
+    if let Some(e) = &taxi_error {
+        taxi_rows.push(kv(tr("Uwaga"), e.clone()));
+    }
+    if let Some(r) = &taxi_route {
+        taxi_rows.push(kv(tr("Trasa"), if r.via.is_empty() { "—".to_string() } else { r.via.join(" → ") }));
+        let min = (r.length_m / (15.0 * 1852.0 / 60.0)).round().max(1.0) as i64;
+        taxi_rows.push(kv(tr("Długość"), trf!("{len} · ok. {min} min przy 15 kt", len = fmt_m(r.length_m))));
+        if !r.crossings.is_empty() {
+            taxi_rows.push(kv(tr("Przecina pas"), r.crossings.iter().map(|m| m.label.clone()).collect::<Vec<_>>().join(", ")));
+        }
+        if let Some(e) = r.end.as_ref().filter(|e| e.runway) {
+            taxi_rows.push(kv(tr("Na końcu"), trf!("zatrzymaj się przed pasem {p}", p = e.label)));
+        }
+    }
+    let ends = taxi_layout.as_ref().map(|l| l.runway_ends.clone()).unwrap_or_default();
+    let taxi_title = match &taxi_layout {
+        Some(l) => l.ident.clone(),
+        None if taxi_route.is_some() || taxi_error.is_some() => "—".to_string(),
+        None if layout::loading() && vzoom >= 12.5 => tr("pobieranie…").to_string(),
+        None => String::new(),
+    };
+    app.set_taxi_airport(ss(taxi_title));
+    app.set_taxi_runways_a(model(ends.iter().take(4).map(|e| ss(e)).collect()));
+    app.set_taxi_runways_b(model(ends.iter().skip(4).take(4).map(|e| ss(e)).collect()));
+    app.set_taxi_info(model(taxi_info));
+    app.set_taxi_rows(model(taxi_rows));
     let (inbound, has_ref, has_sel) = NAV.with(|n| {
         let n = n.borrow();
         (n.inbound, n.ref_pt.is_some(), n.sel_radial.is_some())
@@ -1551,6 +1977,8 @@ fn side_panel(snap: &Option<FlightState>, tilted: bool) {
         appr: lay & NAV_APPR != 0,
         night: lay & NAV_NIGHT != 0,
         grid: lay & NAV_GRID != 0,
+        layout: lay & NAV_LAYOUT_OFF == 0,
+        taxi: lay & NAV_TAXI_OFF == 0,
         style: set.map_style,
         has_direct: direct.is_some(),
         wx: ss(wx_status(lay)),

@@ -3,6 +3,7 @@
 
 pub mod airports;
 pub mod calc;
+pub mod layout;
 pub mod metar;
 pub mod navaids;
 pub mod weather;

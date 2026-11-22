@@ -1,3 +1,10 @@
+## 3.11.0
+
+- Mapy lotnisk na telefonie i na Windows: po przybliżeniu do lotniska widać płyty, pasy i drogi kołowania z oznaczeniami („A”, „B2”) jak na diagramie lotniska. Dla lotniska w pobliżu mapy program raz pobiera z OpenStreetMap (Overpass API, bez klucza) pełniejszy rysunek – terminale, hangary, stanowiska, bramki i miejsca oczekiwania przed pasem – i trzyma go na dysku przez 30 dni, więc potem działa też bez sieci. Na Windows warstwę włącza przycisk „Lotnisko” na wstążce, na telefonie pozycja „Mapa lotniska” w menu warstw.
+- Tryb kołowania: gdy samolot jest na ziemi poniżej 40 kt, mapa (przy śledzeniu samolotu) sama przybliża się do lotniska i obraca zgodnie z kursem, a po starcie wraca do dawnego przybliżenia. Pasek na górze mapy pokazuje drogę pod samolotem, najbliższe skrzyżowanie z odległością („na A · dalej B2 za 120 m”), pas i miejsce oczekiwania przed samolotem – z czerwoną ramką, gdy pas jest tuż przed samolotem albo samolot na nim stoi.
+- Trasa kołowania: wpisz drogi i cel („A B2 H 27”), sam pas („27”) albo stanowisko – sam cel daje najkrótszą trasę. Trasa podświetla się na mapie magentą, z kolejnymi drogami, długością, czasem przy 15 kt i czerwonym znacznikiem „HOLD SHORT” przed każdym przecinanym pasem; w trybie kołowania widać, ile zostało do celu. Pasy lotniska są pod ręką jako przyciski, a na telefonie stanowisko można też dotknąć na mapie. Na Windows panel „Kołowanie” jest z boku mapy, na telefonie pod przyciskiem trasy.
+- Android: pierścienie 5, 10 i 20 NM wokół samolotu (menu warstw).
+
 ## 3.10.4
 
 - Windows: gdy port 47810 jest zajęty albo zarezerwowany przez system (Hyper-V, WSL, Docker), serwer telefonów uruchamia się na jednym z kolejnych portów (47811–47819, w ostateczności dowolnym wolnym) zamiast nie działać wcale. Telefon sam dostaje właściwy port z ogłoszenia w sieci, a numer portu widać w programie.
