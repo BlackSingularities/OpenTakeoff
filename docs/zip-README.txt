@@ -57,7 +57,7 @@ There is no iOS version.
 ==============================================================================
 
 - Windows: OpenTakeoff checks for a new version at startup and every
-  6 hours. It shows what's new and lets you choose: Install now / Later /
+  6 hours and lets you choose: Install now / Later /
   Skip this version. You can also check by hand: Settings -> Check for
   updates.
 - Android: the app checks at every start and installs a new version with

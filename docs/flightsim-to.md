@@ -61,7 +61,7 @@ opentakeoff, android, phone, tablet, companion app, second screen, efb, pfd, nd,
 ### 🔄 Updates are built in
 
 - **The Android app** checks for a new version at every start and installs it with one tap. Your logbook and settings stay.
-- **The Windows program** checks at startup and every 6 hours, shows what's new, and installs in the background: *Install now*, *Later* or *Skip this version*.
+- **The Windows program** checks at startup and every 6 hours and installs in the background: *Install now*, *Later* or *Skip this version*.
 - New versions are still posted here too, if you prefer to download them manually.
 
 ### 📦 What's in the ZIP

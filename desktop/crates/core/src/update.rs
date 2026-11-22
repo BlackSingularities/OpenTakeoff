@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use sha2::{Digest, Sha256};
 
 const FEED: &str = "https://redzikowski.com/api/releases/repos/BlackSingularities/OpenTakeoff/releases/latest";
-/// Zapas, gdy serwer portfolio nie odpowiada; stąd też opis zmian, jeśli serwer go nie podał.
+/// Zapas, gdy serwer portfolio nie odpowiada. Opisu zmian nie pobieramy ani nie pokazujemy.
 const GITHUB: &str = "https://api.github.com/repos/BlackSingularities/OpenTakeoff/releases/latest";
 const UA: &str = "OpenTakeoff-Windows";
 
@@ -29,7 +29,6 @@ fn get(url: &str, accept: &str) -> Result<ureq::Response, String> {
 #[derive(Clone, Debug)]
 pub struct Release {
     pub version: String,
-    pub notes: String,
     asset: String,
     name: String,
     sums: Option<String>,
@@ -46,17 +45,10 @@ pub fn newer(a: &str, b: &str) -> bool {
 /// Najnowsze wydanie, jeśli nowsze od tej wersji.
 pub fn check() -> Result<Option<Release>, String> {
     let fetch = |url: &str| -> Result<serde_json::Value, String> { get(url, "application/json")?.into_json().map_err(|e| e.to_string()) };
-    let mut r = match fetch(FEED) {
+    let r = match fetch(FEED) {
         Ok(v) => v,
         Err(e) => fetch(GITHUB).map_err(|_| e)?,
     };
-    if r["body"].as_str().unwrap_or_default().trim().is_empty() {
-        if let Ok(g) = fetch(GITHUB) {
-            if g["tag_name"] == r["tag_name"] {
-                r["body"] = g["body"].clone();
-            }
-        }
-    }
     let version = r["tag_name"].as_str().unwrap_or_default().trim_start_matches('v').to_string();
     if version.is_empty() || !newer(&version, crate::version()) {
         return Ok(None);
@@ -68,7 +60,6 @@ pub fn check() -> Result<Option<Release>, String> {
     let Some(exe) = exe else { return Ok(None) };
     Ok(Some(Release {
         version,
-        notes: r["body"].as_str().unwrap_or_default().to_string(),
         asset: exe["browser_download_url"].as_str().unwrap_or_default().to_string(),
         name: exe["name"].as_str().unwrap_or("OpenTakeoff-Setup.exe").to_string(),
         sums: find(&|n| n == "sha256sums.txt").and_then(|a| a["browser_download_url"].as_str().map(str::to_string)),

@@ -161,14 +161,11 @@ fn check_update(manual: bool) {
                     a.set_update_text(trf!("Dostępna wersja {v} – zainstaluj z tego miejsca.", v = r.version).into());
                     a.set_update_ready(true);
                     let skipped = state().borrow().s.update_skip == r.version;
-                    // Okno z opisem zmian: po ręcznym sprawdzeniu zawsze, samoczynnie – raz na wersję,
-                    // chyba że użytkownik ją pominął
+                    // Okno aktualizacji (bez opisu zmian): po ręcznym sprawdzeniu zawsze, samoczynnie –
+                    // raz na wersję, chyba że użytkownik ją pominął
                     let already = state().borrow().update.as_ref().is_some_and(|u| u.version == r.version);
                     if manual || (!skipped && !already) {
                         a.set_update_version(r.version.clone().into());
-                        let notes = r.notes.trim();
-                        let notes: String = if notes.chars().count() > 2500 { notes.chars().take(2500).collect::<String>() + "…" } else { notes.to_string() };
-                        a.set_update_notes(notes.into());
                         a.set_update_dialog(true);
                     }
                     state().borrow_mut().update = Some(r);
