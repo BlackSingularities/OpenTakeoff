@@ -1,3 +1,7 @@
+## 3.12.1
+
+- Windows, „Inny PC”: dziennik lotów jest wspólny. Drugi komputer nie nagrywa lotów sam, bo robi to komputer z symulatorem. Po połączeniu, co minutę i po każdej zmianie drugi komputer synchronizuje z nim dziennik, tak jak telefon: brakujące loty przechodzą w obie strony, a usunięte trafiają do kosza po obu stronach. Telefony podłączone do drugiego komputera synchronizują się z nim, więc wszystkie loty schodzą się w jednym dzienniku.
+
 ## 3.12.0
 
 - Windows: OpenTakeoff działa też na drugim komputerze, bez symulatora. Wybierz źródło danych „Inny PC”, wpisz adres komputera z symulatorem i OpenTakeoff (np. 192.168.1.20 albo 192.168.1.20:47812) i raz podaj jego kod parowania. Drugi komputer dostaje przez Wi-Fi albo kabel pełne dane lotu: przyrządy, mapę, plan lotu, procedury i dziennik. Komendy i osie z niego, a także z telefonów podłączonych do niego, trafiają do symulatora. Po pierwszym parowaniu łączy się sam przy każdym uruchomieniu.

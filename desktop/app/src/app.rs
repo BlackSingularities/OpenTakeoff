@@ -185,6 +185,8 @@ pub fn refresh_status() {
         tr("Wstrzymany do lądowania – „Wznów”, żeby nagrywać od razu").to_string()
     } else if let Some(l) = last {
         trf!("Ostatnie lądowanie: {score} · {vs} ft/min", score = l.score, vs = l.vs_fpm)
+    } else if host.is_remote() {
+        tr("Loty nagrywa komputer z symulatorem – dziennik synchronizuje się z nim sam").to_string()
     } else {
         tr("Zacznie się samo po starcie").to_string()
     }));
@@ -194,6 +196,8 @@ pub fn refresh_status() {
         match e {
             HostEvent::FlightSaved(_, route) => msgs.push(trf!("Lot {route} zapisany w dzienniku")),
             HostEvent::FlightDiscarded => msgs.push(tr("Zapis zakończony – loty krótsze niż 2 min nie trafiają do dziennika").to_string()),
+            HostEvent::RemoteSynced(r, s, _) if r + s > 0 => msgs.push(trf!("Dziennik zsynchronizowany z komputerem z symulatorem: odebrano {r}, wysłano {s}", r = fmt::flights(r), s = fmt::flights(s))),
+            HostEvent::RemoteSynced(..) => {}
             HostEvent::RemoteToken(t) => {
                 if !t.is_empty() && st.s.remote_token.is_empty() {
                     msgs.push(tr("Sparowano z drugim komputerem – kolejne połączenia bez kodu").to_string());

@@ -32,6 +32,8 @@ pub enum HostEvent {
     FlightDiscarded,
     /// Drugi komputer wydał token (pusty – unieważniony): zapis w ustawieniach.
     RemoteToken(String),
+    /// Dziennik zsynchronizowany z komputerem z symulatorem: (odebrane, wysłane, usunięte).
+    RemoteSynced(usize, usize, usize),
 }
 
 /// Punkt śladu na mapie „Na żywo” (także bez nagrywania).
@@ -59,6 +61,9 @@ pub struct Host {
     /// i token; nowy token od tamtego komputera czeka w `remote_new_token` na zapis w ustawieniach.
     remote: Mutex<(String, String, String)>,
     remote_new_token: Arc<Mutex<Option<String>>>,
+    /// Bieżące źródło „drugi komputer” (dziennik synchronizuje się z tamtym komputerem, nie nagrywamy tutaj).
+    remote_src: Mutex<Option<Arc<RemoteSource>>>,
+    remote_syncing: Arc<AtomicBool>,
     _discovery: Mutex<Option<Discovery>>,
     recorder: Mutex<Recorder>,
     pub record_enabled: AtomicBool,
@@ -108,6 +113,8 @@ impl Host {
             xplane_host: Mutex::new(xplane_host.to_string()),
             remote: Mutex::new((remote.0.to_string(), String::new(), remote.1.to_string())),
             remote_new_token: Arc::new(Mutex::new(None)),
+            remote_src: Mutex::new(None),
+            remote_syncing: Arc::new(AtomicBool::new(false)),
             _discovery: Mutex::new(None),
             recorder: Mutex::new(rec),
             record_enabled: AtomicBool::new(record),
@@ -181,6 +188,7 @@ impl Host {
             *self.msfs.lock() = Some(m.clone());
             m
         };
+        *self.remote_src.lock() = None;
         let src: Arc<dyn FlightSource> = if simulation {
             *self.msfs.lock() = None;
             Arc::new(SimulationSource::new(self.axes.clone()))
@@ -188,7 +196,9 @@ impl Host {
             *self.msfs.lock() = None;
             let (addr, code, token) = self.remote.lock().clone();
             let cell = self.remote_new_token.clone();
-            Arc::new(RemoteSource::new(self.axes.clone(), &addr, &code, &token, Arc::new(move |t: &str| *cell.lock() = Some(t.to_string()))))
+            let r = Arc::new(RemoteSource::new(self.axes.clone(), &addr, &code, &token, Arc::new(move |t: &str| *cell.lock() = Some(t.to_string()))));
+            *self.remote_src.lock() = Some(r.clone());
+            r
         } else if kind == 2 {
             *self.msfs.lock() = None;
             Arc::new(XPlaneSource::new(self.axes.clone(), &self.xplane_host.lock()))
@@ -251,6 +261,50 @@ impl Host {
         if let Some(m) = self.msfs.lock().as_ref() {
             m.set_look_counts_per_degree(8.0 * percent as f64 / 100.0);
         }
+    }
+
+    /// Dane lotu z drugiego komputera: loty nagrywa tamten komputer, ten tylko synchronizuje dziennik.
+    pub fn is_remote(&self) -> bool {
+        self.remote_src.lock().is_some()
+    }
+
+    /// Synchronizacja dziennika z komputerem z symulatorem w tle (po połączeniu, co minutę i po zmianie
+    /// w dzienniku). Czas ostatniej udanej synchronizacji leży w folderze dziennika – od niego liczą się
+    /// usunięcia wysyłane na tamten komputer.
+    fn sync_remote(self: &Arc<Self>, last: &mut Option<(Instant, u64)>) {
+        let remote = self.remote_src.lock().clone();
+        let Some((host, port, token)) = remote.and_then(|r| r.link()) else {
+            *last = None;
+            return;
+        };
+        let rev = self.logbook.revision();
+        let due = match *last {
+            None => true,
+            Some((t, r)) => t.elapsed() > Duration::from_secs(60) || (r != rev && t.elapsed() > Duration::from_secs(5)),
+        };
+        if !due || self.remote_syncing.swap(true, Ordering::SeqCst) {
+            return;
+        }
+        *last = Some((Instant::now(), rev));
+        let h = self.clone();
+        let _ = std::thread::Builder::new().name("remote-sync".into()).spawn(move || {
+            let mark = h.logbook.dir().join("remote-sync.txt");
+            let since: i64 = std::fs::read_to_string(&mark).ok().and_then(|s| s.trim().parse().ok()).unwrap_or(0);
+            let started = unix_ms();
+            let pc = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "PC".into());
+            let source = format!("OpenTakeoff {host}");
+            match opentakeoff_core::remote::sync_logbook(&host, port, &token, &h.logbook, &format!("OpenTakeoff {pc}"), &source, since) {
+                Ok(r) => {
+                    let _ = std::fs::write(&mark, started.to_string());
+                    if r.received + r.sent + r.removed > 0 {
+                        log::info(&trf!("Dziennik zsynchronizowany z komputerem {host}: odebrano {a}, wysłano {b}, usunięto {c}", a = r.received, b = r.sent, c = r.removed));
+                        h.events.lock().push(HostEvent::RemoteSynced(r.received, r.sent, r.removed));
+                    }
+                }
+                Err(e) => log::warn(&trf!("Synchronizacja dziennika z komputerem {host} nie powiodła się: {e}")),
+            }
+            h.remote_syncing.store(false, Ordering::SeqCst);
+        });
     }
 
     pub fn set_interval(&self, ms: i64) {
@@ -329,6 +383,7 @@ impl Host {
     fn run(self: Arc<Self>) {
         let mut last_draft = Instant::now();
         let mut offline_since: Option<Instant> = None;
+        let mut last_remote_sync: Option<(Instant, u64)> = None;
         loop {
             std::thread::sleep(Duration::from_millis(250));
             let new_token = self.remote_new_token.lock().take();
@@ -342,6 +397,7 @@ impl Host {
                 }
                 self.events.lock().push(HostEvent::RemoteToken(t));
             }
+            self.sync_remote(&mut last_remote_sync);
             let src = self.source();
             // Zmiana stanu źródła → `status` do telefonów
             let key = format!("{}|{}|{}", src.kind(), src.is_connected(), src.status_text());
@@ -372,7 +428,8 @@ impl Host {
                             }
                         }
                     }
-                    if self.record_enabled.load(Ordering::SeqCst) {
+                    // Drugi komputer nie nagrywa – lot zapisuje komputer z symulatorem, a dziennik jest wspólny
+                    if self.record_enabled.load(Ordering::SeqCst) && !self.is_remote() {
                         let done = self.recorder.lock().on_state(s, now);
                         if done.is_some() {
                             self.finished(done);

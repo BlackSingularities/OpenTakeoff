@@ -2,9 +2,13 @@
 //! (protokół Link v1 – kod parowania, potem zapamiętany token). Stan lotu przychodzi strumieniem `state`,
 //! komendy, osie i zapytania navdata idą dalej do tamtego komputera. Telefony podłączone do tego
 //! komputera widzą wszystko tak, jakby symulator działał tutaj.
+//!
+//! Dziennik jest jeden – na komputerze z symulatorem. Ten komputer nie nagrywa lotów sam, tylko
+//! synchronizuje swój dziennik z tamtym (`sync_logbook`, to samo HTTP co telefon), więc loty, usunięcia
+//! i loty z telefonów podłączonych tutaj schodzą się w jednym miejscu.
 
 use std::collections::HashMap;
-use std::io::ErrorKind;
+use std::io::{ErrorKind, Read};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -19,6 +23,9 @@ use tungstenite::{Message, WebSocket};
 use crate::axes::AxisController;
 use crate::commands::Validated;
 use crate::lang::tr;
+use crate::logbook::archive;
+use crate::logbook::sync::{DownloadRequest, SyncRequest, SyncResponse};
+use crate::logbook::LogbookStore;
 use crate::navdata::{AirportInfo, AirportProcedures, FixResult, NavDataProvider, NavError, NavResult};
 use crate::proto::{codes, FlightState, VERSION, WEBSOCKET_PORT};
 use crate::source::{tick_ms, CommandResult, FlightSource};
@@ -148,6 +155,57 @@ impl RemoteSource {
     pub fn address(&self) -> String {
         format!("{}:{}", self.sh.host, self.sh.port)
     }
+
+    /// (adres, port, token), gdy tamten komputer przyjął parowanie – do synchronizacji dziennika.
+    pub fn link(&self) -> Option<(String, u16, String)> {
+        let token = self.sh.token.lock().clone();
+        (self.sh.paired.load(Ordering::SeqCst) && !token.is_empty()).then(|| (self.sh.host.clone(), self.sh.port, token))
+    }
+}
+
+/// Wynik synchronizacji dziennika z komputerem z symulatorem.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SyncOutcome {
+    pub received: usize,
+    pub sent: usize,
+    pub removed: usize,
+}
+
+/// Synchronizacja dziennika z komputerem z symulatorem (jak telefon, docs/link-protocol.md p. 6):
+/// loty usunięte tutaj od `since_ms` idą do kosza tam, brakujące loty w obie strony, a usunięte tam –
+/// do kosza tutaj. `device` – nazwa tego komputera, `source` – opis tamtego (pochodzenie odebranych lotów).
+pub fn sync_logbook(host: &str, port: u16, token: &str, store: &LogbookStore, device: &str, source: &str, since_ms: i64) -> Result<SyncOutcome, String> {
+    let h = if host.contains(':') { format!("[{host}]") } else { host.to_string() };
+    let base = format!("http://{h}:{port}/v1/logbook");
+    let auth = format!("Bearer {token}");
+    let post = |path: &str, content_type: &str, body: &[u8]| -> Result<Vec<u8>, String> {
+        let resp = ureq::post(&format!("{base}/{path}"))
+            .set("Authorization", &auth)
+            .set("Content-Type", content_type)
+            .timeout(Duration::from_secs(120))
+            .send_bytes(body)
+            .map_err(|e| e.to_string())?;
+        let mut out = Vec::new();
+        resp.into_reader().take(256 * 1024 * 1024).read_to_end(&mut out).map_err(|e| e.to_string())?;
+        Ok(out)
+    };
+    let req = SyncRequest { v: 1, device: device.to_string(), flights: store.sync_list(), deleted: store.deleted_since(since_ms) };
+    let body = serde_json::to_vec(&req).map_err(|e| e.to_string())?;
+    let plan: SyncResponse = serde_json::from_slice(&post("sync", "application/json", &body)?).map_err(|e| e.to_string())?;
+    let mut out = SyncOutcome::default();
+    if !plan.remove.is_empty() {
+        out.removed = store.delete(&plan.remove);
+    }
+    if !plan.want.is_empty() {
+        post("upload", "application/octet-stream", &store.export(&plan.want))?;
+        out.sent = plan.want.len();
+    }
+    if !plan.offer.is_empty() {
+        let body = serde_json::to_vec(&DownloadRequest { ids: plan.offer.clone() }).map_err(|e| e.to_string())?;
+        let flights = archive::decode(&post("download", "application/json", &body)?)?;
+        out.received = store.import(flights, source).added;
+    }
+    Ok(out)
 }
 
 impl FlightSource for RemoteSource {
@@ -514,5 +572,55 @@ mod tests {
         assert!(!nav.procedures("EPGD").unwrap().approaches.is_empty());
         remote.stop();
         srv.stop();
+    }
+
+    fn flight(id: &str, start: i64) -> crate::logbook::FlightLog {
+        use crate::logbook::TrackPoint;
+        let track = vec![TrackPoint { t: start, lat: 52.0, lon: 21.0, ..Default::default() }, TrackPoint { t: start + 600_000, lat: 52.1, lon: 21.1, ..Default::default() }];
+        crate::logbook::FlightLog { id: id.into(), start, end: start + 600_000, aircraft: Some("C172".into()), track, ..Default::default() }
+    }
+
+    fn temp() -> std::path::PathBuf {
+        let d = std::env::temp_dir().join(format!("otk-remote-{}", crate::logbook::model::new_id()));
+        let _ = std::fs::create_dir_all(&d);
+        d
+    }
+
+    #[test]
+    fn logbook_sync_both_ways() {
+        let (main_dir, second_dir) = (temp(), temp());
+        let main = LogbookStore::open(main_dir.clone());
+        let second = LogbookStore::open(second_dir.clone());
+        main.put(flight("main-only", 10_000_000), "pc");
+        main.put(flight("main-deleted", 20_000_000), "pc");
+        second.put(flight("main-deleted", 20_000_000), "pc");
+        second.put(flight("second-only", 30_000_000), "pc");
+        second.put(flight("second-deleted", 40_000_000), "pc");
+        main.put(flight("second-deleted", 40_000_000), "pc");
+        main.delete(&["main-deleted".into()]);
+        second.delete(&["second-deleted".into()]);
+
+        let pairing = Arc::new(Pairing::new(None));
+        let axes = Arc::new(AxisController::default());
+        let srv = LinkServer::new(pairing.clone(), axes, Arc::new(NavDataService::new()), "3.0.0", Arc::new(|_| {}));
+        srv.set_sync(main.clone());
+        let port = srv.start(0).unwrap();
+        let token = match pairing.try_pair("127.0.0.1", Some(pairing.code().as_str()), None) {
+            crate::pairing::PairResult::Ok(t) => t,
+            r => panic!("{r:?}"),
+        };
+        let r = sync_logbook("127.0.0.1", port, &token, &second, "PC2", "PC1", 0).unwrap();
+        assert_eq!(r, SyncOutcome { received: 1, sent: 1, removed: 1 });
+        let ids = |s: &LogbookStore| {
+            let mut v: Vec<String> = s.flights().iter().map(|f| f.id.clone()).collect();
+            v.sort();
+            v
+        };
+        assert_eq!(ids(&*main), vec!["main-only".to_string(), "second-only".to_string()]);
+        assert_eq!(ids(&*second), ids(&*main));
+        assert!(sync_logbook("127.0.0.1", port, "zly", &second, "PC2", "PC1", 0).is_err());
+        srv.stop();
+        let _ = std::fs::remove_dir_all(main_dir);
+        let _ = std::fs::remove_dir_all(second_dir);
     }
 }

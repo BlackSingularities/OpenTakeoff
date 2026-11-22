@@ -106,7 +106,9 @@ OpenTakeoff można uruchomić także na drugim komputerze, bez symulatora. Łąc
 2. Na drugim komputerze wybierz źródło danych **Inny PC** (pasek narzędzi albo karta Telefony).
 3. Wpisz adres komputera z symulatorem (np. `192.168.1.20`, a gdy port jest inny niż 47810, to `192.168.1.20:47812`) oraz kod parowania i kliknij **Połącz**.
 
-Kod parowania podaje się tylko raz. Później drugi komputer łączy się sam przy każdym uruchomieniu. Na komputerze z symulatorem zapora Windows musi wpuszczać połączenia na port 47810 (punkt 2). Oba komputery mogą zapisywać lot w swoim dzienniku.
+Kod parowania podaje się tylko raz. Później drugi komputer łączy się sam przy każdym uruchomieniu. Na komputerze z symulatorem zapora Windows musi wpuszczać połączenia na port 47810 (punkt 2).
+
+Dziennik lotów jest jeden. Loty nagrywa komputer z symulatorem, a drugi komputer niczego sam nie nagrywa. Zamiast tego synchronizuje swój dziennik z tamtym zaraz po połączeniu, co minutę i po każdej zmianie. Działa to tak jak synchronizacja telefonu: brakujące loty przechodzą w obie strony, a lot usunięty na jednym komputerze trafia do kosza na drugim. Telefony podłączone do drugiego komputera synchronizują się z nim, więc ich loty też trafiają do wspólnego dziennika.
 
 ## Problemy
 

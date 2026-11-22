@@ -5434,11 +5434,23 @@ msgstr "Pairing code from that computer – only for the first connection"
 msgid "Połącz"
 msgstr "Connect"
 
-msgid "Na komputerze z symulatorem musi działać OpenTakeoff. Ten program pobiera od niego dane lotu przez Wi-Fi albo kabel, przekazuje komendy i osie, a telefony podłączone tutaj widzą wszystko jak przy symulatorze. Kod parowania podaje się tylko raz."
-msgstr "OpenTakeoff must be running on the computer with the simulator. This program gets flight data from it over Wi-Fi or cable, passes on commands and axes, and phones connected here see everything as if the simulator were here. The pairing code is entered only once."
+msgid "Na komputerze z symulatorem musi działać OpenTakeoff. Ten program pobiera od niego dane lotu przez Wi-Fi albo kabel, przekazuje komendy i osie, a telefony podłączone tutaj widzą wszystko jak przy symulatorze. Dziennik lotów jest wspólny: loty nagrywa komputer z symulatorem, a ten komputer i jego telefony synchronizują się z nim same. Kod parowania podaje się tylko raz."
+msgstr "OpenTakeoff must be running on the computer with the simulator. This program gets flight data from it over Wi-Fi or cable, passes on commands and axes, and phones connected here see everything as if the simulator were here. The logbook is shared: the simulator computer records the flights, and this computer and its phones sync with it automatically. The pairing code is entered only once."
 
 msgid "Źródło danych lotu. Inny PC – dane z OpenTakeoff na komputerze z symulatorem (adres i kod parowania na karcie Telefony)"
 msgstr "Flight data source. Other PC – data from OpenTakeoff on the computer with the simulator (address and pairing code on the Phones tab)"
 
 msgid "Dane z OpenTakeoff na komputerze z symulatorem, przez sieć (adres na karcie Telefony)"
 msgstr "Data from OpenTakeoff on the computer with the simulator, over the network (address on the Phones tab)"
+
+msgid "Dziennik zsynchronizowany z komputerem {host}: odebrano {a}, wysłano {b}, usunięto {c}"
+msgstr "Logbook synced with computer {host}: received {a}, sent {b}, removed {c}"
+
+msgid "Synchronizacja dziennika z komputerem {host} nie powiodła się: {e}"
+msgstr "Logbook sync with computer {host} failed: {e}"
+
+msgid "Dziennik zsynchronizowany z komputerem z symulatorem: odebrano {r}, wysłano {s}"
+msgstr "Logbook synced with the simulator computer: received {r}, sent {s}"
+
+msgid "Loty nagrywa komputer z symulatorem – dziennik synchronizuje się z nim sam"
+msgstr "Flights are recorded by the simulator computer – the logbook syncs with it automatically"

@@ -379,6 +379,11 @@ impl LogbookStore {
         SyncResponse { v: 1, want, offer, remove, flights: d.flights.len() }
     }
 
+    /// Loty usunięte od `since` (ms od epoki) – do synchronizacji z komputerem z symulatorem.
+    pub fn deleted_since(&self, since: i64) -> Vec<String> {
+        self.data.lock().meta.tombstones.iter().filter(|(_, t)| **t >= since).map(|(id, _)| id.clone()).collect()
+    }
+
     /// Lista lotów do porównania (bez torów).
     pub fn sync_list(&self) -> Vec<SyncFlight> {
         self.data.lock().flights.iter().map(|f| SyncFlight { id: f.id.clone(), start: f.start, end: f.end, aircraft: f.aircraft.clone() }).collect()

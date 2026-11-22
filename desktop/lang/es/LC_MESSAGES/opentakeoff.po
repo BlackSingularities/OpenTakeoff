@@ -5434,11 +5434,23 @@ msgstr "Código de emparejamiento de ese ordenador: solo en la primera conexión
 msgid "Połącz"
 msgstr "Conectar"
 
-msgid "Na komputerze z symulatorem musi działać OpenTakeoff. Ten program pobiera od niego dane lotu przez Wi-Fi albo kabel, przekazuje komendy i osie, a telefony podłączone tutaj widzą wszystko jak przy symulatorze. Kod parowania podaje się tylko raz."
-msgstr "OpenTakeoff debe estar en marcha en el ordenador con el simulador. Este programa recibe de él los datos de vuelo por Wi-Fi o cable, transmite comandos y ejes, y los teléfonos conectados aquí lo ven todo como junto al simulador. El código de emparejamiento se introduce solo una vez."
+msgid "Na komputerze z symulatorem musi działać OpenTakeoff. Ten program pobiera od niego dane lotu przez Wi-Fi albo kabel, przekazuje komendy i osie, a telefony podłączone tutaj widzą wszystko jak przy symulatorze. Dziennik lotów jest wspólny: loty nagrywa komputer z symulatorem, a ten komputer i jego telefony synchronizują się z nim same. Kod parowania podaje się tylko raz."
+msgstr "OpenTakeoff debe estar en marcha en el ordenador con el simulador. Este programa recibe de él los datos de vuelo por Wi-Fi o cable, transmite comandos y ejes, y los teléfonos conectados aquí lo ven todo como junto al simulador. El diario de vuelos es común: los vuelos los graba el ordenador con el simulador, y este ordenador y sus teléfonos se sincronizan con él solos. El código de emparejamiento se introduce solo una vez."
 
 msgid "Źródło danych lotu. Inny PC – dane z OpenTakeoff na komputerze z symulatorem (adres i kod parowania na karcie Telefony)"
 msgstr "Fuente de datos de vuelo. Otro PC: datos de OpenTakeoff en el ordenador con el simulador (dirección y código en la pestaña Teléfonos)"
 
 msgid "Dane z OpenTakeoff na komputerze z symulatorem, przez sieć (adres na karcie Telefony)"
 msgstr "Datos de OpenTakeoff en el ordenador con el simulador, por la red (dirección en la pestaña Teléfonos)"
+
+msgid "Dziennik zsynchronizowany z komputerem {host}: odebrano {a}, wysłano {b}, usunięto {c}"
+msgstr "Diario sincronizado con el ordenador {host}: recibidos {a}, enviados {b}, eliminados {c}"
+
+msgid "Synchronizacja dziennika z komputerem {host} nie powiodła się: {e}"
+msgstr "Error al sincronizar el diario con el ordenador {host}: {e}"
+
+msgid "Dziennik zsynchronizowany z komputerem z symulatorem: odebrano {r}, wysłano {s}"
+msgstr "Diario sincronizado con el ordenador del simulador: recibidos {r}, enviados {s}"
+
+msgid "Loty nagrywa komputer z symulatorem – dziennik synchronizuje się z nim sam"
+msgstr "Los vuelos los graba el ordenador con el simulador: el diario se sincroniza con él solo"
