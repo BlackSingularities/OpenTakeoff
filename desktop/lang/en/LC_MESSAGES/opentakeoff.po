@@ -5352,3 +5352,93 @@ msgstr "Airport map from OpenStreetMap when zoomed in: labelled taxiways, stands
 
 msgid "Tryb kołowania: na ziemi poniżej 40 kt mapa przybliża się do lotniska i obraca zgodnie z kursem samolotu"
 msgstr "Taxi mode: on the ground below 40 kt the map zooms in to the airport and turns with the aircraft heading"
+
+msgid "Wpisz adres komputera z symulatorem i OpenTakeoff"
+msgstr "Enter the address of the computer with the simulator and OpenTakeoff"
+
+msgid "Drugi komputer {addr}: {problem}"
+msgstr "Other computer {addr}: {problem}"
+
+msgid "Łączenie z komputerem {addr}…"
+msgstr "Connecting to computer {addr}…"
+
+msgid "Połączono z komputerem {addr}: {text}"
+msgstr "Connected to computer {addr}: {text}"
+
+msgid "Połączono z komputerem {addr}, brak danych lotu: {text}"
+msgstr "Connected to computer {addr}, no flight data: {text}"
+
+msgid "Brak odpowiedzi drugiego komputera"
+msgstr "No response from the other computer"
+
+msgid "Drugi komputer"
+msgstr "Other computer"
+
+msgid "Drugi komputer (OpenTakeoff {v})"
+msgstr "Other computer (OpenTakeoff {v})"
+
+msgid "Nieznany adres"
+msgstr "Unknown address"
+
+msgid "Przerwane uzgadnianie połączenia"
+msgstr "Connection handshake interrupted"
+
+msgid "brak połączenia ({e})"
+msgstr "no connection ({e})"
+
+msgid "wpisz kod parowania z tamtego komputera"
+msgstr "enter the pairing code from that computer"
+
+msgid "tamten komputer zakończył połączenie"
+msgstr "that computer closed the connection"
+
+msgid "połączenie przerwane ({e})"
+msgstr "connection lost ({e})"
+
+msgid "tamten komputer nie odpowiada"
+msgstr "that computer is not responding"
+
+msgid "za dużo prób parowania – odczekaj minutę"
+msgstr "too many pairing attempts – wait a minute"
+
+msgid "zły kod parowania – wpisz kod widoczny na tamtym komputerze"
+msgstr "wrong pairing code – enter the code shown on that computer"
+
+msgid "Źródło danych: drugi komputer z OpenTakeoff"
+msgstr "Data source: other computer with OpenTakeoff"
+
+msgid "Nieprawidłowy adres – wpisz np. 192.168.1.20 albo 192.168.1.20:47810"
+msgstr "Invalid address – enter e.g. 192.168.1.20 or 192.168.1.20:47810"
+
+msgid "Sparowano z drugim komputerem – kolejne połączenia bez kodu"
+msgstr "Paired with the other computer – next connections without a code"
+
+msgid "Inny PC"
+msgstr "Other PC"
+
+msgid "Automatycznie – dane z MSFS albo X-Plane, zależnie od tego, który działa. Inny PC – dane z OpenTakeoff na komputerze z symulatorem, przez sieć"
+msgstr "Automatic – data from MSFS or X-Plane, whichever is running. Other PC – data from OpenTakeoff on the computer with the simulator, over the network"
+
+msgid "Komputer z symulatorem"
+msgstr "Computer with the simulator"
+
+msgid "Adres IP (i port, gdy inny niż 47810) komputera z symulatorem i OpenTakeoff – widać go na karcie Telefony tamtego komputera"
+msgstr "IP address (and port, if not 47810) of the computer with the simulator and OpenTakeoff – shown on the Phones tab of that computer"
+
+msgid "kod"
+msgstr "code"
+
+msgid "Kod parowania z tamtego komputera – tylko przy pierwszym połączeniu"
+msgstr "Pairing code from that computer – only for the first connection"
+
+msgid "Połącz"
+msgstr "Connect"
+
+msgid "Na komputerze z symulatorem musi działać OpenTakeoff. Ten program pobiera od niego dane lotu przez Wi-Fi albo kabel, przekazuje komendy i osie, a telefony podłączone tutaj widzą wszystko jak przy symulatorze. Kod parowania podaje się tylko raz."
+msgstr "OpenTakeoff must be running on the computer with the simulator. This program gets flight data from it over Wi-Fi or cable, passes on commands and axes, and phones connected here see everything as if the simulator were here. The pairing code is entered only once."
+
+msgid "Źródło danych lotu. Inny PC – dane z OpenTakeoff na komputerze z symulatorem (adres i kod parowania na karcie Telefony)"
+msgstr "Flight data source. Other PC – data from OpenTakeoff on the computer with the simulator (address and pairing code on the Phones tab)"
+
+msgid "Dane z OpenTakeoff na komputerze z symulatorem, przez sieć (adres na karcie Telefony)"
+msgstr "Data from OpenTakeoff on the computer with the simulator, over the network (address on the Phones tab)"

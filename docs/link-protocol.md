@@ -493,6 +493,7 @@ Telefon zapisuje odpowiedzi u siebie i nie musi pytać ponownie.
 |---|---|---|
 | `airport` | `icao` | lotnisko, pasy z ILS, częstotliwości |
 | `procedures` | `icao` | listy SID, STAR i podejść (bez odcinków) |
+| `procedures_full` | `icao` | wszystkie procedury z odcinkami (`departures`, `arrivals`, `approaches`) – dla drugiego komputera z OpenTakeoff, od 3.12.0 |
 | `procedure_legs` | `icao`, `procType` (`departure` / `arrival` / `approach`), `name`, opcjonalnie `runway`, `transition` | odcinki procedury + `missed` |
 | `fix` | `ident`, opcjonalnie `nearLat` + `nearLon` (razem) | wszystkie punkty o tej nazwie |
 | `nearby` | `lat`, `lon`, opcjonalnie `radiusNm` (1–250, domyślnie 60) | lotniska i pomoce nawigacyjne w pobliżu |

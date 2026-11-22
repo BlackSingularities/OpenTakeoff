@@ -88,10 +88,13 @@ pub struct Settings {
     /// Warstwy mapy: plan z SimBrief i miejsca zrzutów ekranu.
     pub nav_plan: bool,
     pub nav_shots: bool,
-    /// Symulator: 0 automatycznie (MSFS albo X-Plane), 1 tylko MSFS, 2 tylko X-Plane.
+    /// Symulator: 0 automatycznie (MSFS albo X-Plane), 1 tylko MSFS, 2 tylko X-Plane, 3 drugi komputer.
     pub sim_kind: i32,
     /// Adres komputera z X-Plane (pusty – ten komputer).
     pub xplane_host: String,
+    /// Drugi komputer z symulatorem i OpenTakeoff („host” albo „host:port”) i token po parowaniu.
+    pub remote_host: String,
+    pub remote_token: String,
     /// Strony dla OBS (pasek, karta lądowania) także dla innych komputerów w sieci lokalnej.
     pub obs_lan: bool,
     /// Aktualizacje: sprawdzanie co kilka godzin i wersja, o której użytkownik nie chce przypominać.
@@ -292,6 +295,8 @@ impl Default for Settings {
             nav_shots: true,
             sim_kind: 0,
             xplane_host: String::new(),
+            remote_host: String::new(),
+            remote_token: String::new(),
             obs_lan: false,
             update_auto: true,
             update_skip: String::new(),

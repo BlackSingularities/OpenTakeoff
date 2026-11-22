@@ -63,6 +63,7 @@ fn apply_settings(ui: &AppWindow, s: &Settings) {
     app.set_sim_kind(s.sim_kind);
     app.set_update_auto(s.update_auto);
     app.set_xplane_host(s.xplane_host.clone().into());
+    app.set_remote_host(s.remote_host.clone().into());
     app.set_theme_mode(s.theme);
     app.set_record_flights(s.record_flights);
     app.set_record_interval(s.record_interval);
@@ -257,7 +258,7 @@ fn main() {
 
     // Diagnostyka: OPENTAKEOFF_SIMULATION=1 – lot testowy bez zmiany ustawień
     let sim = settings.simulation || std::env::var("OPENTAKEOFF_SIMULATION").is_ok_and(|v| v == "1");
-    let host = host::Host::start(sim, settings.sim_kind as i64, &settings.xplane_host, settings.look_sensitivity, settings.record_flights, settings.interval_ms());
+    let host = host::Host::start(sim, settings.sim_kind as i64, &settings.xplane_host, (settings.remote_host.as_str(), settings.remote_token.as_str()), settings.look_sensitivity, settings.record_flights, settings.interval_ms());
     host.set_sync_enabled(settings.auto_sync);
     let ui = AppWindow::new().expect("okno");
     // Tłumaczenia .slint Slint rejestruje dopiero przy pierwszym komponencie (wcześniej wybór języka

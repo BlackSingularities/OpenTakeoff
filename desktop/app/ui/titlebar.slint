@@ -348,6 +348,15 @@ component SimButton inherits Rectangle {
                         }
                     }
                     SourceTile {
+                        icon: Icons.link;
+                        label: @tr("Inny PC");
+                        active: !App.simulation && App.sim-kind == 3;
+                        tip: @tr("Dane z OpenTakeoff na komputerze z symulatorem, przez sieć (adres na karcie Telefony)");
+                        clicked => {
+                            App.cmd("source", "remote");
+                        }
+                    }
+                    SourceTile {
                         icon: Icons.plane;
                         label: @tr("Symulacja");
                         active: App.simulation;

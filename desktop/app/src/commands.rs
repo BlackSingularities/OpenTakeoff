@@ -97,6 +97,7 @@ pub(crate) fn cmd(ui: &AppWindow, id: &str, arg: &str) {
                             b.s.sim_kind = match other {
                                 "msfs" => 1,
                                 "xplane" => 2,
+                                "remote" => 3,
                                 _ => 0,
                             };
                         }
@@ -115,6 +116,33 @@ pub(crate) fn cmd(ui: &AppWindow, id: &str, arg: &str) {
             }
             app.set_sim_kind(kind);
             app.set_xplane_host(xp_host.into());
+            app::refresh_status();
+        }
+        // Drugi komputer: „adres|kod parowania” (kod pusty – zapamiętany token)
+        "remote-connect" => {
+            let (addr, code) = arg.split_once('|').unwrap_or((arg, ""));
+            let addr = addr.trim().to_string();
+            if opentakeoff_core::remote::parse_address(&addr).is_none() && !addr.is_empty() {
+                toast(tr("Nieprawidłowy adres – wpisz np. 192.168.1.20 albo 192.168.1.20:47810").to_string());
+                return;
+            }
+            {
+                let st = state();
+                let mut b = st.borrow_mut();
+                if b.s.remote_host != addr {
+                    b.s.remote_token.clear();
+                }
+                b.s.remote_host = addr.clone();
+                b.s.simulation = false;
+                b.s.sim_kind = 3;
+            }
+            save();
+            host.simulation.store(false, Ordering::SeqCst);
+            host.sim_kind.store(3, Ordering::SeqCst);
+            host.set_remote(&addr, code);
+            app.set_sim_kind(3);
+            app.set_remote_host(addr.into());
+            app.set_remote_code("".into());
             app::refresh_status();
         }
         "simulation" => {

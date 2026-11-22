@@ -98,6 +98,16 @@ OpenTakeoff na Windows obsługuje też X-Plane 11 i 12, bez wtyczek i bez osobny
 
 Program podaje pozycję, przyrządy, autopilota, radia, silniki i przyziemienia oraz przyjmuje komendy i sterowanie osiami z telefonu. W X-Plane nie ma danych nawigacyjnych z bazy (punkt 5) ani rozglądania się kamerą z telefonu. W trybie Automatycznie, gdy działają oba symulatory, pierwszeństwo ma MSFS.
 
+## 9. Drugi komputer (symulator na innym PC)
+
+OpenTakeoff można uruchomić także na drugim komputerze, bez symulatora. Łączy się wtedy z OpenTakeoff na komputerze z symulatorem, tak jak telefon, i pokazuje te same dane: przyrządy, mapę, plan lotu, dziennik. Telefony podłączone do drugiego komputera też dostają dane lotu, a ich komendy i osie trafiają do symulatora.
+
+1. Na komputerze z symulatorem uruchom OpenTakeoff jak zwykle. Na karcie Telefony odczytaj adres, port i kod parowania.
+2. Na drugim komputerze wybierz źródło danych **Inny PC** (pasek narzędzi albo karta Telefony).
+3. Wpisz adres komputera z symulatorem (np. `192.168.1.20`, a gdy port jest inny niż 47810, to `192.168.1.20:47812`) oraz kod parowania i kliknij **Połącz**.
+
+Kod parowania podaje się tylko raz. Później drugi komputer łączy się sam przy każdym uruchomieniu. Na komputerze z symulatorem zapora Windows musi wpuszczać połączenia na port 47810 (punkt 2). Oba komputery mogą zapisywać lot w swoim dzienniku.
+
 ## Problemy
 
 | Objaw | Co zrobić |

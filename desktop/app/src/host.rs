@@ -1,4 +1,5 @@
-//! Składa wszystko razem: serwer dla telefonów, rozgłaszanie, źródło danych (MSFS albo symulacja),
+//! Składa wszystko razem: serwer dla telefonów, rozgłaszanie, źródło danych (MSFS, X-Plane, drugi komputer
+//! z OpenTakeoff albo symulacja),
 //! zapis lotów na komputerze i dziennik z synchronizacją. Działa w tle niezależnie od okna.
 
 use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
@@ -15,6 +16,7 @@ use opentakeoff_core::logbook::{FlightLog, LogbookStore};
 use opentakeoff_core::navdata::NavDataService;
 use opentakeoff_core::pairing::Pairing;
 use opentakeoff_core::proto::{self, FlightState, WEBSOCKET_PORT};
+use opentakeoff_core::remote::RemoteSource;
 use opentakeoff_core::server::LinkServer;
 use opentakeoff_core::simulation::SimulationSource;
 use opentakeoff_core::source::{unix_ms, FlightSource};
@@ -28,6 +30,8 @@ use parking_lot::{Mutex, RwLock};
 pub enum HostEvent {
     FlightSaved(String, String),
     FlightDiscarded,
+    /// Drugi komputer wydał token (pusty – unieważniony): zapis w ustawieniach.
+    RemoteToken(String),
 }
 
 /// Punkt śladu na mapie „Na żywo” (także bez nagrywania).
@@ -48,9 +52,13 @@ pub struct Host {
     source: RwLock<Arc<dyn FlightSource>>,
     msfs: Mutex<Option<Arc<MsfsSource>>>,
     pub simulation: AtomicBool,
-    /// Symulator: 0 automatycznie (MSFS albo X-Plane), 1 tylko MSFS, 2 tylko X-Plane.
+    /// Symulator: 0 automatycznie (MSFS albo X-Plane), 1 tylko MSFS, 2 tylko X-Plane, 3 drugi komputer.
     pub sim_kind: AtomicI64,
     xplane_host: Mutex<String>,
+    /// Drugi komputer z symulatorem i OpenTakeoff: adres, kod parowania (tylko do pierwszego połączenia)
+    /// i token; nowy token od tamtego komputera czeka w `remote_new_token` na zapis w ustawieniach.
+    remote: Mutex<(String, String, String)>,
+    remote_new_token: Arc<Mutex<Option<String>>>,
     _discovery: Mutex<Option<Discovery>>,
     recorder: Mutex<Recorder>,
     pub record_enabled: AtomicBool,
@@ -71,7 +79,8 @@ fn log_line(s: String) {
 }
 
 impl Host {
-    pub fn start(simulation: bool, sim_kind: i64, xplane_host: &str, look_sensitivity: i32, record: bool, interval_ms: i64) -> Arc<Host> {
+    #[allow(clippy::too_many_arguments)]
+    pub fn start(simulation: bool, sim_kind: i64, xplane_host: &str, remote: (&str, &str), look_sensitivity: i32, record: bool, interval_ms: i64) -> Arc<Host> {
         let pairing = Arc::new(Pairing::new(Some(paths::config().join("devices.json"))));
         let axes = Arc::new(AxisController::default());
         let nav = Arc::new(NavDataService::new());
@@ -95,8 +104,10 @@ impl Host {
             source: RwLock::new(placeholder),
             msfs: Mutex::new(None),
             simulation: AtomicBool::new(simulation),
-            sim_kind: AtomicI64::new(sim_kind.clamp(0, 2)),
+            sim_kind: AtomicI64::new(sim_kind.clamp(0, 3)),
             xplane_host: Mutex::new(xplane_host.to_string()),
+            remote: Mutex::new((remote.0.to_string(), String::new(), remote.1.to_string())),
+            remote_new_token: Arc::new(Mutex::new(None)),
             _discovery: Mutex::new(None),
             recorder: Mutex::new(rec),
             record_enabled: AtomicBool::new(record),
@@ -173,6 +184,11 @@ impl Host {
         let src: Arc<dyn FlightSource> = if simulation {
             *self.msfs.lock() = None;
             Arc::new(SimulationSource::new(self.axes.clone()))
+        } else if kind == 3 {
+            *self.msfs.lock() = None;
+            let (addr, code, token) = self.remote.lock().clone();
+            let cell = self.remote_new_token.clone();
+            Arc::new(RemoteSource::new(self.axes.clone(), &addr, &code, &token, Arc::new(move |t: &str| *cell.lock() = Some(t.to_string()))))
         } else if kind == 2 {
             *self.msfs.lock() = None;
             Arc::new(XPlaneSource::new(self.axes.clone(), &self.xplane_host.lock()))
@@ -194,14 +210,36 @@ impl Host {
             match kind {
                 1 => tr("Źródło danych: MSFS"),
                 2 => tr("Źródło danych: X-Plane"),
+                3 => tr("Źródło danych: drugi komputer z OpenTakeoff"),
                 _ => tr("Źródło danych: MSFS albo X-Plane (automatycznie)"),
             }
         });
     }
 
-    /// Wybór symulatora (0 auto, 1 MSFS, 2 X-Plane) i adres komputera z X-Plane; przełącza źródło.
+    /// Drugi komputer: adres i kod parowania (pusty – zostaje zapamiętany token); przełącza źródło,
+    /// gdy wybrany jest drugi komputer. Nowy adres unieważnia token poprzedniego komputera.
+    pub fn set_remote(&self, address: &str, code: &str) -> bool {
+        {
+            let mut r = self.remote.lock();
+            let address = address.trim().to_string();
+            let changed = r.0 != address;
+            if changed {
+                r.2.clear();
+                *self.remote_new_token.lock() = Some(String::new());
+            }
+            r.0 = address;
+            r.1 = code.trim().to_string();
+        }
+        let active = !self.simulation.load(Ordering::SeqCst) && self.sim_kind.load(Ordering::SeqCst) == 3;
+        if active {
+            self.switch_source(false);
+        }
+        active
+    }
+
+    /// Wybór symulatora (0 auto, 1 MSFS, 2 X-Plane, 3 drugi komputer) i adres komputera z X-Plane; przełącza źródło.
     pub fn set_sim(&self, kind: i64, xplane_host: &str) {
-        self.sim_kind.store(kind.clamp(0, 2), Ordering::SeqCst);
+        self.sim_kind.store(kind.clamp(0, 3), Ordering::SeqCst);
         *self.xplane_host.lock() = xplane_host.to_string();
         if !self.simulation.load(Ordering::SeqCst) {
             self.switch_source(false);
@@ -293,6 +331,17 @@ impl Host {
         let mut offline_since: Option<Instant> = None;
         loop {
             std::thread::sleep(Duration::from_millis(250));
+            let new_token = self.remote_new_token.lock().take();
+            if let Some(t) = new_token {
+                {
+                    let mut r = self.remote.lock();
+                    r.2 = t.clone();
+                    if !t.is_empty() {
+                        r.1.clear();
+                    }
+                }
+                self.events.lock().push(HostEvent::RemoteToken(t));
+            }
             let src = self.source();
             // Zmiana stanu źródła → `status` do telefonów
             let key = format!("{}|{}|{}", src.kind(), src.is_connected(), src.status_text());

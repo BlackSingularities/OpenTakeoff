@@ -5352,3 +5352,93 @@ msgstr "Mapa del aeropuerto de OpenStreetMap al acercar: calles de rodaje con su
 
 msgid "Tryb kołowania: na ziemi poniżej 40 kt mapa przybliża się do lotniska i obraca zgodnie z kursem samolotu"
 msgstr "Modo rodaje: en tierra por debajo de 40 kt el mapa se acerca al aeropuerto y gira con el rumbo del avión"
+
+msgid "Wpisz adres komputera z symulatorem i OpenTakeoff"
+msgstr "Escribe la dirección del ordenador con el simulador y OpenTakeoff"
+
+msgid "Drugi komputer {addr}: {problem}"
+msgstr "Otro ordenador {addr}: {problem}"
+
+msgid "Łączenie z komputerem {addr}…"
+msgstr "Conectando con el ordenador {addr}…"
+
+msgid "Połączono z komputerem {addr}: {text}"
+msgstr "Conectado con el ordenador {addr}: {text}"
+
+msgid "Połączono z komputerem {addr}, brak danych lotu: {text}"
+msgstr "Conectado con el ordenador {addr}, sin datos de vuelo: {text}"
+
+msgid "Brak odpowiedzi drugiego komputera"
+msgstr "Sin respuesta del otro ordenador"
+
+msgid "Drugi komputer"
+msgstr "Otro ordenador"
+
+msgid "Drugi komputer (OpenTakeoff {v})"
+msgstr "Otro ordenador (OpenTakeoff {v})"
+
+msgid "Nieznany adres"
+msgstr "Dirección desconocida"
+
+msgid "Przerwane uzgadnianie połączenia"
+msgstr "Negociación de conexión interrumpida"
+
+msgid "brak połączenia ({e})"
+msgstr "sin conexión ({e})"
+
+msgid "wpisz kod parowania z tamtego komputera"
+msgstr "escribe el código de emparejamiento de ese ordenador"
+
+msgid "tamten komputer zakończył połączenie"
+msgstr "ese ordenador cerró la conexión"
+
+msgid "połączenie przerwane ({e})"
+msgstr "conexión perdida ({e})"
+
+msgid "tamten komputer nie odpowiada"
+msgstr "ese ordenador no responde"
+
+msgid "za dużo prób parowania – odczekaj minutę"
+msgstr "demasiados intentos de emparejamiento: espera un minuto"
+
+msgid "zły kod parowania – wpisz kod widoczny na tamtym komputerze"
+msgstr "código de emparejamiento incorrecto: escribe el código que aparece en ese ordenador"
+
+msgid "Źródło danych: drugi komputer z OpenTakeoff"
+msgstr "Fuente de datos: otro ordenador con OpenTakeoff"
+
+msgid "Nieprawidłowy adres – wpisz np. 192.168.1.20 albo 192.168.1.20:47810"
+msgstr "Dirección no válida: escribe p. ej. 192.168.1.20 o 192.168.1.20:47810"
+
+msgid "Sparowano z drugim komputerem – kolejne połączenia bez kodu"
+msgstr "Emparejado con el otro ordenador: las próximas conexiones no necesitan código"
+
+msgid "Inny PC"
+msgstr "Otro PC"
+
+msgid "Automatycznie – dane z MSFS albo X-Plane, zależnie od tego, który działa. Inny PC – dane z OpenTakeoff na komputerze z symulatorem, przez sieć"
+msgstr "Automático: datos de MSFS o X-Plane, el que esté en marcha. Otro PC: datos de OpenTakeoff en el ordenador con el simulador, por la red"
+
+msgid "Komputer z symulatorem"
+msgstr "Ordenador con el simulador"
+
+msgid "Adres IP (i port, gdy inny niż 47810) komputera z symulatorem i OpenTakeoff – widać go na karcie Telefony tamtego komputera"
+msgstr "Dirección IP (y puerto, si no es 47810) del ordenador con el simulador y OpenTakeoff: aparece en la pestaña Teléfonos de ese ordenador"
+
+msgid "kod"
+msgstr "código"
+
+msgid "Kod parowania z tamtego komputera – tylko przy pierwszym połączeniu"
+msgstr "Código de emparejamiento de ese ordenador: solo en la primera conexión"
+
+msgid "Połącz"
+msgstr "Conectar"
+
+msgid "Na komputerze z symulatorem musi działać OpenTakeoff. Ten program pobiera od niego dane lotu przez Wi-Fi albo kabel, przekazuje komendy i osie, a telefony podłączone tutaj widzą wszystko jak przy symulatorze. Kod parowania podaje się tylko raz."
+msgstr "OpenTakeoff debe estar en marcha en el ordenador con el simulador. Este programa recibe de él los datos de vuelo por Wi-Fi o cable, transmite comandos y ejes, y los teléfonos conectados aquí lo ven todo como junto al simulador. El código de emparejamiento se introduce solo una vez."
+
+msgid "Źródło danych lotu. Inny PC – dane z OpenTakeoff na komputerze z symulatorem (adres i kod parowania na karcie Telefony)"
+msgstr "Fuente de datos de vuelo. Otro PC: datos de OpenTakeoff en el ordenador con el simulador (dirección y código en la pestaña Teléfonos)"
+
+msgid "Dane z OpenTakeoff na komputerze z symulatorem, przez sieć (adres na karcie Telefony)"
+msgstr "Datos de OpenTakeoff en el ordenador con el simulador, por la red (dirección en la pestaña Teléfonos)"

@@ -1,5 +1,5 @@
 //! OpenTakeoff dla Windows – rdzeń bez interfejsu: most do telefonu (protokół Link v1, parowanie, serwer,
-//! rozgłaszanie, osie, komendy, dane nawigacyjne, tryb symulacji), dziennik lotów z synchronizacją,
+//! rozgłaszanie, osie, komendy, dane nawigacyjne, tryb symulacji, drugi komputer), dziennik lotów z synchronizacją,
 //! baza lotnisk, pogoda i narzędzia, tłumaczenia, ścieżki i aktualizacje.
 
 pub mod aero;
@@ -13,6 +13,7 @@ pub mod navdata;
 pub mod pairing;
 pub mod paths;
 pub mod proto;
+pub mod remote;
 pub mod server;
 pub mod simnav;
 pub mod simulation;

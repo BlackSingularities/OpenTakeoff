@@ -386,6 +386,8 @@ pub mod math {
 pub enum Query {
     Airport { icao: String },
     Procedures { icao: String },
+    /// Pełne procedury z odcinkami (dla drugiego komputera z OpenTakeoff).
+    ProceduresFull { icao: String },
     ProcedureLegs { icao: String, proc_type: String, name: String, runway: Option<String>, transition: Option<String> },
     Fix { ident: String, near: Option<(f64, f64)> },
     Nearby { lat: f64, lon: f64, radius_nm: f64 },
@@ -396,6 +398,7 @@ impl Query {
         match self {
             Query::Airport { .. } => "airport",
             Query::Procedures { .. } => "procedures",
+            Query::ProceduresFull { .. } => "procedures_full",
             Query::ProcedureLegs { .. } => "procedure_legs",
             Query::Fix { .. } => "fix",
             Query::Nearby { .. } => "nearby",
@@ -428,6 +431,7 @@ impl Query {
         match m.str("kind") {
             Some("airport") => Ok(Query::Airport { icao: code("icao", 2, 8)? }),
             Some("procedures") => Ok(Query::Procedures { icao: code("icao", 2, 8)? }),
+            Some("procedures_full") => Ok(Query::ProceduresFull { icao: code("icao", 2, 8)? }),
             Some("procedure_legs") => {
                 let icao = code("icao", 2, 8)?;
                 let proc_type = match m.str("procType") {
@@ -461,7 +465,7 @@ impl Query {
     fn cache_key(&self, source: &str) -> String {
         match self {
             Query::Airport { icao } => format!("{source}|airport|{icao}"),
-            Query::Procedures { icao } | Query::ProcedureLegs { icao, .. } => format!("{source}|procedures|{icao}"),
+            Query::Procedures { icao } | Query::ProceduresFull { icao } | Query::ProcedureLegs { icao, .. } => format!("{source}|procedures|{icao}"),
             // Pozycja zaokrąglona do 0,2° (~12 NM): zapytania z lecącego samolotu trafiają w tę samą pozycję
             Query::Nearby { lat, lon, radius_nm } => format!("{source}|nearby|{}|{}|{radius_nm}", (lat * 5.0).round(), (lon * 5.0).round()),
             Query::Fix { ident, .. } => format!("{source}|fix|{ident}"),
@@ -561,6 +565,7 @@ impl NavDataService {
         match q {
             Query::Airport { icao } => Ok(to(&*self.airport(provider, source, icao)?)),
             Query::Procedures { icao } => Ok(to(&self.procedures(provider, source, icao)?.summary())),
+            Query::ProceduresFull { icao } => Ok(to(&*self.procedures(provider, source, icao)?)),
             Query::ProcedureLegs { icao, proc_type, name, runway, transition } => {
                 let p = self.procedures(provider, source, icao)?;
                 Ok(to(&p.legs(proc_type, name, runway.as_deref(), transition.as_deref())?))

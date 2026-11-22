@@ -1,3 +1,8 @@
+## 3.12.0
+
+- Windows: OpenTakeoff działa też na drugim komputerze, bez symulatora. Wybierz źródło danych „Inny PC”, wpisz adres komputera z symulatorem i OpenTakeoff (np. 192.168.1.20 albo 192.168.1.20:47812) i raz podaj jego kod parowania. Drugi komputer dostaje przez Wi-Fi albo kabel pełne dane lotu: przyrządy, mapę, plan lotu, procedury i dziennik. Komendy i osie z niego, a także z telefonów podłączonych do niego, trafiają do symulatora. Po pierwszym parowaniu łączy się sam przy każdym uruchomieniu.
+- Windows: okno aktualizacji nie pokazuje już opisu zmian z GitHuba. Aktualizacja działa jak dotąd.
+
 ## 3.11.0
 
 - Mapy lotnisk na telefonie i na Windows: po przybliżeniu do lotniska widać płyty, pasy i drogi kołowania z oznaczeniami („A”, „B2”) jak na diagramie lotniska. Dla lotniska w pobliżu mapy program raz pobiera z OpenStreetMap (Overpass API, bez klucza) pełniejszy rysunek – terminale, hangary, stanowiska, bramki i miejsca oczekiwania przed pasem – i trzyma go na dysku przez 30 dni, więc potem działa też bez sieci. Na Windows warstwę włącza przycisk „Lotnisko” na wstążce, na telefonie pozycja „Mapa lotniska” w menu warstw.

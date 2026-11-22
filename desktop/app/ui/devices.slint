@@ -78,14 +78,58 @@ export component Devices inherits Rectangle {
                         icon: Icons.monitor;
                     }
                     Segmented {
-                        items: [@tr("Automatycznie"), "MSFS", "X-Plane", @tr("Tryb symulacji")];
-                        current: App.simulation ? 3 : App.sim-kind;
-                        tip: @tr("Automatycznie – dane z MSFS albo X-Plane, zależnie od tego, który działa");
+                        items: [@tr("Automatycznie"), "MSFS", "X-Plane", @tr("Inny PC"), @tr("Tryb symulacji")];
+                        current: App.simulation ? 4 : App.sim-kind;
+                        tip: @tr("Automatycznie – dane z MSFS albo X-Plane, zależnie od tego, który działa. Inny PC – dane z OpenTakeoff na komputerze z symulatorem, przez sieć");
                         picked(i) => {
-                            App.cmd("source", i == 0 ? "auto" : i == 1 ? "msfs" : i == 2 ? "xplane" : "sim");
+                            App.cmd("source", i == 0 ? "auto" : i == 1 ? "msfs" : i == 2 ? "xplane" : i == 3 ? "remote" : "sim");
                         }
                     }
-                    if !App.simulation && App.sim-kind != 1: HorizontalLayout {
+                    if !App.simulation && App.sim-kind == 3: HorizontalLayout {
+                        spacing: 8px;
+                        AText {
+                            text: @tr("Komputer z symulatorem");
+                            font-family: Theme.font;
+                            font-size: Theme.fs;
+                            color: Theme.text-dim;
+                            vertical-alignment: center;
+                        }
+                        Field {
+                            w: 170px;
+                            mono: true;
+                            text <=> App.remote-host;
+                            placeholder: "192.168.1.20:47810";
+                            tip: @tr("Adres IP (i port, gdy inny niż 47810) komputera z symulatorem i OpenTakeoff – widać go na karcie Telefony tamtego komputera");
+                            accepted(t) => {
+                                App.cmd("remote-connect", t + "|" + App.remote-code);
+                            }
+                        }
+                        Field {
+                            w: 90px;
+                            mono: true;
+                            text <=> App.remote-code;
+                            placeholder: @tr("kod");
+                            tip: @tr("Kod parowania z tamtego komputera – tylko przy pierwszym połączeniu");
+                            accepted(t) => {
+                                App.cmd("remote-connect", App.remote-host + "|" + t);
+                            }
+                        }
+                        Button {
+                            label: @tr("Połącz");
+                            icon: Icons.link;
+                            clicked => {
+                                App.cmd("remote-connect", App.remote-host + "|" + App.remote-code);
+                            }
+                        }
+                    }
+                    if !App.simulation && App.sim-kind == 3: AText {
+                        text: @tr("Na komputerze z symulatorem musi działać OpenTakeoff. Ten program pobiera od niego dane lotu przez Wi-Fi albo kabel, przekazuje komendy i osie, a telefony podłączone tutaj widzą wszystko jak przy symulatorze. Kod parowania podaje się tylko raz.");
+                        font-family: Theme.font;
+                        font-size: Theme.fs-small;
+                        color: Theme.text-faint;
+                        wrap: word-wrap;
+                    }
+                    if !App.simulation && App.sim-kind != 1 && App.sim-kind != 3: HorizontalLayout {
                         spacing: 8px;
                         AText {
                             text: @tr("Komputer z X-Plane");
@@ -104,7 +148,7 @@ export component Devices inherits Rectangle {
                             }
                         }
                     }
-                    if !App.simulation && App.sim-kind != 1: AText {
+                    if !App.simulation && App.sim-kind != 1 && App.sim-kind != 3: AText {
                         text: @tr("X-Plane 11/12 bez wtyczek: w X-Plane Settings → Network włącz przyjmowanie połączeń UDP (port 49000). Osobny most w Pythonie nie jest już potrzebny.");
                         font-family: Theme.font;
                         font-size: Theme.fs-small;

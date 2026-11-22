@@ -194,6 +194,13 @@ pub fn refresh_status() {
         match e {
             HostEvent::FlightSaved(_, route) => msgs.push(trf!("Lot {route} zapisany w dzienniku")),
             HostEvent::FlightDiscarded => msgs.push(tr("Zapis zakończony – loty krótsze niż 2 min nie trafiają do dziennika").to_string()),
+            HostEvent::RemoteToken(t) => {
+                if !t.is_empty() && st.s.remote_token.is_empty() {
+                    msgs.push(tr("Sparowano z drugim komputerem – kolejne połączenia bez kodu").to_string());
+                }
+                st.s.remote_token = t;
+                st.s.save();
+            }
         }
     }
     let mut synced: HashMap<String, (usize, usize, usize)> = HashMap::new();
