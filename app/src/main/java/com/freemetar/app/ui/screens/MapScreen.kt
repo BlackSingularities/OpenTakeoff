@@ -350,7 +350,8 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
         (style?.getSource(SRC_METAR) as? GeoJsonSource)?.setGeoJson(metarFeatures(metars, c))
     }
     // Samolot z symulatora i przebyty tor
-    LaunchedEffect(style, live?.position, live?.attitude) {
+    val trackProfile = settings.trackProfile
+    LaunchedEffect(style, live?.position, live?.attitude, trackProfile) {
         val st = style ?: return@LaunchedEffect
         val lat = live?.position?.lat; val lon = live?.position?.lon
         val fc = if (lat == null || lon == null) FeatureCollection.fromFeatures(emptyList())
@@ -359,8 +360,9 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
             live?.position?.altMslFt?.let { addStringProperty("label", altLabel(it.roundToInt())) }
         })
         (st.getSource(SRC_PLANE) as? GeoJsonSource)?.setGeoJson(fc)
-        // Samolot w 3D na wysokości lotu; z bliska w skali mapy, z daleka mały znak stałej wielkości
-        val alt = live?.position?.altMslFt
+        // Samolot w 3D na wysokości lotu; z bliska w skali mapy, z daleka mały znak stałej wielkości.
+        // Bez profilu wysokości samolot leży na ziemi, na płaskiej linii toru
+        val alt = live?.position?.altMslFt?.let { if (trackProfile) it else 0.0 }
         mapView.getMapAsync { m ->
             val plane3d = if (lat == null || lon == null || alt == null) FeatureCollection.fromFeatures(emptyList()) else {
                 val zoom = m.cameraPosition.zoom
@@ -411,6 +413,11 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
     LaunchedEffect(style) {
         val st = style ?: return@LaunchedEffect
         set3dLayers(st, true)
+    }
+    // Profil wysokości toru: linia w powietrzu, ściana i etykiety wysokości; bez niego tylko płaska linia na ziemi
+    LaunchedEffect(style, trackProfile) {
+        val st = style ?: return@LaunchedEffect
+        setLayersVisible(st, listOf(LYR_LINE3D, LYR_WALL3D, "oab-track-label"), trackProfile)
     }
     // Zapisany lot: kadr na cały tor
     LaunchedEffect(style, shownFlight?.id) {
@@ -598,6 +605,7 @@ fun MapScreen(vm: MainViewModel, onOpen: (String) -> Unit) {
                     item(loc("map.airport_layout"), tools.showLayout) { setTools { it.copy(showLayout = !it.showLayout) } }
                     item(loc("map.taxi_mode"), tools.taxiMode) { setTools { it.copy(taxiMode = !it.taxiMode) } }
                     item(loc("map.range_rings"), tools.showRings) { setTools { it.copy(showRings = !it.showRings) } }
+                    item(loc("map.track_altitude_profile"), trackProfile) { vm.setTrackProfile(!trackProfile) }
                 }
             }
             if (live != null) MapKey(Icons.Outlined.MyLocation, loc("map.follow_aircraft"), follow) { setTools { it.copy(follow = !it.follow) } }

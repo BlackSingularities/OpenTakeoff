@@ -1130,6 +1130,7 @@
   "map.airport_layout": "Mapa lotniska (drogi kołowania, stanowiska)",
   "map.taxi_mode": "Tryb kołowania (przybliżenie na ziemi)",
   "map.range_rings": "Pierścienie 5/10/20 NM",
+  "map.track_altitude_profile": "Profil wysokości toru",
   "taxi.title": "Trasa kołowania",
   "taxi.hint": "np. A B2 H 27, samo 27 albo stanowisko",
   "taxi.show": "Pokaż",

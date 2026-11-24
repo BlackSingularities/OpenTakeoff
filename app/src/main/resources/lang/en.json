@@ -1130,6 +1130,7 @@
   "map.airport_layout": "Airport map (taxiways, stands)",
   "map.taxi_mode": "Taxi mode (zoom in on the ground)",
   "map.range_rings": "Range rings 5/10/20 NM",
+  "map.track_altitude_profile": "Track altitude profile",
   "taxi.title": "Taxi route",
   "taxi.hint": "e.g. A B2 H 27, just 27 or a stand",
   "taxi.show": "Show",

@@ -1,3 +1,8 @@
+## 3.12.2
+
+- Android: pasek „Lot na żywo” nad zakładkami nie ucina już tekstu przy powiększonej czcionce systemowej. Rośnie razem z tekstem, a pusty wiersz z nazwą samolotu znika.
+- Android: w menu warstw mapy jest nowa pozycja „Profil wysokości toru”. Po jej wyłączeniu tor jest zwykłą płaską linią na ziemi, bez linii w powietrzu, ściany i etykiet wysokości, a samolot leży na tej linii. Wybór zostaje zapamiętany.
+
 ## 3.12.1
 
 - Windows, „Inny PC”: dziennik lotów jest wspólny. Drugi komputer nie nagrywa lotów sam, bo robi to komputer z symulatorem. Po połączeniu, co minutę i po każdej zmianie drugi komputer synchronizuje z nim dziennik, tak jak telefon: brakujące loty przechodzą w obie strony, a usunięte trafiają do kosza po obu stronach. Telefony podłączone do drugiego komputera synchronizują się z nim, więc wszystkie loty schodzą się w jednym dzienniku.

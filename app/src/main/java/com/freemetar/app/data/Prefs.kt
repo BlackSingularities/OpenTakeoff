@@ -49,6 +49,8 @@ data class Settings(
     /** Włączone zapowiedzi (identyfikatory z [CalloutsList]). */
     val enabledCallouts: Set<String> = CalloutsList.ALL.map { it.first }.toSet(),
     val calloutsSpeechRate: Float = 1.0f,
+    /** Profil wysokości toru na mapie (linia w powietrzu i ściana); wyłączony — sama płaska linia na ziemi. */
+    val trackProfile: Boolean = true,
 )
 
 class Prefs(private val context: Context) {
@@ -73,6 +75,7 @@ class Prefs(private val context: Context) {
     private val CALLOUTS_ON = booleanPreferencesKey("callouts_enabled")
     private val CALLOUTS_LIST = stringPreferencesKey("callouts_list")
     private val CALLOUTS_RATE = floatPreferencesKey("callouts_rate")
+    private val TRACK_PROFILE = booleanPreferencesKey("map_track_profile")
 
     private fun list(v: String?) = v?.split(",")?.filter { it.isNotBlank() }
 
@@ -98,6 +101,7 @@ class Prefs(private val context: Context) {
             // Pusty zapis = wszystkie wyłączone; brak klucza = domyślna lista
             enabledCallouts = p[CALLOUTS_LIST]?.split(",")?.filter { it.isNotBlank() }?.toSet() ?: Settings().enabledCallouts,
             calloutsSpeechRate = p[CALLOUTS_RATE] ?: 1.0f,
+            trackProfile = p[TRACK_PROFILE] ?: true,
         )
     }
 
@@ -161,4 +165,5 @@ class Prefs(private val context: Context) {
         p[CALLOUTS_LIST] = (if (on) cur + id else cur - id).joinToString(",")
     }
     suspend fun setCalloutsSpeechRate(v: Float) = context.dataStore.edit { it[CALLOUTS_RATE] = v }
+    suspend fun setTrackProfile(v: Boolean) = context.dataStore.edit { it[TRACK_PROFILE] = v }
 }

@@ -1130,6 +1130,7 @@
   "map.airport_layout": "Mapa del aeropuerto (calles de rodaje, puestos)",
   "map.taxi_mode": "Modo rodaje (acercar en tierra)",
   "map.range_rings": "Anillos 5/10/20 NM",
+  "map.track_altitude_profile": "Perfil de altitud de la traza",
   "taxi.title": "Ruta de rodaje",
   "taxi.hint": "p. ej. A B2 H 27, solo 27 o un puesto",
   "taxi.show": "Mostrar",

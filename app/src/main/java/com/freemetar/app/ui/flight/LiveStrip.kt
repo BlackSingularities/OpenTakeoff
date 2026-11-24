@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -69,7 +69,8 @@ fun LiveFlightStrip(s: FlightState, onClick: () -> Unit, modifier: Modifier = Mo
         modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp).clip(RoundedCornerShape(10.dp)).background(STRIP_BG)
             .semantics { contentDescription = desc }
             .clickable(role = Role.Button, onClick = onClick)
-            .height(40.dp).padding(horizontal = 10.dp),
+            // Wysokość rośnie z tekstem — przy powiększonej czcionce systemowej stałe 40 dp ucinało wartości
+            .heightIn(min = 40.dp).padding(horizontal = 12.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // „LIVE” z czerwoną kropką, potem samolot i trasa
@@ -79,16 +80,18 @@ fun LiveFlightStrip(s: FlightState, onClick: () -> Unit, modifier: Modifier = Mo
             Text(
                 listOfNotNull(next?.let { "→ $it" }, if (s.aircraft.paused == true) tr("live_strip.paused") else null).joinToString("  ")
                     .ifEmpty { tr("live_strip.live_flight") },
-                fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = STRIP_ACCENT, maxLines = 1,
+                fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 11.sp, lineHeight = 13.sp, color = STRIP_ACCENT,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
-            Text(s.aircraft.atcModel?.takeIf { it.isNotBlank() } ?: s.aircraft.title ?: "", fontSize = 10.sp, color = STRIP_LABEL,
+            val model = s.aircraft.atcModel?.takeIf { it.isNotBlank() } ?: s.aircraft.title
+            if (!model.isNullOrBlank()) Text(model, fontSize = 10.sp, lineHeight = 12.sp, color = STRIP_LABEL,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             items.forEach { (k, v) ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(k, fontFamily = Mono, fontSize = 8.sp, color = STRIP_LABEL, maxLines = 1)
-                    Text(v, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = STRIP_VALUE, maxLines = 1)
+                    Text(k, fontFamily = Mono, fontSize = 8.sp, lineHeight = 10.sp, color = STRIP_LABEL, maxLines = 1)
+                    Text(v, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 13.sp, lineHeight = 15.sp, color = STRIP_VALUE, maxLines = 1)
                 }
             }
         }
